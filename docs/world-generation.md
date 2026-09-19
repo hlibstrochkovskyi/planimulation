@@ -1,6 +1,6 @@
 # World generation: technical proposal
 
-Date: September 19, 2026. These algorithms are not implemented. This document makes the first steps concrete and testable. See [DESIGN.md](../DESIGN.md) for the overall concept.
+Date: September 19, 2026. The spherical surface, recipe validation, named random streams, and flat projection are implemented in milestone A. Tectonics, terrain, water, climate, and ecology below remain proposals. See [DESIGN.md](../DESIGN.md) for the overall concept and [development](development.md) for the current implementation.
 
 ## 1. One world, multiple views
 
@@ -18,9 +18,9 @@ The simulation does not read map pixels or use screen-space distances. Colors, l
 
 ## 2. Surface representation
 
-The working choice is a recursively subdivided icosahedron with vertices normalized onto the unit sphere. Each vertex is the center of a computational region. A barycentric dual region is assembled around it from parts of adjacent spherical triangles.
+The implemented surface is a recursively subdivided icosahedron with vertices normalized onto the unit sphere. Each vertex is the center of a computational region. A barycentric dual region is assembled around it from parts of adjacent spherical triangles.
 
-This is a proposed topology, not a requirement to use a rendering library's mesh constructor. The core owns topology construction and must produce stable identifiers and neighbor ordering.
+The core owns topology construction and produces stable identifiers and neighbor ordering without using a rendering library's mesh constructor.
 
 For recursive four-way triangle subdivision, the number of centers is `10 * 4^L + 2`: level 5 gives 10,242 regions; level 6 gives 40,962. These are initial benchmark candidates, not promises of adequate detail or speed. Debugging uses smaller levels.
 

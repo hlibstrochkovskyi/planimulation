@@ -1,14 +1,14 @@
 # Early implementation plan
 
-Status: proposal, September 19, 2026. No application code has been written. Each milestone is independently demonstrable; milestone letters are not released versions.
+Status: milestone A implementation, September 19, 2026. Later milestones remain proposals. Each milestone is independently demonstrable; milestone letters are not released versions.
 
 ## 1. Proposed stack
 
-For the first interactive prototype: TypeScript, a browser UI, a Web Worker for generation, and Three.js for rendering. A Node.js headless adapter uses the same core. This is a working choice to share a language between computation and visualization; package versions are selected when scaffolding the application.
+The first application uses Electron with a TypeScript renderer and a Web Worker for generation. A Node.js headless adapter uses the same core. Dependencies are pinned in the package manifest and lockfile. The current flat map uses Canvas 2D; Three.js is deferred until the 3D milestone needs it.
 
-The core imports neither DOM/Worker APIs nor Three.js. The Worker is an adapter. Initially the GPU handles rendering; GPU simulation or a native core is considered after benchmarks and reproducibility checks.
+The core imports neither Electron, DOM/Worker APIs, nor rendering libraries. The Worker is an adapter. The desktop main process owns the window and native recipe dialogs; a sandboxed, context-isolated preload exposes two narrow recipe operations. GPU simulation or a native core is considered after benchmarks and reproducibility checks.
 
-The first UI is small. Its framework is not a modeling decision. Services, a server database, and distributed computation are unnecessary at this stage.
+The first UI uses standard DOM controls without a framework or development web server. Services, a server database, and distributed computation are unnecessary at this stage.
 
 ## 2. Minimal responsibilities
 
@@ -129,4 +129,4 @@ Automated checks focus on topology, units, balances, fluxes, determinism, checkp
 
 Population readiness means the environment provides water, wild food, seasonal hazards, traversal costs, and change history with stable behavior across an ensemble. Then introduce the groups described in [DESIGN.md](../DESIGN.md), consuming real stocks and modifying their environment.
 
-Immediate implementation scope: milestones A and B. Climate equations, economic modeling, and political entities must not block the first explainable map.
+Current implementation scope is milestone A. Milestone B follows as a separate increment. Climate equations, economic modeling, and political entities must not block the first explainable terrain map.
