@@ -7,3 +7,4 @@
 - Keep simulation state independent of rendering. Visual detail must not silently alter physical data.
 - Preserve reproducibility: record resolved parameters and model versions, and keep subsystem random streams independent.
 - Do not describe proposed or unimplemented features as working functionality.
+- Use the repository owner's configured Git identity. Never add Codex or another assistant as a contributor, co-author, or commit-message attribution.
