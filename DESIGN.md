@@ -157,7 +157,7 @@ Conflict is not an inevitable response to scarcity. Actors can seek suppliers, c
 
 ## 7. Observation and experimentation
 
-A layered map with navigation and an inspector is the primary interface. Eventually the same model should support a flat map, a globe, and a local 3D view.
+A layered map with navigation and an inspector is the primary interface. The same model supports a flat analytical map and a 3D globe. Future computed elevation shapes the globe without requiring relief in the flat view. Settlements and routes are markers and network overlays, not detailed 3D cities. A street-level or local open-world environment is outside the current product scope.
 
 Natural layers include physical terrain, elevation, geology, temperature, precipitation, wind, catchments, snow, soil moisture, biomes, productivity, and resources. Later layers include population, settlements, routes, trade, wealth, politics, culture, migration, military conditions, and food security.
 

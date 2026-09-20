@@ -152,7 +152,7 @@ The flat projection must split triangles crossing the seam and map all display f
 
 The globe uses the same centers, elevations, and triangles. A labeled vertical-exaggeration factor can improve readability without affecting modeled slopes and distances. Water uses a separate surface at its corresponding level.
 
-A future local 3D view interpolates the underlying terrain. Additional rocks, trees, and small irregularities are visual detail. Giving them routing or resource consequences requires an explicit model extension with scale-coupling rules.
+The current product targets a flat analytical map and a globe with eventual computed relief, not detailed 3D cities or a street-level environment. Settlements are markers sized or styled from their modeled properties. Visual detail must never acquire routing or resource consequences without an explicit scale-coupling model.
 
 Dynamics adds Play/Pause, single stepping, a date, and temperature, precipitation, wind, snow, river, soil-moisture, and vegetation layers. Every layer distinguishes current values, period averages, and climatic normals.
 

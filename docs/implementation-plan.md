@@ -1,12 +1,14 @@
 # Early implementation plan
 
-Status: milestone A implementation, September 19, 2026. Later milestones remain proposals. Each milestone is independently demonstrable; milestone letters are not released versions.
+Status: milestone A plus the native/GPU foundation increment, September 20, 2026. Geological and later simulation milestones remain proposals. Each milestone is independently demonstrable; milestone letters are not released versions.
 
-## 1. Proposed stack
+## 1. Selected foundation stack
 
-The first application uses Electron with a TypeScript renderer and a Web Worker for generation. A Node.js headless adapter uses the same core. Dependencies are pinned in the package manifest and lockfile. The current flat map uses Canvas 2D; Three.js is deferred until the 3D milestone needs it.
+The application uses Electron with a TypeScript interface and Three.js/WebGL 2 for both the flat atlas and globe. An independent Rust executable owns geometry, generation, and the diagnostic transport state. A Node.js headless adapter uses the same executable. Dependencies are recorded in npm and Cargo lockfiles.
 
-The core imports neither Electron, DOM/Worker APIs, nor rendering libraries. The Worker is an adapter. The desktop main process owns the window and native recipe dialogs; a sandboxed, context-isolated preload exposes two narrow recipe operations. GPU simulation or a native core is considered after benchmarks and reproducibility checks.
+The Rust library imports no desktop or rendering libraries. The main process owns the native process lifecycle, validates commands, and handles recipe dialogs; the sandboxed, context-isolated preload exposes named operations only. Binary native messages are bounded and versioned. Geometry is delivered once; diagnostic updates contain only a field and metadata. IPC still copies data; it is not zero-copy. A renderer Worker prepares display geometry, not simulation state. The old TypeScript generator remains an independent numerical test reference.
+
+See [Native/GPU foundation](native-foundation.md) for implemented contracts, measurements, and limitations. A small surface/transport workload is not evidence that the complete future simulator already meets its performance goals.
 
 The first UI uses standard DOM controls without a framework or development web server. Services, a server database, and distributed computation are unnecessary at this stage.
 
@@ -20,11 +22,11 @@ core/
   model          state fields, units, versions
   diagnostics    invariants, statistics, checksums
 adapters/
-  worker         start/cancel generation, deliver results
+  native         start/cancel generation, bounded binary results, diagnostic frames
   headless       recipes and batch checks without a UI
 viewer/
   map            projection, layers, region selection
-  globe          later: 3D view of the same data
+  globe          3D view of the same data; elevation follows geological generation
   controls       parameters, legends, inspector
 ```
 
@@ -60,7 +62,7 @@ Work:
 2. Large-scale relief and bounded spherical noise detail.
 3. Initial water-level fitting and water-component classification.
 4. Map, legends, zoom/pan, and an elevation-contribution inspector.
-5. Worker generation with progress, cancellation, and protection against stale-result publication.
+5. Native generation with progress, cancellation, and protection against stale-result publication.
 6. Export the resolved recipe and map image; report statistics and field checksums.
 
 Check reproduction using data, not screenshots: rendering antialiasing may differ. Do not expose a control as functional when its mechanism is absent.
@@ -107,9 +109,9 @@ Preserve differences between worlds. Checks detect broken laws rather than requi
 
 ## 8. Adding 3D
 
-After milestone B, add a globe as a short independent milestone: the same elevation, ocean, layers, and `cell_id`, with different viewing geometry and camera. Climate completion is not a prerequisite.
+The native/GPU foundation already provides a smooth globe and a flat map sharing layers and `cell_id`. Milestone B will add the same computed elevation and ocean fields to both. Climate completion is not a prerequisite. No detailed 3D cities or street-level environment are required; settlements and routes will be analytical overlays.
 
-Acceptance: a selected region has identical data on the map and globe; view switching leaves the model hash unchanged; vertical exaggeration does not affect measurements. Detailed local terrain and decorative LOD come later.
+Acceptance: a selected region has identical data on the map and globe; view switching leaves the model hash unchanged; vertical exaggeration does not affect measurements. Globe LOD can follow measured need; a detailed local environment is outside the current scope.
 
 ## 9. Determinism and persistence
 
@@ -129,4 +131,4 @@ Automated checks focus on topology, units, balances, fluxes, determinism, checkp
 
 Population readiness means the environment provides water, wild food, seasonal hazards, traversal costs, and change history with stable behavior across an ensemble. Then introduce the groups described in [DESIGN.md](../DESIGN.md), consuming real stocks and modifying their environment.
 
-Current implementation scope is milestone A. Milestone B follows as a separate increment. Climate equations, economic modeling, and political entities must not block the first explainable terrain map.
+Current implementation scope is milestone A plus a native/GPU integration and diagnostic transport test. Milestone B follows as a separate increment. Climate equations, economic modeling, and political entities must not block the first explainable terrain map.
