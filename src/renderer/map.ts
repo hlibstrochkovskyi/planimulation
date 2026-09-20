@@ -1,149 +1,181 @@
-import { locateRegion } from '../core/surface';
+import { BufferAttribute, BufferGeometry, DataTexture, DoubleSide, FloatType, Group, LineBasicMaterial,
+  LineSegments, Mesh, MOUSE, NearestFilter, OrthographicCamera, PerspectiveCamera, Raycaster, RedFormat,
+  Scene, ShaderMaterial, Vector2, WebGLRenderer } from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { World } from '../core/world';
-import { directionAt, projectRegion } from './projection';
+import type { ViewGeometry, ViewPair } from './view-geometry';
 
 export type Layer = 'signal' | 'area' | 'latitude';
-
-function color(value: number): string {
-  const t = Math.max(0, Math.min(1, value));
-  const a = t < .5 ? [41, 72, 85] : [100, 137, 133];
-  const b = t < .5 ? [100, 137, 133] : [185, 203, 160];
-  const k = t < .5 ? t * 2 : (t - .5) * 2;
-  return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(',')})`;
-}
+export type ViewMode = 'flat' | 'globe';
 
 export class SurfaceMap {
-  private context: CanvasRenderingContext2D;
+  private readonly renderer: WebGLRenderer;
+  private readonly scene = new Scene();
+  private readonly flatCamera = new OrthographicCamera(-1.2, 1.2, .6, -.6, .01, 100);
+  private readonly globeCamera = new PerspectiveCamera(42, 1, .01, 100);
+  private readonly controls: OrbitControls;
+  private readonly resizeObserver: ResizeObserver;
+  private readonly raycaster = new Raycaster();
+  private readonly material = new ShaderMaterial({
+    side: DoubleSide,
+    uniforms: { field: { value: null }, textureWidth: { value: 1 }, textureHeight: { value: 1 },
+      selected: { value: -1 }, globe: { value: 0 } },
+    vertexShader: `attribute float region; varying float cell; varying vec3 direction;
+      void main() { cell=region; direction=normalMatrix*position;
+        gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+    fragmentShader: `uniform sampler2D field; uniform float textureWidth; uniform float textureHeight;
+      uniform float selected; uniform float globe; varying float cell; varying vec3 direction;
+      void main() {
+        float id=floor(cell+0.5);
+        vec2 uv=vec2((mod(id,textureWidth)+0.5)/textureWidth,(floor(id/textureWidth)+0.5)/textureHeight);
+        float v=clamp(texture2D(field,uv).r,0.0,1.0);
+        vec3 color=mix(vec3(0.16,0.28,0.33),vec3(0.73,0.80,0.63),v);
+        if(abs(cell-selected)<0.25) color=vec3(0.96,0.78,0.42);
+        if(globe>0.5) color*=0.76+0.24*max(0.0,dot(normalize(direction),normalize(vec3(-0.4,0.6,1.0))));
+        gl_FragColor=vec4(color,1.0);
+      }`,
+  });
+  private readonly lineMaterial = new LineBasicMaterial({ color: '#304849', transparent: true, opacity: .45 });
+  private views: Record<ViewMode, Group> | null = null;
+  private texture: DataTexture | null = null;
+  private values = new Float32Array(0);
   private world: World | null = null;
-  private paths: Path2D[] = [];
+  private mode: ViewMode = 'flat';
   private layer: Layer = 'signal';
   private boundaries = true;
-  private zoom = 1;
-  private panX = 0;
-  private panY = 0;
-  private selected: number | null = null;
-  private drag: { x: number; y: number; total: number } | null = null;
+  private worker: Worker | null = null;
+  private abortPreparation: (() => void) | null = null;
+  private frame = 0;
+  private lost = false;
+  private pointerStart = [0, 0];
 
-  constructor(private canvas: HTMLCanvasElement, private onSelect: (id: number) => void) {
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('A 2D canvas context is required.');
-    this.context = context;
-    new ResizeObserver(() => this.draw()).observe(canvas);
-    canvas.addEventListener('wheel', (event) => {
-      event.preventDefault();
+  constructor(private readonly canvas: HTMLCanvasElement, private readonly select: (id: number) => void) {
+    this.renderer = new WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    this.renderer.setClearColor('#0c1417');
+    this.flatCamera.position.set(0, 0, 3);
+    this.globeCamera.position.set(3, 0, 0);
+    this.controls = new OrbitControls(this.flatCamera, canvas);
+    this.controls.enableRotate = false;
+    this.controls.screenSpacePanning = true;
+    this.controls.minZoom = .5; this.controls.maxZoom = 30;
+    this.controls.minDistance = 1.15; this.controls.maxDistance = 8;
+    this.controls.addEventListener('change', () => this.draw());
+    canvas.addEventListener('pointerdown', (e) => { this.pointerStart = [e.clientX, e.clientY]; });
+    canvas.addEventListener('pointerup', (e) => {
+      if (Math.hypot(e.clientX - this.pointerStart[0], e.clientY - this.pointerStart[1]) > 4 || e.button !== 0 || !this.views) return;
       const rect = canvas.getBoundingClientRect();
-      this.setZoom(this.zoom * Math.exp(-event.deltaY * .0015), event.clientX - rect.left, event.clientY - rect.top);
-    }, { passive: false });
-    canvas.addEventListener('pointerdown', (event) => {
-      if (event.button !== 0) return;
-      this.drag = { x: event.clientX, y: event.clientY, total: 0 };
-      canvas.setPointerCapture(event.pointerId);
+      this.raycaster.setFromCamera(new Vector2((e.clientX - rect.left) / rect.width * 2 - 1, 1 - (e.clientY - rect.top) / rect.height * 2), this.camera);
+      const mesh = this.views[this.mode].children[0] as Mesh<BufferGeometry>;
+      const hit = this.raycaster.intersectObject(mesh, false)[0];
+      if (!hit?.face) return;
+      const id = mesh.geometry.getAttribute('region').getX(hit.face.a);
+      this.material.uniforms.selected.value = id; this.select(id); this.draw();
     });
-    canvas.addEventListener('pointermove', (event) => {
-      if (!this.drag) return;
-      const dx = event.clientX - this.drag.x, dy = event.clientY - this.drag.y;
-      this.drag.total += Math.hypot(dx, dy);
-      this.panX += dx; this.panY += dy;
-      this.drag.x = event.clientX; this.drag.y = event.clientY;
-      if (this.drag.total > 4) canvas.classList.add('dragging');
-      this.draw();
-    });
-    canvas.addEventListener('pointerup', (event) => {
-      if (!this.drag) return;
-      const click = this.drag.total < 4;
-      this.drag = null;
-      canvas.classList.remove('dragging');
-      if (!click || !this.world) return;
-      const rect = canvas.getBoundingClientRect(), view = this.view();
-      const u = (event.clientX - rect.left - view.x) / view.width;
-      const v = (event.clientY - rect.top - view.y) / view.height;
-      if (v < 0 || v > 1) return;
-      this.selected = locateRegion(this.world.surface, directionAt(((u % 1) + 1) % 1, v));
-      this.onSelect(this.selected);
-      this.draw();
-    });
-    canvas.addEventListener('pointercancel', () => { this.drag = null; canvas.classList.remove('dragging'); });
+    canvas.addEventListener('webglcontextlost', (event) => { event.preventDefault(); this.lost = true; canvas.dataset.gpu = 'lost'; });
+    canvas.addEventListener('webglcontextrestored', () => { this.lost = false; canvas.dataset.gpu = 'ready'; this.draw(); });
+    canvas.dataset.gpu = 'ready';
+    this.resizeObserver = new ResizeObserver(() => this.resize());
+    this.resizeObserver.observe(canvas.parentElement!);
+    this.resize(); this.setMode('flat');
   }
-
-  setWorld(world: World): void {
-    this.world = world;
-    this.paths = Array.from({ length: world.stats.regionCount }, (_, id) => {
-      const polygon = projectRegion(world.surface, id), path = new Path2D();
-      path.moveTo(...polygon[0]);
-      for (const point of polygon.slice(1)) path.lineTo(...point);
-      path.closePath();
-      return path;
-    });
-    this.selected = null;
+  private get camera(): OrthographicCamera | PerspectiveCamera { return this.mode === 'flat' ? this.flatCamera : this.globeCamera; }
+  private resize(): void {
+    const width = this.canvas.clientWidth, height = this.canvas.clientHeight;
+    if (!width || !height) return;
+    this.renderer.setSize(width, height, false);
+    const aspect = width / height, halfHeight = Math.max(.6, 1.1 / aspect);
+    Object.assign(this.flatCamera, { left: -halfHeight * aspect, right: halfHeight * aspect, top: halfHeight, bottom: -halfHeight });
+    this.flatCamera.updateProjectionMatrix();
+    this.globeCamera.aspect = aspect; this.globeCamera.updateProjectionMatrix(); this.draw();
+  }
+  private makeView(data: ViewGeometry): Group {
+    const geometry = new BufferGeometry();
+    geometry.setAttribute('position', new BufferAttribute(data.positions, 3));
+    geometry.setAttribute('region', new BufferAttribute(data.regions, 1));
+    const lines = new BufferGeometry(); lines.setAttribute('position', new BufferAttribute(data.lines, 3));
+    const group = new Group();
+    group.add(new Mesh(geometry, this.material), new LineSegments(lines, this.lineMaterial));
+    return group;
+  }
+  cancelPreparation(): void {
+    this.worker?.terminate(); this.worker = null; this.abortPreparation?.(); this.abortPreparation = null;
+  }
+  async setWorld(world: World): Promise<void> {
+    this.cancelPreparation();
+    const worker = new Worker(new URL('./geometry.worker.ts', import.meta.url), { type: 'module' });
+    this.worker = worker;
+    const pair = await new Promise<ViewPair>((resolve, reject) => {
+      this.abortPreparation = () => reject(new Error('View preparation canceled.'));
+      worker.onerror = (e) => reject(new Error(e.message));
+      worker.onmessage = (e: MessageEvent<{ pair: ViewPair; error?: string }>) => {
+        if (e.data.error) reject(new Error(e.data.error)); else resolve(e.data.pair);
+      };
+      worker.postMessage(world.surface);
+    }).finally(() => { worker.terminate(); if (this.worker === worker) { this.worker = null; this.abortPreparation = null; } });
+    const next = { flat: this.makeView(pair.flat), globe: this.makeView(pair.globe) };
+    this.releaseViews(); this.views = next;
+    this.scene.add(next.flat, next.globe); this.world = world;
+    const width = Math.min(1024, this.renderer.capabilities.maxTextureSize);
+    const height = Math.ceil(world.stats.regionCount / width);
+    this.values = new Float32Array(width * height);
+    this.texture = new DataTexture(this.values, width, height, RedFormat, FloatType);
+    this.texture.minFilter = this.texture.magFilter = NearestFilter;
+    this.material.uniforms.field.value = this.texture;
+    this.material.uniforms.textureWidth.value = width; this.material.uniforms.textureHeight.value = height;
+    this.material.uniforms.selected.value = -1;
+    this.setLayer(this.layer); this.setMode(this.mode); this.setBoundaries(this.boundaries);
+  }
+  setMode(mode: ViewMode): void {
+    this.mode = mode; this.canvas.dataset.view = mode;
+    this.material.uniforms.globe.value = mode === 'globe' ? 1 : 0;
+    if (this.views) { this.views.flat.visible = mode === 'flat'; this.views.globe.visible = mode === 'globe'; }
+    this.controls.object = this.camera; this.controls.enableRotate = mode === 'globe';
+    this.controls.enablePan = mode === 'flat';
+    this.controls.mouseButtons.LEFT = mode === 'flat' ? MOUSE.PAN : MOUSE.ROTATE;
     this.reset();
   }
-
-  setLayer(layer: Layer): void { this.layer = layer; this.draw(); }
-  setBoundaries(value: boolean): void { this.boundaries = value; this.draw(); }
-  reset(): void { this.zoom = 1; this.panX = 0; this.panY = 0; this.draw(); }
-  zoomBy(factor: number): void { this.setZoom(this.zoom * factor, this.canvas.clientWidth / 2, this.canvas.clientHeight / 2); }
-
-  private view(): { x: number; y: number; width: number; height: number } {
-    const width = Math.min(this.canvas.clientWidth - 36, (this.canvas.clientHeight - 60) * 2) * this.zoom;
-    return { x: (this.canvas.clientWidth - width) / 2 + this.panX,
-      y: (this.canvas.clientHeight - width / 2) / 2 - 8 + this.panY, width, height: width / 2 };
+  setLayer(layer: Layer): void { this.layer = layer; this.refreshField(); }
+  refreshField(): void {
+    if (!this.world || !this.texture) return;
+    const w = this.world;
+    for (let id = 0; id < w.stats.regionCount; id++) {
+      this.values[id] = this.layer === 'signal' ? (w.diagnosticField[id] + 1) / 2
+        : this.layer === 'latitude' ? 1 - Math.abs(Math.asin(w.surface.centers[id * 3 + 1])) / (Math.PI / 2)
+          : (w.surface.areasSquareMeters[id] - w.stats.minimumAreaSquareMeters)
+            / Math.max(1, w.stats.maximumAreaSquareMeters - w.stats.minimumAreaSquareMeters);
+    }
+    this.texture.needsUpdate = true; this.draw();
   }
-
-  private setZoom(value: number, x: number, y: number): void {
-    const before = this.view();
-    const u = (x - before.x) / before.width, v = (y - before.y) / before.height;
-    this.zoom = Math.max(1, Math.min(12, value));
-    const after = this.view();
-    this.panX += x - (after.x + u * after.width);
-    this.panY += y - (after.y + v * after.height);
+  setBoundaries(visible: boolean): void {
+    this.boundaries = visible;
+    if (this.views) for (const group of Object.values(this.views)) group.children[1].visible = visible;
     this.draw();
   }
-
+  reset(): void {
+    this.controls.target.set(0, 0, 0);
+    if (this.mode === 'flat') { this.flatCamera.position.set(0, 0, 3); this.flatCamera.zoom = 1; this.flatCamera.updateProjectionMatrix(); }
+    else this.globeCamera.position.set(3, 0, 0);
+    this.controls.update(); this.draw();
+  }
+  zoomBy(factor: number): void {
+    if (this.mode === 'flat') { this.flatCamera.zoom = Math.max(.5, Math.min(30, this.flatCamera.zoom * factor)); this.flatCamera.updateProjectionMatrix(); }
+    else this.globeCamera.position.multiplyScalar(Math.max(1.15, Math.min(8, this.globeCamera.position.length() / factor)) / this.globeCamera.position.length());
+    this.controls.update(); this.draw();
+  }
   private draw(): void {
-    const { canvas, context: ctx, world } = this;
-    const ratio = window.devicePixelRatio || 1;
-    const pixelWidth = Math.round(canvas.clientWidth * ratio), pixelHeight = Math.round(canvas.clientHeight * ratio);
-    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) { canvas.width = pixelWidth; canvas.height = pixelHeight; }
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    ctx.fillStyle = '#0c1417'; ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
-    if (!world) return;
-    const view = this.view();
-    // Bound vertical panning and wrap longitude so the planet has no horizontal edge.
-    if (view.height > canvas.clientHeight - 40) {
-      this.panY += Math.min(20 - view.y, Math.max(canvas.clientHeight - 40 - view.y - view.height, 0));
-    } else this.panY = 0;
-    this.panX = ((this.panX + view.width / 2) % view.width + view.width) % view.width - view.width / 2;
-    const v = this.view();
-    ctx.save();
-    ctx.beginPath(); ctx.rect(12, Math.max(12, v.y), canvas.clientWidth - 24, Math.min(v.height, canvas.clientHeight - Math.max(12, v.y) - 32)); ctx.clip();
-    const minShift = Math.floor(-v.x / v.width) - 1;
-    const maxShift = Math.ceil((canvas.clientWidth - v.x) / v.width) + 1;
-    const transform = (shift: number): void => ctx.setTransform(ratio * v.width, 0, 0, ratio * v.height, ratio * (v.x + shift * v.width), ratio * v.y);
-    for (let id = 0; id < this.paths.length; id++) {
-      let value = .5 + world.diagnosticField[id] * .5;
-      if (this.layer === 'area') value = (world.surface.areasSquareMeters[id] - world.stats.minimumAreaSquareMeters)
-        / (world.stats.maximumAreaSquareMeters - world.stats.minimumAreaSquareMeters || 1);
-      if (this.layer === 'latitude') value = 1 - Math.abs(Math.asin(world.surface.centers[id * 3 + 1])) / (Math.PI / 2);
-      ctx.fillStyle = color(value);
-      for (let shift = minShift; shift <= maxShift; shift++) {
-        transform(shift); ctx.fill(this.paths[id]);
-        ctx.strokeStyle = this.boundaries ? '#14262b66' : ctx.fillStyle;
-        ctx.lineWidth = (this.boundaries ? .55 : .4) / v.width;
-        ctx.stroke(this.paths[id]);
-      }
+    if (this.frame || this.lost) return;
+    this.frame = requestAnimationFrame(() => { this.frame = 0; if (!this.lost) this.renderer.render(this.scene, this.camera); });
+  }
+  private releaseViews(): void {
+    if (this.views) for (const group of Object.values(this.views)) {
+      this.scene.remove(group);
+      for (const object of group.children) (object as Mesh<BufferGeometry>).geometry.dispose();
     }
-    transform(0); ctx.strokeStyle = '#b6d3cc28'; ctx.lineWidth = .7 / v.width;
-    ctx.beginPath();
-    for (let lat = 1; lat < 6; lat++) { ctx.moveTo(minShift, lat / 6); ctx.lineTo(maxShift + 1, lat / 6); }
-    for (let shift = minShift; shift <= maxShift; shift++) {
-      for (let lon = 0; lon < 12; lon++) { ctx.moveTo(shift + lon / 12, 0); ctx.lineTo(shift + lon / 12, 1); }
-    }
-    ctx.stroke();
-    if (this.selected !== null) {
-      for (let shift = minShift; shift <= maxShift; shift++) {
-        transform(shift); ctx.strokeStyle = '#ecf6c9'; ctx.lineWidth = 2 / v.width; ctx.stroke(this.paths[this.selected]);
-      }
-    }
-    ctx.restore();
+    this.texture?.dispose(); this.texture = null; this.views = null;
+  }
+  dispose(): void {
+    this.cancelPreparation(); cancelAnimationFrame(this.frame); this.resizeObserver.disconnect();
+    this.controls.dispose(); this.releaseViews(); this.material.dispose(); this.lineMaterial.dispose(); this.renderer.dispose();
   }
 }

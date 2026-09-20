@@ -1,4 +1,4 @@
-export const MODEL_VERSION = 'surface-1';
+export const MODEL_VERSION = 'surface-rust-1';
 export const RANDOM_VERSION = 'fnv1a-utf8-mulberry32-1';
 
 export interface Recipe {
@@ -33,7 +33,7 @@ export function parseRecipe(value: unknown): Recipe {
     if (!(key in input)) throw new Error(`Missing recipe field: ${key}.`);
   }
   if (input.schemaVersion !== 1 || input.modelVersion !== MODEL_VERSION || input.randomVersion !== RANDOM_VERSION) {
-    throw new Error('Unsupported recipe version. This build supports surface-1 recipes only.');
+    throw new Error('Unsupported recipe version. This build supports surface-rust-1 recipes only; legacy recipes are not silently migrated.');
   }
   if (typeof input.seed !== 'string' || input.seed.trim().length === 0 || input.seed.length > 128) {
     throw new Error('Seed must contain 1–128 characters and cannot be blank.');

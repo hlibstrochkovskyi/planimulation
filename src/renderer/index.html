@@ -40,14 +40,15 @@
         <div class="sidebar-bottom"><span class="status-dot"></span> LOCAL · OFFLINE · REPRODUCIBLE</div>
       </aside>
       <div class="workspace">
-        <div class="map-heading"><div><p class="eyebrow">PLANETARY ATLAS</p><h2 id="world-name">Preparing your world</h2></div><div class="map-tools"><button id="zoom-out" aria-label="Zoom out">−</button><button id="reset-view">Fit map</button><button id="zoom-in" aria-label="Zoom in">+</button></div></div>
-        <div id="map-container"><canvas id="map" aria-label="Interactive spherical surface map"></canvas><div id="map-empty">Building a foundation for your world…</div><div class="map-caption">EQUIRECTANGULAR PROJECTION <span>DRAG TO PAN · SCROLL TO ZOOM · CLICK TO INSPECT</span></div></div>
+        <div class="map-heading"><div><p class="eyebrow">PLANETARY ATLAS</p><h2 id="world-name">Preparing your world</h2></div><div class="map-tools"><button data-view="flat" class="active" aria-pressed="true">2D map</button><button data-view="globe" aria-pressed="false">Globe</button><button id="zoom-out" aria-label="Zoom out">−</button><button id="reset-view">Fit map</button><button id="zoom-in" aria-label="Zoom in">+</button></div></div>
+        <div id="map-container"><canvas id="map" aria-label="Interactive spherical surface map"></canvas><div id="gpu-status" role="alert">Graphics context lost. Waiting for recovery; the native model is unchanged.</div><div id="map-empty">Building a foundation for your world…</div><div class="map-caption"><b id="projection-label">EQUIRECTANGULAR PROJECTION</b><span>DRAG TO MOVE · SCROLL TO ZOOM · CLICK TO INSPECT</span></div></div>
         <div class="legend"><span id="legend-title">Seed field · dimensionless diagnostic</span><div><span id="legend-low">−1</span><span id="legend-gradient"></span><span id="legend-high">+1</span></div></div>
-        <div class="metrics"><div><span>REGIONS</span><strong id="region-count">—</strong></div><div><span>SURFACE AREA</span><strong id="surface-area">—</strong></div><div><span>GENERATION</span><strong id="generation-time">—</strong></div><div><span>FINGERPRINT</span><strong id="fingerprint">—</strong></div></div>
+        <div class="diagnostic-controls"><button id="play" disabled>Run diagnostic</button><span id="diagnostic-tick">Step 0</span><span>Conservative graph diffusion · not climate or geological time</span></div>
+        <div class="metrics"><div><span>REGIONS</span><strong id="region-count">—</strong></div><div><span>SURFACE AREA</span><strong id="surface-area">—</strong></div><div><span>GENERATION + VIEWS</span><strong id="generation-time">—</strong></div><div><span>INITIAL FINGERPRINT</span><strong id="fingerprint">—</strong></div></div>
         <section class="inspector"><div><p class="eyebrow">REGION INSPECTOR</p><h3 id="selection-title">Explore the surface</h3><p id="selection-note" class="muted">Select a region to see its geometry and connections.</p></div><dl id="selection-details"></dl></section>
       </div>
     </main>
-    <footer><span id="status" role="status" aria-live="polite">Starting…</span><span id="model-label">SURFACE MODEL 1 · NO SIMULATION TIME</span></footer>
+    <footer><span id="status" role="status" aria-live="polite">Starting…</span><span id="model-label">SURFACE-RUST-1 · GPU VIEWS</span></footer>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

@@ -1,0 +1,106 @@
+import { strict as assert } from 'node:assert';
+import { test } from 'node:test';
+import path from 'node:path';
+import { DEFAULT_RECIPE } from '../src/core/recipe';
+import { generateWorld } from '../src/core/world';
+import { FrameReader, NativeController, NativeSession, decodeWorld } from '../src/native/client';
+import type { Packet } from '../src/native/client';
+import { buildViewGeometry } from '../src/renderer/view-geometry';
+import { buildSurface } from '../src/core/surface';
+
+const executable = path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core');
+
+test('binary framing handles fragmented headers/bodies, multiple frames, and rejects oversized packets', () => {
+  const received: Packet[] = [], reader = new FrameReader((packet) => received.push(packet));
+  const body = Buffer.from([1, 2, 3]);
+  const header = Buffer.from(JSON.stringify({ protocol: 1, kind: 'frame', byteLength: body.length }));
+  const prefix = Buffer.alloc(4); prefix.writeUInt32LE(header.length);
+  const packet = Buffer.concat([prefix, header, body]);
+  for (const byte of packet) reader.push(Buffer.from([byte]));
+  reader.push(Buffer.concat([packet, packet]));
+  assert.equal(received.length, 3); assert.deepEqual(received[0].bytes, body);
+  for (const size of [0, 1, 32769, 0xffffffff]) {
+    const invalid = Buffer.alloc(4); invalid.writeUInt32LE(size);
+    assert.throws(() => new FrameReader(() => {}).push(invalid));
+  }
+  const badHeader = Buffer.from(JSON.stringify({ protocol: 2, kind: 'world', byteLength: 0 }));
+  prefix.writeUInt32LE(badHeader.length);
+  assert.throws(() => new FrameReader(() => {}).push(Buffer.concat([prefix, badHeader])));
+});
+
+test('Rust topology and fields agree with the independent TS reference; repeatability is exact', async () => {
+  const core = new NativeController(executable);
+  try {
+    for (const subdivision of [0, 1, 3, 5, 6]) {
+      const recipe = { ...DEFAULT_RECIPE, subdivision, seed: 'bridge-🌍' };
+      const { world: actual } = await core.generate(recipe);
+      const expected = generateWorld(recipe);
+      for (const [key, array] of Object.entries({ ...expected.surface, diagnosticField: expected.diagnosticField })) {
+        if (!ArrayBuffer.isView(array)) continue;
+        const values = array as Float64Array | Uint32Array;
+        const got = key === 'diagnosticField' ? actual.diagnosticField : actual.surface[key as keyof typeof actual.surface] as typeof values;
+        assert.equal(got.length, values.length, key);
+        for (let i = 0; i < values.length; i++) {
+          if (values instanceof Uint32Array) assert.equal(got[i], values[i], key);
+          else assert.ok(Math.abs(got[i] - values[i]) / Math.max(1, Math.abs(values[i])) < 1e-11, `${key}[${i}]`);
+        }
+      }
+      assert.deepEqual((await core.generate(recipe)).world, actual);
+    }
+  } finally { core.close(); }
+});
+
+test('cancellation, replacement, step bounds, and backpressure preserve the active world', async () => {
+  const core = new NativeController(executable);
+  try {
+    const { epoch, world } = await core.generate({ ...DEFAULT_RECIPE, subdivision: 3 });
+    core.accept(epoch);
+    await assert.rejects(core.advance(epoch, 0));
+    await assert.rejects(core.advance(epoch + 1, 1));
+    const obsolete = core.generate({ ...DEFAULT_RECIPE, subdivision: 6 });
+    const rejected = assert.rejects(obsolete, /canceled/);
+    core.cancel(); await rejected;
+    assert.equal((await core.advance(epoch, 4)).tick, 4);
+    const pending = core.advance(epoch, 100);
+    await assert.rejects(core.advance(epoch, 1), /busy/);
+    const frame = await pending;
+    assert.equal(frame.tick, 104); assert.ok(frame.relativeMassError < 1e-12);
+    assert.ok(frame.field.every((v) => v >= -1 && v <= 1));
+    assert.notDeepEqual(frame.field, world.diagnosticField);
+    const prepared = await core.generate({ ...DEFAULT_RECIPE, subdivision: 2 });
+    core.cancel();
+    assert.throws(() => core.accept(prepared.epoch));
+    assert.equal((await core.advance(epoch, 1)).tick, 105);
+  } finally { core.close(); }
+});
+
+test('native validation rejects legacy recipes and malformed output is not decoded', async () => {
+  const session = new NativeSession(executable);
+  try {
+    await assert.rejects(session.request({ command: 'advance', steps: 1 }), /Generate/);
+    await assert.rejects(session.request({ command: 'generate', recipe: { ...DEFAULT_RECIPE, modelVersion: 'surface-1' } }), /Unsupported/);
+    const packet = await session.request({ command: 'generate', recipe: { ...DEFAULT_RECIPE, subdivision: 0 } });
+    assert.throws(() => decodeWorld({ ...packet, bytes: packet.bytes.subarray(1) }), /lengths/);
+    const invalid = Buffer.from(packet.bytes); invalid.writeDoubleLE(NaN);
+    assert.throws(() => decodeWorld({ ...packet, bytes: invalid }), /finite/);
+  } finally { session.close(); }
+});
+
+for (const level of [0, 1, 3]) test(`GPU geometry level ${level}: flat atlas covers area without seam overflow; IDs survive both views`, () => {
+  const s = buildSurface(level, 1000), views = buildViewGeometry(s), n = s.areasSquareMeters.length;
+  let area = 0;
+  for (let i = 0; i < views.flat.positions.length; i += 9) {
+    const [ax, ay, , bx, by, , cx, cy] = views.flat.positions.subarray(i, i + 9);
+    area += Math.abs((bx - ax) * (cy - ay) - (by - ay) * (cx - ax)) / 2;
+  }
+  assert.ok(Math.abs(area - 2) < 1e-6, `Atlas area: ${area}`);
+  for (const view of Object.values(views)) {
+    assert.equal(view.positions.length, view.regions.length * 3);
+    assert.equal(new Set(view.regions).size, n);
+    assert.ok(view.positions.every(Number.isFinite));
+    for (let i = 0; i < view.regions.length; i += 3) {
+      assert.equal(view.regions[i], view.regions[i + 1]); assert.equal(view.regions[i], view.regions[i + 2]);
+    }
+  }
+  for (let i = 0; i < views.flat.positions.length; i += 3) assert.ok(Math.abs(views.flat.positions[i]) <= 1);
+});

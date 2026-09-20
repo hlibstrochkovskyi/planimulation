@@ -10,12 +10,14 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/*.test.ts",
+    "test": "npm run build:native && cargo test --locked --manifest-path native/Cargo.toml && node --import tsx --test tests/*.test.ts",
+    "build:native": "node --import tsx scripts/build-native.ts",
     "build": "npm run typecheck && node --import tsx scripts/build.ts",
     "start": "npm run build && electron .",
     "desktop": "electron .",
     "headless": "node --import tsx src/headless.ts",
     "benchmark": "node --import tsx scripts/benchmark.ts",
+    "benchmark:desktop": "npm run build && node --import tsx scripts/benchmark-desktop.ts",
     "test:desktop": "npm run build && node --import tsx scripts/test-desktop.ts",
     "package": "npm run build && node --import tsx scripts/package.ts"
   },
@@ -23,8 +25,10 @@
     "@electron/packager": "20.3.0",
     "@playwright/test": "1.63.0",
     "@types/node": "26.6.2",
+    "@types/three": "0.186.0",
     "electron": "44.4.3",
     "esbuild": "0.28.2",
+    "three": "0.186.0",
     "tsx": "4.23.13",
     "typescript": "7.0.2",
     "vite": "8.3.0"

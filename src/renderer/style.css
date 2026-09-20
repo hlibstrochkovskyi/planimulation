@@ -1,5 +1,12 @@
 @import url('./theme.css');
 
+.map-tools .active { background: #253c36; border-color: #577d69; color: #bce6d1; }
+.diagnostic-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; color: var(--muted); font-size: 10px; }
+.diagnostic-controls button { font-size: 11px; padding: 6px 10px; }
+#diagnostic-tick { font-variant-numeric: tabular-nums; white-space: nowrap; }
+#gpu-status { display: none; position: absolute; inset: 0; place-items: center; padding: 25px; background: #101719e8; color: #eda799; text-align: center; }
+canvas[data-gpu="lost"] ~ #gpu-status { display: grid; }
+
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--background); color: var(--text); font: 14px/1.5 system-ui, sans-serif; height: 100vh; overflow: hidden; }
 button, input, select { font: inherit; }

@@ -1,10 +1,10 @@
 import { strict as assert } from 'node:assert';
-import { mkdir, mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { _electron as electron, expect } from '@playwright/test';
 import { DEFAULT_RECIPE, parseRecipe } from '../src/core/recipe';
-import { generateWorld } from '../src/core/world';
+import { NativeController } from '../src/native/client';
 
 const temp = await mkdtemp(path.join(os.tmpdir(), 'planimulation-desktop-'));
 const recipePath = path.join(temp, 'recipe.json');
@@ -16,59 +16,53 @@ try {
   const page = await app.firstWindow();
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => { if (message.type() === 'error' && /THREE|WebGL|shader/i.test(message.text())) errors.push(message.text()); });
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.locator('#region-count')).toHaveText('10,242');
   const fingerprint = await page.locator('#fingerprint').innerText();
-  const workerFile = (await readdir('dist/renderer/assets')).find((name) => name.startsWith('world.worker-') && name.endsWith('.js'));
-  assert.ok(workerFile);
-  const desktopData = await page.evaluate(async ({ filename, recipe }) => {
-    return await new Promise<{ checksum: string; fields: Record<string, number[]> }>((resolve, reject) => {
-      const worker = new Worker(new URL(`./assets/${filename}`, location.href), { type: 'module' });
-      worker.onerror = (event) => { worker.terminate(); reject(new Error(event.message)); };
-      worker.onmessage = (event) => {
-        if (event.data.type === 'error') { worker.terminate(); reject(new Error(event.data.message)); }
-        if (event.data.type !== 'complete') return;
-        const world = event.data.world;
-        const fields: Record<string, number[]> = { diagnosticField: Array.from(world.diagnosticField) };
-        for (const [key, value] of Object.entries(world.surface)) {
-          if (ArrayBuffer.isView(value)) fields[key] = Array.from(value as unknown as ArrayLike<number>);
-        }
-        worker.terminate(); resolve({ checksum: world.checksum, fields });
-      };
-      worker.postMessage(recipe);
-    });
-  }, { filename: workerFile, recipe: { ...DEFAULT_RECIPE } });
-  assert.equal(desktopData.checksum, fingerprint, 'Independent desktop workers reproduce bit for bit.');
-  const reference = generateWorld(DEFAULT_RECIPE);
-  let largestRelativeError = 0;
-  for (const [key, expected] of Object.entries({ ...reference.surface, diagnosticField: reference.diagnosticField })) {
-    if (!ArrayBuffer.isView(expected)) continue;
-    const actual = desktopData.fields[key], values = expected as Float64Array | Uint32Array;
-    assert.equal(actual.length, values.length);
-    for (let i = 0; i < actual.length; i++) {
-      if (values instanceof Uint32Array) assert.equal(actual[i], values[i], `${key}[${i}]`);
-      else {
-        const relative = Math.abs(actual[i] - values[i]) / Math.max(1, Math.abs(values[i]));
-        largestRelativeError = Math.max(largestRelativeError, relative);
-        assert.ok(relative < 1e-12, `${key}[${i}] differs by ${relative}`);
-      }
-    }
-  }
-  console.log(`Cross-runtime comparison: Node ${reference.checksum}, Electron ${fingerprint}, maximum scaled error ${largestRelativeError}.`);
+  const reference = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
+  try { assert.equal((await reference.generate(DEFAULT_RECIPE)).world.checksum, fingerprint, 'Headless and desktop use the same native math.'); }
+  finally { reference.close(); }
+  const desktopData = await page.evaluate(async (recipe) => {
+    const result = await window.desktop.generate(recipe);
+    await window.desktop.cancelGeneration();
+    return { checksum: result.world.checksum, typed: result.world.diagnosticField instanceof Float64Array };
+  }, { ...DEFAULT_RECIPE });
+  assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['openRecipe', 'saveRecipe']);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'generate', 'openRecipe', 'saveRecipe']);
 
   const canvas = page.locator('#map');
   const bounds = await canvas.boundingBox();
   assert.ok(bounds);
   await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
   await expect(page.locator('#selection-title')).toContainText('Region');
+  const selectedRegion = await page.locator('#selection-title').innerText();
+  const selectedDetails = await page.locator('#selection-details').innerText();
+  await page.getByRole('button', { name: 'Globe', exact: true }).click();
+  await expect(canvas).toHaveAttribute('data-view', 'globe');
+  await expect(page.locator('#selection-title')).toHaveText(selectedRegion);
+  await expect(page.locator('#selection-details')).toHaveText(selectedDetails, { useInnerText: true });
+  await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
+  await expect(page.locator('#selection-title')).toHaveText(selectedRegion);
+  await expect(page.locator('button[data-view="globe"]')).toHaveAttribute('aria-pressed', 'true');
+  await mkdir('artifacts', { recursive: true });
+  await page.screenshot({ path: executablePath ? 'artifacts/globe-desktop-packaged.png' : 'artifacts/globe-desktop.png' });
+  await page.getByRole('button', { name: '2D map', exact: true }).click();
+  await expect(canvas).toHaveAttribute('data-view', 'flat');
   await page.getByRole('button', { name: 'Zoom in' }).click();
   await page.getByRole('button', { name: 'Fit map' }).click();
   await page.locator('[data-layer="area"]').click();
   await expect(page.locator('#legend-title')).toContainText('Region area');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await page.locator('[data-layer="signal"]').click();
+  await page.locator('#play').click();
+  await expect(page.locator('#diagnostic-tick')).not.toHaveText('Step 0');
+  await page.getByRole('button', { name: 'Globe', exact: true }).click();
+  await page.getByRole('button', { name: 'Pause diagnostic', exact: true }).click();
+  await expect(page.locator('#status')).toContainText('relative mass error');
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
+  await page.getByRole('button', { name: '2D map', exact: true }).click();
 
   // Stub only native dialogs; still exercise the real bridge, validation, and filesystem handlers.
   await app.evaluate(({ dialog }, destination) => {
@@ -93,7 +87,7 @@ try {
   await expect(page.locator('#status')).toContainText('Unsupported recipe version');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
 
-  // Queue replacement jobs synchronously; stale workers cannot publish results.
+  // Queue replacement jobs synchronously; obsolete native jobs cannot publish results.
   await page.evaluate(() => {
     const seed = document.querySelector<HTMLInputElement>('#seed')!;
     const level = document.querySelector<HTMLSelectElement>('#subdivision')!;
@@ -110,6 +104,9 @@ try {
   });
   await expect(page.locator('#status')).toContainText('canceled');
   await expect(page.locator('#fingerprint')).toHaveText(latestHash);
+  await page.locator('#play').click();
+  await expect(page.locator('#diagnostic-tick')).not.toHaveText('Step 0');
+  await page.locator('#play').click();
   await page.locator('#seed').fill(DEFAULT_RECIPE.seed);
   await page.locator('#subdivision').selectOption(String(DEFAULT_RECIPE.subdivision));
   await page.locator('#generate').click();

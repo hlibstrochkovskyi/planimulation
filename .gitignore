@@ -5,3 +5,4 @@ artifacts/
 test-results/
 *.log
 .DS_Store
+native/target/

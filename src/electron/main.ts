@@ -4,10 +4,13 @@ import { open, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseRecipe, serializeRecipe } from '../core/recipe';
+import { NativeController } from '../native/client';
 
 const rendererFile = path.join(__dirname, '../renderer/index.html');
 const rendererURL = pathToFileURL(rendererFile).href;
 let mainWindow: BrowserWindow | null = null;
+const core = new NativeController(path.join(app.isPackaged ? process.resourcesPath : path.join(__dirname, '..'),
+  'native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
 
 function senderWindow(event: IpcMainInvokeEvent): BrowserWindow {
   if (!mainWindow || event.sender !== mainWindow.webContents || event.senderFrame !== event.sender.mainFrame
@@ -26,8 +29,10 @@ function createWindow(): void {
   });
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   mainWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  mainWindow.webContents.on('did-start-loading', () => core.close());
+  mainWindow.webContents.on('render-process-gone', () => core.close());
   mainWindow.once('ready-to-show', () => mainWindow?.show());
-  mainWindow.on('closed', () => { mainWindow = null; });
+  mainWindow.on('closed', () => { core.close(); mainWindow = null; });
   void mainWindow.loadFile(rendererFile);
 }
 
@@ -35,6 +40,10 @@ app.setName('Planimulation');
 void app.whenReady().then(() => {
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   session.defaultSession.setPermissionCheckHandler(() => false);
+  ipcMain.handle('world:generate', (event, recipe: unknown) => { senderWindow(event); return core.generate(parseRecipe(recipe)); });
+  ipcMain.handle('world:cancel', (event) => { senderWindow(event); core.cancel(); });
+  ipcMain.handle('world:accept', (event, epoch: number) => { senderWindow(event); core.accept(epoch); });
+  ipcMain.handle('world:advance', (event, epoch: number, steps: number) => { senderWindow(event); return core.advance(epoch, steps); });
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),
     { label: 'File', submenu: [{ role: 'quit' }] },
@@ -67,3 +76,4 @@ void app.whenReady().then(() => {
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+app.on('before-quit', () => core.close());

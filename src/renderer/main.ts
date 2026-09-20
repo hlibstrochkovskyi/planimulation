@@ -4,7 +4,7 @@ import type { Recipe } from '../core/recipe';
 import type { World } from '../core/world';
 import type { DesktopAPI } from '../shared/desktop-api';
 import { SurfaceMap } from './map';
-import type { Layer } from './map';
+import type { Layer, ViewMode } from './map';
 
 function element<T extends HTMLElement>(id: string): T {
   const result = document.getElementById(id);
@@ -21,8 +21,12 @@ const cancel = element<HTMLButtonElement>('cancel');
 const save = element<HTMLButtonElement>('save-recipe');
 const number = new Intl.NumberFormat('en', { maximumFractionDigits: 1 });
 let world: World | null = null;
-let worker: Worker | null = null;
 let generationId = 0;
+let epoch = 0;
+let selected: number | null = null;
+let playing = false;
+let advancing = false;
+let playbackTimer = 0;
 let currentLayer: Layer = 'signal';
 
 function showStatus(message: string, error = false): void {
@@ -32,6 +36,7 @@ function showStatus(message: string, error = false): void {
 
 function inspect(id: number): void {
   if (!world) return;
+  selected = id;
   const s = world.surface, x = s.centers[id * 3], y = s.centers[id * 3 + 1], z = s.centers[id * 3 + 2];
   const lat = Math.asin(y) * 180 / Math.PI, lon = Math.atan2(z, x) * 180 / Math.PI;
   const neighbors = s.neighbors.subarray(s.neighborOffsets[id], s.neighborOffsets[id + 1]);
@@ -50,7 +55,17 @@ function inspect(id: number): void {
   }
 }
 
-const map = new SurfaceMap(element<HTMLCanvasElement>('map'), inspect);
+function createMap(): SurfaceMap {
+  try { return new SurfaceMap(element<HTMLCanvasElement>('map'), inspect); }
+  catch (error) {
+    const message = 'GPU viewer unavailable. This build requires WebGL 2; check graphics support and restart.';
+    showStatus(message, true); element('map-empty').textContent = message;
+    document.body.dataset.state = 'error';
+    element<HTMLButtonElement>('generate').disabled = true;
+    throw error;
+  }
+}
+const map = createMap();
 
 function updateLegend(): void {
   const legends: Record<Layer, [string, string, string]> = {
@@ -70,62 +85,98 @@ function setInputs(recipe: Recipe): void {
   radiusInput.value = String(recipe.radiusMeters / 1000);
 }
 
-function generate(recipe: Recipe): void {
-  worker?.terminate();
+async function generate(recipe: Recipe): Promise<void> {
+  pause(); map.cancelPreparation();
   const request = ++generationId;
   const start = performance.now();
   cancel.hidden = false; save.disabled = true;
-  showStatus('Preparing a new surface…');
+  showStatus('Building the surface in the native core…');
   document.body.dataset.state = 'generating';
-  const task = new Worker(new URL('./world.worker.ts', import.meta.url), { type: 'module' });
-  worker = task;
-  const stop = (): void => {
-    task.terminate();
-    if (worker === task) worker = null;
-    cancel.hidden = true; save.disabled = world === null;
-  };
-  task.onerror = (event) => {
+  element<HTMLButtonElement>('play').disabled = true;
+  try {
+    const result = await api.generate(recipe);
     if (request !== generationId) return;
-    stop(); showStatus(event.message || 'Generation worker failed.', true);
-    document.body.dataset.state = 'error';
-  };
-  task.onmessage = (event: MessageEvent<{ type: string; message: string; world: World }>) => {
+    const calculationMs = performance.now() - start;
+    showStatus('Preparing GPU geometry for both views…');
+    await map.setWorld(result.world);
     if (request !== generationId) return;
-    if (event.data.type === 'progress') { showStatus(event.data.message); return; }
-    if (event.data.type === 'error') { stop(); showStatus(event.data.message, true); document.body.dataset.state = 'error'; return; }
-    try {
-      world = event.data.world;
-      const calculationMs = performance.now() - start;
-      map.setWorld(world);
-      map.setLayer(currentLayer);
-      element('world-name').textContent = world.recipe.seed;
-      element('region-count').textContent = number.format(world.stats.regionCount);
-      element('surface-area').textContent = `${number.format(world.stats.totalAreaSquareMeters / 1e12)} M km²`;
-      element('generation-time').textContent = `${number.format(calculationMs)} ms`;
-      element('fingerprint').textContent = world.checksum;
-      element('map-empty').hidden = true;
-      element('selection-title').textContent = 'Explore the surface';
-      element('selection-note').textContent = 'Select a region to see its geometry and connections.';
-      element('selection-details').replaceChildren();
-      updateLegend(); stop();
-      document.body.dataset.state = 'ready';
-      showStatus(`Surface ready · ${(world.stats.arrayBytes / 2 ** 20).toFixed(1)} MiB of model arrays · Area error ${world.stats.relativeAreaError.toExponential(1)}`);
-    } catch (error) {
-      stop(); showStatus(error instanceof Error ? error.message : String(error), true);
+    // Queue acceptance before any subsequent UI action; no await between view
+    // publication and this request. The old native world survives preparation.
+    const accepted = api.acceptWorld(result.epoch);
+    world = result.world; epoch = result.epoch; selected = null;
+    map.setLayer(currentLayer);
+    element('world-name').textContent = world.recipe.seed;
+    element('region-count').textContent = number.format(world.stats.regionCount);
+    element('surface-area').textContent = `${number.format(world.stats.totalAreaSquareMeters / 1e12)} M km²`;
+    element('generation-time').textContent = `${number.format(performance.now() - start)} ms`;
+    element('generation-time').title = `Native generation + IPC: ${calculationMs.toFixed(1)} ms; remaining time prepares GPU views.`;
+    element('fingerprint').textContent = world.checksum;
+    element('map-empty').hidden = true;
+    element('selection-title').textContent = 'Explore the surface';
+    element('selection-note').textContent = 'Select a region to see its geometry and connections.';
+    element('selection-details').replaceChildren();
+    element('diagnostic-tick').textContent = 'Step 0';
+    updateLegend(); cancel.hidden = true; save.disabled = false;
+    element<HTMLButtonElement>('play').disabled = false;
+    document.body.dataset.state = 'ready';
+    showStatus(`Surface ready · ${(world.stats.arrayBytes / 2 ** 20).toFixed(1)} MiB of model arrays · Area error ${world.stats.relativeAreaError.toExponential(1)}`);
+    await accepted;
+  } catch (error) {
+    if (request === generationId) {
+      void api.cancelGeneration();
+      cancel.hidden = true; save.disabled = world === null;
+      element<HTMLButtonElement>('play').disabled = world === null;
+      showStatus(error instanceof Error ? error.message : String(error), true);
       document.body.dataset.state = 'error';
     }
-  };
-  task.postMessage(recipe);
+  }
+}
+
+function pause(): void {
+  playing = false; clearTimeout(playbackTimer);
+  element('play').textContent = 'Run diagnostic';
+}
+async function advance(): Promise<void> {
+  if (!playing || advancing || !world) return;
+  advancing = true;
+  const request = generationId, activeEpoch = epoch;
+  try {
+    const frame = await api.advance(activeEpoch, 4);
+    if (request !== generationId || frame.epoch !== epoch || !world) return;
+    world.diagnosticField = frame.field; map.refreshField();
+    if (selected !== null) inspect(selected);
+    element('diagnostic-tick').textContent = `Step ${frame.tick}`;
+    showStatus(`Diagnostic diffusion · relative mass error ${frame.relativeMassError.toExponential(2)} · Recipe saves the initial state, not this diagnostic step.`);
+  } catch (e) { if (request === generationId) { pause(); showStatus(String(e), true); } }
+  finally {
+    advancing = false;
+    if (playing) playbackTimer = window.setTimeout(() => void advance(), 33);
+  }
+}
+element('play').addEventListener('click', () => {
+  if (playing) pause();
+  else { playing = true; element('play').textContent = 'Pause diagnostic'; void advance(); }
+});
+for (const button of document.querySelectorAll<HTMLButtonElement>('button[data-view]')) {
+  button.addEventListener('click', () => {
+    const mode = button.dataset.view as ViewMode;
+    map.setMode(mode);
+    for (const other of document.querySelectorAll('button[data-view]')) {
+      other.classList.toggle('active', other === button); other.setAttribute('aria-pressed', String(other === button));
+    }
+    element('projection-label').textContent = mode === 'flat' ? 'EQUIRECTANGULAR PROJECTION' : 'GLOBE · NO ELEVATION MODEL YET';
+  });
 }
 
 element('recipe-form').addEventListener('submit', (event) => {
   event.preventDefault();
   try {
-    generate(parseRecipe({ ...DEFAULT_RECIPE, seed: seedInput.value, subdivision: Number(resolutionInput.value), radiusMeters: Number(radiusInput.value) * 1000 }));
+    void generate(parseRecipe({ ...DEFAULT_RECIPE, seed: seedInput.value, subdivision: Number(resolutionInput.value), radiusMeters: Number(radiusInput.value) * 1000 }));
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
 });
 cancel.addEventListener('click', () => {
-  generationId++; worker?.terminate(); worker = null; cancel.hidden = true; save.disabled = world === null;
+  generationId++; map.cancelPreparation(); void api.cancelGeneration(); cancel.hidden = true; save.disabled = world === null;
+  element<HTMLButtonElement>('play').disabled = world === null;
   document.body.dataset.state = world ? 'ready' : 'idle';
   showStatus(world ? 'Generation canceled. The previous surface is still displayed.' : 'Generation canceled.');
 });
@@ -133,7 +184,7 @@ element('new-seed').addEventListener('click', () => { seedInput.value = crypto.r
 element('open-recipe').addEventListener('click', async () => {
   try {
     const recipe = await api.openRecipe();
-    if (recipe) { const validated = parseRecipe(recipe); setInputs(validated); generate(validated); }
+    if (recipe) { const validated = parseRecipe(recipe); setInputs(validated); void generate(validated); }
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
 });
 save.addEventListener('click', async () => {
@@ -155,6 +206,6 @@ element<HTMLInputElement>('boundaries').addEventListener('change', (event) => ma
 element('reset-view').addEventListener('click', () => map.reset());
 element('zoom-in').addEventListener('click', () => map.zoomBy(1.5));
 element('zoom-out').addEventListener('click', () => map.zoomBy(1 / 1.5));
-window.addEventListener('beforeunload', () => worker?.terminate());
+window.addEventListener('beforeunload', () => { pause(); map.dispose(); });
 setInputs(DEFAULT_RECIPE);
-generate({ ...DEFAULT_RECIPE });
+void generate({ ...DEFAULT_RECIPE });

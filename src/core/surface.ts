@@ -77,9 +77,12 @@ export function buildSurface(subdivision: number, radiusMeters: number): Surface
       distances.push(angularDistance(center, vertices[neighbor]) * radiusMeters);
     }
     const ring = [...incidentCenters[id], ...orderedNeighbors.map((n) => midpoint(center, vertices[n]))];
+    const anchor = ring[0];
     const tangent = normalize(cross(Math.abs(center[2]) < 0.9 ? [0, 0, 1] : [0, 1, 0], center));
     const bitangent = cross(center, tangent);
     ring.sort((a, b) => Math.atan2(dot(a, bitangent), dot(a, tangent)) - Math.atan2(dot(b, bitangent), dot(b, tangent)));
+    // A fixed incident-face anchor avoids a runtime-dependent ±pi start vertex.
+    ring.push(...ring.splice(0, ring.indexOf(anchor)));
     let area = 0;
     for (let j = 0; j < ring.length; j++) {
       boundaries.push(...ring[j]);

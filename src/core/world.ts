@@ -66,6 +66,7 @@ export function checksumWorld(recipe: Recipe, surface: Surface, field: Float64Ar
   return hash.toString(16).padStart(8, '0');
 }
 
+/** Independent TypeScript regression reference; desktop and headless use the native core. */
 export function generateWorld(input: unknown, progress: (message: string) => void = () => {}): World {
   const recipe = parseRecipe(input);
   progress('Building the spherical surface…');
