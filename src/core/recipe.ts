@@ -1,4 +1,4 @@
-export const MODEL_VERSION = 'surface-rust-1';
+export const MODEL_VERSION = 'tectonics-1';
 export const RANDOM_VERSION = 'fnv1a-utf8-mulberry32-1';
 
 export interface Recipe {
@@ -8,6 +8,8 @@ export interface Recipe {
   seed: string;
   subdivision: number;
   radiusMeters: number;
+  plateCount: number;
+  maxPlateSpeedCmPerYear: number;
 }
 
 export const DEFAULT_RECIPE: Readonly<Recipe> = Object.freeze({
@@ -17,6 +19,8 @@ export const DEFAULT_RECIPE: Readonly<Recipe> = Object.freeze({
   seed: 'first-light',
   subdivision: 5,
   radiusMeters: 6_371_000,
+  plateCount: 12,
+  maxPlateSpeedCmPerYear: 8,
 });
 
 /** Strict parsing prevents an old or misspelled parameter from being silently ignored. */
@@ -29,11 +33,11 @@ export function parseRecipe(value: unknown): Recipe {
   for (const key of Object.keys(input)) {
     if (!keys.includes(key)) throw new Error(`Unknown recipe field: ${key}.`);
   }
+  if (input.schemaVersion !== 1 || input.modelVersion !== MODEL_VERSION || input.randomVersion !== RANDOM_VERSION) {
+    throw new Error('Unsupported recipe version. This build supports tectonics-1 recipes only; legacy recipes are not silently migrated.');
+  }
   for (const key of keys) {
     if (!(key in input)) throw new Error(`Missing recipe field: ${key}.`);
-  }
-  if (input.schemaVersion !== 1 || input.modelVersion !== MODEL_VERSION || input.randomVersion !== RANDOM_VERSION) {
-    throw new Error('Unsupported recipe version. This build supports surface-rust-1 recipes only; legacy recipes are not silently migrated.');
   }
   if (typeof input.seed !== 'string' || input.seed.trim().length === 0 || input.seed.length > 128) {
     throw new Error('Seed must contain 1–128 characters and cannot be blank.');
@@ -45,6 +49,11 @@ export function parseRecipe(value: unknown): Recipe {
     || input.radiusMeters < 100_000 || input.radiusMeters > 20_000_000) {
     throw new Error('Radius must be between 100 and 20,000 km.');
   }
+  if (!Number.isInteger(input.plateCount) || Number(input.plateCount) < 2 || Number(input.plateCount) > Math.min(32, 10 * 4 ** Number(input.subdivision) + 2)) {
+    throw new Error('Plate count must be 2–32 and no larger than the region count.');
+  }
+  if (typeof input.maxPlateSpeedCmPerYear !== 'number' || !Number.isFinite(input.maxPlateSpeedCmPerYear)
+    || input.maxPlateSpeedCmPerYear < 0 || input.maxPlateSpeedCmPerYear > 20) throw new Error('Maximum plate speed must be 0–20 cm/year.');
   return {
     schemaVersion: 1,
     modelVersion: MODEL_VERSION,
@@ -52,6 +61,8 @@ export function parseRecipe(value: unknown): Recipe {
     seed: input.seed,
     subdivision: Number(input.subdivision),
     radiusMeters: input.radiusMeters,
+    plateCount: Number(input.plateCount),
+    maxPlateSpeedCmPerYear: input.maxPlateSpeedCmPerYear,
   };
 }
 

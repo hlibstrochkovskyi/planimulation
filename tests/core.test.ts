@@ -14,7 +14,11 @@ test('recipes are strict, bounded, versioned, and round-trip without hidden defa
     { ...DEFAULT_RECIPE, seed: 'x'.repeat(129) }, { ...DEFAULT_RECIPE, subdivision: 7 },
     { ...DEFAULT_RECIPE, subdivision: -1 }, { ...DEFAULT_RECIPE, subdivision: 2.5 },
     { ...DEFAULT_RECIPE, radiusMeters: NaN }, { ...DEFAULT_RECIPE, radiusMeters: Infinity },
-    { ...DEFAULT_RECIPE, radiusMeters: 1 }, { ...DEFAULT_RECIPE, radiusMeters: '6371000' }]) {
+    { ...DEFAULT_RECIPE, radiusMeters: 1 }, { ...DEFAULT_RECIPE, radiusMeters: '6371000' },
+    { ...DEFAULT_RECIPE, plateCount: 1 }, { ...DEFAULT_RECIPE, plateCount: 33 }, { ...DEFAULT_RECIPE, plateCount: 2.5 },
+    { ...DEFAULT_RECIPE, plateCount: 13, subdivision: 0 }, { ...DEFAULT_RECIPE, plateCount: '12' },
+    { ...DEFAULT_RECIPE, maxPlateSpeedCmPerYear: -1 }, { ...DEFAULT_RECIPE, maxPlateSpeedCmPerYear: 21 },
+    { ...DEFAULT_RECIPE, maxPlateSpeedCmPerYear: NaN }, { ...DEFAULT_RECIPE, maxPlateSpeedCmPerYear: '8' }]) {
     assert.throws(() => parseRecipe(value));
   }
 });

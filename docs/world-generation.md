@@ -1,10 +1,10 @@
 # World generation: technical proposal
 
-Date: September 19, 2026. The spherical surface, recipe validation, named random streams, and flat projection are implemented in milestone A. Tectonics, terrain, water, climate, and ecology below remain proposals. See [DESIGN.md](../DESIGN.md) for the overall concept and [development](development.md) for the current implementation.
+Initial proposal: September 19, 2026. The spherical surface, recipes, random streams, GPU flat/globe views, and B1 static plate kinematics are implemented. Crust/continentality, terrain, water, climate, and ecology remain proposals. See [DESIGN.md](../DESIGN.md) for the concept, [development](development.md) for workflow, and [Plate kinematics](tectonics.md) for the implemented algorithm and its limitations.
 
 ## 1. One world, multiple views
 
-Model a closed spherical surface from the outset. A flat map projects its data; a globe displays another view; local terrain samples a region with additional visual detail.
+Model a closed spherical surface from the outset. A flat map projects its data; a globe displays another view. A detailed local environment is outside the current scope.
 
 ```text
 seed + resolved parameters + versions
@@ -64,6 +64,8 @@ Validate types, finite values, supported ranges, and mutually compatible modes. 
 Geometry depends on its version and resolution. Continental structure and detail use their own streams. Rendering consumes no simulation randomness. Heaps, sorting, and equal-cost choices use a stable secondary key such as `cell_id`.
 
 ### B. Approximate plates and crust
+
+The implemented B1 subset uses a positive-cost multi-source graph partition to guarantee connected plates, rigid angular velocities, and local shared-edge relative motion. The following continentality/crust and relief dependencies remain proposals; plate identity does not imply land or ocean.
 
 Choose distributed plate centers on the sphere. Partition by spherical distance, optionally applying bounded boundary deformation while preserving plate connectivity. Generate a coherent large-scale continentality field: one plate may include different crustal regions.
 

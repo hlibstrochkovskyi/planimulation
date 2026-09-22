@@ -41,7 +41,7 @@ export class FrameReader {
       if (this.header === null) {
         if (this.length < this.headerLength) return;
         const h = JSON.parse(this.take(this.headerLength).toString('utf8')) as Header;
-        if (!h || h.protocol !== 1 || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
+        if (!h || h.protocol !== 2 || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
           || !['world', 'frame', 'error'].includes(h.kind)) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
@@ -68,7 +68,10 @@ export function decodeWorld(packet: Packet): World {
   if (h.kind !== 'world') throw new Error('Expected native world.');
   const recipe = parseRecipe(h.recipe), n = 10 * 4 ** recipe.subdivision + 2;
   const neighbors = 6 * n - 12, faces = 60 * 4 ** recipe.subdivision;
-  const expectedBytes = n * 24 + faces * 4 + (n + 1) * 8 + neighbors * 12 + n * 16 + neighbors * 48;
+  const b = h.boundarySegmentCount;
+  if (typeof b !== 'number' || !Number.isInteger(b) || b < 2 || b > neighbors || b % 2) throw new Error('Invalid native boundary count.');
+  const expectedBytes = n * 24 + faces * 4 + (n + 1) * 8 + neighbors * 12 + n * 16 + neighbors * 48
+    + n * 4 + recipe.plateCount * 28 + b * 76;
   if (bytes.length !== expectedBytes) throw new Error('Invalid native world array lengths.');
   let cursor = 0;
   const f64 = (length: number): Float64Array => {
@@ -83,6 +86,11 @@ export function decodeWorld(packet: Packet): World {
     neighborOffsets: u32(n + 1), neighbors: u32(neighbors), neighborDistancesMeters: f64(neighbors),
     areasSquareMeters: f64(n), boundaryOffsets: u32(n + 1), boundaryDirections: f64(neighbors * 6) };
   const diagnosticField = f64(n);
+  const tectonics = { owners: u32(n), seeds: u32(recipe.plateCount), angularVelocities: f64(recipe.plateCount * 3),
+    boundaryCells: u32(b * 2), boundaryDirections: f64(b * 6), boundaryMotion: f64(b * 2), boundaryTypes: u32(b) };
+  if (tectonics.owners.some((v) => v >= recipe.plateCount) || tectonics.seeds.some((v, p) => v >= n || tectonics.owners[v] !== p)
+    || new Set(tectonics.seeds).size !== recipe.plateCount || tectonics.boundaryTypes.some((v) => v > 3)
+    || tectonics.boundaryCells.some((v) => v >= n)) throw new Error('Invalid native plate metadata.');
   const stats = h.stats as World['stats'];
   if (!stats || stats.regionCount !== n || stats.faceCount !== faces / 3 || stats.edgeCount !== neighbors / 2
     || stats.arrayBytes !== bytes.length || !Object.values(stats).every(Number.isFinite)
@@ -98,7 +106,22 @@ export function decodeWorld(packet: Packet): World {
       throw new Error('Invalid native offsets.');
     }
   }
-  return { recipe, surface, diagnosticField, checksum: h.checksum, stats };
+  let crossPlateLinks = 0;
+  for (let i = 0; i < n; i++) for (let k = surface.neighborOffsets[i]; k < surface.neighborOffsets[i + 1]; k++) {
+    if (tectonics.owners[i] !== tectonics.owners[surface.neighbors[k]]) crossPlateLinks++;
+  }
+  if (crossPlateLinks !== b) throw new Error('Incomplete native plate boundaries.');
+  const pairs = new Map<number, number>();
+  for (let i = 0; i < b; i++) {
+    const a = tectonics.boundaryCells[i * 2], c = tectonics.boundaryCells[i * 2 + 1];
+    if (a >= c || tectonics.owners[a] === tectonics.owners[c]
+      || !surface.neighbors.subarray(surface.neighborOffsets[a], surface.neighborOffsets[a + 1]).includes(c)) {
+      throw new Error('Invalid native plate boundary pair.');
+    }
+    const key = a * n + c; pairs.set(key, (pairs.get(key) ?? 0) + 1);
+  }
+  if ([...pairs.values()].some((count) => count !== 2)) throw new Error('Duplicate or missing native boundary segment.');
+  return { recipe, surface, diagnosticField, tectonics, checksum: h.checksum, stats };
 }
 
 export class NativeSession {

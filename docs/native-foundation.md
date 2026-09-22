@@ -2,6 +2,8 @@
 
 Status: implemented foundation increment, September 20, 2026. Terrain, climate, and civilization remain future work.
 
+Historical baseline: recipe `surface-rust-1` and protocol 1 below describe the foundation increment. The current build adds `tectonics-1` and protocol 2; see [Plate kinematics](tectonics.md) for appended fields and current checks. Process ownership and the diagnostic update mechanism remain unchanged. The measurements below apply to the earlier surface-only workload.
+
 ## Decision and scope
 
 Use a Rust library/executable for authoritative model calculation, Electron/TypeScript for the analytical desktop interface, and Three.js/WebGL 2 for a flat map and a globe. These are two representations of one world, not independently generated maps. Settlements will be markers and routes will be overlays; detailed 3D cities are not required.

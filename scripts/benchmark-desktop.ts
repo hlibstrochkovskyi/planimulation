@@ -2,11 +2,13 @@ import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { _electron as electron, expect } from '@playwright/test';
+import { MODEL_VERSION } from '../src/core/recipe';
 
 const profile = await mkdtemp(path.join(os.tmpdir(), 'planimulation-benchmark-'));
 const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined));
 delete env.ELECTRON_RUN_AS_NODE;
 const app = await electron.launch({ args: ['.', `--user-data-dir=${profile}`], env, timeout: 30_000 });
+app.process().on('exit', (code, signal) => { if (code || signal) console.error(`Electron exited: code=${code}, signal=${signal}`); });
 try {
   const page = await app.firstWindow();
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
@@ -49,7 +51,7 @@ try {
     }
   }
   const gpu = await app.evaluate(async ({ app }) => ({ features: app.getGPUFeatureStatus(), info: await app.getGPUInfo('basic'), metrics: app.getAppMetrics() }));
-  const report = { date: new Date().toISOString(), cpu: os.cpus()[0]?.model, totalMemory: os.totalmem(),
+  const report = { date: new Date().toISOString(), modelVersion: MODEL_VERSION, layer: 'plates', cpu: os.cpus()[0]?.model, totalMemory: os.totalmem(),
     note: '180 requested-animation-frame intervals per sample under alternating zoom and native diffusion; not a GPU timer or a future simulation guarantee.', results, gpu };
   await mkdir('artifacts', { recursive: true });
   await writeFile('artifacts/native-desktop-benchmark.json', `${JSON.stringify(report, null, 2)}\n`);

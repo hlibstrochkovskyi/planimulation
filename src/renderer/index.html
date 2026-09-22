@@ -9,13 +9,13 @@
   <body>
     <header class="app-header">
       <div class="brand"><span class="brand-mark" aria-hidden="true">◉</span><div><h1>Planimulation</h1><p>A world worth understanding</p></div></div>
-      <div class="header-right"><span class="stage-badge">01 / SURFACE</span><button id="open-recipe">Open recipe</button><button id="save-recipe" disabled>Save recipe</button></div>
+      <div class="header-right"><span class="stage-badge">02 / PLATE KINEMATICS</span><button id="open-recipe">Open recipe</button><button id="save-recipe" disabled>Save recipe</button></div>
     </header>
     <main>
       <aside class="sidebar">
         <section>
-          <p class="eyebrow">WORLD SETUP</p><h2>Start with a sphere.</h2>
-          <p class="muted">A continuous surface, ready for a world's geography.</p>
+          <p class="eyebrow">WORLD SETUP</p><h2>A geological foundation.</h2>
+          <p class="muted">Connected plates and their relative motion. Crust and relief come next.</p>
           <form id="recipe-form">
             <label for="seed">World seed</label>
             <div class="seed-row"><input id="seed" name="seed" value="first-light" maxlength="128" required autocomplete="off" spellcheck="false" /><button id="new-seed" type="button" title="Choose a new seed" aria-label="Choose a new seed">↻</button></div>
@@ -23,6 +23,10 @@
             <select id="subdivision"><option value="0">12 regions · base</option><option value="1">42 regions · coarse</option><option value="2">162 regions · coarse</option><option value="3">642 regions · preview</option><option value="4">2,562 regions · standard</option><option value="5" selected>10,242 regions · detailed</option><option value="6">40,962 regions · fine</option></select>
             <label for="radius">Planet radius <span>km</span></label>
             <input id="radius" type="number" min="100" max="20000" step="1" value="6371" required />
+            <label for="plate-count">Tectonic plates <span>2–32, up to region count</span></label>
+            <input id="plate-count" type="number" min="2" max="32" step="1" value="12" required />
+            <label for="plate-speed">Maximum plate speed <span>cm/year</span></label>
+            <input id="plate-speed" type="number" min="0" max="20" step="0.1" value="8" required />
             <button class="primary" id="generate" type="submit">Generate surface <span>↗</span></button>
             <button id="cancel" type="button" hidden>Cancel generation</button>
           </form>
@@ -30,25 +34,30 @@
         <section class="layer-section">
           <p class="eyebrow">MAP LAYERS</p>
           <div class="layer-list" role="group" aria-label="Map layer">
-            <button class="layer active" data-layer="signal" aria-pressed="true"><span>◈</span>Seed field<small>Diagnostic</small></button>
+            <button class="layer active" data-layer="plates" aria-pressed="true"><span>◈</span>Tectonic plates<small>Identity</small></button>
+            <button class="layer" data-layer="boundaries" aria-pressed="false"><span>⋈</span>Boundary motion<small>Kinematics</small></button>
+            <button class="layer" data-layer="speed" aria-pressed="false"><span>↗</span>Plate speed<small>cm/year</small></button>
+            <button class="layer" data-layer="signal" aria-pressed="false"><span>◈</span>Seed field<small>Diagnostic</small></button>
             <button class="layer" data-layer="area" aria-pressed="false"><span>▦</span>Region area<small>km²</small></button>
             <button class="layer" data-layer="latitude" aria-pressed="false"><span>≋</span>Latitude<small>Degrees</small></button>
           </div>
-          <label class="checkbox"><input id="boundaries" type="checkbox" checked /> Region boundaries</label>
+          <label class="checkbox"><input id="boundaries" type="checkbox" /> Region boundaries</label>
         </section>
-        <section class="stage-note"><p class="eyebrow">THE FIRST LAYER</p><p>The seed field is a reproducible test signal. Terrain, oceans and climate come next.</p><p>Changing the seed preserves the underlying surface.</p></section>
+        <section class="stage-note"><p class="eyebrow">WHAT THIS MODEL MEANS</p><p>A plate can later contain oceanic and continental crust. Plate colors do not indicate land.</p><p>Velocities are a static initial condition. The diagnostic run does not move plates or simulate geological history.</p></section>
         <div class="sidebar-bottom"><span class="status-dot"></span> LOCAL · OFFLINE · REPRODUCIBLE</div>
       </aside>
       <div class="workspace">
         <div class="map-heading"><div><p class="eyebrow">PLANETARY ATLAS</p><h2 id="world-name">Preparing your world</h2></div><div class="map-tools"><button data-view="flat" class="active" aria-pressed="true">2D map</button><button data-view="globe" aria-pressed="false">Globe</button><button id="zoom-out" aria-label="Zoom out">−</button><button id="reset-view">Fit map</button><button id="zoom-in" aria-label="Zoom in">+</button></div></div>
         <div id="map-container"><canvas id="map" aria-label="Interactive spherical surface map"></canvas><div id="gpu-status" role="alert">Graphics context lost. Waiting for recovery; the native model is unchanged.</div><div id="map-empty">Building a foundation for your world…</div><div class="map-caption"><b id="projection-label">EQUIRECTANGULAR PROJECTION</b><span>DRAG TO MOVE · SCROLL TO ZOOM · CLICK TO INSPECT</span></div></div>
-        <div class="legend"><span id="legend-title">Seed field · dimensionless diagnostic</span><div><span id="legend-low">−1</span><span id="legend-gradient"></span><span id="legend-high">+1</span></div></div>
+        <div class="legend"><span id="legend-title">Tectonic plates</span><div id="legend-scale"><span id="legend-low">−1</span><span id="legend-gradient"></span><span id="legend-high">+1</span></div></div>
+        <div id="boundary-legend"><span data-kind="1">Convergent</span><span data-kind="2">Divergent</span><span data-kind="3">Transform-dominant</span><span data-kind="0">Quiet</span></div>
         <div class="diagnostic-controls"><button id="play" disabled>Run diagnostic</button><span id="diagnostic-tick">Step 0</span><span>Conservative graph diffusion · not climate or geological time</span></div>
         <div class="metrics"><div><span>REGIONS</span><strong id="region-count">—</strong></div><div><span>SURFACE AREA</span><strong id="surface-area">—</strong></div><div><span>GENERATION + VIEWS</span><strong id="generation-time">—</strong></div><div><span>INITIAL FINGERPRINT</span><strong id="fingerprint">—</strong></div></div>
         <section class="inspector"><div><p class="eyebrow">REGION INSPECTOR</p><h3 id="selection-title">Explore the surface</h3><p id="selection-note" class="muted">Select a region to see its geometry and connections.</p></div><dl id="selection-details"></dl></section>
+        <section class="boundary-inspector"><p class="eyebrow">BOUNDARY EXPLANATION</p><p id="boundary-note" class="muted">Select a region to inspect its plate and any inter-plate boundary segments.</p><ul id="boundary-details"></ul></section>
       </div>
     </main>
-    <footer><span id="status" role="status" aria-live="polite">Starting…</span><span id="model-label">SURFACE-RUST-1 · GPU VIEWS</span></footer>
+    <footer><span id="status" role="status" aria-live="polite">Starting…</span><span id="model-label">TECTONICS-1 · STATIC KINEMATICS</span></footer>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

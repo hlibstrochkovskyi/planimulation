@@ -3,8 +3,9 @@ import type { Recipe } from './recipe';
 import { stream } from './random';
 import { buildSurface } from './surface';
 import type { Surface } from './surface';
+import type { Tectonics } from './tectonics';
 
-export interface World {
+export interface SurfaceWorld {
   recipe: Recipe;
   surface: Surface;
   diagnosticField: Float64Array;
@@ -20,6 +21,7 @@ export interface World {
     arrayBytes: number;
   };
 }
+export interface World extends SurfaceWorld { tectonics: Tectonics }
 
 /** A coherent test signal, deliberately not labeled terrain, climate, or biome. */
 function diagnosticField(surface: Surface, seed: string): Float64Array {
@@ -67,7 +69,7 @@ export function checksumWorld(recipe: Recipe, surface: Surface, field: Float64Ar
 }
 
 /** Independent TypeScript regression reference; desktop and headless use the native core. */
-export function generateWorld(input: unknown, progress: (message: string) => void = () => {}): World {
+export function generateWorld(input: unknown, progress: (message: string) => void = () => {}): SurfaceWorld {
   const recipe = parseRecipe(input);
   progress('Building the spherical surface…');
   const surface = buildSurface(recipe.subdivision, recipe.radiusMeters);

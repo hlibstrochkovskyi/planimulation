@@ -1,7 +1,8 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 import { buildSurface, locateRegion } from '../src/core/surface';
-import { directionAt, projectRegion } from '../src/renderer/projection';
+import { directionAt, projectArc, projectRegion } from '../src/renderer/projection';
+import { normalize } from '../src/core/vector';
 import type { Point2 } from '../src/renderer/projection';
 
 function clipX(polygon: Point2[], limit: number, keepGreater: boolean): Point2[] {
@@ -15,6 +16,21 @@ function clipX(polygon: Point2[], limit: number, keepGreater: boolean): Point2[]
   }
   return result;
 }
+
+test('boundary arcs split at the seam and handle a polar endpoint', () => {
+  const segments = projectArc(normalize([-1, .1, .01]), normalize([-1, .1, -.01]));
+  assert.ok(segments.length >= 2);
+  assert.ok(segments.some(([a, b]) => a[0] === 0 || b[0] === 0));
+  assert.ok(segments.some(([a, b]) => a[0] === 1 || b[0] === 1));
+  for (const [a, b] of segments) {
+    assert.ok(Math.abs(a[0] - b[0]) < .01, 'No line crosses the atlas interior.');
+    for (const v of [...a, ...b]) assert.ok(Number.isFinite(v) && v >= 0 && v <= 1);
+  }
+  const polar = projectArc([0, 1, 0], normalize([1, 1, 1]));
+  assert.ok(polar.length > 0);
+  assert.ok(polar.every(([a, b]) => Math.abs(a[0] - b[0]) < 1e-14));
+  assert.ok(polar.some(([a, b]) => a[1] === 0 || b[1] === 0));
+});
 
 for (const level of [0, 1, 3]) {
   test(`projection level ${level} covers the rectangle including poles and seam`, () => {

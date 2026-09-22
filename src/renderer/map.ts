@@ -3,9 +3,10 @@ import { BufferAttribute, BufferGeometry, DataTexture, DoubleSide, FloatType, Gr
   Scene, ShaderMaterial, Vector2, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { World } from '../core/world';
+import { speedCmPerYear } from '../core/tectonics';
 import type { ViewGeometry, ViewPair } from './view-geometry';
 
-export type Layer = 'signal' | 'area' | 'latitude';
+export type Layer = 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed';
 export type ViewMode = 'flat' | 'globe';
 
 export class SurfaceMap {
@@ -19,30 +20,34 @@ export class SurfaceMap {
   private readonly material = new ShaderMaterial({
     side: DoubleSide,
     uniforms: { field: { value: null }, textureWidth: { value: 1 }, textureHeight: { value: 1 },
-      selected: { value: -1 }, globe: { value: 0 } },
+      selected: { value: -1 }, globe: { value: 0 }, categorical: { value: 0 }, muted: { value: 0 } },
     vertexShader: `attribute float region; varying float cell; varying vec3 direction;
       void main() { cell=region; direction=normalMatrix*position;
         gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
     fragmentShader: `uniform sampler2D field; uniform float textureWidth; uniform float textureHeight;
-      uniform float selected; uniform float globe; varying float cell; varying vec3 direction;
+      uniform float selected; uniform float globe; uniform float categorical; uniform float muted;
+      varying float cell; varying vec3 direction;
       void main() {
         float id=floor(cell+0.5);
         vec2 uv=vec2((mod(id,textureWidth)+0.5)/textureWidth,(floor(id/textureWidth)+0.5)/textureHeight);
-        float v=clamp(texture2D(field,uv).r,0.0,1.0);
-        vec3 color=mix(vec3(0.16,0.28,0.33),vec3(0.73,0.80,0.63),v);
+        float v=texture2D(field,uv).r;
+        vec3 color=mix(vec3(0.16,0.28,0.33),vec3(0.73,0.80,0.63),clamp(v,0.0,1.0));
+        if(categorical>0.5) color=0.51+0.23*cos(6.2831853*(v*0.618033989+vec3(0.0,0.33,0.67)));
+        color*=1.0-muted*0.65;
         if(abs(cell-selected)<0.25) color=vec3(0.96,0.78,0.42);
         if(globe>0.5) color*=0.76+0.24*max(0.0,dot(normalize(direction),normalize(vec3(-0.4,0.6,1.0))));
         gl_FragColor=vec4(color,1.0);
       }`,
   });
   private readonly lineMaterial = new LineBasicMaterial({ color: '#304849', transparent: true, opacity: .45 });
+  private readonly tectonicMaterial = new LineBasicMaterial({ vertexColors: true });
   private views: Record<ViewMode, Group> | null = null;
   private texture: DataTexture | null = null;
   private values = new Float32Array(0);
   private world: World | null = null;
   private mode: ViewMode = 'flat';
-  private layer: Layer = 'signal';
-  private boundaries = true;
+  private layer: Layer = 'plates';
+  private boundaries = false;
   private worker: Worker | null = null;
   private abortPreparation: (() => void) | null = null;
   private frame = 0;
@@ -94,8 +99,11 @@ export class SurfaceMap {
     geometry.setAttribute('position', new BufferAttribute(data.positions, 3));
     geometry.setAttribute('region', new BufferAttribute(data.regions, 1));
     const lines = new BufferGeometry(); lines.setAttribute('position', new BufferAttribute(data.lines, 3));
+    const tectonicLines = new BufferGeometry();
+    tectonicLines.setAttribute('position', new BufferAttribute(data.tectonicLines, 3));
+    tectonicLines.setAttribute('color', new BufferAttribute(data.tectonicColors, 3));
     const group = new Group();
-    group.add(new Mesh(geometry, this.material), new LineSegments(lines, this.lineMaterial));
+    group.add(new Mesh(geometry, this.material), new LineSegments(lines, this.lineMaterial), new LineSegments(tectonicLines, this.tectonicMaterial));
     return group;
   }
   cancelPreparation(): void {
@@ -111,7 +119,7 @@ export class SurfaceMap {
       worker.onmessage = (e: MessageEvent<{ pair: ViewPair; error?: string }>) => {
         if (e.data.error) reject(new Error(e.data.error)); else resolve(e.data.pair);
       };
-      worker.postMessage(world.surface);
+      worker.postMessage({ surface: world.surface, tectonics: world.tectonics });
     }).finally(() => { worker.terminate(); if (this.worker === worker) { this.worker = null; this.abortPreparation = null; } });
     const next = { flat: this.makeView(pair.flat), globe: this.makeView(pair.globe) };
     this.releaseViews(); this.views = next;
@@ -135,12 +143,20 @@ export class SurfaceMap {
     this.controls.mouseButtons.LEFT = mode === 'flat' ? MOUSE.PAN : MOUSE.ROTATE;
     this.reset();
   }
-  setLayer(layer: Layer): void { this.layer = layer; this.refreshField(); }
+  setLayer(layer: Layer): void {
+    this.layer = layer;
+    this.material.uniforms.categorical.value = layer === 'plates' || layer === 'boundaries' ? 1 : 0;
+    this.material.uniforms.muted.value = layer === 'boundaries' ? 1 : 0;
+    if (this.views) for (const view of Object.values(this.views)) view.children[2].visible = layer === 'plates' || layer === 'boundaries';
+    this.refreshField();
+  }
   refreshField(): void {
     if (!this.world || !this.texture) return;
     const w = this.world;
     for (let id = 0; id < w.stats.regionCount; id++) {
-      this.values[id] = this.layer === 'signal' ? (w.diagnosticField[id] + 1) / 2
+      this.values[id] = this.layer === 'plates' || this.layer === 'boundaries' ? w.tectonics.owners[id]
+        : this.layer === 'speed' ? speedCmPerYear(w.surface, w.tectonics, id) / Math.max(1e-30, w.recipe.maxPlateSpeedCmPerYear)
+        : this.layer === 'signal' ? (w.diagnosticField[id] + 1) / 2
         : this.layer === 'latitude' ? 1 - Math.abs(Math.asin(w.surface.centers[id * 3 + 1])) / (Math.PI / 2)
           : (w.surface.areasSquareMeters[id] - w.stats.minimumAreaSquareMeters)
             / Math.max(1, w.stats.maximumAreaSquareMeters - w.stats.minimumAreaSquareMeters);
@@ -176,6 +192,6 @@ export class SurfaceMap {
   }
   dispose(): void {
     this.cancelPreparation(); cancelAnimationFrame(this.frame); this.resizeObserver.disconnect();
-    this.controls.dispose(); this.releaseViews(); this.material.dispose(); this.lineMaterial.dispose(); this.renderer.dispose();
+    this.controls.dispose(); this.releaseViews(); this.material.dispose(); this.lineMaterial.dispose(); this.tectonicMaterial.dispose(); this.renderer.dispose();
   }
 }

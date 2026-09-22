@@ -7,13 +7,14 @@ import { FrameReader, NativeController, NativeSession, decodeWorld } from '../sr
 import type { Packet } from '../src/native/client';
 import { buildViewGeometry } from '../src/renderer/view-geometry';
 import { buildSurface } from '../src/core/surface';
+import { speedCmPerYear, summarizeTectonics } from '../src/core/tectonics';
 
 const executable = path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core');
 
 test('binary framing handles fragmented headers/bodies, multiple frames, and rejects oversized packets', () => {
   const received: Packet[] = [], reader = new FrameReader((packet) => received.push(packet));
   const body = Buffer.from([1, 2, 3]);
-  const header = Buffer.from(JSON.stringify({ protocol: 1, kind: 'frame', byteLength: body.length }));
+  const header = Buffer.from(JSON.stringify({ protocol: 2, kind: 'frame', byteLength: body.length }));
   const prefix = Buffer.alloc(4); prefix.writeUInt32LE(header.length);
   const packet = Buffer.concat([prefix, header, body]);
   for (const byte of packet) reader.push(Buffer.from([byte]));
@@ -23,7 +24,7 @@ test('binary framing handles fragmented headers/bodies, multiple frames, and rej
     const invalid = Buffer.alloc(4); invalid.writeUInt32LE(size);
     assert.throws(() => new FrameReader(() => {}).push(invalid));
   }
-  const badHeader = Buffer.from(JSON.stringify({ protocol: 2, kind: 'world', byteLength: 0 }));
+  const badHeader = Buffer.from(JSON.stringify({ protocol: 1, kind: 'world', byteLength: 0 }));
   prefix.writeUInt32LE(badHeader.length);
   assert.throws(() => new FrameReader(() => {}).push(Buffer.concat([prefix, badHeader])));
 });
@@ -83,7 +84,50 @@ test('native validation rejects legacy recipes and malformed output is not decod
     assert.throws(() => decodeWorld({ ...packet, bytes: packet.bytes.subarray(1) }), /lengths/);
     const invalid = Buffer.from(packet.bytes); invalid.writeDoubleLE(NaN);
     assert.throws(() => decodeWorld({ ...packet, bytes: invalid }), /finite/);
+    assert.throws(() => decodeWorld({ ...packet, header: { ...packet.header, boundarySegmentCount: 1e9 } }), /boundary count/);
+    const world = decodeWorld(packet);
+    const extraBytes = world.stats.regionCount * 4 + world.recipe.plateCount * 28 + Number(packet.header.boundarySegmentCount) * 76;
+    const corruptedOwner = Buffer.from(packet.bytes);
+    corruptedOwner.writeUInt32LE(world.recipe.plateCount, packet.bytes.length - extraBytes);
+    assert.throws(() => decodeWorld({ ...packet, bytes: corruptedOwner }), /plate metadata/);
   } finally { session.close(); }
+});
+
+test('native plate fields survive transport and produce both boundary overlays without changing the model', async () => {
+  const core = new NativeController(executable);
+  try {
+    const { world, epoch } = await core.generate({ ...DEFAULT_RECIPE, subdivision: 3 });
+    core.accept(epoch);
+    const original = structuredClone(world.tectonics);
+    const summary = summarizeTectonics(world.surface, world.tectonics);
+    assert.equal(summary.plates.reduce((sum, plate) => sum + plate.regionCount, 0), world.stats.regionCount);
+    assert.ok(Math.abs(summary.plates.reduce((sum, plate) => sum + plate.areaSquareMeters, 0) / world.stats.totalAreaSquareMeters - 1) < 1e-12);
+    assert.equal(Object.values(summary.boundarySegmentCounts).reduce((sum, v) => sum + v, 0), world.tectonics.boundaryTypes.length);
+    assert.equal(new Set(world.tectonics.owners).size, world.recipe.plateCount);
+    const view = buildViewGeometry(world.surface, world.tectonics);
+    const count = world.tectonics.boundaryTypes.length;
+    assert.equal(view.globe.tectonicLines.length, count * 6);
+    assert.ok(view.flat.tectonicLines.length >= count * 6);
+    for (const data of [view.flat, view.globe]) {
+      assert.equal(data.tectonicLines.length, data.tectonicColors.length);
+      assert.ok(data.tectonicLines.every(Number.isFinite));
+      assert.ok(data.tectonicColors.every((v) => v >= 0 && v <= 1));
+    }
+    for (let i = 0; i < view.flat.tectonicLines.length; i += 6) {
+      assert.ok(Math.abs(view.flat.tectonicLines[i]) <= 1);
+      assert.ok(Math.abs(view.flat.tectonicLines[i + 3]) <= 1);
+      assert.ok(Math.abs(view.flat.tectonicLines[i] - view.flat.tectonicLines[i + 3]) <= 1);
+    }
+    for (let id = 0; id < world.stats.regionCount; id++) {
+      assert.ok(speedCmPerYear(world.surface, world.tectonics, id) <= world.recipe.maxPlateSpeedCmPerYear + 1e-12);
+    }
+    assert.deepEqual(world.tectonics, original);
+    await core.advance(epoch, 10);
+    const stopped = (await core.generate({ ...DEFAULT_RECIPE, subdivision: 3, maxPlateSpeedCmPerYear: 0 })).world;
+    assert.deepEqual(stopped.tectonics.owners, world.tectonics.owners);
+    assert.ok(stopped.tectonics.boundaryTypes.every((v) => v === 0));
+    assert.ok(stopped.tectonics.boundaryMotion.every((v) => v === 0));
+  } finally { core.close(); }
 });
 
 for (const level of [0, 1, 3]) test(`GPU geometry level ${level}: flat atlas covers area without seam overflow; IDs survive both views`, () => {

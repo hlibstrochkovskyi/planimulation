@@ -17,6 +17,32 @@ function longitudeNear(longitude: number, previous: number): number {
   return longitude;
 }
 
+/** Project a minor great-circle arc as clipped lines, never bridging the map seam. */
+export function projectArc(a: Vec3, b: Vec3): [Point2, Point2][] {
+  const steps = Math.max(1, Math.ceil(angularDistance(a, b) / 0.04));
+  const points: Point2[] = [];
+  let previous = Math.hypot(a[0], a[2]) < 1e-10 ? Math.atan2(b[2], b[0]) : Math.atan2(a[2], a[0]);
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const p = normalize([a[0] * (1 - t) + b[0] * t, a[1] * (1 - t) + b[1] * t, a[2] * (1 - t) + b[2] * t]);
+    const longitude = Math.hypot(p[0], p[2]) < 1e-10 ? previous : longitudeNear(Math.atan2(p[2], p[0]), previous);
+    previous = longitude;
+    points.push([longitude / TAU + .5, .5 - Math.asin(Math.max(-1, Math.min(1, p[1]))) / Math.PI]);
+  }
+  const result: [Point2, Point2][] = [];
+  for (let i = 0; i < points.length - 1; i++) for (const shift of [-1, 0, 1]) {
+    const [ax, ay] = points[i], [bx, by] = points[i + 1];
+    const x = ax + shift, dx = bx - ax;
+    let lo = 0, hi = 1;
+    if (Math.abs(dx) < 1e-15) { if (x < 0 || x > 1) continue; }
+    else { lo = Math.max(0, Math.min(-x / dx, (1 - x) / dx)); hi = Math.min(1, Math.max(-x / dx, (1 - x) / dx)); }
+    if (hi <= lo) continue;
+    result.push([[Math.max(0, Math.min(1, x + lo * dx)), ay + (by - ay) * lo],
+      [Math.max(0, Math.min(1, x + hi * dx)), ay + (by - ay) * hi]]);
+  }
+  return result;
+}
+
 /** Project geodesic boundaries; cap polar regions and retain seam-crossing coordinates. */
 export function projectRegion(surface: Surface, id: number): Point2[] {
   const start = surface.boundaryOffsets[id], end = surface.boundaryOffsets[id + 1];

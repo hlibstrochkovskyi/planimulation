@@ -20,7 +20,7 @@ for (const subdivision of [3, 4, 5, 6]) {
     times.sort((a, b) => a - b);
     const referenceStart = performance.now(); generateWorld({ ...DEFAULT_RECIPE, subdivision });
     results.push({ subdivision, regions: world.stats.regionCount, nativeAndIPC_ms: +generationMs.toFixed(1),
-      tsReference_ms: +(performance.now() - referenceStart).toFixed(1),
+      tsSurfaceOnly_ms: +(performance.now() - referenceStart).toFixed(1),
       fourStepsAndIPC_p95_ms: +times[18].toFixed(2), massError,
       arrayMiB: +(world.stats.arrayBytes / 2 ** 20).toFixed(2), frameKiB: world.stats.regionCount * 8 / 1024, checksum: world.checksum });
   } finally { core.close(); }

@@ -20,13 +20,17 @@ try {
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.locator('#region-count')).toHaveText('10,242');
   const fingerprint = await page.locator('#fingerprint').innerText();
+  await expect(page.locator('#legend-title')).toContainText('12 connected plates');
   const reference = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
   try { assert.equal((await reference.generate(DEFAULT_RECIPE)).world.checksum, fingerprint, 'Headless and desktop use the same native math.'); }
   finally { reference.close(); }
   const desktopData = await page.evaluate(async (recipe) => {
     const result = await window.desktop.generate(recipe);
     await window.desktop.cancelGeneration();
-    return { checksum: result.world.checksum, typed: result.world.diagnosticField instanceof Float64Array };
+    const id = result.world.tectonics.boundaryCells[0], centers = result.world.surface.centers;
+    return { checksum: result.world.checksum, typed: result.world.diagnosticField instanceof Float64Array,
+      boundarySample: { id, x: Math.atan2(centers[id * 3 + 2], centers[id * 3]) / Math.PI,
+        y: Math.asin(centers[id * 3 + 1]) / Math.PI } };
   }, { ...DEFAULT_RECIPE });
   assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
@@ -50,6 +54,29 @@ try {
   await page.screenshot({ path: executablePath ? 'artifacts/globe-desktop-packaged.png' : 'artifacts/globe-desktop.png' });
   await page.getByRole('button', { name: '2D map', exact: true }).click();
   await expect(canvas).toHaveAttribute('data-view', 'flat');
+  await page.locator('[data-layer="boundaries"]').click();
+  await expect(page.locator('#legend-title')).toContainText('Boundary motion');
+  await expect(page.locator('#boundary-legend')).toBeVisible();
+  await expect(page.locator('#selection-details')).toContainText('Tectonic plate');
+  await expect(page.locator('#selection-details')).toContainText('cm/year');
+  await page.getByRole('button', { name: 'Fit map' }).click();
+  const boundaryBounds = await canvas.boundingBox();
+  assert.ok(boundaryBounds);
+  const halfHeight = Math.max(.6, 1.1 / (boundaryBounds.width / boundaryBounds.height));
+  await canvas.click({ position: {
+    x: boundaryBounds.width * (.5 + desktopData.boundarySample.x / (2 * halfHeight * boundaryBounds.width / boundaryBounds.height)),
+    y: boundaryBounds.height * (.5 - desktopData.boundarySample.y / (2 * halfHeight)),
+  } });
+  await expect(page.locator('#selection-title')).toHaveText(`Region ${desktopData.boundarySample.id.toLocaleString('en')}`);
+  await expect(page.locator('#boundary-details')).toContainText('opening');
+  await expect(page.locator('#boundary-details')).toContainText('shear');
+  await page.locator('#boundaries').check();
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
+  await page.locator('#boundaries').uncheck();
+  await page.screenshot({ path: executablePath ? 'artifacts/boundaries-desktop-packaged.png' : 'artifacts/boundaries-desktop.png' });
+  await page.locator('[data-layer="speed"]').click();
+  await expect(page.locator('#legend-high')).toHaveText('8 cm/year');
+  await expect(page.locator('#boundary-legend')).toBeHidden();
   await page.getByRole('button', { name: 'Zoom in' }).click();
   await page.getByRole('button', { name: 'Fit map' }).click();
   await page.locator('[data-layer="area"]').click();
@@ -75,12 +102,20 @@ try {
 
   await page.locator('#seed').fill('desktop-roundtrip');
   await page.locator('#subdivision').selectOption('3');
+  await page.locator('#plate-count').fill('7');
+  await page.locator('#plate-speed').fill('0');
   await page.locator('#generate').click();
   await expect(page.locator('#world-name')).toHaveText('desktop-roundtrip');
   await expect(page.locator('#region-count')).toHaveText('642');
+  await page.locator('[data-layer="plates"]').click();
+  await expect(page.locator('#legend-title')).toContainText('7 connected plates');
+  await page.locator('[data-layer="speed"]').click();
+  await expect(page.locator('#legend-high')).toHaveText('0 cm/year');
   assert.notEqual(await page.locator('#fingerprint').innerText(), fingerprint);
   await page.getByRole('button', { name: 'Open recipe' }).click();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
+  await expect(page.locator('#plate-count')).toHaveValue('12');
+  await expect(page.locator('#plate-speed')).toHaveValue('8');
 
   await writeFile(recipePath, JSON.stringify({ ...DEFAULT_RECIPE, modelVersion: 'future' }));
   await page.getByRole('button', { name: 'Open recipe' }).click();
@@ -112,6 +147,7 @@ try {
   await page.locator('#generate').click();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
   await canvas.click({ position: { x: bounds.width * .6, y: bounds.height * .5 } });
+  await page.locator('[data-layer="plates"]').click();
   await mkdir('artifacts', { recursive: true });
   const screenshot = executablePath ? 'artifacts/surface-desktop-packaged.png' : 'artifacts/surface-desktop.png';
   await page.screenshot({ path: screenshot });

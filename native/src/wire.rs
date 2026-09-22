@@ -24,12 +24,20 @@ pub fn arrays(w: &World) -> Vec<u8> {
     u32s(&mut out, &s.boundary_offsets);
     f64s(&mut out, s.boundaries.iter().flatten().copied());
     f64s(&mut out, w.field.iter().copied());
+    let t = &w.tectonics;
+    u32s(&mut out, &t.owners);
+    u32s(&mut out, &t.seeds);
+    f64s(&mut out, t.angular_velocities.iter().flatten().copied());
+    u32s(&mut out, &t.boundary_cells);
+    f64s(&mut out, t.boundary_directions.iter().flatten().copied());
+    f64s(&mut out, t.boundary_motion.iter().copied());
+    u32s(&mut out, &t.boundary_types);
     out
 }
-/// v1: u32 header byte count, JSON header, fixed-order little-endian arrays.
+/// v2: u32 header byte count, JSON header, fixed-order little-endian arrays.
 pub fn send(out: &mut impl Write, header: serde_json::Value, bytes: &[u8]) -> io::Result<()> {
     let mut header = header;
-    header["protocol"] = json!(1);
+    header["protocol"] = json!(2);
     header["byteLength"] = json!(bytes.len());
     let encoded = serde_json::to_vec(&header)?;
     out.write_all(&(encoded.len() as u32).to_le_bytes())?;
@@ -46,6 +54,7 @@ pub fn snapshot(out: &mut impl Write, w: &World) -> io::Result<()> {
     send(
         out,
         json!({"kind":"world", "recipe":w.recipe,
+        "boundarySegmentCount":w.tectonics.boundary_types.len(),
         "checksum":format!("{:08x}",crate::hash(&fingerprint)),
         "stats": {"regionCount": w.field.len(), "faceCount": w.surface.faces.len()/3,
           "edgeCount":w.surface.neighbors.len()/2, "totalAreaSquareMeters":total,

@@ -11,15 +11,17 @@ pub struct Recipe {
     pub seed: String,
     pub subdivision: u32,
     pub radius_meters: f64,
+    pub plate_count: u32,
+    pub max_plate_speed_cm_per_year: f64,
 }
 
 impl Recipe {
     pub fn validate(&self) -> Result<(), String> {
         if self.schema_version != 1
-            || self.model_version != "surface-rust-1"
+            || self.model_version != "tectonics-1"
             || self.random_version != "fnv1a-utf8-mulberry32-1"
         {
-            return Err("Unsupported recipe version; expected surface-rust-1.".into());
+            return Err("Unsupported recipe version; expected tectonics-1.".into());
         }
         if self.seed.trim().is_empty() || self.seed.encode_utf16().count() > 128 {
             return Err("Seed must contain 1–128 UTF-16 code units and cannot be blank.".into());
@@ -29,6 +31,13 @@ impl Recipe {
             || !(100_000.0..=20_000_000.0).contains(&self.radius_meters)
         {
             return Err("Unsupported resolution or radius.".into());
+        }
+        if !(2..=32).contains(&self.plate_count)
+            || self.plate_count > 10 * 4_u32.pow(self.subdivision) + 2
+            || !self.max_plate_speed_cm_per_year.is_finite()
+            || !(0.0..=20.0).contains(&self.max_plate_speed_cm_per_year)
+        {
+            return Err("Plate count must be 2–32 and no larger than the region count; maximum plate speed must be 0–20 cm/year.".into());
         }
         Ok(())
     }
@@ -67,6 +76,9 @@ pub fn hash(bytes: &[u8]) -> u32 {
 }
 pub struct Random(pub u32);
 impl Random {
+    pub fn stream(seed: &str, name: &str) -> Self {
+        Self(hash(&serde_json::to_vec(&[seed, name]).unwrap()))
+    }
     pub fn next_u32(&mut self) -> u32 {
         self.0 = self.0.wrapping_add(0x6d2b79f5);
         let mut v = self.0;
@@ -203,13 +215,20 @@ pub struct World {
     pub field: Vec<f64>,
     pub tick: u64,
     pub initial_mass: f64,
+    pub tectonics: tectonics::Tectonics,
 }
 impl World {
     pub fn generate(recipe: Recipe) -> Result<Self, String> {
         recipe.validate()?;
         let surface = Surface::build(recipe.subdivision, recipe.radius_meters);
-        let key = serde_json::to_vec(&[&recipe.seed, "diagnostic-field"]).unwrap();
-        let mut rng = Random(hash(&key));
+        let tectonics = tectonics::Tectonics::build(
+            &surface,
+            &recipe.seed,
+            recipe.plate_count,
+            recipe.max_plate_speed_cm_per_year,
+            recipe.radius_meters,
+        );
+        let mut rng = Random::stream(&recipe.seed, "diagnostic-field");
         let modes: Vec<_> = (0..8)
             .map(|_| {
                 (
@@ -243,6 +262,7 @@ impl World {
             field,
             tick: 0,
             initial_mass: 0.,
+            tectonics,
         };
         w.initial_mass = w.mass();
         Ok(w)
@@ -285,4 +305,5 @@ impl World {
     }
 }
 
+pub mod tectonics;
 pub mod wire;

@@ -1,10 +1,13 @@
-import { ShapeUtils, Vector2 } from 'three';
+import { Color, ShapeUtils, Vector2 } from 'three';
 import type { Surface } from '../core/surface';
 import { readVector } from '../core/vector';
-import { projectRegion } from './projection';
+import { projectArc, projectRegion } from './projection';
 import type { Point2 } from './projection';
+import type { Tectonics } from '../core/tectonics';
+import { BOUNDARY_COLORS } from '../core/tectonics';
 
-export interface ViewGeometry { positions: Float32Array; regions: Float32Array; lines: Float32Array }
+export interface ViewGeometry { positions: Float32Array; regions: Float32Array; lines: Float32Array;
+  tectonicLines: Float32Array; tectonicColors: Float32Array }
 export interface ViewPair { flat: ViewGeometry; globe: ViewGeometry }
 
 function clip(points: Point2[], bound: number, greater: boolean): Point2[] {
@@ -20,9 +23,9 @@ function clip(points: Point2[], bound: number, greater: boolean): Point2[] {
 }
 
 /** Display-only triangulation. Clipping must not create new simulation regions. */
-export function buildViewGeometry(surface: Surface): ViewPair {
-  const flat = { positions: [] as number[], regions: [] as number[], lines: [] as number[] };
-  const globe = { positions: [] as number[], regions: [] as number[], lines: [] as number[] };
+export function buildViewGeometry(surface: Surface, tectonics?: Tectonics): ViewPair {
+  const flat = { positions: [] as number[], regions: [] as number[], lines: [] as number[], tectonicLines: [] as number[], tectonicColors: [] as number[] };
+  const globe = { positions: [] as number[], regions: [] as number[], lines: [] as number[], tectonicLines: [] as number[], tectonicColors: [] as number[] };
   for (let id = 0; id < surface.areasSquareMeters.length; id++) {
     const polygon = projectRegion(surface, id);
     for (const shift of [-1, 0, 1]) {
@@ -46,7 +49,19 @@ export function buildViewGeometry(surface: Surface): ViewPair {
       globe.lines.push(...a.map((v) => v * 1.0002), ...b.map((v) => v * 1.0002));
     }
   }
+  if (tectonics) for (let i = 0; i < tectonics.boundaryTypes.length; i++) {
+    const a = readVector(tectonics.boundaryDirections, i * 2), b = readVector(tectonics.boundaryDirections, i * 2 + 1);
+    const color = new Color(BOUNDARY_COLORS[tectonics.boundaryTypes[i]]);
+    const rgb = [color.r, color.g, color.b];
+    globe.tectonicLines.push(...a.map((v) => v * 1.0008), ...b.map((v) => v * 1.0008));
+    globe.tectonicColors.push(...rgb, ...rgb);
+    for (const [p, q] of projectArc(a, b)) {
+      flat.tectonicLines.push(p[0] * 2 - 1, .5 - p[1], .0003, q[0] * 2 - 1, .5 - q[1], .0003);
+      flat.tectonicColors.push(...rgb, ...rgb);
+    }
+  }
   const pack = (data: typeof flat): ViewGeometry => ({ positions: Float32Array.from(data.positions),
-    regions: Float32Array.from(data.regions), lines: Float32Array.from(data.lines) });
+    regions: Float32Array.from(data.regions), lines: Float32Array.from(data.lines),
+    tectonicLines: Float32Array.from(data.tectonicLines), tectonicColors: Float32Array.from(data.tectonicColors) });
   return { flat: pack(flat), globe: pack(globe) };
 }

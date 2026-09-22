@@ -5,6 +5,7 @@ import type { World } from '../core/world';
 import type { DesktopAPI } from '../shared/desktop-api';
 import { SurfaceMap } from './map';
 import type { Layer, ViewMode } from './map';
+import { BOUNDARY_NAMES, speedCmPerYear } from '../core/tectonics';
 
 function element<T extends HTMLElement>(id: string): T {
   const result = document.getElementById(id);
@@ -16,6 +17,8 @@ const api: DesktopAPI = window.desktop;
 const seedInput = element<HTMLInputElement>('seed');
 const resolutionInput = element<HTMLSelectElement>('subdivision');
 const radiusInput = element<HTMLInputElement>('radius');
+const plateCountInput = element<HTMLInputElement>('plate-count');
+const plateSpeedInput = element<HTMLInputElement>('plate-speed');
 const status = element('status');
 const cancel = element<HTMLButtonElement>('cancel');
 const save = element<HTMLButtonElement>('save-recipe');
@@ -27,7 +30,9 @@ let selected: number | null = null;
 let playing = false;
 let advancing = false;
 let playbackTimer = 0;
-let currentLayer: Layer = 'signal';
+let currentLayer: Layer = 'plates';
+let plateAreas = new Float64Array(0);
+let boundarySegments = new Map<number, number[]>();
 
 function showStatus(message: string, error = false): void {
   status.textContent = message;
@@ -40,18 +45,36 @@ function inspect(id: number): void {
   const s = world.surface, x = s.centers[id * 3], y = s.centers[id * 3 + 1], z = s.centers[id * 3 + 2];
   const lat = Math.asin(y) * 180 / Math.PI, lon = Math.atan2(z, x) * 180 / Math.PI;
   const neighbors = s.neighbors.subarray(s.neighborOffsets[id], s.neighborOffsets[id + 1]);
+  const plate = world.tectonics.owners[id];
   element('selection-title').textContent = `Region ${id.toLocaleString('en')}`;
   element('selection-note').textContent = `${Math.abs(lat).toFixed(2)}° ${lat >= 0 ? 'N' : 'S'} · ${Math.abs(lon).toFixed(2)}° ${lon >= 0 ? 'E' : 'W'}`;
   const details = element('selection-details');
   details.replaceChildren();
   for (const [label, value] of [
     ['Surface area', `${number.format(s.areasSquareMeters[id] / 1e6)} km²`],
+    ['Tectonic plate', `Plate ${plate + 1} · seed region ${world.tectonics.seeds[plate]}`],
+    ['Plate area', `${number.format(plateAreas[plate] / 1e12)} M km²`],
+    ['Speed (model frame)', `${speedCmPerYear(s, world.tectonics, id).toFixed(3)} cm/year`],
     ['Connected neighbors', String(neighbors.length)],
     ['Mean neighbor distance', `${number.format(s.neighborDistancesMeters.subarray(s.neighborOffsets[id], s.neighborOffsets[id + 1]).reduce((sum, v) => sum + v, 0) / neighbors.length / 1000)} km`],
     ['Diagnostic signal', world.diagnosticField[id].toFixed(5)],
   ]) {
     const dt = document.createElement('dt'), dd = document.createElement('dd');
     dt.textContent = label; dd.textContent = value; details.append(dt, dd);
+  }
+  const boundaryDetails = element('boundary-details');
+  boundaryDetails.replaceChildren();
+  const segments = boundarySegments.get(id) ?? [];
+  element('boundary-note').textContent = segments.length
+    ? 'Actual shared-boundary segments. Positive opening = divergence; negative = convergence. Shear retains its sign.'
+    : 'Plate interior: this region has no inter-plate boundary. Plates are not continents; crust and elevation come next.';
+  for (const segment of segments) {
+    const t = world.tectonics, a = t.boundaryCells[segment * 2], b = t.boundaryCells[segment * 2 + 1];
+    const other = t.owners[a === id ? b : a];
+    const row = document.createElement('li');
+    row.dataset.kind = String(t.boundaryTypes[segment]);
+    row.textContent = `Plate ${other + 1} · ${BOUNDARY_NAMES[t.boundaryTypes[segment]]} · opening ${(t.boundaryMotion[segment * 2] * 100).toFixed(3)} cm/year · shear ${(t.boundaryMotion[segment * 2 + 1] * 100).toFixed(3)} cm/year`;
+    boundaryDetails.append(row);
   }
 }
 
@@ -72,18 +95,28 @@ function updateLegend(): void {
     signal: ['Seed field · dimensionless diagnostic', '−1', '+1'],
     area: ['Region area · true spherical area', world ? `${number.format(world.stats.minimumAreaSquareMeters / 1e6)} km²` : 'min', world ? `${number.format(world.stats.maximumAreaSquareMeters / 1e6)} km²` : 'max'],
     latitude: ['Latitude · distance from the equator', '90°', '0°'],
+    plates: [`${world?.recipe.plateCount ?? '—'} connected plates · colors identify plates, not continents`, '', ''],
+    boundaries: ['Boundary motion · dominant component; oblique motion retained in inspector', '', ''],
+    speed: ['Plate speed · model reference frame', '0', `${world?.recipe.maxPlateSpeedCmPerYear ?? '—'} cm/year`],
   };
   const [title, low, high] = legends[currentLayer];
   element('legend-title').textContent = title;
   element('legend-low').textContent = low;
   element('legend-high').textContent = high;
+  const categorical = currentLayer === 'plates' || currentLayer === 'boundaries';
+  element('legend-scale').hidden = categorical;
+  element('boundary-legend').hidden = !categorical;
 }
 
 function setInputs(recipe: Recipe): void {
   seedInput.value = recipe.seed;
   resolutionInput.value = String(recipe.subdivision);
   radiusInput.value = String(recipe.radiusMeters / 1000);
+  plateCountInput.value = String(recipe.plateCount);
+  plateCountInput.max = String(Math.min(32, 10 * 4 ** recipe.subdivision + 2));
+  plateSpeedInput.value = String(recipe.maxPlateSpeedCmPerYear);
 }
+resolutionInput.addEventListener('change', () => { plateCountInput.max = String(Math.min(32, 10 * 4 ** Number(resolutionInput.value) + 2)); });
 
 async function generate(recipe: Recipe): Promise<void> {
   pause(); map.cancelPreparation();
@@ -104,6 +137,14 @@ async function generate(recipe: Recipe): Promise<void> {
     // publication and this request. The old native world survives preparation.
     const accepted = api.acceptWorld(result.epoch);
     world = result.world; epoch = result.epoch; selected = null;
+    plateAreas = new Float64Array(world.recipe.plateCount);
+    boundarySegments = new Map();
+    for (let id = 0; id < world.stats.regionCount; id++) plateAreas[world.tectonics.owners[id]] += world.surface.areasSquareMeters[id];
+    for (let segment = 0; segment < world.tectonics.boundaryTypes.length; segment++) {
+      for (const cell of world.tectonics.boundaryCells.subarray(segment * 2, segment * 2 + 2)) {
+        const list = boundarySegments.get(cell) ?? []; list.push(segment); boundarySegments.set(cell, list);
+      }
+    }
     map.setLayer(currentLayer);
     element('world-name').textContent = world.recipe.seed;
     element('region-count').textContent = number.format(world.stats.regionCount);
@@ -115,11 +156,13 @@ async function generate(recipe: Recipe): Promise<void> {
     element('selection-title').textContent = 'Explore the surface';
     element('selection-note').textContent = 'Select a region to see its geometry and connections.';
     element('selection-details').replaceChildren();
+    element('boundary-details').replaceChildren();
+    element('boundary-note').textContent = 'Select a region to inspect its plate and any inter-plate boundary segments.';
     element('diagnostic-tick').textContent = 'Step 0';
     updateLegend(); cancel.hidden = true; save.disabled = false;
     element<HTMLButtonElement>('play').disabled = false;
     document.body.dataset.state = 'ready';
-    showStatus(`Surface ready · ${(world.stats.arrayBytes / 2 ** 20).toFixed(1)} MiB of model arrays · Area error ${world.stats.relativeAreaError.toExponential(1)}`);
+    showStatus(`${world.recipe.plateCount} connected plates · ${world.tectonics.boundaryTypes.length} boundary segments · ${(world.stats.arrayBytes / 2 ** 20).toFixed(1)} MiB of model arrays · Static kinematics, no geological time integration`);
     await accepted;
   } catch (error) {
     if (request === generationId) {
@@ -171,7 +214,8 @@ for (const button of document.querySelectorAll<HTMLButtonElement>('button[data-v
 element('recipe-form').addEventListener('submit', (event) => {
   event.preventDefault();
   try {
-    void generate(parseRecipe({ ...DEFAULT_RECIPE, seed: seedInput.value, subdivision: Number(resolutionInput.value), radiusMeters: Number(radiusInput.value) * 1000 }));
+    void generate(parseRecipe({ ...DEFAULT_RECIPE, seed: seedInput.value, subdivision: Number(resolutionInput.value), radiusMeters: Number(radiusInput.value) * 1000,
+      plateCount: Number(plateCountInput.value), maxPlateSpeedCmPerYear: Number(plateSpeedInput.value) }));
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
 });
 cancel.addEventListener('click', () => {
