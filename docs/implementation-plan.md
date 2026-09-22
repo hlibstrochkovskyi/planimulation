@@ -1,6 +1,6 @@
 # Early implementation plan
 
-Status: milestone A, the native/GPU foundation, and milestone B1 (static plate kinematics), September 20, 2026. Crust, elevation, water, and later simulation milestones remain proposals. Each milestone is independently demonstrable; milestone letters are not released versions.
+Status: milestone A, the native/GPU foundation, B1 (static plate kinematics), and B2 (initial crust), September 23, 2026. Elevation, water, and later simulation milestones remain proposals. Each milestone is independently demonstrable; milestone letters are not released versions.
 
 ## 1. Selected foundation stack
 
@@ -54,7 +54,7 @@ Known risks include topology near original icosahedron vertices, projection seam
 
 ## 4. Milestone B: first visual generator
 
-B1 is implemented: connected plates, independent seed/motion streams, angular velocities, real boundary segments, relative opening/shear, and shared flat/globe layers and inspectors. See [Plate kinematics](tectonics.md). Continentality, crust, elevation, oceans, and prehistory integration are not yet implemented; B as a whole is not complete.
+B1 is implemented: connected plates, independent seed/motion streams, angular velocities, real boundary segments, relative opening/shear, and shared flat/globe layers and inspectors. B2 adds independent continentality, area fitting, and initial thickness/density. See [Plate kinematics](tectonics.md) and [Initial crust](crust.md). Elevation, oceans, and prehistory integration are not yet implemented; B as a whole is not complete.
 
 Deliverable: the user changes a seed and parameters and receives structured terrain, oceans, and geological layers.
 
@@ -133,4 +133,4 @@ Automated checks focus on topology, units, balances, fluxes, determinism, checkp
 
 Population readiness means the environment provides water, wild food, seasonal hazards, traversal costs, and change history with stable behavior across an ensemble. Then introduce the groups described in [DESIGN.md](../DESIGN.md), consuming real stocks and modifying their environment.
 
-Current implementation scope is milestone A, the native/GPU integration and diagnostic transport test, and B1 plate kinematics. Remaining milestone B features follow as separate increments. Climate equations, economic modeling, and political entities must not block the first explainable terrain map.
+Current implementation scope is milestone A, the native/GPU integration and diagnostic transport test, B1 plate kinematics, and B2 initial crust. Remaining milestone B features follow as separate increments. Climate equations, economic modeling, and political entities must not block the first explainable terrain map.

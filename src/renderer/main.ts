@@ -6,6 +6,7 @@ import type { DesktopAPI } from '../shared/desktop-api';
 import { SurfaceMap } from './map';
 import type { Layer, ViewMode } from './map';
 import { BOUNDARY_NAMES, speedCmPerYear } from '../core/tectonics';
+import { summarizeCrust } from '../core/crust';
 
 function element<T extends HTMLElement>(id: string): T {
   const result = document.getElementById(id);
@@ -19,6 +20,8 @@ const resolutionInput = element<HTMLSelectElement>('subdivision');
 const radiusInput = element<HTMLInputElement>('radius');
 const plateCountInput = element<HTMLInputElement>('plate-count');
 const plateSpeedInput = element<HTMLInputElement>('plate-speed');
+const continentalFractionInput = element<HTMLInputElement>('continental-fraction');
+const continentalScaleInput = element<HTMLInputElement>('continental-scale');
 const status = element('status');
 const cancel = element<HTMLButtonElement>('cancel');
 const save = element<HTMLButtonElement>('save-recipe');
@@ -30,7 +33,7 @@ let selected: number | null = null;
 let playing = false;
 let advancing = false;
 let playbackTimer = 0;
-let currentLayer: Layer = 'plates';
+let currentLayer: Layer = 'crust';
 let plateAreas = new Float64Array(0);
 let boundarySegments = new Map<number, number[]>();
 
@@ -55,6 +58,9 @@ function inspect(id: number): void {
     ['Tectonic plate', `Plate ${plate + 1} · seed region ${world.tectonics.seeds[plate]}`],
     ['Plate area', `${number.format(plateAreas[plate] / 1e12)} M km²`],
     ['Speed (model frame)', `${speedCmPerYear(s, world.tectonics, id).toFixed(3)} cm/year`],
+    ['Continentality', `${world.crust.continentality[id].toFixed(4)} · ${world.crust.continentality[id] > 0.5 ? 'continental-dominant' : 'oceanic-dominant'}`],
+    ['Crust thickness', `${number.format(world.crust.thicknessMeters[id] / 1000)} km`],
+    ['Crust density', `${number.format(world.crust.densityKgPerCubicMeter[id])} kg/m³`],
     ['Connected neighbors', String(neighbors.length)],
     ['Mean neighbor distance', `${number.format(s.neighborDistancesMeters.subarray(s.neighborOffsets[id], s.neighborOffsets[id + 1]).reduce((sum, v) => sum + v, 0) / neighbors.length / 1000)} km`],
     ['Diagnostic signal', world.diagnosticField[id].toFixed(5)],
@@ -63,11 +69,12 @@ function inspect(id: number): void {
     dt.textContent = label; dd.textContent = value; details.append(dt, dd);
   }
   const boundaryDetails = element('boundary-details');
+  element('crust-note').textContent = `Seeded spherical potential ${world.crust.potential[id].toFixed(6)}; fitted threshold ${world.crust.threshold.toFixed(6)}; smooth transition width 0.12. Continentality blends the 7–35 km thickness and 3,000–2,800 kg/m³ density endmembers. These are initial model approximations, not elevation or water depth.`;
   boundaryDetails.replaceChildren();
   const segments = boundarySegments.get(id) ?? [];
   element('boundary-note').textContent = segments.length
     ? 'Actual shared-boundary segments. Positive opening = divergence; negative = convergence. Shear retains its sign.'
-    : 'Plate interior: this region has no inter-plate boundary. Plates are not continents; crust and elevation come next.';
+    : 'Plate interior: this region has no inter-plate boundary. Crust is independent of plate identity; elevation comes next.';
   for (const segment of segments) {
     const t = world.tectonics, a = t.boundaryCells[segment * 2], b = t.boundaryCells[segment * 2 + 1];
     const other = t.owners[a === id ? b : a];
@@ -98,6 +105,8 @@ function updateLegend(): void {
     plates: [`${world?.recipe.plateCount ?? '—'} connected plates · colors identify plates, not continents`, '', ''],
     boundaries: ['Boundary motion · dominant component; oblique motion retained in inspector', '', ''],
     speed: ['Plate speed · model reference frame', '0', `${world?.recipe.maxPlateSpeedCmPerYear ?? '—'} cm/year`],
+    crust: ['Continentality · initial crust, not land or ocean coverage', '0 · oceanic', '1 · continental'],
+    thickness: ['Crust thickness · initial approximation, not elevation', '7 km', '35 km'],
   };
   const [title, low, high] = legends[currentLayer];
   element('legend-title').textContent = title;
@@ -115,6 +124,8 @@ function setInputs(recipe: Recipe): void {
   plateCountInput.value = String(recipe.plateCount);
   plateCountInput.max = String(Math.min(32, 10 * 4 ** recipe.subdivision + 2));
   plateSpeedInput.value = String(recipe.maxPlateSpeedCmPerYear);
+  continentalFractionInput.value = String(recipe.continentalFraction * 100);
+  continentalScaleInput.value = String(recipe.continentalScale);
 }
 resolutionInput.addEventListener('change', () => { plateCountInput.max = String(Math.min(32, 10 * 4 ** Number(resolutionInput.value) + 2)); });
 
@@ -157,6 +168,9 @@ async function generate(recipe: Recipe): Promise<void> {
     element('selection-note').textContent = 'Select a region to see its geometry and connections.';
     element('selection-details').replaceChildren();
     element('boundary-details').replaceChildren();
+    element('crust-note').textContent = 'Select a region to inspect its crust potential, fitted threshold, and material approximations.';
+    const crustSummary = summarizeCrust(world.surface, world.crust);
+    element('crust-summary').textContent = `Continental-dominant crust: ${(crustSummary.continentalAreaFraction * 100).toFixed(2)}% actual / ${(world.recipe.continentalFraction * 100).toFixed(2)}% target · ${crustSummary.continentalPatchCount} connected patches · largest ${number.format(crustSummary.largestContinentalPatchAreaSquareMeters / 1e12)} M km² · not emerged land`;
     element('boundary-note').textContent = 'Select a region to inspect its plate and any inter-plate boundary segments.';
     element('diagnostic-tick').textContent = 'Step 0';
     updateLegend(); cancel.hidden = true; save.disabled = false;
@@ -215,7 +229,8 @@ element('recipe-form').addEventListener('submit', (event) => {
   event.preventDefault();
   try {
     void generate(parseRecipe({ ...DEFAULT_RECIPE, seed: seedInput.value, subdivision: Number(resolutionInput.value), radiusMeters: Number(radiusInput.value) * 1000,
-      plateCount: Number(plateCountInput.value), maxPlateSpeedCmPerYear: Number(plateSpeedInput.value) }));
+      plateCount: Number(plateCountInput.value), maxPlateSpeedCmPerYear: Number(plateSpeedInput.value),
+      continentalFraction: Number(continentalFractionInput.value) / 100, continentalScale: Number(continentalScaleInput.value) }));
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
 });
 cancel.addEventListener('click', () => {

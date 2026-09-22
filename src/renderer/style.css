@@ -6,7 +6,8 @@
 #diagnostic-tick { font-variant-numeric: tabular-nums; white-space: nowrap; }
 #gpu-status { display: none; position: absolute; inset: 0; place-items: center; padding: 25px; background: #101719e8; color: #eda799; text-align: center; }
 canvas[data-gpu="lost"] ~ #gpu-status { display: grid; }
-#plate-count, #plate-speed { margin-bottom: 18px; }
+#plate-count, #plate-speed, #continental-fraction, #continental-scale { margin-bottom: 18px; }
+#crust-summary { margin-bottom: 12px; }
 #boundary-legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 10px; margin: -8px 0 16px; }
 [data-kind="0"] { color: #82919a; }[data-kind="1"] { color: #ef927e; }[data-kind="2"] { color: #77c6e8; }[data-kind="3"] { color: #e5cd79; }
 .boundary-inspector { margin-top: 14px; padding: 14px 20px; border: 1px solid var(--border); border-radius: 7px; }

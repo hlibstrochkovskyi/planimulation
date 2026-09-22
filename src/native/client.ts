@@ -41,7 +41,7 @@ export class FrameReader {
       if (this.header === null) {
         if (this.length < this.headerLength) return;
         const h = JSON.parse(this.take(this.headerLength).toString('utf8')) as Header;
-        if (!h || h.protocol !== 2 || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
+        if (!h || h.protocol !== 3 || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
           || !['world', 'frame', 'error'].includes(h.kind)) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
@@ -71,7 +71,7 @@ export function decodeWorld(packet: Packet): World {
   const b = h.boundarySegmentCount;
   if (typeof b !== 'number' || !Number.isInteger(b) || b < 2 || b > neighbors || b % 2) throw new Error('Invalid native boundary count.');
   const expectedBytes = n * 24 + faces * 4 + (n + 1) * 8 + neighbors * 12 + n * 16 + neighbors * 48
-    + n * 4 + recipe.plateCount * 28 + b * 76;
+    + n * 4 + recipe.plateCount * 28 + b * 76 + 8 + n * 32;
   if (bytes.length !== expectedBytes) throw new Error('Invalid native world array lengths.');
   let cursor = 0;
   const f64 = (length: number): Float64Array => {
@@ -88,6 +88,11 @@ export function decodeWorld(packet: Packet): World {
   const diagnosticField = f64(n);
   const tectonics = { owners: u32(n), seeds: u32(recipe.plateCount), angularVelocities: f64(recipe.plateCount * 3),
     boundaryCells: u32(b * 2), boundaryDirections: f64(b * 6), boundaryMotion: f64(b * 2), boundaryTypes: u32(b) };
+  const crust = { threshold: f64(1)[0], potential: f64(n), continentality: f64(n), thicknessMeters: f64(n), densityKgPerCubicMeter: f64(n) };
+  if (Math.abs(crust.threshold) > 1.12 || crust.potential.some((v) => Math.abs(v) > 1)
+    || crust.continentality.some((v) => v < 0 || v > 1)
+    || crust.thicknessMeters.some((v) => v < 7000 || v > 35000)
+    || crust.densityKgPerCubicMeter.some((v) => v < 2800 || v > 3000)) throw new Error('Invalid native crust fields.');
   if (tectonics.owners.some((v) => v >= recipe.plateCount) || tectonics.seeds.some((v, p) => v >= n || tectonics.owners[v] !== p)
     || new Set(tectonics.seeds).size !== recipe.plateCount || tectonics.boundaryTypes.some((v) => v > 3)
     || tectonics.boundaryCells.some((v) => v >= n)) throw new Error('Invalid native plate metadata.');
@@ -121,7 +126,7 @@ export function decodeWorld(packet: Packet): World {
     const key = a * n + c; pairs.set(key, (pairs.get(key) ?? 0) + 1);
   }
   if ([...pairs.values()].some((count) => count !== 2)) throw new Error('Duplicate or missing native boundary segment.');
-  return { recipe, surface, diagnosticField, tectonics, checksum: h.checksum, stats };
+  return { recipe, surface, diagnosticField, tectonics, crust, checksum: h.checksum, stats };
 }
 
 export class NativeSession {

@@ -32,12 +32,18 @@ pub fn arrays(w: &World) -> Vec<u8> {
     f64s(&mut out, t.boundary_directions.iter().flatten().copied());
     f64s(&mut out, t.boundary_motion.iter().copied());
     u32s(&mut out, &t.boundary_types);
+    let c = &w.crust;
+    f64s(&mut out, std::iter::once(c.threshold));
+    f64s(&mut out, c.potential.iter().copied());
+    f64s(&mut out, c.continentality.iter().copied());
+    f64s(&mut out, c.thickness_meters.iter().copied());
+    f64s(&mut out, c.density_kg_per_cubic_meter.iter().copied());
     out
 }
-/// v2: u32 header byte count, JSON header, fixed-order little-endian arrays.
+/// v3: u32 header byte count, JSON header, fixed-order little-endian arrays.
 pub fn send(out: &mut impl Write, header: serde_json::Value, bytes: &[u8]) -> io::Result<()> {
     let mut header = header;
-    header["protocol"] = json!(2);
+    header["protocol"] = json!(3);
     header["byteLength"] = json!(bytes.len());
     let encoded = serde_json::to_vec(&header)?;
     out.write_all(&(encoded.len() as u32).to_le_bytes())?;

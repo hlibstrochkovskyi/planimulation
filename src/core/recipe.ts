@@ -1,4 +1,4 @@
-export const MODEL_VERSION = 'tectonics-1';
+export const MODEL_VERSION = 'crust-1';
 export const RANDOM_VERSION = 'fnv1a-utf8-mulberry32-1';
 
 export interface Recipe {
@@ -10,6 +10,8 @@ export interface Recipe {
   radiusMeters: number;
   plateCount: number;
   maxPlateSpeedCmPerYear: number;
+  continentalFraction: number;
+  continentalScale: number;
 }
 
 export const DEFAULT_RECIPE: Readonly<Recipe> = Object.freeze({
@@ -21,6 +23,8 @@ export const DEFAULT_RECIPE: Readonly<Recipe> = Object.freeze({
   radiusMeters: 6_371_000,
   plateCount: 12,
   maxPlateSpeedCmPerYear: 8,
+  continentalFraction: 0.38,
+  continentalScale: 1,
 });
 
 /** Strict parsing prevents an old or misspelled parameter from being silently ignored. */
@@ -34,7 +38,7 @@ export function parseRecipe(value: unknown): Recipe {
     if (!keys.includes(key)) throw new Error(`Unknown recipe field: ${key}.`);
   }
   if (input.schemaVersion !== 1 || input.modelVersion !== MODEL_VERSION || input.randomVersion !== RANDOM_VERSION) {
-    throw new Error('Unsupported recipe version. This build supports tectonics-1 recipes only; legacy recipes are not silently migrated.');
+    throw new Error('Unsupported recipe version. This build supports crust-1 recipes only; legacy recipes are not silently migrated.');
   }
   for (const key of keys) {
     if (!(key in input)) throw new Error(`Missing recipe field: ${key}.`);
@@ -54,6 +58,10 @@ export function parseRecipe(value: unknown): Recipe {
   }
   if (typeof input.maxPlateSpeedCmPerYear !== 'number' || !Number.isFinite(input.maxPlateSpeedCmPerYear)
     || input.maxPlateSpeedCmPerYear < 0 || input.maxPlateSpeedCmPerYear > 20) throw new Error('Maximum plate speed must be 0–20 cm/year.');
+  if (typeof input.continentalFraction !== 'number' || !Number.isFinite(input.continentalFraction)
+    || input.continentalFraction < 0 || input.continentalFraction > 1) throw new Error('Continental fraction must be 0–1, not a land-area target.');
+  if (typeof input.continentalScale !== 'number' || !Number.isFinite(input.continentalScale)
+    || input.continentalScale < 0.5 || input.continentalScale > 2) throw new Error('Continental scale must be 0.5–2.');
   return {
     schemaVersion: 1,
     modelVersion: MODEL_VERSION,
@@ -63,6 +71,8 @@ export function parseRecipe(value: unknown): Recipe {
     radiusMeters: input.radiusMeters,
     plateCount: Number(input.plateCount),
     maxPlateSpeedCmPerYear: input.maxPlateSpeedCmPerYear,
+    continentalFraction: input.continentalFraction,
+    continentalScale: input.continentalScale,
   };
 }
 

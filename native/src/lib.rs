@@ -13,15 +13,17 @@ pub struct Recipe {
     pub radius_meters: f64,
     pub plate_count: u32,
     pub max_plate_speed_cm_per_year: f64,
+    pub continental_fraction: f64,
+    pub continental_scale: f64,
 }
 
 impl Recipe {
     pub fn validate(&self) -> Result<(), String> {
         if self.schema_version != 1
-            || self.model_version != "tectonics-1"
+            || self.model_version != "crust-1"
             || self.random_version != "fnv1a-utf8-mulberry32-1"
         {
-            return Err("Unsupported recipe version; expected tectonics-1.".into());
+            return Err("Unsupported recipe version; expected crust-1.".into());
         }
         if self.seed.trim().is_empty() || self.seed.encode_utf16().count() > 128 {
             return Err("Seed must contain 1–128 UTF-16 code units and cannot be blank.".into());
@@ -38,6 +40,15 @@ impl Recipe {
             || !(0.0..=20.0).contains(&self.max_plate_speed_cm_per_year)
         {
             return Err("Plate count must be 2–32 and no larger than the region count; maximum plate speed must be 0–20 cm/year.".into());
+        }
+        if !self.continental_fraction.is_finite()
+            || !(0.0..=1.).contains(&self.continental_fraction)
+            || !self.continental_scale.is_finite()
+            || !(0.5..=2.).contains(&self.continental_scale)
+        {
+            return Err(
+                "Continental fraction must be 0–1; continental scale must be 0.5–2.".into(),
+            );
         }
         Ok(())
     }
@@ -216,11 +227,18 @@ pub struct World {
     pub tick: u64,
     pub initial_mass: f64,
     pub tectonics: tectonics::Tectonics,
+    pub crust: crust::Crust,
 }
 impl World {
     pub fn generate(recipe: Recipe) -> Result<Self, String> {
         recipe.validate()?;
         let surface = Surface::build(recipe.subdivision, recipe.radius_meters);
+        let crust = crust::Crust::build(
+            &surface,
+            &recipe.seed,
+            recipe.continental_fraction,
+            recipe.continental_scale,
+        );
         let tectonics = tectonics::Tectonics::build(
             &surface,
             &recipe.seed,
@@ -263,6 +281,7 @@ impl World {
             tick: 0,
             initial_mass: 0.,
             tectonics,
+            crust,
         };
         w.initial_mass = w.mass();
         Ok(w)
@@ -305,5 +324,6 @@ impl World {
     }
 }
 
+pub mod crust;
 pub mod tectonics;
 pub mod wire;

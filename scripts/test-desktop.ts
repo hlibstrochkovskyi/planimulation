@@ -20,7 +20,8 @@ try {
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.locator('#region-count')).toHaveText('10,242');
   const fingerprint = await page.locator('#fingerprint').innerText();
-  await expect(page.locator('#legend-title')).toContainText('12 connected plates');
+  await expect(page.locator('#legend-title')).toContainText('Continentality');
+  await expect(page.locator('#crust-summary')).toContainText('38.00% target');
   const reference = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
   try { assert.equal((await reference.generate(DEFAULT_RECIPE)).world.checksum, fingerprint, 'Headless and desktop use the same native math.'); }
   finally { reference.close(); }
@@ -43,10 +44,15 @@ try {
   await expect(page.locator('#selection-title')).toContainText('Region');
   const selectedRegion = await page.locator('#selection-title').innerText();
   const selectedDetails = await page.locator('#selection-details').innerText();
+  await expect(page.locator('#selection-details')).toContainText('Crust thickness');
+  await expect(page.locator('#selection-details')).toContainText('kg/m³');
+  const crustExplanation = await page.locator('#crust-note').innerText();
+  assert.ok(crustExplanation.includes('fitted threshold'));
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
   await expect(canvas).toHaveAttribute('data-view', 'globe');
   await expect(page.locator('#selection-title')).toHaveText(selectedRegion);
   await expect(page.locator('#selection-details')).toHaveText(selectedDetails, { useInnerText: true });
+  await expect(page.locator('#crust-note')).toHaveText(crustExplanation);
   await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
   await expect(page.locator('#selection-title')).toHaveText(selectedRegion);
   await expect(page.locator('button[data-view="globe"]')).toHaveAttribute('aria-pressed', 'true');
@@ -54,6 +60,10 @@ try {
   await page.screenshot({ path: executablePath ? 'artifacts/globe-desktop-packaged.png' : 'artifacts/globe-desktop.png' });
   await page.getByRole('button', { name: '2D map', exact: true }).click();
   await expect(canvas).toHaveAttribute('data-view', 'flat');
+  await page.locator('[data-layer="thickness"]').click();
+  await expect(page.locator('#legend-low')).toHaveText('7 km');
+  await expect(page.locator('#legend-high')).toHaveText('35 km');
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await page.locator('[data-layer="boundaries"]').click();
   await expect(page.locator('#legend-title')).toContainText('Boundary motion');
   await expect(page.locator('#boundary-legend')).toBeVisible();
@@ -104,9 +114,12 @@ try {
   await page.locator('#subdivision').selectOption('3');
   await page.locator('#plate-count').fill('7');
   await page.locator('#plate-speed').fill('0');
+  await page.locator('#continental-fraction').fill('0');
+  await page.locator('#continental-scale').fill('2');
   await page.locator('#generate').click();
   await expect(page.locator('#world-name')).toHaveText('desktop-roundtrip');
   await expect(page.locator('#region-count')).toHaveText('642');
+  await expect(page.locator('#crust-summary')).toContainText('0.00% actual / 0.00% target');
   await page.locator('[data-layer="plates"]').click();
   await expect(page.locator('#legend-title')).toContainText('7 connected plates');
   await page.locator('[data-layer="speed"]').click();
@@ -116,6 +129,8 @@ try {
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
   await expect(page.locator('#plate-count')).toHaveValue('12');
   await expect(page.locator('#plate-speed')).toHaveValue('8');
+  await expect(page.locator('#continental-fraction')).toHaveValue('38');
+  await expect(page.locator('#continental-scale')).toHaveValue('1');
 
   await writeFile(recipePath, JSON.stringify({ ...DEFAULT_RECIPE, modelVersion: 'future' }));
   await page.getByRole('button', { name: 'Open recipe' }).click();
@@ -147,7 +162,7 @@ try {
   await page.locator('#generate').click();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
   await canvas.click({ position: { x: bounds.width * .6, y: bounds.height * .5 } });
-  await page.locator('[data-layer="plates"]').click();
+  await page.locator('[data-layer="crust"]').click();
   await mkdir('artifacts', { recursive: true });
   const screenshot = executablePath ? 'artifacts/surface-desktop-packaged.png' : 'artifacts/surface-desktop.png';
   await page.screenshot({ path: screenshot });

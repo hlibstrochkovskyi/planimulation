@@ -1,6 +1,6 @@
 # Static plate kinematics: milestone B1
 
-Status: implemented. Model recipe `tectonics-1`, binary protocol 2. This is the first geological increment, not a complete terrain generator or a simulation of geological history.
+Status: implemented. This document records B1 with model recipe `tectonics-1`, binary protocol 2. [B2 initial crust](crust.md) now extends it with `crust-1` and protocol 3; plate generation is unchanged. B1's measurements and recipe below are historical. Neither increment is a complete terrain generator or a simulation of geological history.
 
 ## What is implemented
 

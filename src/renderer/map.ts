@@ -6,7 +6,7 @@ import type { World } from '../core/world';
 import { speedCmPerYear } from '../core/tectonics';
 import type { ViewGeometry, ViewPair } from './view-geometry';
 
-export type Layer = 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed';
+export type Layer = 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness';
 export type ViewMode = 'flat' | 'globe';
 
 export class SurfaceMap {
@@ -46,7 +46,7 @@ export class SurfaceMap {
   private values = new Float32Array(0);
   private world: World | null = null;
   private mode: ViewMode = 'flat';
-  private layer: Layer = 'plates';
+  private layer: Layer = 'crust';
   private boundaries = false;
   private worker: Worker | null = null;
   private abortPreparation: (() => void) | null = null;
@@ -155,6 +155,8 @@ export class SurfaceMap {
     const w = this.world;
     for (let id = 0; id < w.stats.regionCount; id++) {
       this.values[id] = this.layer === 'plates' || this.layer === 'boundaries' ? w.tectonics.owners[id]
+        : this.layer === 'crust' ? w.crust.continentality[id]
+        : this.layer === 'thickness' ? (w.crust.thicknessMeters[id] - 7000) / 28000
         : this.layer === 'speed' ? speedCmPerYear(w.surface, w.tectonics, id) / Math.max(1e-30, w.recipe.maxPlateSpeedCmPerYear)
         : this.layer === 'signal' ? (w.diagnosticField[id] + 1) / 2
         : this.layer === 'latitude' ? 1 - Math.abs(Math.asin(w.surface.centers[id * 3 + 1])) / (Math.PI / 2)

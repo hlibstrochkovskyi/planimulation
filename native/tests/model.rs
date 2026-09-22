@@ -3,13 +3,15 @@ use std::collections::{BTreeMap, BTreeSet};
 fn recipe(level: u32, seed: &str) -> Recipe {
     Recipe {
         schema_version: 1,
-        model_version: "tectonics-1".into(),
+        model_version: "crust-1".into(),
         random_version: "fnv1a-utf8-mulberry32-1".into(),
         seed: seed.into(),
         subdivision: level,
         radius_meters: 6_371_000.,
         plate_count: 12,
         max_plate_speed_cm_per_year: 8.,
+        continental_fraction: 0.38,
+        continental_scale: 1.,
     }
 }
 #[test]

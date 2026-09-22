@@ -1,6 +1,6 @@
 # World generation: technical proposal
 
-Initial proposal: September 19, 2026. The spherical surface, recipes, random streams, GPU flat/globe views, and B1 static plate kinematics are implemented. Crust/continentality, terrain, water, climate, and ecology remain proposals. See [DESIGN.md](../DESIGN.md) for the concept, [development](development.md) for workflow, and [Plate kinematics](tectonics.md) for the implemented algorithm and its limitations.
+Initial proposal: September 19, 2026. The spherical surface, recipes, random streams, GPU flat/globe views, B1 static plate kinematics, and B2 initial crust are implemented. Terrain, water, climate, and ecology remain proposals. See [DESIGN.md](../DESIGN.md) for the concept, [development](development.md) for workflow, [Plate kinematics](tectonics.md), and [Initial crust](crust.md) for implemented algorithms and their limitations.
 
 ## 1. One world, multiple views
 
@@ -65,13 +65,13 @@ Geometry depends on its version and resolution. Continental structure and detail
 
 ### B. Approximate plates and crust
 
-The implemented B1 subset uses a positive-cost multi-source graph partition to guarantee connected plates, rigid angular velocities, and local shared-edge relative motion. The following continentality/crust and relief dependencies remain proposals; plate identity does not imply land or ocean.
+The implemented B1 subset uses a positive-cost multi-source graph partition to guarantee connected plates, rigid angular velocities, and local shared-edge relative motion. B2 adds an independent spherical continentality field with area fitting and approximate thickness/density. Relief dependencies below remain proposals; neither plate identity nor crust dominance implies land or ocean.
 
 Choose distributed plate centers on the sphere. Partition by spherical distance, optionally applying bounded boundary deformation while preserving plate connectivity. Generate a coherent large-scale continentality field: one plate may include different crustal regions.
 
 Assign each plate an approximate rotation pole and angular velocity. Point velocity follows `v = ω × r`. At a boundary, compute relative velocity components across and along the boundary.
 
-Convergence, divergence, and shear contribute differently to relief, conditioned on continentality. Approximate crust density and age can later refine these effects and resource-related geological features.
+Convergence, divergence, and shear are proposed to contribute differently to relief, conditioned on continentality. Approximate crust density is available; age is not. They can later refine these effects and resource-related geological features.
 
 This is a static tectonics-inspired generator. It does not integrate millions of years of plate motion or establish scientifically accurate geological ages.
 

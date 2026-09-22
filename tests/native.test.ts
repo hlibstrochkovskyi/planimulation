@@ -8,13 +8,14 @@ import type { Packet } from '../src/native/client';
 import { buildViewGeometry } from '../src/renderer/view-geometry';
 import { buildSurface } from '../src/core/surface';
 import { speedCmPerYear, summarizeTectonics } from '../src/core/tectonics';
+import { summarizeCrust } from '../src/core/crust';
 
 const executable = path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core');
 
 test('binary framing handles fragmented headers/bodies, multiple frames, and rejects oversized packets', () => {
   const received: Packet[] = [], reader = new FrameReader((packet) => received.push(packet));
   const body = Buffer.from([1, 2, 3]);
-  const header = Buffer.from(JSON.stringify({ protocol: 2, kind: 'frame', byteLength: body.length }));
+  const header = Buffer.from(JSON.stringify({ protocol: 3, kind: 'frame', byteLength: body.length }));
   const prefix = Buffer.alloc(4); prefix.writeUInt32LE(header.length);
   const packet = Buffer.concat([prefix, header, body]);
   for (const byte of packet) reader.push(Buffer.from([byte]));
@@ -86,10 +87,15 @@ test('native validation rejects legacy recipes and malformed output is not decod
     assert.throws(() => decodeWorld({ ...packet, bytes: invalid }), /finite/);
     assert.throws(() => decodeWorld({ ...packet, header: { ...packet.header, boundarySegmentCount: 1e9 } }), /boundary count/);
     const world = decodeWorld(packet);
-    const extraBytes = world.stats.regionCount * 4 + world.recipe.plateCount * 28 + Number(packet.header.boundarySegmentCount) * 76;
+    const extraBytes = world.stats.regionCount * 4 + world.recipe.plateCount * 28 + Number(packet.header.boundarySegmentCount) * 76 + 8 + world.stats.regionCount * 32;
     const corruptedOwner = Buffer.from(packet.bytes);
     corruptedOwner.writeUInt32LE(world.recipe.plateCount, packet.bytes.length - extraBytes);
     assert.throws(() => decodeWorld({ ...packet, bytes: corruptedOwner }), /plate metadata/);
+    for (const [offset, value] of [[0, NaN], [8, 2], [8 + 12 * 8, -0.1], [8 + 24 * 8, 1], [8 + 36 * 8, 4000]]) {
+      const invalidCrust = Buffer.from(packet.bytes);
+      invalidCrust.writeDoubleLE(value, packet.bytes.length - (8 + 12 * 32) + offset);
+      assert.throws(() => decodeWorld({ ...packet, bytes: invalidCrust }), /finite|crust/);
+    }
   } finally { session.close(); }
 });
 
@@ -127,6 +133,42 @@ test('native plate fields survive transport and produce both boundary overlays w
     assert.deepEqual(stopped.tectonics.owners, world.tectonics.owners);
     assert.ok(stopped.tectonics.boundaryTypes.every((v) => v === 0));
     assert.ok(stopped.tectonics.boundaryMotion.every((v) => v === 0));
+  } finally { core.close(); }
+});
+
+test('native crust fields and summaries are reproducible, bounded, and independent of tectonics', async () => {
+  const core = new NativeController(executable);
+  try {
+    const recipe = { ...DEFAULT_RECIPE, subdivision: 3 };
+    const { world } = await core.generate(recipe);
+    const summary = summarizeCrust(world.surface, world.crust);
+    assert.ok(Math.abs(summary.continentalAreaFraction - recipe.continentalFraction) < world.stats.maximumAreaSquareMeters / world.stats.totalAreaSquareMeters);
+    assert.ok(summary.continentalPatchCount > 0);
+    assert.ok(summary.largestContinentalPatchAreaSquareMeters <= summary.continentalAreaFraction * world.stats.totalAreaSquareMeters + 1);
+    for (let i = 0; i < world.stats.regionCount; i++) {
+      assert.equal(world.crust.thicknessMeters[i], 7000 + 28000 * world.crust.continentality[i]);
+      assert.equal(world.crust.densityKgPerCubicMeter[i], 3000 - 200 * world.crust.continentality[i]);
+    }
+    assert.deepEqual((await core.generate({ ...recipe, plateCount: 2, maxPlateSpeedCmPerYear: 0 })).world.crust, world.crust);
+    for (const fraction of [0, 1]) {
+      const changed = (await core.generate({ ...recipe, continentalFraction: fraction })).world;
+      assert.deepEqual(changed.tectonics, world.tectonics);
+      assert.deepEqual(changed.crust.potential, world.crust.potential);
+      const result = summarizeCrust(changed.surface, changed.crust);
+      assert.equal(result.continentalAreaFraction, fraction);
+      assert.equal(result.continentalPatchCount, fraction);
+    }
+  } finally { core.close(); }
+});
+
+test('finest world with maximum plate count fits the native transport budget', async () => {
+  const core = new NativeController(executable);
+  try {
+    const { world } = await core.generate({ ...DEFAULT_RECIPE, subdivision: 6, plateCount: 32,
+      maxPlateSpeedCmPerYear: 20, continentalScale: 0.5, radiusMeters: 100_000 });
+    assert.equal(world.stats.regionCount, 40962);
+    assert.equal(world.crust.continentality.length, 40962);
+    assert.ok(world.stats.arrayBytes < 32 * 2 ** 20);
   } finally { core.close(); }
 });
 

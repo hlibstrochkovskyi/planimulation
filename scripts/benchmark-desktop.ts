@@ -51,7 +51,8 @@ try {
     }
   }
   const gpu = await app.evaluate(async ({ app }) => ({ features: app.getGPUFeatureStatus(), info: await app.getGPUInfo('basic'), metrics: app.getAppMetrics() }));
-  const report = { date: new Date().toISOString(), modelVersion: MODEL_VERSION, layer: 'plates', cpu: os.cpus()[0]?.model, totalMemory: os.totalmem(),
+  const layer = await page.locator('[data-layer][aria-pressed="true"]').getAttribute('data-layer');
+  const report = { date: new Date().toISOString(), modelVersion: MODEL_VERSION, layer, cpu: os.cpus()[0]?.model, totalMemory: os.totalmem(),
     note: '180 requested-animation-frame intervals per sample under alternating zoom and native diffusion; not a GPU timer or a future simulation guarantee.', results, gpu };
   await mkdir('artifacts', { recursive: true });
   await writeFile('artifacts/native-desktop-benchmark.json', `${JSON.stringify(report, null, 2)}\n`);
