@@ -1,5 +1,7 @@
 # Initial water: milestone B4
 
+The current [C1 drainage model](drainage.md) uses `drainage-1` and protocol 6. It leaves initial water generation unchanged and appends static drainage arrays. Recipes and measurements in this B4 record are historical.
+
 [B5 water-surface display](water-surface.md) now adds a separate globe water mesh without changing this model or protocol. B4 validation measurements below describe the analytical-bed build.
 
 Implemented model: `water-1`, binary protocol 5. This increment adds initial global filling, an explicit water stock, and connected water bodies downstream of B3 elevation. It does not add drainage, flowing rivers, rainfall, erosion, salinity, or evolving lake budgets.

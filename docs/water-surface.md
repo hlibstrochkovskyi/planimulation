@@ -1,5 +1,7 @@
 # Water-surface display: milestone B5
 
+Historical B5 record. [C1 drainage](drainage.md) now adds native drainage arrays with `drainage-1` and protocol 6; the water-display algorithm below is unchanged.
+
 This is a rendering increment on top of [B4 initial water](water.md), not a new water model. Recipes remain `water-1`, binary protocol 5, and the native fields and fingerprints are unchanged. The default layer is now **Land and water**. Depth, water-body, and geological layers remain analytical views of the bed.
 
 ## Geometry and ownership

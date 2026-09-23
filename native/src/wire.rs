@@ -55,12 +55,16 @@ pub fn arrays(w: &World) -> Vec<u8> {
     f64s(&mut out, w.water.depth_meters.iter().copied());
     u32s(&mut out, &w.water.body_ids);
     u32s(&mut out, &[w.water.main_ocean_id]);
+    u32s(&mut out, &w.drainage.receivers);
+    u32s(&mut out, &w.drainage.outlets);
+    u32s(&mut out, &w.drainage.flat_steps);
+    f64s(&mut out, w.drainage.contributing_area.iter().copied());
     out
 }
-/// v5: u32 header byte count, JSON header, fixed-order little-endian arrays.
+/// v6: u32 header byte count, JSON header, fixed-order little-endian arrays.
 pub fn send(out: &mut impl Write, header: serde_json::Value, bytes: &[u8]) -> io::Result<()> {
     let mut header = header;
-    header["protocol"] = json!(5);
+    header["protocol"] = json!(6);
     header["byteLength"] = json!(bytes.len());
     let encoded = serde_json::to_vec(&header)?;
     out.write_all(&(encoded.len() as u32).to_le_bytes())?;

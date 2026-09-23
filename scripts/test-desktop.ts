@@ -22,6 +22,7 @@ try {
   const fingerprint = await page.locator('#fingerprint').innerText();
   await expect(page.locator('#legend-title')).toContainText('Land and water surface');
   await expect(page.locator('#water-summary')).toContainText('71.00% target');
+  await expect(page.locator('#drainage-summary')).toContainText('closed dry sinks');
   await expect(page.locator('#crust-summary')).toContainText('38.00% target');
   const reference = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
   try { assert.equal((await reference.generate(DEFAULT_RECIPE)).world.checksum, fingerprint, 'Headless and desktop use the same native math.'); }
@@ -30,7 +31,10 @@ try {
     const result = await window.desktop.generate(recipe);
     await window.desktop.cancelGeneration();
     const id = result.world.tectonics.boundaryCells[0], centers = result.world.surface.centers;
+    const routed = result.world.drainage.receivers.findIndex((receiver, region) => receiver !== region && result.world.drainage.flatSteps[region] === 0);
     return { checksum: result.world.checksum, typed: result.world.diagnosticField instanceof Float64Array,
+      drainageSample: { id: routed, x: Math.atan2(centers[routed * 3 + 2], centers[routed * 3]) / Math.PI,
+        y: Math.asin(centers[routed * 3 + 1]) / Math.PI },
       boundarySample: { id, x: Math.atan2(centers[id * 3 + 2], centers[id * 3]) / Math.PI,
         y: Math.asin(centers[id * 3 + 1]) / Math.PI } };
   }, { ...DEFAULT_RECIPE });
@@ -52,6 +56,8 @@ try {
   await expect(page.locator('#selection-details')).toContainText('Initial water depth');
   await expect(page.locator('#water-note')).toContainText('Regional stock');
   const waterExplanation = await page.locator('#water-note').innerText();
+  const drainageExplanation = await page.locator('#drainage-note').innerText();
+  await expect(page.locator('#selection-details')).toContainText('Contributing land area');
   const crustExplanation = await page.locator('#crust-note').innerText();
   assert.ok(crustExplanation.includes('fitted threshold'));
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
@@ -61,6 +67,7 @@ try {
   await expect(page.locator('#crust-note')).toHaveText(crustExplanation);
   await expect(page.locator('#elevation-details')).toHaveText(elevationExplanation, { useInnerText: true });
   await expect(page.locator('#water-note')).toHaveText(waterExplanation);
+  await expect(page.locator('#drainage-note')).toHaveText(drainageExplanation);
   await page.locator('#exaggeration').selectOption('0');
   await expect(canvas).toHaveAttribute('data-exaggeration', '0');
   await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
@@ -87,6 +94,14 @@ try {
   await page.screenshot({ path: executablePath ? 'artifacts/globe-desktop-packaged.png' : 'artifacts/globe-desktop.png' });
   await page.getByRole('button', { name: '2D map', exact: true }).click();
   await expect(canvas).toHaveAttribute('data-view', 'flat');
+  await page.locator('[data-layer="catchments"]').click();
+  await expect(page.locator('#legend-title')).toContainText('Drainage catchments');
+  await expect(page.locator('#legend-scale')).toBeHidden();
+  await expect(page.locator('#boundary-legend')).toBeHidden();
+  await page.locator('[data-layer="contributingArea"]').click();
+  await expect(page.locator('#legend-title')).toContainText('not river discharge');
+  await expect(page.locator('#legend-low')).toHaveText('0 km²');
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await page.locator('[data-layer="waterBodies"]').click();
   await expect(page.locator('#legend-title')).toContainText('Connected water bodies');
   await expect(page.locator('#boundary-legend')).toBeHidden();
@@ -121,6 +136,18 @@ try {
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await page.locator('#boundaries').uncheck();
   await page.screenshot({ path: executablePath ? 'artifacts/boundaries-desktop-packaged.png' : 'artifacts/boundaries-desktop.png' });
+  await page.locator('[data-layer="catchments"]').click();
+  await canvas.click({ position: {
+    x: boundaryBounds.width * (.5 + desktopData.drainageSample.x / (2 * halfHeight * boundaryBounds.width / boundaryBounds.height)),
+    y: boundaryBounds.height * (.5 - desktopData.drainageSample.y / (2 * halfHeight)),
+  } });
+  await expect(page.locator('#selection-title')).toHaveText(`Region ${desktopData.drainageSample.id.toLocaleString('en')}`);
+  await expect(page.locator('#drainage-note')).toContainText('Steepest bed descent');
+  await page.screenshot({ path: executablePath ? 'artifacts/catchments-desktop-packaged.png' : 'artifacts/catchments-desktop.png' });
+  await page.getByRole('button', { name: 'Globe', exact: true }).click();
+  await expect(page.locator('#drainage-note')).toContainText('Steepest bed descent');
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
+  await page.getByRole('button', { name: '2D map', exact: true }).click();
   await page.locator('[data-layer="speed"]').click();
   await expect(page.locator('#legend-high')).toHaveText('8 cm/year');
   await expect(page.locator('#boundary-legend')).toBeHidden();
@@ -164,6 +191,7 @@ try {
   await expect(page.locator('#region-count')).toHaveText('642');
   await expect(page.locator('#crust-summary')).toContainText('0.00% actual / 0.00% target');
   await expect(page.locator('#water-summary')).toContainText('0.00% actual / 0 km³ requested');
+  await expect(page.locator('#drainage-summary')).toContainText('1 terminal catchments · 1 closed dry sinks');
   await page.locator('[data-layer="surface"]').click();
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
   await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
@@ -178,6 +206,7 @@ try {
   await page.locator('#water-volume').fill('1000000');
   await page.locator('#generate').click();
   await expect(page.locator('#water-summary')).toContainText('100.00% actual / 1,000,000 km³ requested');
+  await expect(page.locator('#drainage-summary')).toContainText('1 terminal catchments · 0 closed dry sinks');
   const volumeHash = await page.locator('#fingerprint').innerText();
   await page.locator('[data-layer="surface"]').click();
   await page.getByRole('button', { name: 'Globe', exact: true }).click();

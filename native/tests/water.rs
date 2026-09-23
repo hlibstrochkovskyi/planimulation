@@ -113,7 +113,7 @@ fn volume_fit_preserves_stock_under_bed_changes_and_has_consistent_units() {
 fn recipe(seed: usize, subdivision: u32) -> Recipe {
     Recipe {
         schema_version: 1,
-        model_version: "water-1".into(),
+        model_version: "drainage-1".into(),
         random_version: "fnv1a-utf8-mulberry32-1".into(),
         seed: format!("water-{seed}"),
         subdivision,

@@ -9,7 +9,7 @@
   <body>
     <header class="app-header">
       <div class="brand"><span class="brand-mark" aria-hidden="true">◉</span><div><h1>Planimulation</h1><p>A world worth understanding</p></div></div>
-      <div class="header-right"><span class="stage-badge">06 / WATER SURFACE</span><button id="open-recipe">Open recipe</button><button id="save-recipe" disabled>Save recipe</button></div>
+      <div class="header-right"><span class="stage-badge">07 / DRAINAGE STRUCTURE</span><button id="open-recipe">Open recipe</button><button id="save-recipe" disabled>Save recipe</button></div>
     </header>
     <main>
       <aside class="sidebar">
@@ -51,6 +51,8 @@
             <button class="layer active" data-layer="surface" aria-pressed="true"><span>◉</span>Land and water<small>Surface</small></button>
             <button class="layer" data-layer="depth" aria-pressed="false"><span>≈</span>Water depth<small>m</small></button>
             <button class="layer" data-layer="waterBodies" aria-pressed="false"><span>◒</span>Water bodies<small>Identity</small></button>
+            <button class="layer" data-layer="catchments" aria-pressed="false"><span>⋈</span>Catchments<small>Outlets</small></button>
+            <button class="layer" data-layer="contributingArea" aria-pressed="false"><span>↘</span>Contributing area<small>km²</small></button>
             <button class="layer" data-layer="elevation" aria-pressed="false"><span>△</span>Bed elevation<small>m</small></button>
             <button class="layer" data-layer="uplift" aria-pressed="false"><span>↗</span>Convergence uplift<small>m</small></button>
             <button class="layer" data-layer="crust" aria-pressed="false"><span>◒</span>Continentality<small>Crust</small></button>
@@ -75,17 +77,19 @@
         <p id="crust-summary" class="muted"></p>
         <p id="height-summary" class="muted"></p>
         <p id="water-summary" class="muted"></p>
+        <p id="drainage-summary" class="muted"></p>
         <div class="relief-controls"><label for="exaggeration">Globe vertical exaggeration</label><select id="exaggeration"><option value="0">0× · reference sphere</option><option value="1">1× · true scale</option><option value="5">5×</option><option value="10" selected>10×</option><option value="25">25×</option><option value="50">50×</option></select><span id="exaggeration-note" class="muted"></span></div>
         <div class="diagnostic-controls"><button id="play" disabled>Run diagnostic</button><span id="diagnostic-tick">Step 0</span><span>Conservative graph diffusion · not climate or geological time</span></div>
         <div class="metrics"><div><span>REGIONS</span><strong id="region-count">—</strong></div><div><span>SURFACE AREA</span><strong id="surface-area">—</strong></div><div><span>GENERATION + VIEWS</span><strong id="generation-time">—</strong></div><div><span>INITIAL FINGERPRINT</span><strong id="fingerprint">—</strong></div></div>
         <section class="inspector"><div><p class="eyebrow">REGION INSPECTOR</p><h3 id="selection-title">Explore the surface</h3><p id="selection-note" class="muted">Select a region to see its geometry and connections.</p></div><dl id="selection-details"></dl></section>
         <section class="boundary-inspector"><p class="eyebrow">CRUST EXPLANATION</p><p id="crust-note" class="muted">Select a region to inspect its crust potential, fitted threshold, and material approximations.</p></section>
         <section class="boundary-inspector"><p class="eyebrow">WHY WATER HERE?</p><p id="water-note" class="muted">Select a region to inspect initial filling.</p></section>
+        <section class="boundary-inspector"><p class="eyebrow">WHERE WOULD RUNOFF GO?</p><p id="drainage-note" class="muted">Select a region to inspect drainage potential, not actual flow.</p></section>
         <section class="boundary-inspector"><p class="eyebrow">WHY THIS ELEVATION?</p><p class="muted">Contributions sum to the native elevation. Display exaggeration changes none of them. Shear alone has no uplift term; subduction polarity and geological age are not modeled.</p><ul id="elevation-details"></ul></section>
         <section class="boundary-inspector"><p class="eyebrow">BOUNDARY EXPLANATION</p><p id="boundary-note" class="muted">Select a region to inspect its plate and any inter-plate boundary segments.</p><ul id="boundary-details"></ul></section>
       </div>
     </main>
-    <footer><span id="status" role="status" aria-live="polite">Starting…</span><span id="model-label">WATER-1 · STATIC INITIAL CONDITIONS</span></footer>
+    <footer><span id="status" role="status" aria-live="polite">Starting…</span><span id="model-label">DRAINAGE-1 · STATIC INITIAL CONDITIONS</span></footer>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

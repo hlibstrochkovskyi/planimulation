@@ -15,7 +15,7 @@ const executable = path.resolve('dist/native', process.platform === 'win32' ? 'p
 test('binary framing handles fragmented headers/bodies, multiple frames, and rejects oversized packets', () => {
   const received: Packet[] = [], reader = new FrameReader((packet) => received.push(packet));
   const body = Buffer.from([1, 2, 3]);
-  const header = Buffer.from(JSON.stringify({ protocol: 5, kind: 'frame', byteLength: body.length }));
+  const header = Buffer.from(JSON.stringify({ protocol: 6, kind: 'frame', byteLength: body.length }));
   const prefix = Buffer.alloc(4); prefix.writeUInt32LE(header.length);
   const packet = Buffer.concat([prefix, header, body]);
   for (const byte of packet) reader.push(Buffer.from([byte]));
@@ -87,8 +87,8 @@ test('native validation rejects legacy recipes and malformed output is not decod
     assert.throws(() => decodeWorld({ ...packet, bytes: invalid }), /finite/);
     assert.throws(() => decodeWorld({ ...packet, header: { ...packet.header, boundarySegmentCount: 1e9 } }), /boundary count/);
     const world = decodeWorld(packet);
-    const waterBytes = 20 + world.stats.regionCount * 12;
-    const extraBytes = world.stats.regionCount * 4 + world.recipe.plateCount * 28 + Number(packet.header.boundarySegmentCount) * 76 + 8 + world.stats.regionCount * 72 + waterBytes;
+    const waterAndDrainageBytes = 20 + world.stats.regionCount * 32;
+    const extraBytes = world.stats.regionCount * 4 + world.recipe.plateCount * 28 + Number(packet.header.boundarySegmentCount) * 76 + 8 + world.stats.regionCount * 72 + waterAndDrainageBytes;
     const corruptedOwner = Buffer.from(packet.bytes);
     corruptedOwner.writeUInt32LE(world.recipe.plateCount, packet.bytes.length - extraBytes);
     assert.throws(() => decodeWorld({ ...packet, bytes: corruptedOwner }), /plate metadata/);

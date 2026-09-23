@@ -61,7 +61,7 @@ test('native water decoding rejects inconsistent levels, stocks, masks, and comp
       await assert.rejects(session.request({ command: 'generate', recipe: { ...DEFAULT_RECIPE, water } }));
     }
     const packet = await session.request({ command: 'generate', recipe: { ...DEFAULT_RECIPE, subdivision: 2 } });
-    const world = decodeWorld(packet), n = world.stats.regionCount, start = packet.bytes.length - 20 - n * 12;
+    const world = decodeWorld(packet), n = world.stats.regionCount, start = packet.bytes.length - 20 - n * 32;
     for (const [offset, value] of [[0, NaN], [0, world.water.levelMeters + 1], [8, -1], [8, world.water.resolvedVolumeCubicMeters * 2], [16, -1]]) {
       const bytes = Buffer.from(packet.bytes); bytes.writeDoubleLE(value, start + offset);
       assert.throws(() => decodeWorld({ ...packet, bytes }), /water|finite/);

@@ -9,7 +9,7 @@ import { displaceDirections, effectiveExaggeration } from './relief';
 import { summarizeTerrain } from '../core/terrain';
 import { pickSurface } from './water-surface';
 
-export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies';
+export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea';
 export type ViewMode = 'flat' | 'globe';
 
 export class SurfaceMap {
@@ -63,6 +63,7 @@ export class SurfaceMap {
   private appliedExaggeration = NaN;
   private terrainRange = { minimumMeters: 0, maximumMeters: 1 };
   private maximumDepth = 1;
+  private maximumContributingArea = 1;
   private boundaries = false;
   private worker: Worker | null = null;
   private abortPreparation: (() => void) | null = null;
@@ -158,6 +159,7 @@ export class SurfaceMap {
     this.appliedExaggeration = NaN;
     this.terrainRange = summarizeTerrain(world.surface, world.terrain);
     this.maximumDepth = world.water.depthMeters.reduce((max, d) => Math.max(max, d), 0);
+    this.maximumContributingArea = world.drainage.contributingArea.reduce((max, a) => Math.max(max, a), 0);
     this.setExaggeration(this.exaggeration);
     const width = Math.min(1024, this.renderer.capabilities.maxTextureSize);
     const height = Math.ceil(world.stats.regionCount / width);
@@ -183,7 +185,7 @@ export class SurfaceMap {
     this.layer = layer;
     this.canvas.dataset.activeLayer = layer;
     this.material.uniforms.surfaceMode.value = layer === 'surface' ? 1 : 0;
-    this.material.uniforms.categorical.value = layer === 'plates' || layer === 'boundaries' || layer === 'waterBodies' ? 1 : 0;
+    this.material.uniforms.categorical.value = layer === 'plates' || layer === 'boundaries' || layer === 'waterBodies' || layer === 'catchments' ? 1 : 0;
     this.material.uniforms.waterMode.value = layer === 'depth' ? 1 : layer === 'waterBodies' ? 2 : 0;
     this.material.uniforms.muted.value = layer === 'boundaries' ? 1 : 0;
     if (this.views) for (const view of Object.values(this.views)) {
@@ -198,6 +200,8 @@ export class SurfaceMap {
     const w = this.world;
     for (let id = 0; id < w.stats.regionCount; id++) {
       this.values[id] = this.layer === 'plates' || this.layer === 'boundaries' ? w.tectonics.owners[id]
+        : this.layer === 'catchments' ? w.drainage.outlets[id]
+        : this.layer === 'contributingArea' ? Math.log1p(w.drainage.contributingArea[id] / 1e6) / Math.max(1e-30, Math.log1p(this.maximumContributingArea / 1e6))
         : this.layer === 'surface' ? (w.water.bodyIds[id] ? -Math.max(1e-6, w.water.depthMeters[id] / Math.max(1e-30, this.maximumDepth))
           : Math.max(0, w.terrain.elevation[id] - w.water.levelMeters) / Math.max(1, this.terrainRange.maximumMeters - w.water.levelMeters))
         : this.layer === 'depth' ? (w.water.bodyIds[id] ? w.water.depthMeters[id] / Math.max(1e-30, this.maximumDepth) : -1)

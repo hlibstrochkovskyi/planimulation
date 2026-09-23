@@ -1,6 +1,6 @@
 # World generation: technical proposal
 
-Initial proposal: September 19, 2026. The spherical surface, recipes, random streams, GPU flat/globe views, B1 static plate kinematics, B2 initial crust, B3 explainable elevation, B4 initial water filling, and B5 water-surface display are implemented. Water dynamics, erosion, climate, and ecology remain proposals. See [DESIGN.md](../DESIGN.md), [development](development.md), [Plate kinematics](tectonics.md), [Initial crust](crust.md), [Explainable elevation](terrain.md), [Initial water](water.md), and [Water-surface display](water-surface.md) for the concept and implemented algorithms with their limitations.
+Initial proposal: September 19, 2026. The spherical surface, recipes, random streams, GPU flat/globe views, B1 static plate kinematics, B2 initial crust, B3 explainable elevation, B4 initial water filling, B5 water-surface display, and C1 static drainage structure are implemented. Water dynamics, erosion, climate, and ecology remain proposals. See [DESIGN.md](../DESIGN.md), [development](development.md), [Plate kinematics](tectonics.md), [Initial crust](crust.md), [Explainable elevation](terrain.md), [Initial water](water.md), [Water-surface display](water-surface.md), and [Drainage structure](drainage.md) for the concept and implemented algorithms with their limitations.
 
 ## 1. One world, multiple views
 
@@ -100,6 +100,8 @@ In the first version, the ocean-coverage target means coverage under initial glo
 After erosion, preserve the chosen water volume and recompute the level. Do not restore the requested percentage by silently adding water.
 
 ### E. Catchments and depressions
+
+[C1 drainage structure](drainage.md) now implements bed-based receivers, equal-height routing, terminal catchments, and contributing land-area analysis without modifying terrain. The remaining spill, storage, and erosion mechanisms below are proposals, not implemented functionality.
 
 Identify downhill directions, flats, depressions, spill thresholds, and connections. Priority-Flood methods are candidates for spill analysis; retain physical terrain separately from auxiliary routing elevations.
 
