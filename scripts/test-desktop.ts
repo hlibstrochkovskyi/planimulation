@@ -43,9 +43,18 @@ try {
   assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'generate', 'openRecipe', 'saveRecipe']);
 
   const canvas = page.locator('#map');
-  const bounds = await canvas.boundingBox();
-  assert.ok(bounds);
-  await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
+  const clickAtlas = async (sample: { x: number; y: number }) => {
+    const bounds = await canvas.boundingBox();
+    assert.ok(bounds);
+    const halfHeight = Math.max(.6, 1.1 / (bounds.width / bounds.height));
+    await canvas.click({ position: {
+      x: bounds.width * (.5 + sample.x / (2 * halfHeight * bounds.width / bounds.height)),
+      y: bounds.height * (.5 - sample.y / (2 * halfHeight)),
+    } });
+  };
+  // Locator clicks resolve the current center; window-manager resizing must not
+  // leave later globe picks using dimensions captured at application startup.
+  await canvas.click();
   await expect(page.locator('#selection-title')).toContainText('Region');
   const selectedRegion = await page.locator('#selection-title').innerText();
   const selectedDetails = await page.locator('#selection-details').innerText();
@@ -60,6 +69,7 @@ try {
   await expect(page.locator('#selection-details')).toContainText('Contributing land area');
   const crustExplanation = await page.locator('#crust-note').innerText();
   assert.ok(crustExplanation.includes('fitted threshold'));
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
   await expect(canvas).toHaveAttribute('data-view', 'globe');
   await expect(page.locator('#selection-title')).toHaveText(selectedRegion);
@@ -70,19 +80,20 @@ try {
   await expect(page.locator('#drainage-note')).toHaveText(drainageExplanation);
   await page.locator('#exaggeration').selectOption('0');
   await expect(canvas).toHaveAttribute('data-exaggeration', '0');
-  await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
+  await canvas.click();
   await expect(canvas).toHaveAttribute('data-picked-surface', 'water');
+  await page.setViewportSize({ width: 1600, height: 1000 });
   await page.locator('#exaggeration').selectOption('25');
   await expect(canvas).toHaveAttribute('data-exaggeration', '25');
   await expect(page.locator('#selection-details')).toHaveText(selectedDetails, { useInnerText: true });
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await page.locator('#exaggeration').selectOption('10');
-  await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
+  await canvas.click();
   await expect(page.locator('#selection-title')).toHaveText(selectedRegion);
   await expect(page.locator('button[data-view="globe"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(canvas).toHaveAttribute('data-picked-surface', 'water');
   await page.locator('[data-layer="depth"]').click();
-  await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
+  await canvas.click();
   await expect(canvas).toHaveAttribute('data-picked-surface', 'bed');
   await expect(page.locator('#selection-title')).toHaveText(selectedRegion);
   await expect(page.locator('#selection-details')).toHaveText(selectedDetails, { useInnerText: true });
@@ -122,13 +133,7 @@ try {
   await expect(page.locator('#selection-details')).toContainText('Tectonic plate');
   await expect(page.locator('#selection-details')).toContainText('cm/year');
   await page.getByRole('button', { name: 'Fit map' }).click();
-  const boundaryBounds = await canvas.boundingBox();
-  assert.ok(boundaryBounds);
-  const halfHeight = Math.max(.6, 1.1 / (boundaryBounds.width / boundaryBounds.height));
-  await canvas.click({ position: {
-    x: boundaryBounds.width * (.5 + desktopData.boundarySample.x / (2 * halfHeight * boundaryBounds.width / boundaryBounds.height)),
-    y: boundaryBounds.height * (.5 - desktopData.boundarySample.y / (2 * halfHeight)),
-  } });
+  await clickAtlas(desktopData.boundarySample);
   await expect(page.locator('#selection-title')).toHaveText(`Region ${desktopData.boundarySample.id.toLocaleString('en')}`);
   await expect(page.locator('#boundary-details')).toContainText('opening');
   await expect(page.locator('#boundary-details')).toContainText('shear');
@@ -137,10 +142,7 @@ try {
   await page.locator('#boundaries').uncheck();
   await page.screenshot({ path: executablePath ? 'artifacts/boundaries-desktop-packaged.png' : 'artifacts/boundaries-desktop.png' });
   await page.locator('[data-layer="catchments"]').click();
-  await canvas.click({ position: {
-    x: boundaryBounds.width * (.5 + desktopData.drainageSample.x / (2 * halfHeight * boundaryBounds.width / boundaryBounds.height)),
-    y: boundaryBounds.height * (.5 - desktopData.drainageSample.y / (2 * halfHeight)),
-  } });
+  await clickAtlas(desktopData.drainageSample);
   await expect(page.locator('#selection-title')).toHaveText(`Region ${desktopData.drainageSample.id.toLocaleString('en')}`);
   await expect(page.locator('#drainage-note')).toContainText('Steepest bed descent');
   await page.screenshot({ path: executablePath ? 'artifacts/catchments-desktop-packaged.png' : 'artifacts/catchments-desktop.png' });
@@ -194,7 +196,7 @@ try {
   await expect(page.locator('#drainage-summary')).toContainText('1 terminal catchments · 1 closed dry sinks');
   await page.locator('[data-layer="surface"]').click();
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
-  await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
+  await canvas.click();
   await expect(canvas).toHaveAttribute('data-picked-surface', 'bed');
   await page.getByRole('button', { name: '2D map', exact: true }).click();
   await page.locator('[data-layer="plates"]').click();
@@ -212,7 +214,7 @@ try {
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
   for (const factor of ['0', '1', '10']) {
     await page.locator('#exaggeration').selectOption(factor);
-    await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
+    await canvas.click();
     await expect(canvas).toHaveAttribute('data-picked-surface', 'water');
     await expect(page.locator('#fingerprint')).toHaveText(volumeHash);
   }
@@ -286,7 +288,7 @@ try {
   await page.locator('#subdivision').selectOption(String(DEFAULT_RECIPE.subdivision));
   await page.locator('#generate').click();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
-  await canvas.click({ position: { x: bounds.width * .6, y: bounds.height * .5 } });
+  await canvas.click();
   await page.locator('[data-layer="surface"]').click();
   await mkdir('artifacts', { recursive: true });
   const screenshot = executablePath ? 'artifacts/surface-desktop-packaged.png' : 'artifacts/surface-desktop.png';

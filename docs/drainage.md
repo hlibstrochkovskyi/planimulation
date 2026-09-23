@@ -109,4 +109,4 @@ These are single-run end-to-end observations, not native drainage-only timings. 
 
 ## Next increment
 
-Construct depression/spill hierarchy and level–storage relationships using controlled bowls, nested basins, and sills. Keep analysis levels separate from the bed. Only then introduce prescribed water input, storage, and overflow with a budget. Repeated global initial filling cannot replace independent basin dynamics.
+[C2a basin analysis](basins.md) now supplies a standalone native connectivity hierarchy and level–storage queries, tested on controlled bowls, nested basins, and sills. It is not yet part of desktop generation or the protocol. Next integrate that analysis for inspection, keeping thresholds separate from actual water levels; only then introduce prescribed water input, storage, and overflow with a budget. Repeated global initial filling cannot replace independent basin dynamics.

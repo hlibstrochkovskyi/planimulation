@@ -101,7 +101,7 @@ After erosion, preserve the chosen water volume and recompute the level. Do not 
 
 ### E. Catchments and depressions
 
-[C1 drainage structure](drainage.md) now implements bed-based receivers, equal-height routing, terminal catchments, and contributing land-area analysis without modifying terrain. The remaining spill, storage, and erosion mechanisms below are proposals, not implemented functionality.
+[C1 drainage structure](drainage.md) implements bed-based receivers, equal-height routing, terminal catchments, and contributing land-area analysis without modifying terrain. [C2a basin analysis](basins.md) adds a standalone native connectivity hierarchy, merge thresholds, and storage queries, not yet integrated into the desktop. Dynamic inventories, overflow routing, and erosion below remain proposals.
 
 Identify downhill directions, flats, depressions, spill thresholds, and connections. Priority-Flood methods are candidates for spill analysis; retain physical terrain separately from auxiliary routing elevations.
 

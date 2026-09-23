@@ -94,10 +94,10 @@ test('native validation rejects legacy recipes and malformed output is not decod
     assert.throws(() => decodeWorld({ ...packet, bytes: corruptedOwner }), /plate metadata/);
     for (const [offset, value] of [[0, NaN], [8, 2], [8 + 12 * 8, -0.1], [8 + 24 * 8, 1], [8 + 36 * 8, 4000]]) {
       const invalidCrust = Buffer.from(packet.bytes);
-      invalidCrust.writeDoubleLE(value, packet.bytes.length - (8 + 12 * 72) - waterBytes + offset);
+      invalidCrust.writeDoubleLE(value, packet.bytes.length - (8 + 12 * 72) - waterAndDrainageBytes + offset);
       assert.throws(() => decodeWorld({ ...packet, bytes: invalidCrust }), /finite|crust/);
     }
-    const invalidHeight = Buffer.from(packet.bytes); invalidHeight.writeDoubleLE(100000, packet.bytes.length - waterBytes - 8);
+    const invalidHeight = Buffer.from(packet.bytes); invalidHeight.writeDoubleLE(100000, packet.bytes.length - waterAndDrainageBytes - 8);
     assert.throws(() => decodeWorld({ ...packet, bytes: invalidHeight }), /elevation/);
   } finally { session.close(); }
 });

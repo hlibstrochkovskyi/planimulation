@@ -68,6 +68,6 @@ npm run package          # Unpacked desktop application for the current platform
 
 The desktop tests need a graphical session. Linux builds require the usual Electron/Chromium desktop libraries. Run a build before the headless and benchmark commands. Packaging bundles the native executable outside the application archive; the resulting app does not require Rust or Node.js to be installed. Packaging outputs to `release/`; it does not install globally, sign an application, or create a platform installer. Only Linux x64 is currently validated.
 
-Generation and future algorithm proposals are recorded separately from implemented features. Next comes depression/spill hierarchy and storage accounting; rivers are not yet computed. Resolved-state and image export remain outstanding milestone B work.
+Generation and future algorithm proposals are recorded separately from implemented features. [C2a basin analysis](docs/basins.md) adds a standalone native hierarchy of depression connections and level–storage queries; it is not yet integrated into desktop generation. Next comes inspection integration, followed by independent reservoir inventories and overflow; rivers are not yet computed. Resolved-state and image export remain outstanding milestone B work.
 
 Development, documentation, code comments, and project records use English. Conversation with the project owner uses Russian.

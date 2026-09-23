@@ -349,6 +349,7 @@ impl World {
     }
 }
 
+pub mod basins;
 pub mod crust;
 pub mod drainage;
 pub mod tectonics;
