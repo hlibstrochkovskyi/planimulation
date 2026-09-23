@@ -1,4 +1,4 @@
-export const MODEL_VERSION = 'crust-1';
+export const MODEL_VERSION = 'terrain-1';
 export const RANDOM_VERSION = 'fnv1a-utf8-mulberry32-1';
 
 export interface Recipe {
@@ -12,6 +12,9 @@ export interface Recipe {
   maxPlateSpeedCmPerYear: number;
   continentalFraction: number;
   continentalScale: number;
+  reliefScale: number;
+  boundaryWidthKm: number;
+  detailAmplitudeMeters: number;
 }
 
 export const DEFAULT_RECIPE: Readonly<Recipe> = Object.freeze({
@@ -25,6 +28,9 @@ export const DEFAULT_RECIPE: Readonly<Recipe> = Object.freeze({
   maxPlateSpeedCmPerYear: 8,
   continentalFraction: 0.38,
   continentalScale: 1,
+  reliefScale: 1,
+  boundaryWidthKm: 300,
+  detailAmplitudeMeters: 300,
 });
 
 /** Strict parsing prevents an old or misspelled parameter from being silently ignored. */
@@ -38,7 +44,7 @@ export function parseRecipe(value: unknown): Recipe {
     if (!keys.includes(key)) throw new Error(`Unknown recipe field: ${key}.`);
   }
   if (input.schemaVersion !== 1 || input.modelVersion !== MODEL_VERSION || input.randomVersion !== RANDOM_VERSION) {
-    throw new Error('Unsupported recipe version. This build supports crust-1 recipes only; legacy recipes are not silently migrated.');
+    throw new Error('Unsupported recipe version. This build supports terrain-1 recipes only; legacy recipes are not silently migrated.');
   }
   for (const key of keys) {
     if (!(key in input)) throw new Error(`Missing recipe field: ${key}.`);
@@ -62,6 +68,10 @@ export function parseRecipe(value: unknown): Recipe {
     || input.continentalFraction < 0 || input.continentalFraction > 1) throw new Error('Continental fraction must be 0–1, not a land-area target.');
   if (typeof input.continentalScale !== 'number' || !Number.isFinite(input.continentalScale)
     || input.continentalScale < 0.5 || input.continentalScale > 2) throw new Error('Continental scale must be 0.5–2.');
+  for (const [key, min, max] of [['reliefScale', 0, 2], ['boundaryWidthKm', 50, 1000], ['detailAmplitudeMeters', 0, 1000]] as const) {
+    const value = input[key];
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max) throw new Error(`${key} must be ${min}–${max}.`);
+  }
   return {
     schemaVersion: 1,
     modelVersion: MODEL_VERSION,
@@ -73,6 +83,9 @@ export function parseRecipe(value: unknown): Recipe {
     maxPlateSpeedCmPerYear: input.maxPlateSpeedCmPerYear,
     continentalFraction: input.continentalFraction,
     continentalScale: input.continentalScale,
+    reliefScale: Number(input.reliefScale),
+    boundaryWidthKm: Number(input.boundaryWidthKm),
+    detailAmplitudeMeters: Number(input.detailAmplitudeMeters),
   };
 }
 

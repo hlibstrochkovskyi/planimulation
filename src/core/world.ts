@@ -5,6 +5,7 @@ import { buildSurface } from './surface';
 import type { Surface } from './surface';
 import type { Tectonics } from './tectonics';
 import type { Crust } from './crust';
+import type { Terrain } from './terrain';
 
 export interface SurfaceWorld {
   recipe: Recipe;
@@ -22,7 +23,7 @@ export interface SurfaceWorld {
     arrayBytes: number;
   };
 }
-export interface World extends SurfaceWorld { tectonics: Tectonics; crust: Crust }
+export interface World extends SurfaceWorld { tectonics: Tectonics; crust: Crust; terrain: Terrain }
 
 /** A coherent test signal, deliberately not labeled terrain, climate, or biome. */
 function diagnosticField(surface: Surface, seed: string): Float64Array {

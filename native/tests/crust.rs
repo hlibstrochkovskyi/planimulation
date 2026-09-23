@@ -3,7 +3,7 @@ use planimulation_core::{Recipe, Surface, World, crust::*};
 fn recipe() -> Recipe {
     Recipe {
         schema_version: 1,
-        model_version: "crust-1".into(),
+        model_version: "terrain-1".into(),
         random_version: "fnv1a-utf8-mulberry32-1".into(),
         seed: "crust-test".into(),
         subdivision: 3,
@@ -12,6 +12,9 @@ fn recipe() -> Recipe {
         max_plate_speed_cm_per_year: 8.,
         continental_fraction: 0.38,
         continental_scale: 1.,
+        relief_scale: 1.,
+        boundary_width_km: 300.,
+        detail_amplitude_meters: 300.,
     }
 }
 

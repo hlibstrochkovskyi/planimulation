@@ -27,6 +27,12 @@ test('recipes are strict, bounded, versioned, and round-trip without hidden defa
   }
 });
 
+test('terrain controls reject missing, non-numeric, non-finite, and out-of-range inputs', () => {
+  for (const [key, values] of Object.entries({ reliefScale: [-1, 3, NaN, '1', undefined], boundaryWidthKm: [0, 1001, Infinity, '300', undefined], detailAmplitudeMeters: [-1, 1001, NaN, '300', undefined] })) {
+    for (const value of values) assert.throws(() => parseRecipe({ ...DEFAULT_RECIPE, [key]: value }));
+  }
+});
+
 test('FNV-1a known vectors and Mulberry32 reference sequence stay fixed', () => {
   assert.equal(hashString(''), 0x811c9dc5);
   assert.equal(hashString('a'), 0xe40c292c);

@@ -9,13 +9,13 @@
   <body>
     <header class="app-header">
       <div class="brand"><span class="brand-mark" aria-hidden="true">◉</span><div><h1>Planimulation</h1><p>A world worth understanding</p></div></div>
-      <div class="header-right"><span class="stage-badge">03 / INITIAL CRUST</span><button id="open-recipe">Open recipe</button><button id="save-recipe" disabled>Save recipe</button></div>
+      <div class="header-right"><span class="stage-badge">04 / EXPLAINABLE RELIEF</span><button id="open-recipe">Open recipe</button><button id="save-recipe" disabled>Save recipe</button></div>
     </header>
     <main>
       <aside class="sidebar">
         <section>
           <p class="eyebrow">WORLD SETUP</p><h2>A geological foundation.</h2>
-          <p class="muted">Plates and independent crust structure. Elevation and water come next.</p>
+          <p class="muted">Crust and boundary motion shape elevation. Water and erosion come next.</p>
           <form id="recipe-form">
             <label for="seed">World seed</label>
             <div class="seed-row"><input id="seed" name="seed" value="first-light" maxlength="128" required autocomplete="off" spellcheck="false" /><button id="new-seed" type="button" title="Choose a new seed" aria-label="Choose a new seed">↻</button></div>
@@ -31,6 +31,12 @@
             <input id="continental-fraction" type="number" min="0" max="100" step="any" value="38" required />
             <label for="continental-scale">Continental structure scale <span>0.5–2 · larger = broader</span></label>
             <input id="continental-scale" type="number" min="0.5" max="2" step="any" value="1" required />
+            <label for="relief-scale">Boundary relief strength <span>0–2 multiplier</span></label>
+            <input id="relief-scale" type="number" min="0" max="2" step="any" value="1" required />
+            <label for="boundary-width">Boundary decay width <span>km</span></label>
+            <input id="boundary-width" type="number" min="50" max="1000" step="any" value="300" required />
+            <label for="detail-amplitude">Detail amplitude bound <span>m</span></label>
+            <input id="detail-amplitude" type="number" min="0" max="1000" step="any" value="300" required />
             <button class="primary" id="generate" type="submit">Generate surface <span>↗</span></button>
             <button id="cancel" type="button" hidden>Cancel generation</button>
           </form>
@@ -38,7 +44,9 @@
         <section class="layer-section">
           <p class="eyebrow">MAP LAYERS</p>
           <div class="layer-list" role="group" aria-label="Map layer">
-            <button class="layer active" data-layer="crust" aria-pressed="true"><span>◒</span>Continentality<small>Crust</small></button>
+            <button class="layer active" data-layer="elevation" aria-pressed="true"><span>△</span>Elevation<small>m</small></button>
+            <button class="layer" data-layer="uplift" aria-pressed="false"><span>↗</span>Convergence uplift<small>m</small></button>
+            <button class="layer" data-layer="crust" aria-pressed="false"><span>◒</span>Continentality<small>Crust</small></button>
             <button class="layer" data-layer="thickness" aria-pressed="false"><span>≋</span>Crust thickness<small>km</small></button>
             <button class="layer" data-layer="plates" aria-pressed="false"><span>◈</span>Tectonic plates<small>Identity</small></button>
             <button class="layer" data-layer="boundaries" aria-pressed="false"><span>⋈</span>Boundary motion<small>Kinematics</small></button>
@@ -49,7 +57,7 @@
           </div>
           <label class="checkbox"><input id="boundaries" type="checkbox" /> Region boundaries</label>
         </section>
-        <section class="stage-note"><p class="eyebrow">WHAT THIS MODEL MEANS</p><p>A plate can contain both oceanic and continental crust. Neither crust nor plate colors indicate land: elevation and water are not modeled yet.</p><p>Crust thickness and density are approximate initial properties. The diagnostic run does not evolve crust or move plates.</p></section>
+        <section class="stage-note"><p class="eyebrow">WHAT THIS MODEL MEANS</p><p>Elevation combines crust buoyancy, distance-decayed boundary effects, and bounded detail. Zero is a reference datum, not sea level; no water is modeled.</p><p>This is static approximate relief, without erosion or geological history. Diagnostic playback does not move plates or change terrain.</p></section>
         <div class="sidebar-bottom"><span class="status-dot"></span> LOCAL · OFFLINE · REPRODUCIBLE</div>
       </aside>
       <div class="workspace">
@@ -58,14 +66,17 @@
         <div class="legend"><span id="legend-title">Tectonic plates</span><div id="legend-scale"><span id="legend-low">−1</span><span id="legend-gradient"></span><span id="legend-high">+1</span></div></div>
         <div id="boundary-legend"><span data-kind="1">Convergent</span><span data-kind="2">Divergent</span><span data-kind="3">Transform-dominant</span><span data-kind="0">Quiet</span></div>
         <p id="crust-summary" class="muted"></p>
+        <p id="height-summary" class="muted"></p>
+        <div class="relief-controls"><label for="exaggeration">Globe vertical exaggeration</label><select id="exaggeration"><option value="0">0× · reference sphere</option><option value="1">1× · true scale</option><option value="5">5×</option><option value="10" selected>10×</option><option value="25">25×</option><option value="50">50×</option></select><span id="exaggeration-note" class="muted"></span></div>
         <div class="diagnostic-controls"><button id="play" disabled>Run diagnostic</button><span id="diagnostic-tick">Step 0</span><span>Conservative graph diffusion · not climate or geological time</span></div>
         <div class="metrics"><div><span>REGIONS</span><strong id="region-count">—</strong></div><div><span>SURFACE AREA</span><strong id="surface-area">—</strong></div><div><span>GENERATION + VIEWS</span><strong id="generation-time">—</strong></div><div><span>INITIAL FINGERPRINT</span><strong id="fingerprint">—</strong></div></div>
         <section class="inspector"><div><p class="eyebrow">REGION INSPECTOR</p><h3 id="selection-title">Explore the surface</h3><p id="selection-note" class="muted">Select a region to see its geometry and connections.</p></div><dl id="selection-details"></dl></section>
         <section class="boundary-inspector"><p class="eyebrow">CRUST EXPLANATION</p><p id="crust-note" class="muted">Select a region to inspect its crust potential, fitted threshold, and material approximations.</p></section>
+        <section class="boundary-inspector"><p class="eyebrow">WHY THIS ELEVATION?</p><p class="muted">Contributions sum to the native elevation. Display exaggeration changes none of them. Shear alone has no uplift term; subduction polarity and geological age are not modeled.</p><ul id="elevation-details"></ul></section>
         <section class="boundary-inspector"><p class="eyebrow">BOUNDARY EXPLANATION</p><p id="boundary-note" class="muted">Select a region to inspect its plate and any inter-plate boundary segments.</p><ul id="boundary-details"></ul></section>
       </div>
     </main>
-    <footer><span id="status" role="status" aria-live="polite">Starting…</span><span id="model-label">CRUST-1 · STATIC INITIAL CONDITIONS</span></footer>
+    <footer><span id="status" role="status" aria-live="polite">Starting…</span><span id="model-label">TERRAIN-1 · STATIC INITIAL CONDITIONS</span></footer>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

@@ -6,7 +6,11 @@
 #diagnostic-tick { font-variant-numeric: tabular-nums; white-space: nowrap; }
 #gpu-status { display: none; position: absolute; inset: 0; place-items: center; padding: 25px; background: #101719e8; color: #eda799; text-align: center; }
 canvas[data-gpu="lost"] ~ #gpu-status { display: grid; }
-#plate-count, #plate-speed, #continental-fraction, #continental-scale { margin-bottom: 18px; }
+#plate-count, #plate-speed, #continental-fraction, #continental-scale, #relief-scale, #boundary-width, #detail-amplitude { margin-bottom: 18px; }
+.relief-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0; }
+.relief-controls label, .relief-controls select { margin: 0; }
+.relief-controls select { width: auto; font-size: 11px; padding: 5px; }
+#elevation-details { font-size: 12px; font-variant-numeric: tabular-nums; }
 #crust-summary { margin-bottom: 12px; }
 #boundary-legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 10px; margin: -8px 0 16px; }
 [data-kind="0"] { color: #82919a; }[data-kind="1"] { color: #ef927e; }[data-kind="2"] { color: #77c6e8; }[data-kind="3"] { color: #e5cd79; }

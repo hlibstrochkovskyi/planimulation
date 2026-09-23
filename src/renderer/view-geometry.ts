@@ -7,7 +7,8 @@ import type { Tectonics } from '../core/tectonics';
 import { BOUNDARY_COLORS } from '../core/tectonics';
 
 export interface ViewGeometry { positions: Float32Array; regions: Float32Array; lines: Float32Array;
-  tectonicLines: Float32Array; tectonicColors: Float32Array }
+  tectonicLines: Float32Array; tectonicColors: Float32Array;
+  radialOffsets: Float32Array; lineOffsets: Float32Array; tectonicOffsets: Float32Array }
 export interface ViewPair { flat: ViewGeometry; globe: ViewGeometry }
 
 function clip(points: Point2[], bound: number, greater: boolean): Point2[] {
@@ -23,7 +24,26 @@ function clip(points: Point2[], bound: number, greater: boolean): Point2[] {
 }
 
 /** Display-only triangulation. Clipping must not create new simulation regions. */
-export function buildViewGeometry(surface: Surface, tectonics?: Tectonics): ViewPair {
+export function buildViewGeometry(surface: Surface, tectonics?: Tectonics, elevation?: Float64Array): ViewPair {
+  if (elevation && elevation.length !== surface.areasSquareMeters.length) throw new Error('Invalid elevation field length.');
+  // Every shared dual corner uses the same mean of its incident region heights.
+  // This interpolation belongs to the viewer, not to the physical model.
+  const shared = new Map<string, { sum: number; count: number }>();
+  const key = (v: readonly number[]): string => v.join(',');
+  if (elevation) for (let id = 0; id < elevation.length; id++) {
+    for (let j = surface.boundaryOffsets[id]; j < surface.boundaryOffsets[id + 1]; j++) {
+      const k = key(readVector(surface.boundaryDirections, j));
+      const value = shared.get(k) ?? { sum: 0, count: 0 };
+      value.sum += elevation[id]; value.count++; shared.set(k, value);
+    }
+  }
+  const corner = (v: readonly number[]): number => {
+    if (!elevation) return 0;
+    const value = shared.get(key(v));
+    if (!value) throw new Error('Missing shared relief corner.');
+    return value.sum / value.count / surface.radiusMeters;
+  };
+  const radialOffsets: number[] = [], lineOffsets: number[] = [], tectonicOffsets: number[] = [];
   const flat = { positions: [] as number[], regions: [] as number[], lines: [] as number[], tectonicLines: [] as number[], tectonicColors: [] as number[] };
   const globe = { positions: [] as number[], regions: [] as number[], lines: [] as number[], tectonicLines: [] as number[], tectonicColors: [] as number[] };
   for (let id = 0; id < surface.areasSquareMeters.length; id++) {
@@ -46,6 +66,9 @@ export function buildViewGeometry(surface: Surface, tectonics?: Tectonics): View
       const a = readVector(surface.boundaryDirections, j);
       const b = readVector(surface.boundaryDirections, j + 1 === end ? start : j + 1);
       globe.positions.push(...center, ...a, ...b); globe.regions.push(id, id, id);
+      const ha = corner(a), hb = corner(b);
+      radialOffsets.push((elevation?.[id] ?? 0) / surface.radiusMeters, ha, hb);
+      lineOffsets.push(ha, hb);
       globe.lines.push(...a.map((v) => v * 1.0002), ...b.map((v) => v * 1.0002));
     }
   }
@@ -54,6 +77,7 @@ export function buildViewGeometry(surface: Surface, tectonics?: Tectonics): View
     const color = new Color(BOUNDARY_COLORS[tectonics.boundaryTypes[i]]);
     const rgb = [color.r, color.g, color.b];
     globe.tectonicLines.push(...a.map((v) => v * 1.0008), ...b.map((v) => v * 1.0008));
+    tectonicOffsets.push(corner(a), corner(b));
     globe.tectonicColors.push(...rgb, ...rgb);
     for (const [p, q] of projectArc(a, b)) {
       flat.tectonicLines.push(p[0] * 2 - 1, .5 - p[1], .0003, q[0] * 2 - 1, .5 - q[1], .0003);
@@ -62,6 +86,8 @@ export function buildViewGeometry(surface: Surface, tectonics?: Tectonics): View
   }
   const pack = (data: typeof flat): ViewGeometry => ({ positions: Float32Array.from(data.positions),
     regions: Float32Array.from(data.regions), lines: Float32Array.from(data.lines),
-    tectonicLines: Float32Array.from(data.tectonicLines), tectonicColors: Float32Array.from(data.tectonicColors) });
-  return { flat: pack(flat), globe: pack(globe) };
+    tectonicLines: Float32Array.from(data.tectonicLines), tectonicColors: Float32Array.from(data.tectonicColors),
+    radialOffsets: new Float32Array(0), lineOffsets: new Float32Array(0), tectonicOffsets: new Float32Array(0) });
+  return { flat: pack(flat), globe: { ...pack(globe), radialOffsets: Float32Array.from(radialOffsets),
+    lineOffsets: Float32Array.from(lineOffsets), tectonicOffsets: Float32Array.from(tectonicOffsets) } };
 }

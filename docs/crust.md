@@ -1,6 +1,6 @@
 # Initial crust: milestone B2
 
-Implemented model: `crust-1`, binary protocol 3. This increment adds static initial crust properties to B1 plate kinematics. It does not generate elevation, water, geological ages, subduction polarity, or geological history.
+Historical B2 baseline: `crust-1`, binary protocol 3. [B3 elevation](terrain.md) now extends it with `terrain-1` and protocol 4, leaving crust generation unchanged. The recipe, measurements, and limitations below describe B2 itself, which does not generate elevation, water, geological ages, subduction polarity, or geological history.
 
 ## Meaning and boundaries
 

@@ -1,6 +1,6 @@
 # World generation: technical proposal
 
-Initial proposal: September 19, 2026. The spherical surface, recipes, random streams, GPU flat/globe views, B1 static plate kinematics, and B2 initial crust are implemented. Terrain, water, climate, and ecology remain proposals. See [DESIGN.md](../DESIGN.md) for the concept, [development](development.md) for workflow, [Plate kinematics](tectonics.md), and [Initial crust](crust.md) for implemented algorithms and their limitations.
+Initial proposal: September 19, 2026. The spherical surface, recipes, random streams, GPU flat/globe views, B1 static plate kinematics, B2 initial crust, and B3 explainable elevation are implemented. Water, erosion, climate, and ecology remain proposals. See [DESIGN.md](../DESIGN.md), [development](development.md), [Plate kinematics](tectonics.md), [Initial crust](crust.md), and [Explainable elevation](terrain.md) for the concept and implemented algorithms with their limitations.
 
 ## 1. One world, multiple views
 
@@ -65,17 +65,19 @@ Geometry depends on its version and resolution. Continental structure and detail
 
 ### B. Approximate plates and crust
 
-The implemented B1 subset uses a positive-cost multi-source graph partition to guarantee connected plates, rigid angular velocities, and local shared-edge relative motion. B2 adds an independent spherical continentality field with area fitting and approximate thickness/density. Relief dependencies below remain proposals; neither plate identity nor crust dominance implies land or ocean.
+The implemented B1 subset uses a positive-cost multi-source graph partition to guarantee connected plates, rigid angular velocities, and local shared-edge relative motion. B2 adds an independent spherical continentality field with area fitting and approximate thickness/density. B3 consumes these for approximate elevation; neither plate identity nor crust dominance implies land or ocean.
 
 Choose distributed plate centers on the sphere. Partition by spherical distance, optionally applying bounded boundary deformation while preserving plate connectivity. Generate a coherent large-scale continentality field: one plate may include different crustal regions.
 
 Assign each plate an approximate rotation pole and angular velocity. Point velocity follows `v = ω × r`. At a boundary, compute relative velocity components across and along the boundary.
 
-Convergence, divergence, and shear are proposed to contribute differently to relief, conditioned on continentality. Approximate crust density is available; age is not. They can later refine these effects and resource-related geological features.
+B3 uses convergence and divergence conditioned on continentality. Pure shear currently has no vertical effect. Approximate crust density is available; age and subduction polarity are not. They can later refine relief and resource-related geological features.
 
 This is a static tectonics-inspired generator. It does not integrate millions of years of plate motion or establish scientifically accurate geological ages.
 
 ### C. Elevation
+
+Implemented B3 uses a crust buoyancy baseline, strongest-source exponential boundary envelopes over physical graph distance, and independent bounded spherical detail. See [Explainable elevation](terrain.md) for exact formulas, controls, limitations, and checks. Erosion is not yet included.
 
 Combine a crustal baseline, spatially distributed boundary effects, and bounded local detail. Boundary contributions decay with distance according to structure type, encouraging coherent mountain belts.
 
@@ -152,7 +154,7 @@ The first map includes shaded physical terrain, elevation with a metric legend, 
 
 The flat projection must split triangles crossing the seam and map all display fragments back to the original `cell_id`. Projection distorts polar shapes; measurements come from spherical geometry. Early categorical layers should expose actual computational regions instead of concealing them through smoothing.
 
-The globe uses the same centers, elevations, and triangles. A labeled vertical-exaggeration factor can improve readability without affecting modeled slopes and distances. Water uses a separate surface at its corresponding level.
+The globe uses the same centers and elevations, with shared-corner display interpolation. A labeled vertical-exaggeration factor improves readability without affecting physical heights or reference areas/distances. A separate water surface at its corresponding level remains future work.
 
 The current product targets a flat analytical map and a globe with eventual computed relief, not detailed 3D cities or a street-level environment. Settlements are markers sized or styled from their modeled properties. Visual detail must never acquire routing or resource consequences without an explicit scale-coupling model.
 

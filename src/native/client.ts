@@ -41,7 +41,7 @@ export class FrameReader {
       if (this.header === null) {
         if (this.length < this.headerLength) return;
         const h = JSON.parse(this.take(this.headerLength).toString('utf8')) as Header;
-        if (!h || h.protocol !== 3 || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
+        if (!h || h.protocol !== 4 || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
           || !['world', 'frame', 'error'].includes(h.kind)) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
@@ -71,7 +71,7 @@ export function decodeWorld(packet: Packet): World {
   const b = h.boundarySegmentCount;
   if (typeof b !== 'number' || !Number.isInteger(b) || b < 2 || b > neighbors || b % 2) throw new Error('Invalid native boundary count.');
   const expectedBytes = n * 24 + faces * 4 + (n + 1) * 8 + neighbors * 12 + n * 16 + neighbors * 48
-    + n * 4 + recipe.plateCount * 28 + b * 76 + 8 + n * 32;
+    + n * 4 + recipe.plateCount * 28 + b * 76 + 8 + n * 72;
   if (bytes.length !== expectedBytes) throw new Error('Invalid native world array lengths.');
   let cursor = 0;
   const f64 = (length: number): Float64Array => {
@@ -89,6 +89,16 @@ export function decodeWorld(packet: Packet): World {
   const tectonics = { owners: u32(n), seeds: u32(recipe.plateCount), angularVelocities: f64(recipe.plateCount * 3),
     boundaryCells: u32(b * 2), boundaryDirections: f64(b * 6), boundaryMotion: f64(b * 2), boundaryTypes: u32(b) };
   const crust = { threshold: f64(1)[0], potential: f64(n), continentality: f64(n), thicknessMeters: f64(n), densityKgPerCubicMeter: f64(n) };
+  const terrain = { baseline: f64(n), convergence: f64(n), divergence: f64(n), detail: f64(n), elevation: f64(n) };
+  for (let i = 0; i < n; i++) {
+    if (terrain.baseline[i] < -4500.000001 || terrain.baseline[i] > 167
+      || terrain.convergence[i] < 0 || terrain.convergence[i] > 12000
+      || terrain.divergence[i] < -3000 || terrain.divergence[i] > 5000
+      || Math.abs(terrain.detail[i]) > recipe.detailAmplitudeMeters + 1e-9
+      || Math.abs(terrain.elevation[i] - (terrain.baseline[i] + terrain.convergence[i] + terrain.divergence[i] + terrain.detail[i])) > 1e-8) {
+      throw new Error('Invalid native elevation contributions.');
+    }
+  }
   if (Math.abs(crust.threshold) > 1.12 || crust.potential.some((v) => Math.abs(v) > 1)
     || crust.continentality.some((v) => v < 0 || v > 1)
     || crust.thicknessMeters.some((v) => v < 7000 || v > 35000)
@@ -126,7 +136,7 @@ export function decodeWorld(packet: Packet): World {
     const key = a * n + c; pairs.set(key, (pairs.get(key) ?? 0) + 1);
   }
   if ([...pairs.values()].some((count) => count !== 2)) throw new Error('Duplicate or missing native boundary segment.');
-  return { recipe, surface, diagnosticField, tectonics, crust, checksum: h.checksum, stats };
+  return { recipe, surface, diagnosticField, tectonics, crust, terrain, checksum: h.checksum, stats };
 }
 
 export class NativeSession {

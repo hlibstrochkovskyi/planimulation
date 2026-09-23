@@ -20,7 +20,7 @@ try {
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.locator('#region-count')).toHaveText('10,242');
   const fingerprint = await page.locator('#fingerprint').innerText();
-  await expect(page.locator('#legend-title')).toContainText('Continentality');
+  await expect(page.locator('#legend-title')).toContainText('Elevation');
   await expect(page.locator('#crust-summary')).toContainText('38.00% target');
   const reference = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
   try { assert.equal((await reference.generate(DEFAULT_RECIPE)).world.checksum, fingerprint, 'Headless and desktop use the same native math.'); }
@@ -44,6 +44,8 @@ try {
   await expect(page.locator('#selection-title')).toContainText('Region');
   const selectedRegion = await page.locator('#selection-title').innerText();
   const selectedDetails = await page.locator('#selection-details').innerText();
+  await expect(page.locator('#elevation-details')).toContainText('Total elevation');
+  const elevationExplanation = await page.locator('#elevation-details').innerText();
   await expect(page.locator('#selection-details')).toContainText('Crust thickness');
   await expect(page.locator('#selection-details')).toContainText('kg/m³');
   const crustExplanation = await page.locator('#crust-note').innerText();
@@ -53,6 +55,14 @@ try {
   await expect(page.locator('#selection-title')).toHaveText(selectedRegion);
   await expect(page.locator('#selection-details')).toHaveText(selectedDetails, { useInnerText: true });
   await expect(page.locator('#crust-note')).toHaveText(crustExplanation);
+  await expect(page.locator('#elevation-details')).toHaveText(elevationExplanation, { useInnerText: true });
+  await page.locator('#exaggeration').selectOption('0');
+  await expect(canvas).toHaveAttribute('data-exaggeration', '0');
+  await page.locator('#exaggeration').selectOption('25');
+  await expect(canvas).toHaveAttribute('data-exaggeration', '25');
+  await expect(page.locator('#selection-details')).toHaveText(selectedDetails, { useInnerText: true });
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
+  await page.locator('#exaggeration').selectOption('10');
   await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
   await expect(page.locator('#selection-title')).toHaveText(selectedRegion);
   await expect(page.locator('button[data-view="globe"]')).toHaveAttribute('aria-pressed', 'true');
@@ -63,6 +73,9 @@ try {
   await page.locator('[data-layer="thickness"]').click();
   await expect(page.locator('#legend-low')).toHaveText('7 km');
   await expect(page.locator('#legend-high')).toHaveText('35 km');
+  await page.locator('[data-layer="uplift"]').click();
+  await expect(page.locator('#legend-title')).toContainText('Convergence uplift');
+  await expect(page.locator('#legend-high')).toHaveText('12,000 m');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await page.locator('[data-layer="boundaries"]').click();
   await expect(page.locator('#legend-title')).toContainText('Boundary motion');
@@ -116,6 +129,9 @@ try {
   await page.locator('#plate-speed').fill('0');
   await page.locator('#continental-fraction').fill('0');
   await page.locator('#continental-scale').fill('2');
+  await page.locator('#relief-scale').fill('0');
+  await page.locator('#detail-amplitude').fill('0');
+  await page.locator('#boundary-width').fill('500');
   await page.locator('#generate').click();
   await expect(page.locator('#world-name')).toHaveText('desktop-roundtrip');
   await expect(page.locator('#region-count')).toHaveText('642');
@@ -131,6 +147,23 @@ try {
   await expect(page.locator('#plate-speed')).toHaveValue('8');
   await expect(page.locator('#continental-fraction')).toHaveValue('38');
   await expect(page.locator('#continental-scale')).toHaveValue('1');
+  await expect(page.locator('#relief-scale')).toHaveValue('1');
+  await expect(page.locator('#detail-amplitude')).toHaveValue('300');
+  await expect(page.locator('#boundary-width')).toHaveValue('300');
+
+  // Experimental small planets must limit display distortion, never physical heights.
+  await page.locator('#radius').fill('100');
+  await page.locator('#subdivision').selectOption('2');
+  await page.locator('#generate').click();
+  await expect(page.locator('#region-count')).toHaveText('162');
+  const smallHash = await page.locator('#fingerprint').innerText();
+  await page.locator('#exaggeration').selectOption('50');
+  await expect(page.locator('#exaggeration-note')).toContainText('20% radius display limit');
+  assert.ok(Number(await canvas.getAttribute('data-exaggeration')) < 50);
+  await expect(page.locator('#fingerprint')).toHaveText(smallHash);
+  await page.locator('#exaggeration').selectOption('10');
+  await page.getByRole('button', { name: 'Open recipe' }).click();
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
 
   await writeFile(recipePath, JSON.stringify({ ...DEFAULT_RECIPE, modelVersion: 'future' }));
   await page.getByRole('button', { name: 'Open recipe' }).click();
@@ -162,7 +195,7 @@ try {
   await page.locator('#generate').click();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
   await canvas.click({ position: { x: bounds.width * .6, y: bounds.height * .5 } });
-  await page.locator('[data-layer="crust"]').click();
+  await page.locator('[data-layer="elevation"]').click();
   await mkdir('artifacts', { recursive: true });
   const screenshot = executablePath ? 'artifacts/surface-desktop-packaged.png' : 'artifacts/surface-desktop.png';
   await page.screenshot({ path: screenshot });

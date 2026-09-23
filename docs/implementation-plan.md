@@ -1,6 +1,6 @@
 # Early implementation plan
 
-Status: milestone A, the native/GPU foundation, B1 (static plate kinematics), and B2 (initial crust), September 23, 2026. Elevation, water, and later simulation milestones remain proposals. Each milestone is independently demonstrable; milestone letters are not released versions.
+Status: milestone A, the native/GPU foundation, B1 (static plate kinematics), B2 (initial crust), and B3 (explainable elevation), September 23, 2026. Water, erosion, and later simulation milestones remain proposals. Each milestone is independently demonstrable; milestone letters are not released versions.
 
 ## 1. Selected foundation stack
 
@@ -54,7 +54,7 @@ Known risks include topology near original icosahedron vertices, projection seam
 
 ## 4. Milestone B: first visual generator
 
-B1 is implemented: connected plates, independent seed/motion streams, angular velocities, real boundary segments, relative opening/shear, and shared flat/globe layers and inspectors. B2 adds independent continentality, area fitting, and initial thickness/density. See [Plate kinematics](tectonics.md) and [Initial crust](crust.md). Elevation, oceans, and prehistory integration are not yet implemented; B as a whole is not complete.
+B1 is implemented: connected plates, independent seed/motion streams, angular velocities, real boundary segments, relative opening/shear, and shared flat/globe layers and inspectors. B2 adds independent continentality, area fitting, and initial thickness/density. B3 adds explainable elevation and displaced globe geometry. See [Plate kinematics](tectonics.md), [Initial crust](crust.md), and [Explainable elevation](terrain.md). Oceans and prehistory integration are not yet implemented; B as a whole is not complete.
 
 Deliverable: the user changes a seed and parameters and receives structured terrain, oceans, and geological layers.
 
@@ -111,7 +111,7 @@ Preserve differences between worlds. Checks detect broken laws rather than requi
 
 ## 8. Adding 3D
 
-The native/GPU foundation already provides a smooth globe and a flat map sharing layers and `cell_id`. Milestone B will add the same computed elevation and ocean fields to both. Climate completion is not a prerequisite. No detailed 3D cities or street-level environment are required; settlements and routes will be analytical overlays.
+The native/GPU foundation provides a globe and flat map sharing layers and `cell_id`. B3 adds the same computed elevation to both, with displaced globe geometry and display-only exaggeration. Ocean fields remain future work. Climate completion is not a prerequisite. No detailed 3D cities or street-level environment are required; settlements and routes will be analytical overlays.
 
 Acceptance: a selected region has identical data on the map and globe; view switching leaves the model hash unchanged; vertical exaggeration does not affect measurements. Globe LOD can follow measured need; a detailed local environment is outside the current scope.
 
@@ -133,4 +133,4 @@ Automated checks focus on topology, units, balances, fluxes, determinism, checkp
 
 Population readiness means the environment provides water, wild food, seasonal hazards, traversal costs, and change history with stable behavior across an ensemble. Then introduce the groups described in [DESIGN.md](../DESIGN.md), consuming real stocks and modifying their environment.
 
-Current implementation scope is milestone A, the native/GPU integration and diagnostic transport test, B1 plate kinematics, and B2 initial crust. Remaining milestone B features follow as separate increments. Climate equations, economic modeling, and political entities must not block the first explainable terrain map.
+Current implementation scope is milestone A, the native/GPU integration and diagnostic transport test, B1 plate kinematics, B2 initial crust, and B3 explainable elevation. Remaining milestone B features follow as separate increments. Climate equations, economic modeling, and political entities must not block the first explainable terrain map.

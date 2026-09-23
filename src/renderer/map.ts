@@ -5,8 +5,10 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { World } from '../core/world';
 import { speedCmPerYear } from '../core/tectonics';
 import type { ViewGeometry, ViewPair } from './view-geometry';
+import { displaceDirections, effectiveExaggeration } from './relief';
+import { summarizeTerrain } from '../core/terrain';
 
-export type Layer = 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness';
+export type Layer = 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift';
 export type ViewMode = 'flat' | 'globe';
 
 export class SurfaceMap {
@@ -22,7 +24,7 @@ export class SurfaceMap {
     uniforms: { field: { value: null }, textureWidth: { value: 1 }, textureHeight: { value: 1 },
       selected: { value: -1 }, globe: { value: 0 }, categorical: { value: 0 }, muted: { value: 0 } },
     vertexShader: `attribute float region; varying float cell; varying vec3 direction;
-      void main() { cell=region; direction=normalMatrix*position;
+      void main() { cell=region; direction=normalMatrix*normal;
         gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
     fragmentShader: `uniform sampler2D field; uniform float textureWidth; uniform float textureHeight;
       uniform float selected; uniform float globe; uniform float categorical; uniform float muted;
@@ -35,7 +37,7 @@ export class SurfaceMap {
         if(categorical>0.5) color=0.51+0.23*cos(6.2831853*(v*0.618033989+vec3(0.0,0.33,0.67)));
         color*=1.0-muted*0.65;
         if(abs(cell-selected)<0.25) color=vec3(0.96,0.78,0.42);
-        if(globe>0.5) color*=0.76+0.24*max(0.0,dot(normalize(direction),normalize(vec3(-0.4,0.6,1.0))));
+        if(globe>0.5) color*=0.4+0.6*max(0.0,dot(normalize(direction),normalize(vec3(-0.4,0.6,1.0))));
         gl_FragColor=vec4(color,1.0);
       }`,
   });
@@ -46,7 +48,10 @@ export class SurfaceMap {
   private values = new Float32Array(0);
   private world: World | null = null;
   private mode: ViewMode = 'flat';
-  private layer: Layer = 'crust';
+  private layer: Layer = 'elevation';
+  private exaggeration = 10;
+  private appliedExaggeration = NaN;
+  private terrainRange = { minimumMeters: 0, maximumMeters: 1 };
   private boundaries = false;
   private worker: Worker | null = null;
   private abortPreparation: (() => void) | null = null;
@@ -64,7 +69,7 @@ export class SurfaceMap {
     this.controls.enableRotate = false;
     this.controls.screenSpacePanning = true;
     this.controls.minZoom = .5; this.controls.maxZoom = 30;
-    this.controls.minDistance = 1.15; this.controls.maxDistance = 8;
+    this.controls.minDistance = 1.3; this.controls.maxDistance = 8;
     this.controls.addEventListener('change', () => this.draw());
     canvas.addEventListener('pointerdown', (e) => { this.pointerStart = [e.clientX, e.clientY]; });
     canvas.addEventListener('pointerup', (e) => {
@@ -98,10 +103,14 @@ export class SurfaceMap {
     const geometry = new BufferGeometry();
     geometry.setAttribute('position', new BufferAttribute(data.positions, 3));
     geometry.setAttribute('region', new BufferAttribute(data.regions, 1));
+    geometry.computeVertexNormals();
     const lines = new BufferGeometry(); lines.setAttribute('position', new BufferAttribute(data.lines, 3));
     const tectonicLines = new BufferGeometry();
     tectonicLines.setAttribute('position', new BufferAttribute(data.tectonicLines, 3));
     tectonicLines.setAttribute('color', new BufferAttribute(data.tectonicColors, 3));
+    for (const [g, offsets] of [[geometry, data.radialOffsets], [lines, data.lineOffsets], [tectonicLines, data.tectonicOffsets]] as const) {
+      if (offsets.length) { g.userData.base = (g.getAttribute('position').array as Float32Array).slice(); g.userData.offsets = offsets; }
+    }
     const group = new Group();
     group.add(new Mesh(geometry, this.material), new LineSegments(lines, this.lineMaterial), new LineSegments(tectonicLines, this.tectonicMaterial));
     return group;
@@ -119,11 +128,14 @@ export class SurfaceMap {
       worker.onmessage = (e: MessageEvent<{ pair: ViewPair; error?: string }>) => {
         if (e.data.error) reject(new Error(e.data.error)); else resolve(e.data.pair);
       };
-      worker.postMessage({ surface: world.surface, tectonics: world.tectonics });
+      worker.postMessage({ surface: world.surface, tectonics: world.tectonics, elevation: world.terrain.elevation });
     }).finally(() => { worker.terminate(); if (this.worker === worker) { this.worker = null; this.abortPreparation = null; } });
     const next = { flat: this.makeView(pair.flat), globe: this.makeView(pair.globe) };
     this.releaseViews(); this.views = next;
     this.scene.add(next.flat, next.globe); this.world = world;
+    this.appliedExaggeration = NaN;
+    this.terrainRange = summarizeTerrain(world.surface, world.terrain);
+    this.setExaggeration(this.exaggeration);
     const width = Math.min(1024, this.renderer.capabilities.maxTextureSize);
     const height = Math.ceil(world.stats.regionCount / width);
     this.values = new Float32Array(width * height);
@@ -155,6 +167,8 @@ export class SurfaceMap {
     const w = this.world;
     for (let id = 0; id < w.stats.regionCount; id++) {
       this.values[id] = this.layer === 'plates' || this.layer === 'boundaries' ? w.tectonics.owners[id]
+        : this.layer === 'elevation' ? (w.terrain.elevation[id] - this.terrainRange.minimumMeters) / Math.max(1, this.terrainRange.maximumMeters - this.terrainRange.minimumMeters)
+        : this.layer === 'uplift' ? w.terrain.convergence[id] / 12000
         : this.layer === 'crust' ? w.crust.continentality[id]
         : this.layer === 'thickness' ? (w.crust.thicknessMeters[id] - 7000) / 28000
         : this.layer === 'speed' ? speedCmPerYear(w.surface, w.tectonics, id) / Math.max(1e-30, w.recipe.maxPlateSpeedCmPerYear)
@@ -170,6 +184,22 @@ export class SurfaceMap {
     if (this.views) for (const group of Object.values(this.views)) group.children[1].visible = visible;
     this.draw();
   }
+  setExaggeration(requested: number): number {
+    const applied = this.world ? effectiveExaggeration(requested, this.world.recipe.radiusMeters, this.world.terrain.elevation) : requested;
+    this.exaggeration = requested;
+    if (this.appliedExaggeration === applied) return applied;
+    this.appliedExaggeration = applied;
+    if (this.views) for (const object of this.views.globe.children) {
+      const geometry = (object as Mesh<BufferGeometry>).geometry;
+      const { base, offsets } = geometry.userData as { base?: Float32Array; offsets?: Float32Array };
+      if (!base || !offsets) continue;
+      const attribute = geometry.getAttribute('position') as BufferAttribute;
+      displaceDirections(base, offsets, applied, attribute.array as Float32Array); attribute.needsUpdate = true;
+      if (object instanceof Mesh) geometry.computeVertexNormals();
+      geometry.computeBoundingSphere(); geometry.computeBoundingBox();
+    }
+    this.canvas.dataset.exaggeration = String(applied); this.draw(); return applied;
+  }
   reset(): void {
     this.controls.target.set(0, 0, 0);
     if (this.mode === 'flat') { this.flatCamera.position.set(0, 0, 3); this.flatCamera.zoom = 1; this.flatCamera.updateProjectionMatrix(); }
@@ -178,7 +208,7 @@ export class SurfaceMap {
   }
   zoomBy(factor: number): void {
     if (this.mode === 'flat') { this.flatCamera.zoom = Math.max(.5, Math.min(30, this.flatCamera.zoom * factor)); this.flatCamera.updateProjectionMatrix(); }
-    else this.globeCamera.position.multiplyScalar(Math.max(1.15, Math.min(8, this.globeCamera.position.length() / factor)) / this.globeCamera.position.length());
+    else this.globeCamera.position.multiplyScalar(Math.max(1.3, Math.min(8, this.globeCamera.position.length() / factor)) / this.globeCamera.position.length());
     this.controls.update(); this.draw();
   }
   private draw(): void {

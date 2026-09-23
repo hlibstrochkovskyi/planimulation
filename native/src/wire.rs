@@ -38,12 +38,22 @@ pub fn arrays(w: &World) -> Vec<u8> {
     f64s(&mut out, c.continentality.iter().copied());
     f64s(&mut out, c.thickness_meters.iter().copied());
     f64s(&mut out, c.density_kg_per_cubic_meter.iter().copied());
+    let t = &w.terrain;
+    for field in [
+        &t.baseline,
+        &t.convergence,
+        &t.divergence,
+        &t.detail,
+        &t.elevation,
+    ] {
+        f64s(&mut out, field.iter().copied());
+    }
     out
 }
-/// v3: u32 header byte count, JSON header, fixed-order little-endian arrays.
+/// v4: u32 header byte count, JSON header, fixed-order little-endian arrays.
 pub fn send(out: &mut impl Write, header: serde_json::Value, bytes: &[u8]) -> io::Result<()> {
     let mut header = header;
-    header["protocol"] = json!(3);
+    header["protocol"] = json!(4);
     header["byteLength"] = json!(bytes.len());
     let encoded = serde_json::to_vec(&header)?;
     out.write_all(&(encoded.len() as u32).to_le_bytes())?;

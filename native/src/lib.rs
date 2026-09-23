@@ -15,15 +15,18 @@ pub struct Recipe {
     pub max_plate_speed_cm_per_year: f64,
     pub continental_fraction: f64,
     pub continental_scale: f64,
+    pub relief_scale: f64,
+    pub boundary_width_km: f64,
+    pub detail_amplitude_meters: f64,
 }
 
 impl Recipe {
     pub fn validate(&self) -> Result<(), String> {
         if self.schema_version != 1
-            || self.model_version != "crust-1"
+            || self.model_version != "terrain-1"
             || self.random_version != "fnv1a-utf8-mulberry32-1"
         {
-            return Err("Unsupported recipe version; expected crust-1.".into());
+            return Err("Unsupported recipe version; expected terrain-1.".into());
         }
         if self.seed.trim().is_empty() || self.seed.encode_utf16().count() > 128 {
             return Err("Seed must contain 1–128 UTF-16 code units and cannot be blank.".into());
@@ -48,6 +51,18 @@ impl Recipe {
         {
             return Err(
                 "Continental fraction must be 0–1; continental scale must be 0.5–2.".into(),
+            );
+        }
+        if !self.relief_scale.is_finite()
+            || !(0.0..=2.).contains(&self.relief_scale)
+            || !self.boundary_width_km.is_finite()
+            || !(50.0..=1000.).contains(&self.boundary_width_km)
+            || !self.detail_amplitude_meters.is_finite()
+            || !(0.0..=1000.).contains(&self.detail_amplitude_meters)
+        {
+            return Err(
+                "Relief scale must be 0–2, boundary width 50–1000 km, detail amplitude 0–1000 m."
+                    .into(),
             );
         }
         Ok(())
@@ -228,6 +243,7 @@ pub struct World {
     pub initial_mass: f64,
     pub tectonics: tectonics::Tectonics,
     pub crust: crust::Crust,
+    pub terrain: terrain::Terrain,
 }
 impl World {
     pub fn generate(recipe: Recipe) -> Result<Self, String> {
@@ -246,6 +262,7 @@ impl World {
             recipe.max_plate_speed_cm_per_year,
             recipe.radius_meters,
         );
+        let terrain = terrain::Terrain::build(&surface, &crust, &tectonics, &recipe);
         let mut rng = Random::stream(&recipe.seed, "diagnostic-field");
         let modes: Vec<_> = (0..8)
             .map(|_| {
@@ -282,6 +299,7 @@ impl World {
             initial_mass: 0.,
             tectonics,
             crust,
+            terrain,
         };
         w.initial_mass = w.mass();
         Ok(w)
@@ -326,4 +344,5 @@ impl World {
 
 pub mod crust;
 pub mod tectonics;
+pub mod terrain;
 pub mod wire;
