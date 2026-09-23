@@ -15,7 +15,7 @@ const executable = path.resolve('dist/native', process.platform === 'win32' ? 'p
 test('binary framing handles fragmented headers/bodies, multiple frames, and rejects oversized packets', () => {
   const received: Packet[] = [], reader = new FrameReader((packet) => received.push(packet));
   const body = Buffer.from([1, 2, 3]);
-  const header = Buffer.from(JSON.stringify({ protocol: 4, kind: 'frame', byteLength: body.length }));
+  const header = Buffer.from(JSON.stringify({ protocol: 5, kind: 'frame', byteLength: body.length }));
   const prefix = Buffer.alloc(4); prefix.writeUInt32LE(header.length);
   const packet = Buffer.concat([prefix, header, body]);
   for (const byte of packet) reader.push(Buffer.from([byte]));
@@ -87,16 +87,17 @@ test('native validation rejects legacy recipes and malformed output is not decod
     assert.throws(() => decodeWorld({ ...packet, bytes: invalid }), /finite/);
     assert.throws(() => decodeWorld({ ...packet, header: { ...packet.header, boundarySegmentCount: 1e9 } }), /boundary count/);
     const world = decodeWorld(packet);
-    const extraBytes = world.stats.regionCount * 4 + world.recipe.plateCount * 28 + Number(packet.header.boundarySegmentCount) * 76 + 8 + world.stats.regionCount * 72;
+    const waterBytes = 20 + world.stats.regionCount * 12;
+    const extraBytes = world.stats.regionCount * 4 + world.recipe.plateCount * 28 + Number(packet.header.boundarySegmentCount) * 76 + 8 + world.stats.regionCount * 72 + waterBytes;
     const corruptedOwner = Buffer.from(packet.bytes);
     corruptedOwner.writeUInt32LE(world.recipe.plateCount, packet.bytes.length - extraBytes);
     assert.throws(() => decodeWorld({ ...packet, bytes: corruptedOwner }), /plate metadata/);
     for (const [offset, value] of [[0, NaN], [8, 2], [8 + 12 * 8, -0.1], [8 + 24 * 8, 1], [8 + 36 * 8, 4000]]) {
       const invalidCrust = Buffer.from(packet.bytes);
-      invalidCrust.writeDoubleLE(value, packet.bytes.length - (8 + 12 * 72) + offset);
+      invalidCrust.writeDoubleLE(value, packet.bytes.length - (8 + 12 * 72) - waterBytes + offset);
       assert.throws(() => decodeWorld({ ...packet, bytes: invalidCrust }), /finite|crust/);
     }
-    const invalidHeight = Buffer.from(packet.bytes); invalidHeight.writeDoubleLE(100000, packet.bytes.length - 8);
+    const invalidHeight = Buffer.from(packet.bytes); invalidHeight.writeDoubleLE(100000, packet.bytes.length - waterBytes - 8);
     assert.throws(() => decodeWorld({ ...packet, bytes: invalidHeight }), /elevation/);
   } finally { session.close(); }
 });

@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 fn recipe(level: u32, seed: &str) -> Recipe {
     Recipe {
         schema_version: 1,
-        model_version: "terrain-1".into(),
+        model_version: "water-1".into(),
         random_version: "fnv1a-utf8-mulberry32-1".into(),
         seed: seed.into(),
         subdivision: level,
@@ -15,6 +15,7 @@ fn recipe(level: u32, seed: &str) -> Recipe {
         relief_scale: 1.,
         boundary_width_km: 300.,
         detail_amplitude_meters: 300.,
+        water: planimulation_core::water::WaterSettings::Coverage { fraction: 0.71 },
     }
 }
 #[test]

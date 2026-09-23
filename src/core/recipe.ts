@@ -1,5 +1,7 @@
-export const MODEL_VERSION = 'terrain-1';
+export const MODEL_VERSION = 'water-1';
 export const RANDOM_VERSION = 'fnv1a-utf8-mulberry32-1';
+
+export type WaterSettings = { mode: 'coverage'; fraction: number } | { mode: 'volume'; volumeCubicMeters: number };
 
 export interface Recipe {
   schemaVersion: 1;
@@ -15,6 +17,7 @@ export interface Recipe {
   reliefScale: number;
   boundaryWidthKm: number;
   detailAmplitudeMeters: number;
+  water: WaterSettings;
 }
 
 export const DEFAULT_RECIPE: Readonly<Recipe> = Object.freeze({
@@ -31,6 +34,7 @@ export const DEFAULT_RECIPE: Readonly<Recipe> = Object.freeze({
   reliefScale: 1,
   boundaryWidthKm: 300,
   detailAmplitudeMeters: 300,
+  water: Object.freeze({ mode: 'coverage', fraction: 0.71 }),
 });
 
 /** Strict parsing prevents an old or misspelled parameter from being silently ignored. */
@@ -44,7 +48,7 @@ export function parseRecipe(value: unknown): Recipe {
     if (!keys.includes(key)) throw new Error(`Unknown recipe field: ${key}.`);
   }
   if (input.schemaVersion !== 1 || input.modelVersion !== MODEL_VERSION || input.randomVersion !== RANDOM_VERSION) {
-    throw new Error('Unsupported recipe version. This build supports terrain-1 recipes only; legacy recipes are not silently migrated.');
+    throw new Error('Unsupported recipe version. This build supports water-1 recipes only; legacy recipes are not silently migrated.');
   }
   for (const key of keys) {
     if (!(key in input)) throw new Error(`Missing recipe field: ${key}.`);
@@ -86,7 +90,20 @@ export function parseRecipe(value: unknown): Recipe {
     reliefScale: Number(input.reliefScale),
     boundaryWidthKm: Number(input.boundaryWidthKm),
     detailAmplitudeMeters: Number(input.detailAmplitudeMeters),
+    water: parseWaterSettings(input.water, input.radiusMeters),
   };
+}
+
+function parseWaterSettings(value: unknown, radius: number): WaterSettings {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Water settings must be an object.');
+  const w = value as Record<string, unknown>;
+  const key = w.mode === 'coverage' ? 'fraction' : w.mode === 'volume' ? 'volumeCubicMeters' : null;
+  if (!key || Object.keys(w).length !== 2 || !Object.hasOwn(w, key) || !Object.hasOwn(w, 'mode')) throw new Error('Choose exactly one water mode: coverage or volume.');
+  const amount = w[key], max = w.mode === 'coverage' ? 1 : 4 * Math.PI * radius ** 2 * 20_000;
+  if (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 0 || amount > max) {
+    throw new Error('Water coverage must be 0–1; volume must be nonnegative and at most a 20 km global equivalent layer.');
+  }
+  return w.mode === 'coverage' ? { mode: 'coverage', fraction: amount } : { mode: 'volume', volumeCubicMeters: amount };
 }
 
 export function serializeRecipe(recipe: Recipe): string {

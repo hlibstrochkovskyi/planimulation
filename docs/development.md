@@ -4,7 +4,7 @@
 
 Milestone A establishes spherical geometry, recipes, and inspection. The September 20 native/GPU increment moves desktop and headless calculations to Rust and adds two Three.js views: a flat atlas and a globe. Both display the same region IDs, fields, and selection. B3 now displaces the globe using computed elevation.
 
-Milestone B1 adds static plate kinematics. B2 adds independent continentality, approximate crust thickness/density, and area fitting. B3 adds inspectable elevation contributions, distance-decayed boundary effects, and globe relief. Read [Explainable elevation](terrain.md) for the current `terrain-1` recipe and protocol 4 extension. No water, erosion, or geological time integration is implemented yet.
+Milestone B1 adds static plate kinematics. B2 adds independent continentality, approximate crust thickness/density, and area fitting. B3 adds inspectable elevation contributions, distance-decayed boundary effects, and globe relief. B4 adds initial water-level fitting, an explicit inventory, and connected water bodies. Read [Initial water](water.md) for the current `water-1` recipe and protocol 5 extension. Water dynamics, erosion, and geological time integration are not implemented yet; the globe still displays the bed, with analytical water colors.
 
 The diagnostic diffusion mode exists to exercise stateful native calculation, small dynamic messages, and responsive rendering. It is not a climate, erosion, or geological model. Its step number is not a calendar. Read [Native/GPU foundation](native-foundation.md) for the protocol, numerical definition, and limitations. The original [milestone A report](validation-milestone-a.md) is historical and describes the superseded TS/Canvas implementation.
 
@@ -44,6 +44,7 @@ Packaging produces an unpacked app under `release/`; it neither installs globall
 - `native/src/tectonics.rs`: connected partition, independent random streams, rigid plate velocities, and boundary kinematics.
 - `native/src/crust.rs`: independent spherical potential, area-weighted fitting, initial continentality, thickness, and density.
 - `native/src/terrain.rs`: crust baseline, bounded boundary responses, graph-distance decay, independent detail, and elevation contributions.
+- `native/src/water.rs`: area-weighted coverage fitting, fixed-volume filling, depths, and connected initial water bodies.
 - `native/src/wire.rs`, `native/src/main.rs`: versioned, bounded command and binary-output adapter.
 - `src/native/client.ts`: process lifecycle, framing, validation, generation transactions, headless integration.
 - `src/electron/`: trusted sender checks, native process ownership, native recipe dialogs, sandboxed preload.
@@ -71,6 +72,7 @@ No arbitrary filesystem path, shell command, raw IPC method, or Node.js object i
 | Crust | 900 ensemble combinations; physical-area fitting, plateaus/extremes, monotonicity, units, seam continuity, raw-field refinement, independent plate/crust controls |
 | Elevation | Constructed boundary/graph cases, 60-seed-resolution ensemble, contribution reconstruction, amplitude/width/radius response, immutability during diagnostics |
 | Relief display | Shared corners, reversible exaggeration and radius safety limit, unchanged flat/model geometry, displaced raycasting, finite normals |
+| Initial water | Constructed basins, sills, plateaus, coverage/volume extremes, datum/area scaling, precision failure, 360 reproducible ensemble combinations, independent upstream fields, protocol corruption rejection |
 | Desktop | Shared selection/data, view and layer changes, play/pause, recipe round trip, invalid import, cancellation and continued dynamics |
 | Appearance | Review flat/globe screenshots; numerical tests alone cannot establish readable graphics |
 
@@ -81,7 +83,7 @@ Numerical comparisons use justified tolerances. Repeated operation in the same s
 ```json
 {
   "schemaVersion": 1,
-  "modelVersion": "terrain-1",
+  "modelVersion": "water-1",
   "randomVersion": "fnv1a-utf8-mulberry32-1",
   "seed": "first-light",
   "subdivision": 5,
@@ -92,18 +94,19 @@ Numerical comparisons use justified tolerances. Repeated operation in the same s
   "continentalScale": 1,
   "reliefScale": 1,
   "boundaryWidthKm": 300,
-  "detailAmplitudeMeters": 300
+  "detailAmplitudeMeters": 300,
+  "water": { "mode": "coverage", "fraction": 0.71 }
 }
 ```
 
-All fields are required; unknown fields and unsupported versions are rejected. Seeds preserve their exact text and are limited to 128 UTF-16 code units. The UI shows radius in kilometers; the model stores meters. Native recipe file reads are bounded to 32 KiB. Levels 0–6 are supported.
+All fields are required; unknown fields and unsupported versions are rejected. Seeds preserve their exact text and are limited to 128 UTF-16 code units. The UI shows radius in kilometers; the model stores meters. Native recipe file reads are bounded to 32 KiB. Levels 0–6 are supported. Alternatively, set `water` to `{ "mode": "volume", "volumeCubicMeters": 1.4e18 }`; never combine coverage and volume constraints. UI volume is in km³. Resolved level, stock, and coverage are retained in the native state and headless report; a saved input recipe recomputes them rather than exporting a full state archive.
 
-`surface-1`, `surface-rust-1`, `tectonics-1`, and `crust-1` are not silently migrated. To explore an old seed under the new model, create a new recipe from its visible parameters and keep the old file unchanged; identical checksums are not promised. The old implementation remains available through Git history. Display-only exaggeration is not a recipe parameter.
+`surface-1`, `surface-rust-1`, `tectonics-1`, `crust-1`, and `terrain-1` are not silently migrated. To explore an old seed under the new model, create a new recipe from its visible parameters and keep the old file unchanged; identical checksums are not promised. The old implementation remains available through Git history. Display-only exaggeration is not a recipe parameter.
 
 The displayed fingerprint covers the **initial** recipe and native arrays. It is an FNV-1a regression checksum, not cryptography. Running the diagnostic deliberately does not relabel it as a live-state checksum. Save recipe regenerates the initial field at step zero. Full simulation checkpoints, rewind, and cross-version migrations are not implemented.
 
 ## Next increment
 
-Next add initial water fitting with an explicit volume budget and connected-component classification. Use constructed bowls and controlled parameter changes before tuning a seed ensemble. Both atlas and globe must read those same physical fields; visual vertical exaggeration must not change reference areas, physical heights, or model outcomes.
+Next separate water-surface display geometry from the analytical bed view, explicitly documenting the shoreline approximation. Milestone C then introduces catchments, flats, depression hierarchy, and storage/overflow before flowing rivers. Use constructed bowls and sills before tuning random worlds; preserve each evolving reservoir's inventory rather than repeatedly resetting coverage.
 
 Keep commits coherent, messages and project records in English, and the owner's configured Git identity. Never add assistant attribution or co-author trailers.

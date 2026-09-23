@@ -20,7 +20,8 @@ try {
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.locator('#region-count')).toHaveText('10,242');
   const fingerprint = await page.locator('#fingerprint').innerText();
-  await expect(page.locator('#legend-title')).toContainText('Elevation');
+  await expect(page.locator('#legend-title')).toContainText('Initial water depth');
+  await expect(page.locator('#water-summary')).toContainText('71.00% target');
   await expect(page.locator('#crust-summary')).toContainText('38.00% target');
   const reference = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
   try { assert.equal((await reference.generate(DEFAULT_RECIPE)).world.checksum, fingerprint, 'Headless and desktop use the same native math.'); }
@@ -48,6 +49,9 @@ try {
   const elevationExplanation = await page.locator('#elevation-details').innerText();
   await expect(page.locator('#selection-details')).toContainText('Crust thickness');
   await expect(page.locator('#selection-details')).toContainText('kg/m³');
+  await expect(page.locator('#selection-details')).toContainText('Initial water depth');
+  await expect(page.locator('#water-note')).toContainText('Regional stock');
+  const waterExplanation = await page.locator('#water-note').innerText();
   const crustExplanation = await page.locator('#crust-note').innerText();
   assert.ok(crustExplanation.includes('fitted threshold'));
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
@@ -56,6 +60,7 @@ try {
   await expect(page.locator('#selection-details')).toHaveText(selectedDetails, { useInnerText: true });
   await expect(page.locator('#crust-note')).toHaveText(crustExplanation);
   await expect(page.locator('#elevation-details')).toHaveText(elevationExplanation, { useInnerText: true });
+  await expect(page.locator('#water-note')).toHaveText(waterExplanation);
   await page.locator('#exaggeration').selectOption('0');
   await expect(canvas).toHaveAttribute('data-exaggeration', '0');
   await page.locator('#exaggeration').selectOption('25');
@@ -70,6 +75,13 @@ try {
   await page.screenshot({ path: executablePath ? 'artifacts/globe-desktop-packaged.png' : 'artifacts/globe-desktop.png' });
   await page.getByRole('button', { name: '2D map', exact: true }).click();
   await expect(canvas).toHaveAttribute('data-view', 'flat');
+  await page.locator('[data-layer="waterBodies"]').click();
+  await expect(page.locator('#legend-title')).toContainText('Connected water bodies');
+  await expect(page.locator('#boundary-legend')).toBeHidden();
+  await expect(page.locator('#legend-scale')).toBeHidden();
+  await page.locator('[data-layer="depth"]').click();
+  await expect(page.locator('#legend-low')).toHaveText('0 m');
+  await expect(page.locator('#legend-gradient')).toHaveClass('water-gradient');
   await page.locator('[data-layer="thickness"]').click();
   await expect(page.locator('#legend-low')).toHaveText('7 km');
   await expect(page.locator('#legend-high')).toHaveText('35 km');
@@ -132,15 +144,37 @@ try {
   await page.locator('#relief-scale').fill('0');
   await page.locator('#detail-amplitude').fill('0');
   await page.locator('#boundary-width').fill('500');
+  await page.locator('#water-mode').selectOption('volume');
+  await expect(page.locator('#water-coverage')).toBeDisabled();
+  await page.locator('#water-volume').fill('0');
   await page.locator('#generate').click();
   await expect(page.locator('#world-name')).toHaveText('desktop-roundtrip');
   await expect(page.locator('#region-count')).toHaveText('642');
   await expect(page.locator('#crust-summary')).toContainText('0.00% actual / 0.00% target');
+  await expect(page.locator('#water-summary')).toContainText('0.00% actual / 0 km³ requested');
   await page.locator('[data-layer="plates"]').click();
   await expect(page.locator('#legend-title')).toContainText('7 connected plates');
   await page.locator('[data-layer="speed"]').click();
   await expect(page.locator('#legend-high')).toHaveText('0 cm/year');
   assert.notEqual(await page.locator('#fingerprint').innerText(), fingerprint);
+  // A uniform bed with positive volume is fully wet; save/import retains volume mode.
+  await page.locator('#water-volume').fill('1000000');
+  await page.locator('#generate').click();
+  await expect(page.locator('#water-summary')).toContainText('100.00% actual / 1,000,000 km³ requested');
+  const volumeHash = await page.locator('#fingerprint').innerText();
+  await page.getByRole('button', { name: 'Save recipe' }).click();
+  await expect(page.locator('#status')).toContainText('Recipe saved');
+  const volumeRecipe = parseRecipe(JSON.parse(await readFile(recipePath, 'utf8')));
+  assert.deepEqual(volumeRecipe.water, { mode: 'volume', volumeCubicMeters: 1e15 });
+  await page.locator('#water-volume').fill('0');
+  await page.locator('#generate').click();
+  await expect(page.locator('#water-summary')).toContainText('0.00% actual / 0 km³ requested');
+  await page.getByRole('button', { name: 'Open recipe' }).click();
+  await expect(page.locator('#water-mode')).toHaveValue('volume');
+  await expect(page.locator('#water-volume')).toHaveValue('1000000');
+  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
+  await expect(page.locator('#fingerprint')).toHaveText(volumeHash);
+  await writeFile(recipePath, JSON.stringify(DEFAULT_RECIPE));
   await page.getByRole('button', { name: 'Open recipe' }).click();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
   await expect(page.locator('#plate-count')).toHaveValue('12');
@@ -150,6 +184,9 @@ try {
   await expect(page.locator('#relief-scale')).toHaveValue('1');
   await expect(page.locator('#detail-amplitude')).toHaveValue('300');
   await expect(page.locator('#boundary-width')).toHaveValue('300');
+  await expect(page.locator('#water-mode')).toHaveValue('coverage');
+  await expect(page.locator('#water-coverage')).toHaveValue('71');
+  await expect(page.locator('#water-volume')).toBeDisabled();
 
   // Experimental small planets must limit display distortion, never physical heights.
   await page.locator('#radius').fill('100');
@@ -195,7 +232,7 @@ try {
   await page.locator('#generate').click();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
   await canvas.click({ position: { x: bounds.width * .6, y: bounds.height * .5 } });
-  await page.locator('[data-layer="elevation"]').click();
+  await page.locator('[data-layer="depth"]').click();
   await mkdir('artifacts', { recursive: true });
   const screenshot = executablePath ? 'artifacts/surface-desktop-packaged.png' : 'artifacts/surface-desktop.png';
   await page.screenshot({ path: screenshot });

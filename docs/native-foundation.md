@@ -2,7 +2,7 @@
 
 Status: implemented foundation increment, September 20, 2026. Terrain, climate, and civilization remain future work.
 
-Historical baseline: recipe `surface-rust-1` and protocol 1 below describe the foundation increment. B1 adds protocol 2, B2 protocol 3, and B3 now uses `terrain-1` with protocol 4. See [Plate kinematics](tectonics.md), [Initial crust](crust.md), and [Explainable elevation](terrain.md) for appended fields and checks. Process ownership and the diagnostic update mechanism remain unchanged. The measurements below apply to the earlier surface-only workload.
+Historical baseline: recipe `surface-rust-1` and protocol 1 below describe the foundation increment. B1 adds protocol 2, B2 protocol 3, B3 protocol 4, and B4 now uses `water-1` with protocol 5. See [Plate kinematics](tectonics.md), [Initial crust](crust.md), [Explainable elevation](terrain.md), and [Initial water](water.md) for appended fields and checks. Process ownership and the diagnostic update mechanism remain unchanged. The measurements below apply to the earlier surface-only workload.
 
 ## Decision and scope
 

@@ -12,6 +12,9 @@ canvas[data-gpu="lost"] ~ #gpu-status { display: grid; }
 .relief-controls select { width: auto; font-size: 11px; padding: 5px; }
 #elevation-details { font-size: 12px; font-variant-numeric: tabular-nums; }
 #crust-summary { margin-bottom: 12px; }
+#water-summary { margin-top: 8px; }
+#water-coverage, #water-volume { margin-bottom: 18px; }
+#legend-gradient.water-gradient { background: linear-gradient(90deg, #2e9ebf, #061a42); }
 #boundary-legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 10px; margin: -8px 0 16px; }
 [data-kind="0"] { color: #82919a; }[data-kind="1"] { color: #ef927e; }[data-kind="2"] { color: #77c6e8; }[data-kind="3"] { color: #e5cd79; }
 .boundary-inspector { margin-top: 14px; padding: 14px 20px; border: 1px solid var(--border); border-radius: 7px; }

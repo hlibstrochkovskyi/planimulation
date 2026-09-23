@@ -8,6 +8,7 @@ import type { Layer, ViewMode } from './map';
 import { BOUNDARY_NAMES, speedCmPerYear } from '../core/tectonics';
 import { summarizeCrust } from '../core/crust';
 import { summarizeTerrain } from '../core/terrain';
+import { summarizeWater } from '../core/water';
 
 function element<T extends HTMLElement>(id: string): T {
   const result = document.getElementById(id);
@@ -26,6 +27,9 @@ const continentalScaleInput = element<HTMLInputElement>('continental-scale');
 const reliefScaleInput = element<HTMLInputElement>('relief-scale');
 const boundaryWidthInput = element<HTMLInputElement>('boundary-width');
 const detailAmplitudeInput = element<HTMLInputElement>('detail-amplitude');
+const waterModeInput = element<HTMLSelectElement>('water-mode');
+const waterCoverageInput = element<HTMLInputElement>('water-coverage');
+const waterVolumeInput = element<HTMLInputElement>('water-volume');
 const status = element('status');
 const cancel = element<HTMLButtonElement>('cancel');
 const save = element<HTMLButtonElement>('save-recipe');
@@ -37,8 +41,9 @@ let selected: number | null = null;
 let playing = false;
 let advancing = false;
 let playbackTimer = 0;
-let currentLayer: Layer = 'elevation';
+let currentLayer: Layer = 'depth';
 let terrainStats = { minimumMeters: 0, maximumMeters: 0, meanMeters: 0 };
+let maximumWaterDepth = 0;
 let plateAreas = new Float64Array(0);
 let boundarySegments = new Map<number, number[]>();
 
@@ -67,6 +72,8 @@ function inspect(id: number): void {
     ['Crust thickness', `${number.format(world.crust.thicknessMeters[id] / 1000)} km`],
     ['Crust density', `${number.format(world.crust.densityKgPerCubicMeter[id])} kg/m³`],
     ['Elevation (reference datum)', `${number.format(world.terrain.elevation[id])} m`],
+    ['Initial water depth', `${number.format(world.water.depthMeters[id])} m`],
+    ['Initial water body', world.water.bodyIds[id] === 0 ? 'Dry land' : `Body ${world.water.bodyIds[id]} · ${world.water.bodyIds[id] === world.water.mainOceanId ? 'main ocean' : 'inland basin'}`],
     ['Connected neighbors', String(neighbors.length)],
     ['Reference neighbor distance', `${number.format(s.neighborDistancesMeters.subarray(s.neighborOffsets[id], s.neighborOffsets[id + 1]).reduce((sum, v) => sum + v, 0) / neighbors.length / 1000)} km`],
     ['Diagnostic signal', world.diagnosticField[id].toFixed(5)],
@@ -81,6 +88,7 @@ function inspect(id: number): void {
     const row = document.createElement('li'); row.textContent = `${label}: ${value.toFixed(2)} m`; elevationDetails.append(row);
   }
   element('crust-note').textContent = `Seeded spherical potential ${world.crust.potential[id].toFixed(6)}; fitted threshold ${world.crust.threshold.toFixed(6)}; smooth transition width 0.12. Continentality blends the 7–35 km thickness and 3,000–2,800 kg/m³ density endmembers. These are initial model approximations, not elevation or water depth.`;
+  element('water-note').textContent = `Initial level ${world.water.levelMeters.toFixed(2)} m − bed ${world.terrain.elevation[id].toFixed(2)} m → depth max(0, level − bed) = ${world.water.depthMeters[id].toFixed(2)} m. Regional stock: ${(world.water.depthMeters[id] * s.areasSquareMeters[id] / 1e9).toFixed(3)} km³ using reference-sphere area. Positive-depth neighbors form water bodies; disconnected bodies share only this initial level, not a permanent connection.`;
   boundaryDetails.replaceChildren();
   const segments = boundarySegments.get(id) ?? [];
   element('boundary-note').textContent = segments.length
@@ -120,14 +128,17 @@ function updateLegend(): void {
     thickness: ['Crust thickness · initial approximation, not elevation', '7 km', '35 km'],
     elevation: ['Elevation · reference datum, not sea level · world-relative color scale', `${number.format(terrainStats.minimumMeters)} m`, `${number.format(terrainStats.maximumMeters)} m`],
     uplift: ['Convergence uplift · strongest attenuated source, not accumulated history', '0 m', '12,000 m'],
+    depth: ['Initial water depth · gray = dry · globe shows the bed, not a water-surface mesh', '0 m', `${number.format(maximumWaterDepth)} m`],
+    waterBodies: [`Connected water bodies · gray = dry · main ocean = body ${world?.water.mainOceanId || 'none'}`, '', ''],
   };
   const [title, low, high] = legends[currentLayer];
   element('legend-title').textContent = title;
   element('legend-low').textContent = low;
   element('legend-high').textContent = high;
-  const categorical = currentLayer === 'plates' || currentLayer === 'boundaries';
-  element('legend-scale').hidden = categorical;
-  element('boundary-legend').hidden = !categorical;
+  const plateLayer = currentLayer === 'plates' || currentLayer === 'boundaries';
+  element('legend-scale').hidden = plateLayer || currentLayer === 'waterBodies';
+  element('boundary-legend').hidden = !plateLayer;
+  element('legend-gradient').classList.toggle('water-gradient', currentLayer === 'depth');
 }
 
 function setInputs(recipe: Recipe): void {
@@ -142,7 +153,17 @@ function setInputs(recipe: Recipe): void {
   reliefScaleInput.value = String(recipe.reliefScale);
   boundaryWidthInput.value = String(recipe.boundaryWidthKm);
   detailAmplitudeInput.value = String(recipe.detailAmplitudeMeters);
+  waterModeInput.value = recipe.water.mode;
+  if (recipe.water.mode === 'coverage') waterCoverageInput.value = String(recipe.water.fraction * 100);
+  else waterVolumeInput.value = String(recipe.water.volumeCubicMeters / 1e9);
+  updateWaterInputs();
 }
+function updateWaterInputs(): void {
+  const coverage = waterModeInput.value === 'coverage';
+  element('water-coverage-control').hidden = !coverage; waterCoverageInput.disabled = !coverage;
+  element('water-volume-control').hidden = coverage; waterVolumeInput.disabled = coverage;
+}
+waterModeInput.addEventListener('change', updateWaterInputs);
 function updateExaggeration(): void {
   const requested = Number(element<HTMLSelectElement>('exaggeration').value);
   const applied = map.setExaggeration(requested);
@@ -171,6 +192,8 @@ async function generate(recipe: Recipe): Promise<void> {
     const accepted = api.acceptWorld(result.epoch);
     world = result.world; epoch = result.epoch; selected = null;
     terrainStats = summarizeTerrain(world.surface, world.terrain);
+    const waterStats = summarizeWater(world.surface, world.water);
+    maximumWaterDepth = waterStats.maximumDepthMeters;
     plateAreas = new Float64Array(world.recipe.plateCount);
     boundarySegments = new Map();
     for (let id = 0; id < world.stats.regionCount; id++) plateAreas[world.tectonics.owners[id]] += world.surface.areasSquareMeters[id];
@@ -192,7 +215,10 @@ async function generate(recipe: Recipe): Promise<void> {
     element('selection-details').replaceChildren();
     element('boundary-details').replaceChildren();
     element('elevation-details').replaceChildren();
-    element('height-summary').textContent = `Elevation: ${number.format(terrainStats.minimumMeters)} to ${number.format(terrainStats.maximumMeters)} m · area-weighted mean ${number.format(terrainStats.meanMeters)} m · no water or erosion yet`;
+    element('height-summary').textContent = `Bed elevation: ${number.format(terrainStats.minimumMeters)} to ${number.format(terrainStats.maximumMeters)} m · area-weighted mean ${number.format(terrainStats.meanMeters)} m · no erosion yet`;
+    const waterRequest = world.recipe.water.mode === 'coverage' ? `${(world.recipe.water.fraction * 100).toFixed(2)}% target` : `${number.format(world.recipe.water.volumeCubicMeters / 1e9)} km³ requested`;
+    element('water-summary').textContent = `Water: ${(waterStats.waterAreaFraction * 100).toFixed(2)}% actual / ${waterRequest} · main ocean ${(waterStats.mainOceanAreaFraction * 100).toFixed(2)}% · inland ${(waterStats.inlandWaterAreaFraction * 100).toFixed(2)}% · ${waterStats.bodyCount} bodies · level ${number.format(waterStats.levelMeters)} m · resolved stock ${number.format(waterStats.resolvedVolumeCubicMeters / 1e9)} km³`;
+    element('water-note').textContent = 'Select a region to inspect its initial water depth and stored volume. Coverage fitting never splits equal-elevation plateaus; actual coverage can differ from the target. No runoff, evaporation, or dynamic basin exchange is modeled yet.';
     updateExaggeration();
     element('crust-note').textContent = 'Select a region to inspect its crust potential, fitted threshold, and material approximations.';
     const crustSummary = summarizeCrust(world.surface, world.crust);
@@ -257,7 +283,9 @@ element('recipe-form').addEventListener('submit', (event) => {
     void generate(parseRecipe({ ...DEFAULT_RECIPE, seed: seedInput.value, subdivision: Number(resolutionInput.value), radiusMeters: Number(radiusInput.value) * 1000,
       plateCount: Number(plateCountInput.value), maxPlateSpeedCmPerYear: Number(plateSpeedInput.value),
       continentalFraction: Number(continentalFractionInput.value) / 100, continentalScale: Number(continentalScaleInput.value),
-      reliefScale: Number(reliefScaleInput.value), boundaryWidthKm: Number(boundaryWidthInput.value), detailAmplitudeMeters: Number(detailAmplitudeInput.value) }));
+      reliefScale: Number(reliefScaleInput.value), boundaryWidthKm: Number(boundaryWidthInput.value), detailAmplitudeMeters: Number(detailAmplitudeInput.value),
+      water: waterModeInput.value === 'coverage' ? { mode: 'coverage', fraction: Number(waterCoverageInput.value) / 100 }
+        : { mode: 'volume', volumeCubicMeters: Number(waterVolumeInput.value) * 1e9 } }));
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
 });
 cancel.addEventListener('click', () => {

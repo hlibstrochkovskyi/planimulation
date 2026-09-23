@@ -8,7 +8,7 @@ import type { ViewGeometry, ViewPair } from './view-geometry';
 import { displaceDirections, effectiveExaggeration } from './relief';
 import { summarizeTerrain } from '../core/terrain';
 
-export type Layer = 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift';
+export type Layer = 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies';
 export type ViewMode = 'flat' | 'globe';
 
 export class SurfaceMap {
@@ -22,12 +22,12 @@ export class SurfaceMap {
   private readonly material = new ShaderMaterial({
     side: DoubleSide,
     uniforms: { field: { value: null }, textureWidth: { value: 1 }, textureHeight: { value: 1 },
-      selected: { value: -1 }, globe: { value: 0 }, categorical: { value: 0 }, muted: { value: 0 } },
+      selected: { value: -1 }, globe: { value: 0 }, categorical: { value: 0 }, muted: { value: 0 }, waterMode: { value: 0 } },
     vertexShader: `attribute float region; varying float cell; varying vec3 direction;
       void main() { cell=region; direction=normalMatrix*normal;
         gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
     fragmentShader: `uniform sampler2D field; uniform float textureWidth; uniform float textureHeight;
-      uniform float selected; uniform float globe; uniform float categorical; uniform float muted;
+      uniform float selected; uniform float globe; uniform float categorical; uniform float muted; uniform float waterMode;
       varying float cell; varying vec3 direction;
       void main() {
         float id=floor(cell+0.5);
@@ -35,6 +35,8 @@ export class SurfaceMap {
         float v=texture2D(field,uv).r;
         vec3 color=mix(vec3(0.16,0.28,0.33),vec3(0.73,0.80,0.63),clamp(v,0.0,1.0));
         if(categorical>0.5) color=0.51+0.23*cos(6.2831853*(v*0.618033989+vec3(0.0,0.33,0.67)));
+        if(waterMode>0.5 && waterMode<1.5) color=v<0.0 ? vec3(0.34,0.36,0.30) : mix(vec3(0.18,0.62,0.75),vec3(0.025,0.10,0.26),clamp(v,0.0,1.0));
+        if(waterMode>1.5 && v<0.5) color=vec3(0.34,0.36,0.30);
         color*=1.0-muted*0.65;
         if(abs(cell-selected)<0.25) color=vec3(0.96,0.78,0.42);
         if(globe>0.5) color*=0.4+0.6*max(0.0,dot(normalize(direction),normalize(vec3(-0.4,0.6,1.0))));
@@ -48,10 +50,11 @@ export class SurfaceMap {
   private values = new Float32Array(0);
   private world: World | null = null;
   private mode: ViewMode = 'flat';
-  private layer: Layer = 'elevation';
+  private layer: Layer = 'depth';
   private exaggeration = 10;
   private appliedExaggeration = NaN;
   private terrainRange = { minimumMeters: 0, maximumMeters: 1 };
+  private maximumDepth = 1;
   private boundaries = false;
   private worker: Worker | null = null;
   private abortPreparation: (() => void) | null = null;
@@ -135,6 +138,7 @@ export class SurfaceMap {
     this.scene.add(next.flat, next.globe); this.world = world;
     this.appliedExaggeration = NaN;
     this.terrainRange = summarizeTerrain(world.surface, world.terrain);
+    this.maximumDepth = world.water.depthMeters.reduce((max, d) => Math.max(max, d), 0);
     this.setExaggeration(this.exaggeration);
     const width = Math.min(1024, this.renderer.capabilities.maxTextureSize);
     const height = Math.ceil(world.stats.regionCount / width);
@@ -157,7 +161,8 @@ export class SurfaceMap {
   }
   setLayer(layer: Layer): void {
     this.layer = layer;
-    this.material.uniforms.categorical.value = layer === 'plates' || layer === 'boundaries' ? 1 : 0;
+    this.material.uniforms.categorical.value = layer === 'plates' || layer === 'boundaries' || layer === 'waterBodies' ? 1 : 0;
+    this.material.uniforms.waterMode.value = layer === 'depth' ? 1 : layer === 'waterBodies' ? 2 : 0;
     this.material.uniforms.muted.value = layer === 'boundaries' ? 1 : 0;
     if (this.views) for (const view of Object.values(this.views)) view.children[2].visible = layer === 'plates' || layer === 'boundaries';
     this.refreshField();
@@ -167,6 +172,8 @@ export class SurfaceMap {
     const w = this.world;
     for (let id = 0; id < w.stats.regionCount; id++) {
       this.values[id] = this.layer === 'plates' || this.layer === 'boundaries' ? w.tectonics.owners[id]
+        : this.layer === 'depth' ? (w.water.bodyIds[id] ? w.water.depthMeters[id] / Math.max(1e-30, this.maximumDepth) : -1)
+        : this.layer === 'waterBodies' ? w.water.bodyIds[id]
         : this.layer === 'elevation' ? (w.terrain.elevation[id] - this.terrainRange.minimumMeters) / Math.max(1, this.terrainRange.maximumMeters - this.terrainRange.minimumMeters)
         : this.layer === 'uplift' ? w.terrain.convergence[id] / 12000
         : this.layer === 'crust' ? w.crust.continentality[id]

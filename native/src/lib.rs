@@ -18,15 +18,16 @@ pub struct Recipe {
     pub relief_scale: f64,
     pub boundary_width_km: f64,
     pub detail_amplitude_meters: f64,
+    pub water: water::WaterSettings,
 }
 
 impl Recipe {
     pub fn validate(&self) -> Result<(), String> {
         if self.schema_version != 1
-            || self.model_version != "terrain-1"
+            || self.model_version != "water-1"
             || self.random_version != "fnv1a-utf8-mulberry32-1"
         {
-            return Err("Unsupported recipe version; expected terrain-1.".into());
+            return Err("Unsupported recipe version; expected water-1.".into());
         }
         if self.seed.trim().is_empty() || self.seed.encode_utf16().count() > 128 {
             return Err("Seed must contain 1–128 UTF-16 code units and cannot be blank.".into());
@@ -65,7 +66,7 @@ impl Recipe {
                     .into(),
             );
         }
-        Ok(())
+        self.water.validate(4. * PI * self.radius_meters.powi(2))
     }
 }
 
@@ -244,6 +245,7 @@ pub struct World {
     pub tectonics: tectonics::Tectonics,
     pub crust: crust::Crust,
     pub terrain: terrain::Terrain,
+    pub water: water::Water,
 }
 impl World {
     pub fn generate(recipe: Recipe) -> Result<Self, String> {
@@ -263,6 +265,7 @@ impl World {
             recipe.radius_meters,
         );
         let terrain = terrain::Terrain::build(&surface, &crust, &tectonics, &recipe);
+        let water = water::Water::generate(&surface, &terrain.elevation, &recipe.water)?;
         let mut rng = Random::stream(&recipe.seed, "diagnostic-field");
         let modes: Vec<_> = (0..8)
             .map(|_| {
@@ -300,6 +303,7 @@ impl World {
             tectonics,
             crust,
             terrain,
+            water,
         };
         w.initial_mass = w.mass();
         Ok(w)
@@ -345,4 +349,5 @@ impl World {
 pub mod crust;
 pub mod tectonics;
 pub mod terrain;
+pub mod water;
 pub mod wire;

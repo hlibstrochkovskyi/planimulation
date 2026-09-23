@@ -1,6 +1,6 @@
 # World generation: technical proposal
 
-Initial proposal: September 19, 2026. The spherical surface, recipes, random streams, GPU flat/globe views, B1 static plate kinematics, B2 initial crust, and B3 explainable elevation are implemented. Water, erosion, climate, and ecology remain proposals. See [DESIGN.md](../DESIGN.md), [development](development.md), [Plate kinematics](tectonics.md), [Initial crust](crust.md), and [Explainable elevation](terrain.md) for the concept and implemented algorithms with their limitations.
+Initial proposal: September 19, 2026. The spherical surface, recipes, random streams, GPU flat/globe views, B1 static plate kinematics, B2 initial crust, B3 explainable elevation, and B4 initial water filling are implemented. Water dynamics, erosion, climate, and ecology remain proposals. See [DESIGN.md](../DESIGN.md), [development](development.md), [Plate kinematics](tectonics.md), [Initial crust](crust.md), [Explainable elevation](terrain.md), and [Initial water](water.md) for the concept and implemented algorithms with their limitations.
 
 ## 1. One world, multiple views
 
@@ -41,7 +41,7 @@ Expose controls only for implemented mechanisms. Do not add decorative sliders f
 | Seed | Reproducible initial randomness | First map |
 | Resolution | Region count and computation cost | First map |
 | Radius | Physical distances and areas | First map |
-| Water | Target ocean fraction **or** specified volume | First map |
+| Water | Target total water fraction **or** specified volume | Implemented B4 |
 | Continental structure | Spatial parameters of crust distribution | First map |
 | Relief | Scale of uplift/depressions and boundary effects | First map |
 | Geological detail | Plate count, detail scales, and amplitudes | Advanced first-map controls |
@@ -86,6 +86,8 @@ Sample a three-dimensional noise field at points on the sphere. Version its algo
 Retain inspector contributions: crust baseline, boundary effects, detail, and later erosion. Their sum reconstructs the generated elevation within numerical tolerance.
 
 ### D. Ocean and sea level
+
+B4 implements initial coverage/volume fitting and component classification. See [Initial water](water.md) for exact plateau/tie/full-coverage conventions, stock tolerances, and the analytical bed view. Dynamic basin budgets and erosion refitting remain future integration work.
 
 Support two mutually exclusive modes: water volume or target coverage. In coverage mode, find a level using area-weighted regions, infer the corresponding volume, and retain the resulting physical recipe.
 

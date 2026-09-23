@@ -1,6 +1,6 @@
 # Static plate kinematics: milestone B1
 
-Status: implemented. This document records B1 with model recipe `tectonics-1`, binary protocol 2. [B2 initial crust](crust.md) and [B3 elevation](terrain.md) extend it; the current build uses `terrain-1` and protocol 4. Plate generation is unchanged. B1's measurements and recipe below are historical, not a description of geological time integration.
+Status: implemented. This document records B1 with model recipe `tectonics-1`, binary protocol 2. [B2 initial crust](crust.md), [B3 elevation](terrain.md), and [B4 initial water](water.md) extend it; the current build uses `water-1` and protocol 5. Plate generation is unchanged. B1's measurements and recipe below are historical, not a description of geological time integration.
 
 ## What is implemented
 
