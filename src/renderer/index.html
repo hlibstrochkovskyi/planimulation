@@ -9,7 +9,7 @@
   <body>
     <header class="app-header">
       <div class="brand"><span class="brand-mark" aria-hidden="true">◉</span><div><h1>Planimulation</h1><p>A world worth understanding</p></div></div>
-      <div class="header-right"><span class="stage-badge">05 / INITIAL WATER</span><button id="open-recipe">Open recipe</button><button id="save-recipe" disabled>Save recipe</button></div>
+      <div class="header-right"><span class="stage-badge">06 / WATER SURFACE</span><button id="open-recipe">Open recipe</button><button id="save-recipe" disabled>Save recipe</button></div>
     </header>
     <main>
       <aside class="sidebar">
@@ -48,7 +48,8 @@
         <section class="layer-section">
           <p class="eyebrow">MAP LAYERS</p>
           <div class="layer-list" role="group" aria-label="Map layer">
-            <button class="layer active" data-layer="depth" aria-pressed="true"><span>≈</span>Water depth<small>m</small></button>
+            <button class="layer active" data-layer="surface" aria-pressed="true"><span>◉</span>Land and water<small>Surface</small></button>
+            <button class="layer" data-layer="depth" aria-pressed="false"><span>≈</span>Water depth<small>m</small></button>
             <button class="layer" data-layer="waterBodies" aria-pressed="false"><span>◒</span>Water bodies<small>Identity</small></button>
             <button class="layer" data-layer="elevation" aria-pressed="false"><span>△</span>Bed elevation<small>m</small></button>
             <button class="layer" data-layer="uplift" aria-pressed="false"><span>↗</span>Convergence uplift<small>m</small></button>
@@ -63,7 +64,7 @@
           </div>
           <label class="checkbox"><input id="boundaries" type="checkbox" /> Region boundaries</label>
         </section>
-        <section class="stage-note"><p class="eyebrow">WHAT THIS MODEL MEANS</p><p>Initial water depth follows the geological bed and one fitted level. The largest connected water body is called the main ocean; others are inland basins. This does not model salinity.</p><p>Water layers color the bed, including on the relief globe. A separate water-surface mesh, erosion, rivers, and climate are not implemented. Diagnostic playback does not change terrain or water.</p></section>
+        <section class="stage-note"><p class="eyebrow">WHAT THIS MODEL MEANS</p><p>Initial water depth follows the geological bed and one fitted level. The largest connected water body is called the main ocean; others are inland basins. This does not model salinity.</p><p>Land and water shows a separate water surface on the globe, limited to wet regions and occluded by the interpolated bed. Its visible shoreline is approximate; regional statistics remain authoritative. Depth and geology layers show the bed. Land colors are elevation-based, not biomes.</p><p>Erosion, rivers, and climate are not implemented. Diagnostic playback does not change terrain or water.</p></section>
         <div class="sidebar-bottom"><span class="status-dot"></span> LOCAL · OFFLINE · REPRODUCIBLE</div>
       </aside>
       <div class="workspace">

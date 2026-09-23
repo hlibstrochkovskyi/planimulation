@@ -4,7 +4,7 @@
 
 Milestone A establishes spherical geometry, recipes, and inspection. The September 20 native/GPU increment moves desktop and headless calculations to Rust and adds two Three.js views: a flat atlas and a globe. Both display the same region IDs, fields, and selection. B3 now displaces the globe using computed elevation.
 
-Milestone B1 adds static plate kinematics. B2 adds independent continentality, approximate crust thickness/density, and area fitting. B3 adds inspectable elevation contributions, distance-decayed boundary effects, and globe relief. B4 adds initial water-level fitting, an explicit inventory, and connected water bodies. Read [Initial water](water.md) for the current `water-1` recipe and protocol 5 extension. Water dynamics, erosion, and geological time integration are not implemented yet; the globe still displays the bed, with analytical water colors.
+Milestone B1 adds static plate kinematics. B2 adds independent continentality, approximate crust thickness/density, and area fitting. B3 adds inspectable elevation contributions, distance-decayed boundary effects, and globe relief. B4 adds initial water-level fitting, an explicit inventory, and connected water bodies. Read [Initial water](water.md) for the current `water-1` recipe and protocol 5 extension. [B5 water-surface display](water-surface.md) adds a separate globe water mesh while analytical layers retain the bed view; it changes no native fields or versions. Water dynamics, erosion, and geological time integration are not implemented yet.
 
 The diagnostic diffusion mode exists to exercise stateful native calculation, small dynamic messages, and responsive rendering. It is not a climate, erosion, or geological model. Its step number is not a calendar. Read [Native/GPU foundation](native-foundation.md) for the protocol, numerical definition, and limitations. The original [milestone A report](validation-milestone-a.md) is historical and describes the superseded TS/Canvas implementation.
 
@@ -72,6 +72,7 @@ No arbitrary filesystem path, shell command, raw IPC method, or Node.js object i
 | Crust | 900 ensemble combinations; physical-area fitting, plateaus/extremes, monotonicity, units, seam continuity, raw-field refinement, independent plate/crust controls |
 | Elevation | Constructed boundary/graph cases, 60-seed-resolution ensemble, contribution reconstruction, amplitude/width/radius response, immutability during diagnostics |
 | Relief display | Shared corners, reversible exaggeration and radius safety limit, unchanged flat/model geometry, displaced raycasting, finite normals |
+| Water-surface display | Wet-only caps, dry/full worlds, joint bed/water bound, visible-surface picking, hidden-water exclusion, zero-exaggeration ties, poles/seam identities |
 | Initial water | Constructed basins, sills, plateaus, coverage/volume extremes, datum/area scaling, precision failure, 360 reproducible ensemble combinations, independent upstream fields, protocol corruption rejection |
 | Desktop | Shared selection/data, view and layer changes, play/pause, recipe round trip, invalid import, cancellation and continued dynamics |
 | Appearance | Review flat/globe screenshots; numerical tests alone cannot establish readable graphics |
@@ -107,6 +108,6 @@ The displayed fingerprint covers the **initial** recipe and native arrays. It is
 
 ## Next increment
 
-Next separate water-surface display geometry from the analytical bed view, explicitly documenting the shoreline approximation. Milestone C then introduces catchments, flats, depression hierarchy, and storage/overflow before flowing rivers. Use constructed bowls and sills before tuning random worlds; preserve each evolving reservoir's inventory rather than repeatedly resetting coverage.
+Milestone C introduces catchments, flats, depression hierarchy, and storage/overflow before flowing rivers. Use constructed bowls and sills before tuning random worlds; preserve each evolving reservoir's inventory rather than repeatedly resetting coverage. Resolved-state and image export remain outstanding milestone B work.
 
 Keep commits coherent, messages and project records in English, and the owner's configured Git identity. Never add assistant attribution or co-author trailers.

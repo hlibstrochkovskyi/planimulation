@@ -41,7 +41,7 @@ let selected: number | null = null;
 let playing = false;
 let advancing = false;
 let playbackTimer = 0;
-let currentLayer: Layer = 'depth';
+let currentLayer: Layer = 'surface';
 let terrainStats = { minimumMeters: 0, maximumMeters: 0, meanMeters: 0 };
 let maximumWaterDepth = 0;
 let plateAreas = new Float64Array(0);
@@ -118,6 +118,7 @@ const map = createMap();
 
 function updateLegend(): void {
   const legends: Record<Layer, [string, string, string]> = {
+    surface: ['Land and water surface · globe shoreline is a display approximation · colors are not biomes', '', ''],
     signal: ['Seed field · dimensionless diagnostic', '−1', '+1'],
     area: ['Region area · true spherical area', world ? `${number.format(world.stats.minimumAreaSquareMeters / 1e6)} km²` : 'min', world ? `${number.format(world.stats.maximumAreaSquareMeters / 1e6)} km²` : 'max'],
     latitude: ['Latitude · distance from the equator', '90°', '0°'],
@@ -136,7 +137,7 @@ function updateLegend(): void {
   element('legend-low').textContent = low;
   element('legend-high').textContent = high;
   const plateLayer = currentLayer === 'plates' || currentLayer === 'boundaries';
-  element('legend-scale').hidden = plateLayer || currentLayer === 'waterBodies';
+  element('legend-scale').hidden = plateLayer || currentLayer === 'waterBodies' || currentLayer === 'surface';
   element('boundary-legend').hidden = !plateLayer;
   element('legend-gradient').classList.toggle('water-gradient', currentLayer === 'depth');
 }
@@ -167,7 +168,7 @@ waterModeInput.addEventListener('change', updateWaterInputs);
 function updateExaggeration(): void {
   const requested = Number(element<HTMLSelectElement>('exaggeration').value);
   const applied = map.setExaggeration(requested);
-  element('exaggeration-note').textContent = `Globe relief: ${number.format(applied)}× applied${applied < requested ? ` (${requested}× requested; 20% radius display limit)` : ''} · display only; flat map stays flat`;
+  element('exaggeration-note').textContent = `Globe relief and water: ${number.format(applied)}× applied${applied < requested ? ` (${requested}× requested; 20% radius display limit)` : ''} · display only; flat map stays flat`;
 }
 element('exaggeration').addEventListener('change', updateExaggeration);
 resolutionInput.addEventListener('change', () => { plateCountInput.max = String(Math.min(32, 10 * 4 ** Number(resolutionInput.value) + 2)); });
@@ -309,7 +310,7 @@ save.addEventListener('click', async () => {
 for (const button of document.querySelectorAll<HTMLButtonElement>('[data-layer]')) {
   button.addEventListener('click', () => {
     currentLayer = button.dataset.layer as Layer;
-    for (const other of document.querySelectorAll('[data-layer]')) {
+    for (const other of document.querySelectorAll('button[data-layer]')) {
       other.classList.toggle('active', other === button);
       other.setAttribute('aria-pressed', String(other === button));
     }

@@ -5,10 +5,14 @@ import { projectArc, projectRegion } from './projection';
 import type { Point2 } from './projection';
 import type { Tectonics } from '../core/tectonics';
 import { BOUNDARY_COLORS } from '../core/tectonics';
+import type { Water } from '../core/water';
+import { buildWaterSurface } from './water-surface';
 
 export interface ViewGeometry { positions: Float32Array; regions: Float32Array; lines: Float32Array;
   tectonicLines: Float32Array; tectonicColors: Float32Array;
-  radialOffsets: Float32Array; lineOffsets: Float32Array; tectonicOffsets: Float32Array }
+  radialOffsets: Float32Array; lineOffsets: Float32Array; tectonicOffsets: Float32Array;
+  waterPositions: Float32Array; waterRegions: Float32Array; waterOffsets: Float32Array;
+  waterLines: Float32Array; waterLineOffsets: Float32Array }
 export interface ViewPair { flat: ViewGeometry; globe: ViewGeometry }
 
 function clip(points: Point2[], bound: number, greater: boolean): Point2[] {
@@ -24,7 +28,7 @@ function clip(points: Point2[], bound: number, greater: boolean): Point2[] {
 }
 
 /** Display-only triangulation. Clipping must not create new simulation regions. */
-export function buildViewGeometry(surface: Surface, tectonics?: Tectonics, elevation?: Float64Array): ViewPair {
+export function buildViewGeometry(surface: Surface, tectonics?: Tectonics, elevation?: Float64Array, water?: Water): ViewPair {
   if (elevation && elevation.length !== surface.areasSquareMeters.length) throw new Error('Invalid elevation field length.');
   // Every shared dual corner uses the same mean of its incident region heights.
   // This interpolation belongs to the viewer, not to the physical model.
@@ -87,7 +91,11 @@ export function buildViewGeometry(surface: Surface, tectonics?: Tectonics, eleva
   const pack = (data: typeof flat): ViewGeometry => ({ positions: Float32Array.from(data.positions),
     regions: Float32Array.from(data.regions), lines: Float32Array.from(data.lines),
     tectonicLines: Float32Array.from(data.tectonicLines), tectonicColors: Float32Array.from(data.tectonicColors),
-    radialOffsets: new Float32Array(0), lineOffsets: new Float32Array(0), tectonicOffsets: new Float32Array(0) });
-  return { flat: pack(flat), globe: { ...pack(globe), radialOffsets: Float32Array.from(radialOffsets),
-    lineOffsets: Float32Array.from(lineOffsets), tectonicOffsets: Float32Array.from(tectonicOffsets) } };
+    radialOffsets: new Float32Array(0), lineOffsets: new Float32Array(0), tectonicOffsets: new Float32Array(0),
+    waterPositions: new Float32Array(0), waterRegions: new Float32Array(0), waterOffsets: new Float32Array(0),
+    waterLines: new Float32Array(0), waterLineOffsets: new Float32Array(0) });
+  const globeView = { ...pack(globe), radialOffsets: Float32Array.from(radialOffsets),
+    lineOffsets: Float32Array.from(lineOffsets), tectonicOffsets: Float32Array.from(tectonicOffsets) };
+  if (water) Object.assign(globeView, buildWaterSurface(globeView.positions, globeView.regions, water, surface.radiusMeters));
+  return { flat: pack(flat), globe: globeView };
 }

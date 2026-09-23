@@ -7,8 +7,9 @@ import { speedCmPerYear } from '../core/tectonics';
 import type { ViewGeometry, ViewPair } from './view-geometry';
 import { displaceDirections, effectiveExaggeration } from './relief';
 import { summarizeTerrain } from '../core/terrain';
+import { pickSurface } from './water-surface';
 
-export type Layer = 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies';
+export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies';
 export type ViewMode = 'flat' | 'globe';
 
 export class SurfaceMap {
@@ -22,12 +23,14 @@ export class SurfaceMap {
   private readonly material = new ShaderMaterial({
     side: DoubleSide,
     uniforms: { field: { value: null }, textureWidth: { value: 1 }, textureHeight: { value: 1 },
-      selected: { value: -1 }, globe: { value: 0 }, categorical: { value: 0 }, muted: { value: 0 }, waterMode: { value: 0 } },
+      selected: { value: -1 }, globe: { value: 0 }, categorical: { value: 0 }, muted: { value: 0 }, waterMode: { value: 0 },
+      surfaceMode: { value: 0 }, waterSurface: { value: 0 } },
     vertexShader: `attribute float region; varying float cell; varying vec3 direction;
       void main() { cell=region; direction=normalMatrix*normal;
         gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
     fragmentShader: `uniform sampler2D field; uniform float textureWidth; uniform float textureHeight;
       uniform float selected; uniform float globe; uniform float categorical; uniform float muted; uniform float waterMode;
+      uniform float surfaceMode; uniform float waterSurface;
       varying float cell; varying vec3 direction;
       void main() {
         float id=floor(cell+0.5);
@@ -37,12 +40,17 @@ export class SurfaceMap {
         if(categorical>0.5) color=0.51+0.23*cos(6.2831853*(v*0.618033989+vec3(0.0,0.33,0.67)));
         if(waterMode>0.5 && waterMode<1.5) color=v<0.0 ? vec3(0.34,0.36,0.30) : mix(vec3(0.18,0.62,0.75),vec3(0.025,0.10,0.26),clamp(v,0.0,1.0));
         if(waterMode>1.5 && v<0.5) color=vec3(0.34,0.36,0.30);
+        if(surfaceMode>0.5) {
+          color=mix(vec3(0.34,0.40,0.28),vec3(0.72,0.69,0.61),clamp(v,0.0,1.0));
+          if(waterSurface>0.5 || (globe<0.5 && v<0.0)) color=mix(vec3(0.18,0.62,0.75),vec3(0.025,0.10,0.26),clamp(-v,0.0,1.0));
+        }
         color*=1.0-muted*0.65;
         if(abs(cell-selected)<0.25) color=vec3(0.96,0.78,0.42);
         if(globe>0.5) color*=0.4+0.6*max(0.0,dot(normalize(direction),normalize(vec3(-0.4,0.6,1.0))));
         gl_FragColor=vec4(color,1.0);
       }`,
   });
+  private readonly waterMaterial = this.material.clone();
   private readonly lineMaterial = new LineBasicMaterial({ color: '#304849', transparent: true, opacity: .45 });
   private readonly tectonicMaterial = new LineBasicMaterial({ vertexColors: true });
   private views: Record<ViewMode, Group> | null = null;
@@ -50,7 +58,7 @@ export class SurfaceMap {
   private values = new Float32Array(0);
   private world: World | null = null;
   private mode: ViewMode = 'flat';
-  private layer: Layer = 'depth';
+  private layer: Layer = 'surface';
   private exaggeration = 10;
   private appliedExaggeration = NaN;
   private terrainRange = { minimumMeters: 0, maximumMeters: 1 };
@@ -63,6 +71,10 @@ export class SurfaceMap {
   private pointerStart = [0, 0];
 
   constructor(private readonly canvas: HTMLCanvasElement, private readonly select: (id: number) => void) {
+    // Share field/selection uniforms, but distinguish the raised water mesh.
+    this.waterMaterial.uniforms = { ...this.material.uniforms, waterSurface: { value: 1 } };
+    this.waterMaterial.polygonOffset = true;
+    this.waterMaterial.polygonOffsetFactor = -1; this.waterMaterial.polygonOffsetUnits = -1;
     this.renderer = new WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.renderer.setClearColor('#0c1417');
@@ -79,10 +91,10 @@ export class SurfaceMap {
       if (Math.hypot(e.clientX - this.pointerStart[0], e.clientY - this.pointerStart[1]) > 4 || e.button !== 0 || !this.views) return;
       const rect = canvas.getBoundingClientRect();
       this.raycaster.setFromCamera(new Vector2((e.clientX - rect.left) / rect.width * 2 - 1, 1 - (e.clientY - rect.top) / rect.height * 2), this.camera);
-      const mesh = this.views[this.mode].children[0] as Mesh<BufferGeometry>;
-      const hit = this.raycaster.intersectObject(mesh, false)[0];
-      if (!hit?.face) return;
-      const id = mesh.geometry.getAttribute('region').getX(hit.face.a);
+      const view = this.views[this.mode];
+      const hit = pickSurface(this.raycaster, view.children[0] as Mesh<BufferGeometry>, view.children[3] as Mesh<BufferGeometry>);
+      if (!hit) return;
+      const id = hit.id; this.canvas.dataset.pickedSurface = hit.surface;
       this.material.uniforms.selected.value = id; this.select(id); this.draw();
     });
     canvas.addEventListener('webglcontextlost', (event) => { event.preventDefault(); this.lost = true; canvas.dataset.gpu = 'lost'; });
@@ -111,11 +123,18 @@ export class SurfaceMap {
     const tectonicLines = new BufferGeometry();
     tectonicLines.setAttribute('position', new BufferAttribute(data.tectonicLines, 3));
     tectonicLines.setAttribute('color', new BufferAttribute(data.tectonicColors, 3));
-    for (const [g, offsets] of [[geometry, data.radialOffsets], [lines, data.lineOffsets], [tectonicLines, data.tectonicOffsets]] as const) {
+    const water = new BufferGeometry();
+    water.setAttribute('position', new BufferAttribute(data.waterPositions, 3));
+    water.setAttribute('region', new BufferAttribute(data.waterRegions, 1));
+    water.computeVertexNormals();
+    const waterLines = new BufferGeometry(); waterLines.setAttribute('position', new BufferAttribute(data.waterLines, 3));
+    for (const [g, offsets] of [[geometry, data.radialOffsets], [lines, data.lineOffsets], [tectonicLines, data.tectonicOffsets],
+      [water, data.waterOffsets], [waterLines, data.waterLineOffsets]] as const) {
       if (offsets.length) { g.userData.base = (g.getAttribute('position').array as Float32Array).slice(); g.userData.offsets = offsets; }
     }
     const group = new Group();
-    group.add(new Mesh(geometry, this.material), new LineSegments(lines, this.lineMaterial), new LineSegments(tectonicLines, this.tectonicMaterial));
+    group.add(new Mesh(geometry, this.material), new LineSegments(lines, this.lineMaterial), new LineSegments(tectonicLines, this.tectonicMaterial),
+      new Mesh(water, this.waterMaterial), new LineSegments(waterLines, this.lineMaterial));
     return group;
   }
   cancelPreparation(): void {
@@ -131,7 +150,7 @@ export class SurfaceMap {
       worker.onmessage = (e: MessageEvent<{ pair: ViewPair; error?: string }>) => {
         if (e.data.error) reject(new Error(e.data.error)); else resolve(e.data.pair);
       };
-      worker.postMessage({ surface: world.surface, tectonics: world.tectonics, elevation: world.terrain.elevation });
+      worker.postMessage({ surface: world.surface, tectonics: world.tectonics, elevation: world.terrain.elevation, water: world.water });
     }).finally(() => { worker.terminate(); if (this.worker === worker) { this.worker = null; this.abortPreparation = null; } });
     const next = { flat: this.makeView(pair.flat), globe: this.makeView(pair.globe) };
     this.releaseViews(); this.views = next;
@@ -148,6 +167,7 @@ export class SurfaceMap {
     this.material.uniforms.field.value = this.texture;
     this.material.uniforms.textureWidth.value = width; this.material.uniforms.textureHeight.value = height;
     this.material.uniforms.selected.value = -1;
+    delete this.canvas.dataset.pickedSurface;
     this.setLayer(this.layer); this.setMode(this.mode); this.setBoundaries(this.boundaries);
   }
   setMode(mode: ViewMode): void {
@@ -161,10 +181,16 @@ export class SurfaceMap {
   }
   setLayer(layer: Layer): void {
     this.layer = layer;
+    this.canvas.dataset.activeLayer = layer;
+    this.material.uniforms.surfaceMode.value = layer === 'surface' ? 1 : 0;
     this.material.uniforms.categorical.value = layer === 'plates' || layer === 'boundaries' || layer === 'waterBodies' ? 1 : 0;
     this.material.uniforms.waterMode.value = layer === 'depth' ? 1 : layer === 'waterBodies' ? 2 : 0;
     this.material.uniforms.muted.value = layer === 'boundaries' ? 1 : 0;
-    if (this.views) for (const view of Object.values(this.views)) view.children[2].visible = layer === 'plates' || layer === 'boundaries';
+    if (this.views) for (const view of Object.values(this.views)) {
+      view.children[2].visible = layer === 'plates' || layer === 'boundaries';
+      view.children[3].visible = layer === 'surface';
+      view.children[4].visible = layer === 'surface' && this.boundaries;
+    }
     this.refreshField();
   }
   refreshField(): void {
@@ -172,6 +198,8 @@ export class SurfaceMap {
     const w = this.world;
     for (let id = 0; id < w.stats.regionCount; id++) {
       this.values[id] = this.layer === 'plates' || this.layer === 'boundaries' ? w.tectonics.owners[id]
+        : this.layer === 'surface' ? (w.water.bodyIds[id] ? -Math.max(1e-6, w.water.depthMeters[id] / Math.max(1e-30, this.maximumDepth))
+          : Math.max(0, w.terrain.elevation[id] - w.water.levelMeters) / Math.max(1, this.terrainRange.maximumMeters - w.water.levelMeters))
         : this.layer === 'depth' ? (w.water.bodyIds[id] ? w.water.depthMeters[id] / Math.max(1e-30, this.maximumDepth) : -1)
         : this.layer === 'waterBodies' ? w.water.bodyIds[id]
         : this.layer === 'elevation' ? (w.terrain.elevation[id] - this.terrainRange.minimumMeters) / Math.max(1, this.terrainRange.maximumMeters - this.terrainRange.minimumMeters)
@@ -188,11 +216,14 @@ export class SurfaceMap {
   }
   setBoundaries(visible: boolean): void {
     this.boundaries = visible;
-    if (this.views) for (const group of Object.values(this.views)) group.children[1].visible = visible;
+    if (this.views) for (const group of Object.values(this.views)) {
+      group.children[1].visible = visible; group.children[4].visible = visible && this.layer === 'surface';
+    }
     this.draw();
   }
   setExaggeration(requested: number): number {
-    const applied = this.world ? effectiveExaggeration(requested, this.world.recipe.radiusMeters, this.world.terrain.elevation) : requested;
+    const applied = this.world ? effectiveExaggeration(requested, this.world.recipe.radiusMeters, this.world.terrain.elevation,
+      this.world.water.mainOceanId ? this.world.water.levelMeters : undefined) : requested;
     this.exaggeration = requested;
     if (this.appliedExaggeration === applied) return applied;
     this.appliedExaggeration = applied;
@@ -231,6 +262,6 @@ export class SurfaceMap {
   }
   dispose(): void {
     this.cancelPreparation(); cancelAnimationFrame(this.frame); this.resizeObserver.disconnect();
-    this.controls.dispose(); this.releaseViews(); this.material.dispose(); this.lineMaterial.dispose(); this.tectonicMaterial.dispose(); this.renderer.dispose();
+    this.controls.dispose(); this.releaseViews(); this.material.dispose(); this.waterMaterial.dispose(); this.lineMaterial.dispose(); this.tectonicMaterial.dispose(); this.renderer.dispose();
   }
 }

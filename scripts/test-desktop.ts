@@ -20,7 +20,7 @@ try {
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.locator('#region-count')).toHaveText('10,242');
   const fingerprint = await page.locator('#fingerprint').innerText();
-  await expect(page.locator('#legend-title')).toContainText('Initial water depth');
+  await expect(page.locator('#legend-title')).toContainText('Land and water surface');
   await expect(page.locator('#water-summary')).toContainText('71.00% target');
   await expect(page.locator('#crust-summary')).toContainText('38.00% target');
   const reference = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
@@ -63,6 +63,8 @@ try {
   await expect(page.locator('#water-note')).toHaveText(waterExplanation);
   await page.locator('#exaggeration').selectOption('0');
   await expect(canvas).toHaveAttribute('data-exaggeration', '0');
+  await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
+  await expect(canvas).toHaveAttribute('data-picked-surface', 'water');
   await page.locator('#exaggeration').selectOption('25');
   await expect(canvas).toHaveAttribute('data-exaggeration', '25');
   await expect(page.locator('#selection-details')).toHaveText(selectedDetails, { useInnerText: true });
@@ -71,6 +73,16 @@ try {
   await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
   await expect(page.locator('#selection-title')).toHaveText(selectedRegion);
   await expect(page.locator('button[data-view="globe"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(canvas).toHaveAttribute('data-picked-surface', 'water');
+  await page.locator('[data-layer="depth"]').click();
+  await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
+  await expect(canvas).toHaveAttribute('data-picked-surface', 'bed');
+  await expect(page.locator('#selection-title')).toHaveText(selectedRegion);
+  await expect(page.locator('#selection-details')).toHaveText(selectedDetails, { useInnerText: true });
+  await page.locator('[data-layer="surface"]').click();
+  await page.locator('#boundaries').check();
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
+  await page.locator('#boundaries').uncheck();
   await mkdir('artifacts', { recursive: true });
   await page.screenshot({ path: executablePath ? 'artifacts/globe-desktop-packaged.png' : 'artifacts/globe-desktop.png' });
   await page.getByRole('button', { name: '2D map', exact: true }).click();
@@ -152,6 +164,11 @@ try {
   await expect(page.locator('#region-count')).toHaveText('642');
   await expect(page.locator('#crust-summary')).toContainText('0.00% actual / 0.00% target');
   await expect(page.locator('#water-summary')).toContainText('0.00% actual / 0 km³ requested');
+  await page.locator('[data-layer="surface"]').click();
+  await page.getByRole('button', { name: 'Globe', exact: true }).click();
+  await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
+  await expect(canvas).toHaveAttribute('data-picked-surface', 'bed');
+  await page.getByRole('button', { name: '2D map', exact: true }).click();
   await page.locator('[data-layer="plates"]').click();
   await expect(page.locator('#legend-title')).toContainText('7 connected plates');
   await page.locator('[data-layer="speed"]').click();
@@ -162,6 +179,15 @@ try {
   await page.locator('#generate').click();
   await expect(page.locator('#water-summary')).toContainText('100.00% actual / 1,000,000 km³ requested');
   const volumeHash = await page.locator('#fingerprint').innerText();
+  await page.locator('[data-layer="surface"]').click();
+  await page.getByRole('button', { name: 'Globe', exact: true }).click();
+  for (const factor of ['0', '1', '10']) {
+    await page.locator('#exaggeration').selectOption(factor);
+    await canvas.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
+    await expect(canvas).toHaveAttribute('data-picked-surface', 'water');
+    await expect(page.locator('#fingerprint')).toHaveText(volumeHash);
+  }
+  await page.getByRole('button', { name: '2D map', exact: true }).click();
   await page.getByRole('button', { name: 'Save recipe' }).click();
   await expect(page.locator('#status')).toContainText('Recipe saved');
   const volumeRecipe = parseRecipe(JSON.parse(await readFile(recipePath, 'utf8')));
@@ -232,7 +258,7 @@ try {
   await page.locator('#generate').click();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
   await canvas.click({ position: { x: bounds.width * .6, y: bounds.height * .5 } });
-  await page.locator('[data-layer="depth"]').click();
+  await page.locator('[data-layer="surface"]').click();
   await mkdir('artifacts', { recursive: true });
   const screenshot = executablePath ? 'artifacts/surface-desktop-packaged.png' : 'artifacts/surface-desktop.png';
   await page.screenshot({ path: screenshot });

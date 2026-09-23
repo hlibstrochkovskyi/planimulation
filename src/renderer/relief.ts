@@ -1,7 +1,8 @@
 /** Display-only safety limit: keep radial excursions within 20% of the reference radius. */
-export function effectiveExaggeration(requested: number, radiusMeters: number, heights: Float64Array): number {
+export function effectiveExaggeration(requested: number, radiusMeters: number, heights: Float64Array, waterLevel?: number): number {
   if (!Number.isFinite(requested) || requested < 0 || requested > 50 || !Number.isFinite(radiusMeters) || radiusMeters <= 0) throw new Error('Invalid display exaggeration.');
-  let max = 0;
+  if (waterLevel !== undefined && !Number.isFinite(waterLevel)) throw new Error('Invalid water display level.');
+  let max = Math.abs(waterLevel ?? 0);
   for (const height of heights) max = Math.max(max, Math.abs(height));
   return max === 0 ? requested : Math.min(requested, 0.2 * radiusMeters / max);
 }

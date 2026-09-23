@@ -1,6 +1,6 @@
 # World generation: technical proposal
 
-Initial proposal: September 19, 2026. The spherical surface, recipes, random streams, GPU flat/globe views, B1 static plate kinematics, B2 initial crust, B3 explainable elevation, and B4 initial water filling are implemented. Water dynamics, erosion, climate, and ecology remain proposals. See [DESIGN.md](../DESIGN.md), [development](development.md), [Plate kinematics](tectonics.md), [Initial crust](crust.md), [Explainable elevation](terrain.md), and [Initial water](water.md) for the concept and implemented algorithms with their limitations.
+Initial proposal: September 19, 2026. The spherical surface, recipes, random streams, GPU flat/globe views, B1 static plate kinematics, B2 initial crust, B3 explainable elevation, B4 initial water filling, and B5 water-surface display are implemented. Water dynamics, erosion, climate, and ecology remain proposals. See [DESIGN.md](../DESIGN.md), [development](development.md), [Plate kinematics](tectonics.md), [Initial crust](crust.md), [Explainable elevation](terrain.md), [Initial water](water.md), and [Water-surface display](water-surface.md) for the concept and implemented algorithms with their limitations.
 
 ## 1. One world, multiple views
 
@@ -156,9 +156,9 @@ The first map includes shaded physical terrain, elevation with a metric legend, 
 
 The flat projection must split triangles crossing the seam and map all display fragments back to the original `cell_id`. Projection distorts polar shapes; measurements come from spherical geometry. Early categorical layers should expose actual computational regions instead of concealing them through smoothing.
 
-The globe uses the same centers and elevations, with shared-corner display interpolation. A labeled vertical-exaggeration factor improves readability without affecting physical heights or reference areas/distances. A separate water surface at its corresponding level remains future work.
+The globe uses the same centers and elevations, with shared-corner display interpolation. A labeled vertical-exaggeration factor improves readability without affecting physical heights or reference areas/distances. [B5 water-surface display](water-surface.md) adds wet-region caps at the initial water level, occluded by the interpolated bed. This approximate visible shoreline does not replace native wet/dry classification or measurements; analytical layers still expose the bed.
 
-The current product targets a flat analytical map and a globe with eventual computed relief, not detailed 3D cities or a street-level environment. Settlements are markers sized or styled from their modeled properties. Visual detail must never acquire routing or resource consequences without an explicit scale-coupling model.
+The current product provides a flat analytical map and a globe with computed relief, not detailed 3D cities or a street-level environment. Future settlements are markers sized or styled from their modeled properties. Visual detail must never acquire routing or resource consequences without an explicit scale-coupling model.
 
 Dynamics adds Play/Pause, single stepping, a date, and temperature, precipitation, wind, snow, river, soil-moisture, and vegetation layers. Every layer distinguishes current values, period averages, and climatic normals.
 

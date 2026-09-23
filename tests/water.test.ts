@@ -43,8 +43,8 @@ test('water summaries partition physical area and volume; fixed-volume regenerat
     assert.deepEqual(volumeWorld.terrain, world.terrain);
     assert.deepEqual(volumeWorld.crust, world.crust);
     assert.deepEqual(volumeWorld.tectonics, world.tectonics);
-    buildViewGeometry(world.surface, world.tectonics, world.terrain.elevation);
-    assert.deepEqual(world.water, original, 'Bed display geometry cannot alter initial water.');
+    buildViewGeometry(world.surface, world.tectonics, world.terrain.elevation, world.water);
+    assert.deepEqual(world.water, original, 'Bed and water display geometry cannot alter initial water.');
     for (const fraction of [0, 1]) {
       const changed = (await core.generate({ ...world.recipe, water: { mode: 'coverage', fraction } })).world;
       const s = summarizeWater(changed.surface, changed.water);

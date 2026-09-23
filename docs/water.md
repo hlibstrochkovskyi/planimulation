@@ -1,5 +1,7 @@
 # Initial water: milestone B4
 
+[B5 water-surface display](water-surface.md) now adds a separate globe water mesh without changing this model or protocol. B4 validation measurements below describe the analytical-bed build.
+
 Implemented model: `water-1`, binary protocol 5. This increment adds initial global filling, an explicit water stock, and connected water bodies downstream of B3 elevation. It does not add drainage, flowing rivers, rainfall, erosion, salinity, or evolving lake budgets.
 
 ## Parameters and ownership
@@ -78,7 +80,7 @@ Additional payload: `20 + 12N` bytes. Diagnostic frames remain unchanged except 
 
 Both the flat map and globe share water-depth and water-body layers and the same inspector values. Depth colors run from shallow cyan to deep blue, scaled to the current world's maximum depth; dry regions are neutral gray. Body colors are categorical, not depth or salinity. The legend identifies the main-ocean ID.
 
-**The globe still renders the geological bed, including underwater relief.** Water layers color that bed; this increment does not add an elevated water-surface mesh, shore clipping, waves, or transparency. The UI explicitly labels this analytical view. Exaggeration and view changes never alter water volume or wet/dry classification.
+**The analytical water layers render the geological bed, including underwater relief.** B4 itself does not add a raised water mesh. The subsequent [B5 surface layer](water-surface.md) adds one as a separate display mode, with an explicitly approximate shoreline. Neither mode changes water volume or native wet/dry classification.
 
 ## Validation
 
@@ -120,4 +122,4 @@ The benchmark ran without simultaneous project builds/tests. Each sample covers 
 
 ## Next increments
 
-Separate display water geometry with an explicit shoreline approximation can build on these fields. Catchments, flats, depression hierarchy, storage/overflow, and mass-accounted erosion then belong to milestone C. Do not rename initial filling or diagnostic diffusion as hydrology.
+B5 now supplies separate display water geometry with an explicit shoreline approximation. Catchments, flats, depression hierarchy, storage/overflow, and mass-accounted erosion belong to milestone C. Do not rename initial filling or diagnostic diffusion as hydrology.
