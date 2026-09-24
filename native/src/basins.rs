@@ -208,6 +208,34 @@ impl Basins {
         &self.region_nodes
     }
 
+    /// Detach one minimum basin for a prescribed-input experiment. A non-root
+    /// spill is an imposed external collector, never automatic sibling routing.
+    /// Merged branches are rejected: their children need independent inventories.
+    pub fn isolated_leaf_reservoir(
+        &self,
+        node: usize,
+        initial_volume: f64,
+    ) -> Result<crate::reservoir::Reservoir, String> {
+        use crate::reservoir::{Boundary, Column, Reservoir};
+        let branch = self.nodes.get(node).ok_or("Invalid basin node.")?;
+        if !branch.children.is_empty() {
+            return Err("An isolated reservoir requires a leaf basin, not a merged branch.".into());
+        }
+        let columns = self.members[node]
+            .iter()
+            .map(|&i| Column {
+                bed_meters: self.heights[i],
+                area_square_meters: self.areas[i],
+            })
+            .collect();
+        let boundary = branch
+            .spill_level_meters
+            .map_or(Boundary::Closed, |spill_level_meters| {
+                Boundary::ExternalCollector { spill_level_meters }
+            });
+        Reservoir::new(columns, boundary, initial_volume)
+    }
+
     /// Total connected-subtree prism volume, not added rainfall or available capacity.
     /// At exact merge height the sill has zero depth: this is a limiting threshold.
     /// Iterative O(subtree size) query, intended for inspection, not every time step.

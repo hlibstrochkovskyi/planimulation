@@ -1,0 +1,18 @@
+{
+  "checkpoint": {
+    "experimentVersion": "isolated-reservoir-1",
+    "columns": [
+      { "bedMeters": 0, "areaSquareMeters": 2 },
+      { "bedMeters": 1, "areaSquareMeters": 3 }
+    ],
+    "boundary": { "externalCollector": { "spillLevelMeters": 3 } },
+    "inventory": {
+      "initialVolumeCubicMeters": 0,
+      "inputVolumeCubicMeters": 0,
+      "outflowVolumeCubicMeters": 0,
+      "storedVolumeCubicMeters": 0,
+      "pulseCount": 0
+    }
+  },
+  "inputsCubicMeters": [1, 1, 5, 5, 4, 0]
+}

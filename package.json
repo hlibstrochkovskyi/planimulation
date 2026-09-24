@@ -10,7 +10,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "npm run typecheck && npm run build:native && cargo test --locked --manifest-path native/Cargo.toml && node --import tsx --test tests/*.test.ts",
+    "test": "npm run typecheck && npm run build:native && cargo test --locked --manifest-path native/Cargo.toml --all-targets && node --import tsx --test tests/*.test.ts",
     "build:native": "node --import tsx scripts/build-native.ts",
     "build": "npm run typecheck && node --import tsx scripts/build.ts",
     "start": "npm run build && electron .",

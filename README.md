@@ -24,6 +24,7 @@ The application currently includes a desktop surface laboratory, static plate ki
 | [Drainage structure](docs/drainage.md) | Bed receivers, flat routing, terminal catchments, and contributing land-area accounting |
 | [Basin analysis](docs/basins.md) | Plateau-batched hierarchy, threshold contacts, and level–storage relationships |
 | [Basin inspection](docs/basin-inspection.md) | Versioned transport, branch/threshold layers, and parent/capacity inspection |
+| [Reservoir experiment](docs/reservoir-experiment.md) | Standalone prescribed-input storage, external collector, budgets, and checkpoints |
 
 ## Status
 
@@ -70,6 +71,6 @@ npm run package          # Unpacked desktop application for the current platform
 
 The desktop tests need a graphical session. Linux builds require the usual Electron/Chromium desktop libraries. Run a build before the headless and benchmark commands. Packaging bundles the native executable outside the application archive; the resulting app does not require Rust or Node.js to be installed. Packaging outputs to `release/`; it does not install globally, sign an application, or create a platform installer. Only Linux x64 is currently validated.
 
-Generation and future algorithm proposals are recorded separately from implemented features. [C2a basin analysis](docs/basins.md) and [C2b inspection](docs/basin-inspection.md) provide a native hierarchy of depression connections with shared desktop inspection. Next come prescribed-input experiments, independent reservoir inventories, and overflow; rivers are not yet computed. Resolved-state and image export remain outstanding milestone B work.
+Generation and future algorithm proposals are recorded separately from implemented features. [C2a basin analysis](docs/basins.md) and [C2b inspection](docs/basin-inspection.md) provide a native hierarchy of depression connections with shared desktop inspection. [C3a](docs/reservoir-experiment.md) adds a standalone, checkpointable single-reservoir filling experiment with an explicit external collector; it does not advance desktop water. Next come coupled reservoirs and fill/merge rules; rivers are not yet computed. Resolved-world-state and image export remain outstanding milestone B work.
 
 Development, documentation, code comments, and project records use English. Conversation with the project owner uses Russian.

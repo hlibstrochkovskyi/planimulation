@@ -355,6 +355,7 @@ impl World {
 pub mod basins;
 pub mod crust;
 pub mod drainage;
+pub mod reservoir;
 pub mod tectonics;
 pub mod terrain;
 pub mod water;
