@@ -46,7 +46,7 @@ test('protocol rejects drainage corruption and does not silently migrate water r
   try {
     await assert.rejects(session.request({ command: 'generate', recipe: { ...DEFAULT_RECIPE, modelVersion: 'water-1' } }), /Unsupported/);
     const packet = await session.request({ command: 'generate', recipe: { ...DEFAULT_RECIPE, subdivision: 2 } });
-    const world = decodeWorld(packet), n = world.stats.regionCount, start = packet.bytes.length - n * 20;
+    const world = decodeWorld(packet), n = world.stats.regionCount, start = packet.bytes.length - n * 24 - world.basins.parents.length * 44;
     for (const offset of [0, n * 4, n * 8]) {
       const bytes = Buffer.from(packet.bytes); bytes.writeUInt32LE(n + 1, start + offset);
       assert.throws(() => decodeWorld({ ...packet, bytes }), /drainage/);

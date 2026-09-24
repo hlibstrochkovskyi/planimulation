@@ -10,6 +10,7 @@ import { summarizeCrust } from '../core/crust';
 import { summarizeTerrain } from '../core/terrain';
 import { summarizeWater } from '../core/water';
 import { summarizeDrainage } from '../core/drainage';
+import { basinTree, summarizeBasins } from '../core/basins';
 
 function element<T extends HTMLElement>(id: string): T {
   const result = document.getElementById(id);
@@ -46,6 +47,9 @@ let currentLayer: Layer = 'surface';
 let terrainStats = { minimumMeters: 0, maximumMeters: 0, meanMeters: 0 };
 let maximumWaterDepth = 0;
 let maximumContributingArea = 0;
+let basinStats: ReturnType<typeof summarizeBasins> | null = null;
+let basinChildren: number[][] = [];
+let inspectedBasin: number | null = null;
 let plateAreas = new Float64Array(0);
 let boundarySegments = new Map<number, number[]>();
 
@@ -54,9 +58,10 @@ function showStatus(message: string, error = false): void {
   status.classList.toggle('error', error);
 }
 
-function inspect(id: number): void {
+function inspect(id: number, preserveBasin = false): void {
   if (!world) return;
   selected = id;
+  inspectBasin(preserveBasin && inspectedBasin !== null ? inspectedBasin : world.basins.regionNodes[id]);
   const s = world.surface, x = s.centers[id * 3], y = s.centers[id * 3 + 1], z = s.centers[id * 3 + 2];
   const lat = Math.asin(y) * 180 / Math.PI, lon = Math.atan2(z, x) * 180 / Math.PI;
   const neighbors = s.neighbors.subarray(s.neighborOffsets[id], s.neighborOffsets[id + 1]);
@@ -97,7 +102,7 @@ function inspect(id: number): void {
   const receiver = world.drainage.receivers[id], steps = world.drainage.flatSteps[id];
   element('drainage-note').textContent = receiver === id
     ? world.water.bodyIds[id] ? 'Existing water is a terminal receiver. Incoming land area is counted here; water-body area itself is excluded. No underwater routing or overflow is inferred.'
-      : 'Closed dry sink: no lower exit from this equal-height component. A closed flat uses its smallest region ID as the analysis outlet. The bed is not filled or raised; no lake storage or spill level is computed yet.'
+      : 'Closed dry sink: no lower exit from this equal-height component. A closed flat uses its smallest region ID as the analysis outlet. The bed is not filled or raised. Separate basin analysis describes possible connections, not actual lake storage.'
     : steps ? `Equal-height routing: ${steps} graph hops to a downhill exit or closed-flat sink. The receiver has one fewer hop. This deterministic tie-break is not a measured hydraulic gradient and changes no bed heights.`
       : `Steepest bed descent to region ${receiver}: ${(world.terrain.elevation[id] - world.terrain.elevation[receiver]).toFixed(2)} m drop over ${number.format(s.neighborDistancesMeters[s.neighborOffsets[id] + neighbors.indexOf(receiver)] / 1000)} km. Gradient ties prefer the smaller region ID. Area accumulation assumes connectivity only, not rain, travel time, or discharge.`;
   boundaryDetails.replaceChildren();
@@ -114,6 +119,31 @@ function inspect(id: number): void {
     boundaryDetails.append(row);
   }
 }
+
+function inspectBasin(node: number): void {
+  if (!world || selected === null) return;
+  inspectedBasin = node;
+  const b = world.basins, parent = b.parents[node], root = parent === node, children = basinChildren[node];
+  map.setBasinContact(root ? -1 : b.spillFrom[node], root ? -1 : b.spillTo[node]);
+  element('basin-title').textContent = `Branch ${node} · ${root ? 'global root' : children.length ? 'merged basin' : 'minimum basin'}`;
+  element('basin-note').textContent = `Region ${selected} belongs to branch ${b.regionNodes[selected]}. Colors show exclusive branch ownership, not whole nested footprints. Cyan marks the threshold contact on basin layers; gold marks the selected region. Capacity includes descendant storage: do not sum it across the hierarchy. This does not measure present water or available empty capacity. Inspecting a parent does not change region selection.`;
+  element<HTMLButtonElement>('basin-parent').disabled = root;
+  element<HTMLButtonElement>('basin-owner').disabled = node === b.regionNodes[selected];
+  const rows = element('basin-details'); rows.replaceChildren();
+  const edge = root ? '' : `Region ${b.spillFrom[node]} ↔ region ${b.spillTo[node]}`;
+  for (const [label, value] of [
+    ['Parent branch', root ? 'None · closed planet' : `Branch ${parent}`],
+    ['Child branches', children.length ? `${children.length}: ${children.slice(0, 12).join(', ')}${children.length > 12 ? ' …' : ''}` : 'None · minimum plateau'],
+    ['Formation threshold', `${number.format(b.birthLevels[node])} m · reference datum`],
+    ['Next connection threshold', root ? 'None · no external drain' : `${number.format(b.spillLevels[node])} m · not current water level`],
+    ['Total capacity at threshold', root ? 'No finite spill capacity' : `${number.format(b.capacities[node] / 1e9)} km³ · includes children`],
+    ['Subtree support area', `${number.format(b.supportAreas[node] / 1e6)} km² · not current wet area`],
+    ['Threshold contact', root ? 'None' : `${edge} · adjacency witness, not a flow path`],
+  ]) { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = label; dd.textContent = value; rows.append(dt, dd); }
+}
+
+element('basin-parent').addEventListener('click', () => { if (world && inspectedBasin !== null) inspectBasin(world.basins.parents[inspectedBasin]); });
+element('basin-owner').addEventListener('click', () => { if (world && selected !== null) inspectBasin(world.basins.regionNodes[selected]); });
 
 function createMap(): SurfaceMap {
   try { return new SurfaceMap(element<HTMLCanvasElement>('map'), inspect); }
@@ -144,13 +174,17 @@ function updateLegend(): void {
     waterBodies: [`Connected water bodies · gray = dry · main ocean = body ${world?.water.mainOceanId || 'none'}`, '', ''],
     catchments: ['Drainage catchments · colors identify terminal outlets, not states or rivers', '', ''],
     contributingArea: ['Contributing dry-land area · logarithmic color scale · not river discharge', '0 km²', `${number.format(maximumContributingArea / 1e6)} km²`],
+    basins: ['Basin branches · exclusive ownership, not full nested footprints or current lakes', '', ''],
+    spill: ['Next basin connection threshold · not current water level · gray = root without external drain',
+      basinStats?.minimumSpillMeters === null ? 'No finite thresholds' : `${number.format(basinStats?.minimumSpillMeters ?? 0)} m`,
+      basinStats?.maximumSpillMeters === null ? '' : `${number.format(basinStats?.maximumSpillMeters ?? 0)} m`],
   };
   const [title, low, high] = legends[currentLayer];
   element('legend-title').textContent = title;
   element('legend-low').textContent = low;
   element('legend-high').textContent = high;
   const plateLayer = currentLayer === 'plates' || currentLayer === 'boundaries';
-  element('legend-scale').hidden = plateLayer || currentLayer === 'waterBodies' || currentLayer === 'surface' || currentLayer === 'catchments';
+  element('legend-scale').hidden = plateLayer || currentLayer === 'waterBodies' || currentLayer === 'surface' || currentLayer === 'catchments' || currentLayer === 'basins';
   element('boundary-legend').hidden = !plateLayer;
   element('legend-gradient').classList.toggle('water-gradient', currentLayer === 'depth');
 }
@@ -210,6 +244,8 @@ async function generate(recipe: Recipe): Promise<void> {
     maximumWaterDepth = waterStats.maximumDepthMeters;
     const drainageStats = summarizeDrainage(world.surface, world.water, world.drainage);
     maximumContributingArea = drainageStats.maximumContributingAreaSquareMeters;
+    basinStats = summarizeBasins(world.basins); basinChildren = basinTree(world.basins).children;
+    inspectedBasin = null;
     plateAreas = new Float64Array(world.recipe.plateCount);
     boundarySegments = new Map();
     for (let id = 0; id < world.stats.regionCount; id++) plateAreas[world.tectonics.owners[id]] += world.surface.areasSquareMeters[id];
@@ -231,12 +267,16 @@ async function generate(recipe: Recipe): Promise<void> {
     element('selection-details').replaceChildren();
     element('boundary-details').replaceChildren();
     element('elevation-details').replaceChildren();
+    element('basin-details').replaceChildren(); element('basin-title').textContent = 'Select a region';
+    element('basin-note').textContent = 'Thresholds describe possible connections, not current water levels. Analysis includes underwater terrain.';
+    element<HTMLButtonElement>('basin-parent').disabled = true; element<HTMLButtonElement>('basin-owner').disabled = true;
+    element('basin-summary').textContent = `Basins: ${basinStats.leafCount} minima · ${basinStats.nodeCount} hierarchy branches · includes underwater terrain · no simulated filling or overflow`;
     element('height-summary').textContent = `Bed elevation: ${number.format(terrainStats.minimumMeters)} to ${number.format(terrainStats.maximumMeters)} m · area-weighted mean ${number.format(terrainStats.meanMeters)} m · no erosion yet`;
     const waterRequest = world.recipe.water.mode === 'coverage' ? `${(world.recipe.water.fraction * 100).toFixed(2)}% target` : `${number.format(world.recipe.water.volumeCubicMeters / 1e9)} km³ requested`;
     element('water-summary').textContent = `Water: ${(waterStats.waterAreaFraction * 100).toFixed(2)}% actual / ${waterRequest} · main ocean ${(waterStats.mainOceanAreaFraction * 100).toFixed(2)}% · inland ${(waterStats.inlandWaterAreaFraction * 100).toFixed(2)}% · ${waterStats.bodyCount} bodies · level ${number.format(waterStats.levelMeters)} m · resolved stock ${number.format(waterStats.resolvedVolumeCubicMeters / 1e9)} km³`;
     element('water-note').textContent = 'Select a region to inspect its initial water depth and stored volume. Coverage fitting never splits equal-elevation plateaus; actual coverage can differ from the target. No runoff, evaporation, or dynamic basin exchange is modeled yet.';
     element('drainage-summary').textContent = `Drainage: ${drainageStats.catchmentCount} terminal catchments · ${drainageStats.closedSinkCount} closed dry sinks · ${(drainageStats.closedDrainageLandFraction * 100).toFixed(2)}% of dry land ends in closed sinks · topology only, no flowing water`;
-    element('drainage-note').textContent = 'Select a region to inspect its receiver, flat-routing rule, and contributing land area. Existing water bodies stop routing; closed sinks are preserved. Spill hierarchy and lake dynamics are not implemented.';
+    element('drainage-note').textContent = 'Select a region to inspect its receiver, flat-routing rule, and contributing land area. Existing water bodies stop routing; closed sinks are preserved. Basin analysis is separate; lake dynamics are not implemented.';
     updateExaggeration();
     element('crust-note').textContent = 'Select a region to inspect its crust potential, fitted threshold, and material approximations.';
     const crustSummary = summarizeCrust(world.surface, world.crust);
@@ -271,7 +311,7 @@ async function advance(): Promise<void> {
     const frame = await api.advance(activeEpoch, 4);
     if (request !== generationId || frame.epoch !== epoch || !world) return;
     world.diagnosticField = frame.field; map.refreshField();
-    if (selected !== null) inspect(selected);
+    if (selected !== null) inspect(selected, true);
     element('diagnostic-tick').textContent = `Step ${frame.tick}`;
     showStatus(`Diagnostic diffusion · relative mass error ${frame.relativeMassError.toExponential(2)} · Recipe saves the initial state, not this diagnostic step.`);
   } catch (e) { if (request === generationId) { pause(); showStatus(String(e), true); } }

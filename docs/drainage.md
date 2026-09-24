@@ -1,5 +1,7 @@
 # Drainage structure: milestone C1
 
+Historical C1 record. [C2b basin inspection](basin-inspection.md) now uses `basins-1`, protocol 7, appending the basin hierarchy without changing C1 routing. The recipe version and measurements below describe C1.
+
 Implemented model: `drainage-1`, binary protocol 6. This is static bed-based drainage analysis downstream of geology and initial water, not flowing rivers, rainfall, lake filling, erosion, or a depression hierarchy. Milestone C is not complete.
 
 ## Contract
@@ -109,4 +111,4 @@ These are single-run end-to-end observations, not native drainage-only timings. 
 
 ## Next increment
 
-[C2a basin analysis](basins.md) now supplies a standalone native connectivity hierarchy and level–storage queries, tested on controlled bowls, nested basins, and sills. It is not yet part of desktop generation or the protocol. Next integrate that analysis for inspection, keeping thresholds separate from actual water levels; only then introduce prescribed water input, storage, and overflow with a budget. Repeated global initial filling cannot replace independent basin dynamics.
+[C2a basin analysis](basins.md) supplies a native connectivity hierarchy and level–storage queries; [C2b inspection](basin-inspection.md) integrates it into the desktop. Next introduce prescribed water input, independent storage, and overflow with a budget. Repeated global initial filling cannot replace independent basin dynamics.

@@ -4,7 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 fn recipe(level: u32, count: u32, seed: u32) -> Recipe {
     Recipe {
         schema_version: 1,
-        model_version: "drainage-1".into(),
+        model_version: "basins-1".into(),
         random_version: "fnv1a-utf8-mulberry32-1".into(),
         seed: format!("plates-{seed}"),
         subdivision: level,

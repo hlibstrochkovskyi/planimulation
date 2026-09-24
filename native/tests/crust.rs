@@ -3,7 +3,7 @@ use planimulation_core::{Recipe, Surface, World, crust::*};
 fn recipe() -> Recipe {
     Recipe {
         schema_version: 1,
-        model_version: "drainage-1".into(),
+        model_version: "basins-1".into(),
         random_version: "fnv1a-utf8-mulberry32-1".into(),
         seed: "crust-test".into(),
         subdivision: 3,

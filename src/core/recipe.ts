@@ -1,4 +1,4 @@
-export const MODEL_VERSION = 'drainage-1';
+export const MODEL_VERSION = 'basins-1';
 export const RANDOM_VERSION = 'fnv1a-utf8-mulberry32-1';
 
 export type WaterSettings = { mode: 'coverage'; fraction: number } | { mode: 'volume'; volumeCubicMeters: number };
@@ -48,7 +48,7 @@ export function parseRecipe(value: unknown): Recipe {
     if (!keys.includes(key)) throw new Error(`Unknown recipe field: ${key}.`);
   }
   if (input.schemaVersion !== 1 || input.modelVersion !== MODEL_VERSION || input.randomVersion !== RANDOM_VERSION) {
-    throw new Error('Unsupported recipe version. This build supports drainage-1 recipes only; legacy recipes are not silently migrated.');
+    throw new Error('Unsupported recipe version. This build supports basins-1 recipes only; legacy recipes are not silently migrated.');
   }
   for (const key of keys) {
     if (!(key in input)) throw new Error(`Missing recipe field: ${key}.`);

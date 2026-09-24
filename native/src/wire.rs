@@ -59,12 +59,58 @@ pub fn arrays(w: &World) -> Vec<u8> {
     u32s(&mut out, &w.drainage.outlets);
     u32s(&mut out, &w.drainage.flat_steps);
     f64s(&mut out, w.drainage.contributing_area.iter().copied());
+    let nodes = w.basins.nodes();
+    u32s(
+        &mut out,
+        &w.basins
+            .region_nodes()
+            .iter()
+            .map(|&id| id as u32)
+            .collect::<Vec<_>>(),
+    );
+    u32s(
+        &mut out,
+        &nodes
+            .iter()
+            .enumerate()
+            .map(|(id, node)| node.parent.unwrap_or(id) as u32)
+            .collect::<Vec<_>>(),
+    );
+    f64s(&mut out, nodes.iter().map(|node| node.birth_level_meters));
+    f64s(
+        &mut out,
+        nodes
+            .iter()
+            .map(|node| node.spill_level_meters.unwrap_or(node.birth_level_meters)),
+    );
+    for endpoint in 0..2 {
+        u32s(
+            &mut out,
+            &nodes
+                .iter()
+                .map(|node| {
+                    node.spill_edge
+                        .map_or(s.areas.len() as u32, |edge| edge[endpoint])
+                })
+                .collect::<Vec<_>>(),
+        );
+    }
+    f64s(
+        &mut out,
+        nodes.iter().map(|node| node.support_area_square_meters),
+    );
+    f64s(
+        &mut out,
+        nodes
+            .iter()
+            .map(|node| node.capacity_cubic_meters.unwrap_or(0.)),
+    );
     out
 }
-/// v6: u32 header byte count, JSON header, fixed-order little-endian arrays.
+/// v7: u32 header byte count, JSON header, fixed-order little-endian arrays.
 pub fn send(out: &mut impl Write, header: serde_json::Value, bytes: &[u8]) -> io::Result<()> {
     let mut header = header;
-    header["protocol"] = json!(6);
+    header["protocol"] = json!(7);
     header["byteLength"] = json!(bytes.len());
     let encoded = serde_json::to_vec(&header)?;
     out.write_all(&(encoded.len() as u32).to_le_bytes())?;
@@ -82,6 +128,7 @@ pub fn snapshot(out: &mut impl Write, w: &World) -> io::Result<()> {
         out,
         json!({"kind":"world", "recipe":w.recipe,
         "boundarySegmentCount":w.tectonics.boundary_types.len(),
+        "basinNodeCount":w.basins.nodes().len(), "basinAnalysisVersion":crate::basins::ANALYSIS_VERSION,
         "checksum":format!("{:08x}",crate::hash(&fingerprint)),
         "stats": {"regionCount": w.field.len(), "faceCount": w.surface.faces.len()/3,
           "edgeCount":w.surface.neighbors.len()/2, "totalAreaSquareMeters":total,

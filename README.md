@@ -4,7 +4,7 @@ An exploratory simulation of procedural Earth-like worlds and the histories that
 
 A reproducible world connects geography, climate, water, ecology, and resources. Populations adapt to their environment; production, connections, and decisions shape settlements, states, and history. Civilizations then change the environment that supports them.
 
-The application currently includes a desktop surface laboratory, static plate kinematics, independent initial crust, explainable elevation, initial water filling, and static drainage catchments on a flat map and relief globe. Next come basin storage and overflow, then erosion and a living natural environment with seasons, flowing water, and vegetation. Human populations follow once that foundation has been checked.
+The application currently includes a desktop surface laboratory, static plate kinematics, independent initial crust, explainable elevation, initial water filling, static drainage catchments, and basin hierarchy inspection on a flat map and relief globe. Next come dynamic basin storage and overflow, then erosion and a living natural environment with seasons, flowing water, and vegetation. Human populations follow once that foundation has been checked.
 
 ## Documentation
 
@@ -22,10 +22,12 @@ The application currently includes a desktop surface laboratory, static plate ki
 | [Initial water](docs/water.md) | Coverage/volume fitting, connected water bodies, inventory accounting, analytical layers, and validation |
 | [Water-surface display](docs/water-surface.md) | Separate globe water mesh, shoreline approximation, joint exaggeration bounds, and picking |
 | [Drainage structure](docs/drainage.md) | Bed receivers, flat routing, terminal catchments, and contributing land-area accounting |
+| [Basin analysis](docs/basins.md) | Plateau-batched hierarchy, threshold contacts, and level–storage relationships |
+| [Basin inspection](docs/basin-inspection.md) | Versioned transport, branch/threshold layers, and parent/capacity inspection |
 
 ## Status
 
-Milestones A, B1–B5, and C1 implement an Electron desktop application with an independent Rust core and a TypeScript interface:
+Milestones A, B1–B5, C1, and C2a–C2b implement an Electron desktop application with an independent Rust core and a TypeScript interface:
 
 - A closed spherical mesh with 12–40,962 computational regions, physical areas, neighbors, and distances.
 - A GPU-rendered flat map **and a 3D globe of the same world**, with shared layers and region inspection. View changes never regenerate the model.
@@ -42,7 +44,7 @@ The seed field is a coherent **diagnostic signal**, separate from terrain, clima
 
 Static drainage now assigns bed-based receivers, routes equal-height flats without altering elevation, preserves closed dry sinks, and accumulates contributing land area. Catchment and area layers are drainage potential, not flowing rivers; spill heights and lake storage are not computed yet.
 
-Plates are not continents, and continental crust is not emerged land. Geology, water, and drainage are static initial conditions; diagnostic playback does not evolve them. See [Drainage structure](docs/drainage.md) and its linked foundation documents for assumptions and the process boundary. Current recipes use `drainage-1`; older recipes, including `water-1`, are explicitly rejected without automatic reinterpretation.
+Plates are not continents, and continental crust is not emerged land. Geology, water, drainage, and basin hierarchy are static initial conditions; diagnostic playback does not evolve them. [Basin inspection](docs/basin-inspection.md) adds branch/threshold layers, parent navigation, contact highlights, and capacity explanations in both views. Current recipes use `basins-1`; older recipes, including `drainage-1`, are explicitly rejected without automatic reinterpretation.
 
 ## Run the desktop application
 
@@ -68,6 +70,6 @@ npm run package          # Unpacked desktop application for the current platform
 
 The desktop tests need a graphical session. Linux builds require the usual Electron/Chromium desktop libraries. Run a build before the headless and benchmark commands. Packaging bundles the native executable outside the application archive; the resulting app does not require Rust or Node.js to be installed. Packaging outputs to `release/`; it does not install globally, sign an application, or create a platform installer. Only Linux x64 is currently validated.
 
-Generation and future algorithm proposals are recorded separately from implemented features. [C2a basin analysis](docs/basins.md) adds a standalone native hierarchy of depression connections and level–storage queries; it is not yet integrated into desktop generation. Next comes inspection integration, followed by independent reservoir inventories and overflow; rivers are not yet computed. Resolved-state and image export remain outstanding milestone B work.
+Generation and future algorithm proposals are recorded separately from implemented features. [C2a basin analysis](docs/basins.md) and [C2b inspection](docs/basin-inspection.md) provide a native hierarchy of depression connections with shared desktop inspection. Next come prescribed-input experiments, independent reservoir inventories, and overflow; rivers are not yet computed. Resolved-state and image export remain outstanding milestone B work.
 
 Development, documentation, code comments, and project records use English. Conversation with the project owner uses Russian.

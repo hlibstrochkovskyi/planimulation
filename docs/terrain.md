@@ -1,6 +1,6 @@
 # Explainable elevation: milestone B3
 
-Historical B3 record. The current [B4 water model](water.md) extends this unchanged elevation algorithm with initial water filling and protocol 5. Measurements below refer to the B3 build.
+Historical B3 record. [B4 initial water](water.md) extended this unchanged elevation algorithm; the current build uses [C2b basin inspection](basin-inspection.md), model `basins-1`, and protocol 7. Measurements below refer to the B3 build.
 
 Implemented model: `terrain-1`, binary protocol 4. B3 adds static elevation and a displaced globe to B1 plates and B2 crust. Water, erosion, geological age, subduction polarity, and geological time integration remain unimplemented.
 

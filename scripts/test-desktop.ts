@@ -23,6 +23,7 @@ try {
   await expect(page.locator('#legend-title')).toContainText('Land and water surface');
   await expect(page.locator('#water-summary')).toContainText('71.00% target');
   await expect(page.locator('#drainage-summary')).toContainText('closed dry sinks');
+  await expect(page.locator('#basin-summary')).toContainText('226 minima · 451 hierarchy branches');
   await expect(page.locator('#crust-summary')).toContainText('38.00% target');
   const reference = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
   try { assert.equal((await reference.generate(DEFAULT_RECIPE)).world.checksum, fingerprint, 'Headless and desktop use the same native math.'); }
@@ -32,7 +33,14 @@ try {
     await window.desktop.cancelGeneration();
     const id = result.world.tectonics.boundaryCells[0], centers = result.world.surface.centers;
     const routed = result.world.drainage.receivers.findIndex((receiver, region) => receiver !== region && result.world.drainage.flatSteps[region] === 0);
+    const basinRegion = result.world.basins.regionNodes.findIndex((node, id) => result.world.basins.parents[node] !== node
+      && Math.abs(Math.atan2(centers[id * 3 + 2], centers[id * 3]) / Math.PI) < 0.8 && Math.abs(centers[id * 3 + 1]) < 0.7);
+    const basinNode = result.world.basins.regionNodes[basinRegion];
     return { checksum: result.world.checksum, typed: result.world.diagnosticField instanceof Float64Array,
+      basinSample: { id: basinRegion, node: basinNode, parent: result.world.basins.parents[basinNode],
+        from: result.world.basins.spillFrom[basinNode], to: result.world.basins.spillTo[basinNode],
+        x: Math.atan2(centers[basinRegion * 3 + 2], centers[basinRegion * 3]) / Math.PI,
+        y: Math.asin(centers[basinRegion * 3 + 1]) / Math.PI },
       drainageSample: { id: routed, x: Math.atan2(centers[routed * 3 + 2], centers[routed * 3]) / Math.PI,
         y: Math.asin(centers[routed * 3 + 1]) / Math.PI },
       boundarySample: { id, x: Math.atan2(centers[id * 3 + 2], centers[id * 3]) / Math.PI,
@@ -152,6 +160,41 @@ try {
   await page.getByRole('button', { name: '2D map', exact: true }).click();
   await page.locator('[data-layer="speed"]').click();
   await expect(page.locator('#legend-high')).toHaveText('8 cm/year');
+  await page.locator('[data-layer="basins"]').click();
+  await expect(page.locator('#legend-scale')).toBeHidden();
+  await expect(page.locator('#legend-title')).toContainText('exclusive ownership');
+  await clickAtlas(desktopData.basinSample);
+  await expect(page.locator('#selection-title')).toHaveText(`Region ${desktopData.basinSample.id.toLocaleString('en')}`);
+  const basinRegionTitle = await page.locator('#selection-title').innerText();
+  const basinDetails = await page.locator('#basin-details').innerText();
+  await expect(page.locator('#basin-title')).toContainText(`Branch ${desktopData.basinSample.node} ·`);
+  await expect(page.locator('#basin-details')).toContainText('not current water level');
+  await expect(page.locator('#basin-details')).toContainText('includes children');
+  await expect(canvas).toHaveAttribute('data-spill-from', String(desktopData.basinSample.from));
+  await expect(canvas).toHaveAttribute('data-spill-to', String(desktopData.basinSample.to));
+  await page.screenshot({ path: executablePath ? 'artifacts/basins-desktop-packaged.png' : 'artifacts/basins-desktop.png' });
+  await page.locator('#basin-parent').click();
+  await expect(page.locator('#basin-title')).toContainText(`Branch ${desktopData.basinSample.parent} ·`);
+  await expect(page.locator('#selection-title')).toHaveText(basinRegionTitle);
+  const beforeBasinPlayback = await page.locator('#diagnostic-tick').innerText();
+  await page.locator('#play').click();
+  await expect(page.locator('#diagnostic-tick')).not.toHaveText(beforeBasinPlayback);
+  await page.locator('#play').click();
+  await expect(page.locator('#basin-title')).toContainText(`Branch ${desktopData.basinSample.parent} ·`);
+  await page.locator('#basin-owner').click();
+  await expect(page.locator('#basin-details')).toHaveText(basinDetails, { useInnerText: true });
+  await page.locator('#basin-details').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: executablePath ? 'artifacts/basin-inspector-packaged.png' : 'artifacts/basin-inspector.png' });
+  await page.getByRole('button', { name: 'Globe', exact: true }).click();
+  await expect(page.locator('#basin-details')).toHaveText(basinDetails, { useInnerText: true });
+  await page.locator('[data-layer="spill"]').click();
+  await expect(page.locator('#legend-title')).toContainText('not current water level');
+  await expect(page.locator('#legend-scale')).toBeVisible();
+  await expect(page.locator('#boundary-legend')).toBeHidden();
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
+  await page.screenshot({ path: executablePath ? 'artifacts/spill-globe-packaged.png' : 'artifacts/spill-globe.png' });
+  await page.getByRole('button', { name: '2D map', exact: true }).click();
+  await page.locator('[data-layer="speed"]').click();
   await expect(page.locator('#boundary-legend')).toBeHidden();
   await page.getByRole('button', { name: 'Zoom in' }).click();
   await page.getByRole('button', { name: 'Fit map' }).click();
@@ -194,11 +237,20 @@ try {
   await expect(page.locator('#crust-summary')).toContainText('0.00% actual / 0.00% target');
   await expect(page.locator('#water-summary')).toContainText('0.00% actual / 0 km³ requested');
   await expect(page.locator('#drainage-summary')).toContainText('1 terminal catchments · 1 closed dry sinks');
+  await expect(page.locator('#basin-summary')).toContainText('1 minima · 1 hierarchy branches');
+  await expect(page.locator('#basin-title')).toHaveText('Select a region');
+  await expect(page.locator('#basin-parent')).toBeDisabled();
   await page.locator('[data-layer="surface"]').click();
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
   await canvas.click();
   await expect(canvas).toHaveAttribute('data-picked-surface', 'bed');
   await page.getByRole('button', { name: '2D map', exact: true }).click();
+  await expect(page.locator('#basin-title')).toContainText('global root');
+  await expect(page.locator('#basin-details')).toContainText('No finite spill capacity');
+  await expect(page.locator('#basin-parent')).toBeDisabled();
+  await expect(canvas).toHaveAttribute('data-spill-from', '-1');
+  await page.locator('[data-layer="spill"]').click();
+  await expect(page.locator('#legend-low')).toHaveText('No finite thresholds');
   await page.locator('[data-layer="plates"]').click();
   await expect(page.locator('#legend-title')).toContainText('7 connected plates');
   await page.locator('[data-layer="speed"]').click();

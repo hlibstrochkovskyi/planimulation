@@ -1,6 +1,6 @@
 # Early implementation plan
 
-Status: desktop milestones A, the native/GPU foundation, B1 (static plate kinematics), B2 (initial crust), B3 (explainable elevation), B4 (initial water filling), B5 (water-surface display), and C1 (static drainage structure), plus standalone native C2a basin analysis, September 23, 2026. Water dynamics, erosion, and later simulation milestones remain proposals. Each milestone is independently demonstrable; milestone letters are not released versions.
+Status: desktop milestones A, the native/GPU foundation, B1 (static plate kinematics), B2 (initial crust), B3 (explainable elevation), B4 (initial water filling), B5 (water-surface display), C1 (static drainage structure), C2a (basin analysis), and C2b (basin inspection), September 24, 2026. Water dynamics, erosion, and later simulation milestones remain proposals. Each milestone is independently demonstrable; milestone letters are not released versions.
 
 ## 1. Selected foundation stack
 
@@ -77,9 +77,9 @@ Completion produces the first usable artifact to open and explore. Rivers, biome
 
 ## 5. Milestone C: catchments, lakes, and terrain preparation
 
-[C1 drainage structure](drainage.md) is implemented: bed receivers, deterministic flat routing, terminal catchments, and contributing dry-land area. It preserves closed sinks and does not alter terrain or water. Current desktop recipes use `drainage-1`, protocol 6; milestone C is not complete.
+[C1 drainage structure](drainage.md) is implemented: bed receivers, deterministic flat routing, terminal catchments, and contributing dry-land area. It preserves closed sinks and does not alter terrain or water. Current desktop recipes use `basins-1`, protocol 7; milestone C is not complete.
 
-[C2a basin analysis](basins.md) adds a standalone Rust connectivity hierarchy, merge thresholds, and level–storage queries. It is available through the native library and a developer JSON-report example, not the desktop or wire protocol. Desktop integration, actual reservoir inventories, overflow, and erosion remain unimplemented. The analysis has its own `basin-analysis-1` version; generation recipes and fingerprints are unchanged.
+[C2a basin analysis](basins.md) adds a Rust connectivity hierarchy, merge thresholds, and level–storage queries. [C2b inspection](basin-inspection.md) integrates its unchanged `basin-analysis-1` algorithm into generation, versioned binary transport, two map/globe layers, and a hierarchy inspector. Actual reservoir inventories, overflow, and erosion remain unimplemented.
 
 Deliverable: correct drainage structure and a demonstration of basin filling under prescribed water input.
 
@@ -137,4 +137,4 @@ Automated checks focus on topology, units, balances, fluxes, determinism, checkp
 
 Population readiness means the environment provides water, wild food, seasonal hazards, traversal costs, and change history with stable behavior across an ensemble. Then introduce the groups described in [DESIGN.md](../DESIGN.md), consuming real stocks and modifying their environment.
 
-Current implementation scope is milestone A, the native/GPU integration and diagnostic transport test, B1 plate kinematics, B2 initial crust, B3 explainable elevation, B4 initial water filling, B5 water-surface display, C1 drainage structure, and standalone C2a basin analysis. Next integrate basin inspection, then independent inventories and overflow accounting. Remaining milestone B features follow as separate increments. Climate equations, economic modeling, and political entities must not block the first explainable terrain map.
+Current implementation scope is milestone A, the native/GPU integration and diagnostic transport test, B1 plate kinematics, B2 initial crust, B3 explainable elevation, B4 initial water filling, B5 water-surface display, C1 drainage structure, C2a basin analysis, and C2b basin inspection. Next introduce prescribed-input filling with independent inventories and overflow accounting. Remaining milestone B features follow as separate increments. Climate equations, economic modeling, and political entities must not block the first explainable terrain map.

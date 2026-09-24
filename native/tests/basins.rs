@@ -305,7 +305,7 @@ fn generated_terrain_retains_water_and_drainage_and_matches_threshold_budgets() 
         for seed in 0..if level == 6 { 2 } else { 10 } {
             let mut world = World::generate(Recipe {
                 schema_version: 1,
-                model_version: "drainage-1".into(),
+                model_version: "basins-1".into(),
                 random_version: "fnv1a-utf8-mulberry32-1".into(),
                 seed: format!("basin-world-{seed}"),
                 subdivision: level,

@@ -1,6 +1,6 @@
 # Basin connectivity and storage analysis: milestone C2a
 
-Status: native analysis module and standalone JSON report. Analysis version `basin-analysis-1`. This increment is **not integrated into desktop generation, the wire protocol, or water dynamics**. Desktop recipes remain `drainage-1`, protocol 6, and their fingerprints do not change. C2 and milestone C are not complete.
+Historical C2a baseline: native analysis module and standalone JSON report, analysis version `basin-analysis-1`. At that milestone the module was not integrated into desktop generation or the wire protocol; recipes remained `drainage-1`, protocol 6. [C2b basin inspection](basin-inspection.md) now integrates the same algorithm with `basins-1`, protocol 7. The measurements below describe C2a. Water dynamics remain unimplemented; milestone C is not complete.
 
 ## Purpose and boundary
 
@@ -89,7 +89,7 @@ The regression run also exposed two existing test issues: stale references after
 
 ## Next integration
 
-Expose this analysis through a versioned native payload and shared flat/globe inspection. Keep spill thresholds visibly distinct from actual water levels. Then specify initial reservoir assignment, sibling overflow paths, fill/merge/split behavior, and prescribed inflow with explicit input/storage/outflow budgets. A geometric merge tree alone is not that solver.
+[C2b](basin-inspection.md) supplies versioned native transport and shared flat/globe inspection, keeping spill thresholds distinct from actual water levels. Next specify initial reservoir assignment, sibling overflow paths, fill/merge/split behavior, and prescribed inflow with explicit input/storage/outflow budgets. A geometric merge tree alone is not that solver.
 
 ## Research context
 

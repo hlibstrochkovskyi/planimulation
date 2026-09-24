@@ -1,6 +1,6 @@
 # Initial crust: milestone B2
 
-Historical B2 baseline: `crust-1`, binary protocol 3. [B3 elevation](terrain.md), [B4 initial water](water.md), and [C1 drainage](drainage.md) extend it; the current build uses `drainage-1` and protocol 6, leaving crust generation unchanged. The recipe, measurements, and limitations below describe B2 itself, which does not generate elevation, water, geological ages, subduction polarity, or geological history.
+Historical B2 baseline: `crust-1`, binary protocol 3. [B3 elevation](terrain.md), [B4 initial water](water.md), and [C1 drainage](drainage.md) extend it; the current build uses `basins-1` and protocol 7, leaving crust generation unchanged. The recipe, measurements, and limitations below describe B2 itself, which does not generate elevation, water, geological ages, subduction polarity, or geological history.
 
 ## Meaning and boundaries
 

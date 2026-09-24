@@ -7,6 +7,7 @@ import { summarizeCrust } from './core/crust';
 import { summarizeTerrain } from './core/terrain';
 import { summarizeWater } from './core/water';
 import { summarizeDrainage } from './core/drainage';
+import { summarizeBasins } from './core/basins';
 
 const core = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
 
@@ -19,7 +20,7 @@ try {
   console.log(JSON.stringify({ recipe: world.recipe, checksum: world.checksum, stats: world.stats,
     tectonics: summarizeTectonics(world.surface, world.tectonics), crust: summarizeCrust(world.surface, world.crust),
     terrain: summarizeTerrain(world.surface, world.terrain), water: summarizeWater(world.surface, world.water),
-    drainage: summarizeDrainage(world.surface, world.water, world.drainage), generationMs: performance.now() - start }, null, 2));
+    drainage: summarizeDrainage(world.surface, world.water, world.drainage), basins: summarizeBasins(world.basins), generationMs: performance.now() - start }, null, 2));
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;

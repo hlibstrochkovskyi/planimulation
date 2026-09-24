@@ -5,6 +5,7 @@ import type { Recipe } from '../core/recipe';
 import type { World } from '../core/world';
 import { validateWater } from '../core/water';
 import { validateDrainage } from '../core/drainage';
+import { BASIN_ANALYSIS_VERSION, validateBasins } from '../core/basins';
 import type { DiagnosticFrame } from '../shared/desktop-api';
 
 const MAX_BYTES = 32 * 2 ** 20;
@@ -43,7 +44,7 @@ export class FrameReader {
       if (this.header === null) {
         if (this.length < this.headerLength) return;
         const h = JSON.parse(this.take(this.headerLength).toString('utf8')) as Header;
-        if (!h || h.protocol !== 6 || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
+        if (!h || h.protocol !== 7 || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
           || !['world', 'frame', 'error'].includes(h.kind)) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
@@ -72,8 +73,10 @@ export function decodeWorld(packet: Packet): World {
   const neighbors = 6 * n - 12, faces = 60 * 4 ** recipe.subdivision;
   const b = h.boundarySegmentCount;
   if (typeof b !== 'number' || !Number.isInteger(b) || b < 2 || b > neighbors || b % 2) throw new Error('Invalid native boundary count.');
+  const k = h.basinNodeCount;
+  if (typeof k !== 'number' || !Number.isInteger(k) || k < 1 || k > 2 * n - 1 || h.basinAnalysisVersion !== BASIN_ANALYSIS_VERSION) throw new Error('Invalid native basin metadata.');
   const expectedBytes = n * 24 + faces * 4 + (n + 1) * 8 + neighbors * 12 + n * 16 + neighbors * 48
-    + n * 4 + recipe.plateCount * 28 + b * 76 + 8 + n * 72 + 20 + n * 32;
+    + n * 4 + recipe.plateCount * 28 + b * 76 + 8 + n * 72 + 20 + n * 32 + n * 4 + k * 44;
   if (bytes.length !== expectedBytes) throw new Error('Invalid native world array lengths.');
   let cursor = 0;
   const f64 = (length: number): Float64Array => {
@@ -94,6 +97,8 @@ export function decodeWorld(packet: Packet): World {
   const terrain = { baseline: f64(n), convergence: f64(n), divergence: f64(n), detail: f64(n), elevation: f64(n) };
   const water = { levelMeters: f64(1)[0], resolvedVolumeCubicMeters: f64(1)[0], depthMeters: f64(n), bodyIds: u32(n), mainOceanId: u32(1)[0] };
   const drainage = { receivers: u32(n), outlets: u32(n), flatSteps: u32(n), contributingArea: f64(n) };
+  const basins = { regionNodes: u32(n), parents: u32(k), birthLevels: f64(k), spillLevels: f64(k),
+    spillFrom: u32(k), spillTo: u32(k), supportAreas: f64(k), capacities: f64(k) };
   for (let i = 0; i < n; i++) {
     if (terrain.baseline[i] < -4500.000001 || terrain.baseline[i] > 167
       || terrain.convergence[i] < 0 || terrain.convergence[i] > 12000
@@ -142,7 +147,8 @@ export function decodeWorld(packet: Packet): World {
   if ([...pairs.values()].some((count) => count !== 2)) throw new Error('Duplicate or missing native boundary segment.');
   validateWater(surface, terrain, water, recipe.water);
   validateDrainage(surface, terrain.elevation, water, drainage);
-  return { recipe, surface, diagnosticField, tectonics, crust, terrain, water, drainage, checksum: h.checksum, stats };
+  validateBasins(surface, terrain.elevation, basins);
+  return { recipe, surface, diagnosticField, tectonics, crust, terrain, water, drainage, basins, checksum: h.checksum, stats };
 }
 
 export class NativeSession {

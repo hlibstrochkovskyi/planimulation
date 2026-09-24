@@ -4,11 +4,11 @@
 
 Milestone A establishes spherical geometry, recipes, and inspection. The September 20 native/GPU increment moves desktop and headless calculations to Rust and adds two Three.js views: a flat atlas and a globe. Both display the same region IDs, fields, and selection. B3 now displaces the globe using computed elevation.
 
-Milestone B1 adds static plate kinematics. B2 adds independent continentality, approximate crust thickness/density, and area fitting. B3 adds inspectable elevation contributions, distance-decayed boundary effects, and globe relief. B4 adds initial water filling; B5 adds separate globe water surfaces. [C1 drainage structure](drainage.md) adds bed receivers, flat routing, terminal catchments, and contributing land area with model `drainage-1` and protocol 6. Desktop basin-hierarchy integration, water dynamics, erosion, and geological time integration are not implemented yet.
+Milestone B1 adds static plate kinematics. B2 adds independent continentality, approximate crust thickness/density, and area fitting. B3 adds inspectable elevation contributions, distance-decayed boundary effects, and globe relief. B4 adds initial water filling; B5 adds separate globe water surfaces. C1 adds drainage structure; [C2b basin inspection](basin-inspection.md) integrates the hierarchy with model `basins-1` and protocol 7. Water dynamics, erosion, and geological time integration are not implemented yet.
 
 The diagnostic diffusion mode exists to exercise stateful native calculation, small dynamic messages, and responsive rendering. It is not a climate, erosion, or geological model. Its step number is not a calendar. Read [Native/GPU foundation](native-foundation.md) for the protocol, numerical definition, and limitations. The original [milestone A report](validation-milestone-a.md) is historical and describes the superseded TS/Canvas implementation.
 
-[C2a basin analysis](basins.md) is a separate native-library increment: bed connectivity hierarchy, merge thresholds, and prism-storage queries with a standalone report. It is not integrated into desktop generation or water dynamics and leaves recipes, protocol, and fingerprints unchanged. Run it on an exported recipe with `cargo run --release --locked --manifest-path native/Cargo.toml --example basins -- path/to/recipe.json` (or `-` for stdin).
+[C2a basin analysis](basins.md) supplies the native bed-connectivity hierarchy, merge thresholds, and prism-storage queries. C2b computes it during generation and exposes branch/threshold layers and hierarchy inspection. A standalone report is also available: `cargo run --release --locked --manifest-path native/Cargo.toml --example basins -- path/to/recipe.json` (or `-` for stdin), using a current `basins-1` recipe.
 
 ## Daily workflow
 
@@ -48,7 +48,7 @@ Packaging produces an unpacked app under `release/`; it neither installs globall
 - `native/src/terrain.rs`: crust baseline, bounded boundary responses, graph-distance decay, independent detail, and elevation contributions.
 - `native/src/water.rs`: area-weighted coverage fitting, fixed-volume filling, depths, and connected initial water bodies.
 - `native/src/drainage.rs`: bed-based receivers, equal-height routing, terminal catchments, and topological land-area accumulation.
-- `native/src/basins.rs`: standalone plateau-batched connectivity hierarchy and level–storage analysis; `native/examples/basins.rs` emits its developer report.
+- `native/src/basins.rs`: plateau-batched connectivity hierarchy and level–storage analysis, owned by each generated world; `native/examples/basins.rs` emits its developer report.
 - `native/src/wire.rs`, `native/src/main.rs`: versioned, bounded command and binary-output adapter.
 - `src/native/client.ts`: process lifecycle, framing, validation, generation transactions, headless integration.
 - `src/electron/`: trusted sender checks, native process ownership, native recipe dialogs, sandboxed preload.
@@ -90,7 +90,7 @@ Numerical comparisons use justified tolerances. Repeated operation in the same s
 ```json
 {
   "schemaVersion": 1,
-  "modelVersion": "drainage-1",
+  "modelVersion": "basins-1",
   "randomVersion": "fnv1a-utf8-mulberry32-1",
   "seed": "first-light",
   "subdivision": 5,
@@ -108,12 +108,12 @@ Numerical comparisons use justified tolerances. Repeated operation in the same s
 
 All fields are required; unknown fields and unsupported versions are rejected. Seeds preserve their exact text and are limited to 128 UTF-16 code units. The UI shows radius in kilometers; the model stores meters. Native recipe file reads are bounded to 32 KiB. Levels 0–6 are supported. Alternatively, set `water` to `{ "mode": "volume", "volumeCubicMeters": 1.4e18 }`; never combine coverage and volume constraints. UI volume is in km³. Resolved level, stock, and coverage are retained in the native state and headless report; a saved input recipe recomputes them rather than exporting a full state archive.
 
-`surface-1`, `surface-rust-1`, `tectonics-1`, `crust-1`, `terrain-1`, and `water-1` are not silently migrated. To explore an old seed under the new model, create a new recipe from its visible parameters and keep the old file unchanged; identical checksums are not promised. The old implementation remains available through Git history. Display-only exaggeration is not a recipe parameter.
+`surface-1`, `surface-rust-1`, `tectonics-1`, `crust-1`, `terrain-1`, `water-1`, and `drainage-1` are not silently migrated. To explore an old seed under the new model, create a new recipe from its visible parameters and keep the old file unchanged; identical checksums are not promised. The old implementation remains available through Git history. Display-only exaggeration is not a recipe parameter.
 
 The displayed fingerprint covers the **initial** recipe and native arrays. It is an FNV-1a regression checksum, not cryptography. Running the diagnostic deliberately does not relabel it as a live-state checksum. Save recipe regenerates the initial field at step zero. Full simulation checkpoints, rewind, and cross-version migrations are not implemented.
 
 ## Next increment
 
-C1 supplies static drainage structure; C2a supplies standalone basin analysis. Next integrate the hierarchy into inspection before introducing independent inventories and overflow. Use constructed bowls and sills before tuning random worlds; preserve each evolving reservoir's inventory rather than repeatedly resetting coverage. Resolved-state and image export remain outstanding milestone B work.
+C1 supplies static drainage structure; C2a and C2b supply basin analysis and desktop inspection. Next introduce prescribed-input filling experiments with independent inventories and overflow. Use constructed bowls and sills before tuning random worlds; preserve each evolving reservoir's inventory rather than repeatedly resetting coverage. Resolved-state and image export remain outstanding milestone B work.
 
 Keep commits coherent, messages and project records in English, and the owner's configured Git identity. Never add assistant attribution or co-author trailers.

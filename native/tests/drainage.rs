@@ -141,7 +141,7 @@ fn existing_water_is_terminal_and_grouped_by_body_without_receiving_its_own_area
 fn recipe(seed: usize, level: u32, fraction: f64) -> Recipe {
     Recipe {
         schema_version: 1,
-        model_version: "drainage-1".into(),
+        model_version: "basins-1".into(),
         random_version: "fnv1a-utf8-mulberry32-1".into(),
         seed: format!("drainage-{seed}"),
         subdivision: level,

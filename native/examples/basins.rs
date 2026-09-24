@@ -1,5 +1,5 @@
 //! Standalone analysis report. Does not change desktop state or the wire protocol.
-use planimulation_core::{Recipe, World, basins::Basins};
+use planimulation_core::{Recipe, World};
 use serde_json::json;
 use std::io::{Read, Write};
 
@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let recipe: Recipe = serde_json::from_slice(&bytes)?;
     let world = World::generate(recipe)?;
-    let analysis = Basins::build(&world.surface, &world.terrain.elevation)?;
+    let analysis = &world.basins;
     let report = json!({ "reportVersion": 1, "recipe": world.recipe,
         "scope": "Static bed connectivity and prism storage; no water movement or external outlet.",
         "regionCount": world.surface.areas.len(),

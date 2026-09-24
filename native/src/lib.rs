@@ -24,10 +24,10 @@ pub struct Recipe {
 impl Recipe {
     pub fn validate(&self) -> Result<(), String> {
         if self.schema_version != 1
-            || self.model_version != "drainage-1"
+            || self.model_version != "basins-1"
             || self.random_version != "fnv1a-utf8-mulberry32-1"
         {
-            return Err("Unsupported recipe version; expected drainage-1.".into());
+            return Err("Unsupported recipe version; expected basins-1.".into());
         }
         if self.seed.trim().is_empty() || self.seed.encode_utf16().count() > 128 {
             return Err("Seed must contain 1–128 UTF-16 code units and cannot be blank.".into());
@@ -247,6 +247,7 @@ pub struct World {
     pub terrain: terrain::Terrain,
     pub water: water::Water,
     pub drainage: drainage::Drainage,
+    pub basins: basins::Basins,
 }
 impl World {
     pub fn generate(recipe: Recipe) -> Result<Self, String> {
@@ -268,6 +269,7 @@ impl World {
         let terrain = terrain::Terrain::build(&surface, &crust, &tectonics, &recipe);
         let water = water::Water::generate(&surface, &terrain.elevation, &recipe.water)?;
         let drainage = drainage::Drainage::build(&surface, &terrain.elevation, &water.body_ids);
+        let basins = basins::Basins::build(&surface, &terrain.elevation)?;
         let mut rng = Random::stream(&recipe.seed, "diagnostic-field");
         let modes: Vec<_> = (0..8)
             .map(|_| {
@@ -307,6 +309,7 @@ impl World {
             terrain,
             water,
             drainage,
+            basins,
         };
         w.initial_mass = w.mass();
         Ok(w)
