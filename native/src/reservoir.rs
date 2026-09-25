@@ -5,7 +5,7 @@ pub const EXPERIMENT_VERSION: &str = "isolated-reservoir-1";
 
 // Parse checkpoint decimals exactly without changing serde_json's global float
 // parser: existing world recipes must retain their versioned interpretation.
-fn checkpoint_number<'de, D: serde::Deserializer<'de>>(d: D) -> Result<f64, D::Error> {
+pub(crate) fn checkpoint_number<'de, D: serde::Deserializer<'de>>(d: D) -> Result<f64, D::Error> {
     let raw = Box::<serde_json::value::RawValue>::deserialize(d)?;
     raw.get().parse::<f64>().map_err(serde::de::Error::custom)
 }
@@ -82,11 +82,11 @@ pub struct Reservoir {
     capacity: Option<f64>,
 }
 
-fn tolerance(scale: f64) -> f64 {
+pub(crate) fn tolerance(scale: f64) -> f64 {
     1e-9_f64.max(scale.abs() * 1e-12)
 }
 
-fn add(a: f64, b: f64) -> Result<f64, String> {
+pub(crate) fn add(a: f64, b: f64) -> Result<f64, String> {
     let sum = a + b;
     if !sum.is_finite() || (b > 0. && sum <= a) {
         return Err("Reservoir addition overflowed or is below stock precision.".into());
@@ -214,7 +214,7 @@ impl Reservoir {
         self.level_for_volume(self.inventory().stored_volume_cubic_meters)
     }
 
-    fn level_for_volume(&self, volume: f64) -> Result<Option<f64>, String> {
+    pub(crate) fn level_for_volume(&self, volume: f64) -> Result<Option<f64>, String> {
         if !volume.is_finite() || volume < 0. || self.capacity.is_some_and(|cap| volume > cap) {
             return Err("Storage outside isolated reservoir range.".into());
         }

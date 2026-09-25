@@ -89,7 +89,7 @@ The regression run also exposed two existing test issues: stale references after
 
 ## Next integration
 
-[C2b](basin-inspection.md) supplies versioned native transport and shared flat/globe inspection, keeping spill thresholds distinct from actual water levels. [C3a](reservoir-experiment.md) adds isolated-leaf prescribed-input experiments with explicit stock/collector budgets and checkpoints, without changing this analysis. Sibling overflow paths, fill/merge/split behavior, and initial planetary reservoir assignment remain future work. A geometric merge tree alone is not that solver.
+[C2b](basin-inspection.md) supplies versioned native transport and shared flat/globe inspection, keeping spill thresholds distinct from actual water levels. [C3a](reservoir-experiment.md) adds isolated storage; [C3b](reservoir-pair.md) adds filling, spill, and merging for one explicitly connected pair, without changing this analysis. General sibling receiving paths, nested/multiway routing, splitting, and initial planetary reservoir assignment remain future work. A geometric merge tree alone is not that solver.
 
 ## Research context
 

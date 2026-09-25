@@ -1,0 +1,29 @@
+{
+  "checkpoint": {
+    "experimentVersion": "reservoir-pair-1",
+    "geometry": {
+      "left": [
+        { "bedMeters": 0, "areaSquareMeters": 2 },
+        { "bedMeters": 1, "areaSquareMeters": 3 }
+      ],
+      "right": [{ "bedMeters": -1, "areaSquareMeters": 4 }],
+      "connection": [
+        { "bedMeters": 3, "areaSquareMeters": 1 },
+        { "bedMeters": 5, "areaSquareMeters": 2 }
+      ],
+      "sillMeters": 3
+    },
+    "inventory": {
+      "initial": { "left": 0, "right": 0 },
+      "input": { "left": 0, "right": 0 },
+      "storage": { "separate": { "left": 0, "right": 0 } },
+      "pulseCount": 0
+    }
+  },
+  "inputsCubicMeters": [
+    { "left": 12, "right": 0 },
+    { "left": 4, "right": 0 },
+    { "left": 12, "right": 0 },
+    { "left": 10, "right": 0 }
+  ]
+}

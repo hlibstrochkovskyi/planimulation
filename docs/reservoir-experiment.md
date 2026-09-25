@@ -82,4 +82,4 @@ Recorded September 24, 2026:
 
 ## Next increment
 
-Introduce a controlled pair of adjacent reservoirs with explicit sill connectivity and separate inventories. Excess must reach the receiving reservoir; a common level above the sill is permitted only after both sides can support it. Check unequal starting stocks, reversed inflow, simultaneous contacts, exact threshold behavior, checkpoint continuation, and combined water accounting before extending to nested networks. Assignment of existing planetary water must preserve its stock; repeatedly refitting a global coverage target is not a dynamics model.
+[C3b](reservoir-pair.md) now implements a separate closed-pair experiment with an explicit sill, neighbor filling, shared storage, and checkpoints. C3a remains the isolated external-collector case. Nested/multiway routing and assignment of existing planetary inventories remain future work; repeatedly refitting a global coverage target is not a dynamics model.

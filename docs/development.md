@@ -12,6 +12,8 @@ The diagnostic diffusion mode exists to exercise stateful native calculation, sm
 
 [C3a reservoir experiments](reservoir-experiment.md) add isolated leaf storage, prescribed volume pulses, an optional external collector, and complete experiment checkpoints. They do not modify generated world water or the desktop. Run `cargo run --release --locked --manifest-path native/Cargo.toml --example reservoir -- docs/scenarios/reservoir-sill.json` for a hand-verifiable example.
 
+[C3b coupled pairs](reservoir-pair.md) add conservative exchange across one declared sill, receiver filling, and common storage above it, in a closed developer experiment. Run `cargo run --release --locked --manifest-path native/Cargo.toml --example reservoir_pair -- docs/scenarios/reservoir-pair.json`. Nested and multiway routing remain unimplemented.
+
 ## Daily workflow
 
 Prerequisites: Node.js 22.12+, npm, Rust and a platform linker, a graphical session for desktop tests, and WebGL 2 for viewing. Linux x64 is the validated target. Rust 1.98.1 is the tested toolchain; other targets/toolchains are not claimed to be bitwise equivalent.
@@ -52,6 +54,7 @@ Packaging produces an unpacked app under `release/`; it neither installs globall
 - `native/src/drainage.rs`: bed-based receivers, equal-height routing, terminal catchments, and topological land-area accumulation.
 - `native/src/basins.rs`: plateau-batched connectivity hierarchy and level–storage analysis, owned by each generated world; `native/examples/basins.rs` emits its developer report.
 - `native/src/reservoir.rs`: isolated single-reservoir storage curve, pulse budgets, and checkpoint validation; `native/examples/reservoir.rs` runs bounded developer experiments.
+- `native/src/reservoir_pair.rs`: closed-pair inventories, conservative transfer, threshold/merged states, and checkpoint validation; `native/examples/reservoir_pair.rs` runs its bounded scenario.
 - `native/src/wire.rs`, `native/src/main.rs`: versioned, bounded command and binary-output adapter.
 - `src/native/client.ts`: process lifecycle, framing, validation, generation transactions, headless integration.
 - `src/electron/`: trusted sender checks, native process ownership, native recipe dialogs, sandboxed preload.
@@ -85,6 +88,7 @@ No arbitrary filesystem path, shell command, raw IPC method, or Node.js object i
 | Drainage | Constructed slopes/bowls/flats, weighted gradients and areas, 180 repeated ensemble combinations, acyclicity, terminal land-area balance, and binary corruption rejection |
 | Basin analysis | Weighted nested bowls, simultaneous sills, independent threshold-component BFS, 120 synthetic and 32 generated cases, datum/area invariants, deep iterative hierarchy, unchanged upstream state |
 | Isolated reservoir | Hand-computed levels/capacity, independent prism sums, exact-threshold overflow, closed boundaries, seeded pulses, precision rejection, transactional errors, JSON checkpoint continuation, CLI input bounds; no coupled-lake claim |
+| Coupled pair | Receiver filling, reverse/simultaneous inputs, exact sill state, connection-area storage, symmetry, pulse partitioning, 90 seeded sequences, independent prism sums, physical-chain comparison, transactional errors, and checkpoint replay; no general network claim |
 | Appearance | Review flat/globe screenshots; numerical tests alone cannot establish readable graphics |
 
 Numerical comparisons use justified tolerances. Repeated operation in the same supported binary is exact. Native boundary rings start at a fixed incident face, avoiding an arbitrary change of starting vertex at the `atan2` ±π branch cut.
@@ -118,6 +122,6 @@ The displayed fingerprint covers the **initial** recipe and native arrays. It is
 
 ## Next increment
 
-C1 supplies static drainage structure; C2a and C2b supply basin analysis and desktop inspection. C3a supplies isolated prescribed-input storage with an external collector and experiment checkpoints. Next connect two constructed reservoirs through an explicit sill, preserving combined inventory and filling the receiving side before merging. Planetary inventory assignment and dynamic-world persistence remain separate work. Resolved-world-state and image export remain outstanding milestone B work.
+C1 supplies static drainage structure; C2a and C2b supply basin analysis and desktop inspection. C3a supplies isolated storage; C3b supplies closed-pair filling, spill, and merging with experiment checkpoints. Next specify actual receiving paths in a controlled nested hierarchy, including multiway contacts, without assuming arbitrary siblings are adjacent. Planetary inventory assignment and dynamic-world persistence remain separate work. Resolved-world-state and image export remain outstanding milestone B work.
 
 Keep commits coherent, messages and project records in English, and the owner's configured Git identity. Never add assistant attribution or co-author trailers.
