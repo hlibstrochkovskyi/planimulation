@@ -82,4 +82,4 @@ Recorded September 24, 2026:
 
 ## Next increment
 
-[C3b](reservoir-pair.md) now implements a separate closed-pair experiment with an explicit sill, neighbor filling, shared storage, and checkpoints. C3a remains the isolated external-collector case. Nested/multiway routing and assignment of existing planetary inventories remain future work; repeatedly refitting a global coverage target is not a dynamics model.
+[C3b](reservoir-pair.md) implements a closed-pair experiment; [C3d](nested-reservoir.md) extends experimentation to bounded binary nested filling with unique sill contacts and checkpoints. C3a remains the isolated external-collector case. General multiway/alternative-outlet allocation and assignment of existing planetary inventories remain future work; repeatedly refitting a global coverage target is not a dynamics model.

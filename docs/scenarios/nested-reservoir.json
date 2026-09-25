@@ -1,0 +1,26 @@
+{
+  "start": {
+    "dry": {
+      "columns": [
+        { "bedMeters": 0, "areaSquareMeters": 1 },
+        { "bedMeters": 2, "areaSquareMeters": 1 },
+        { "bedMeters": 1, "areaSquareMeters": 1 },
+        { "bedMeters": 5, "areaSquareMeters": 1 },
+        { "bedMeters": -1, "areaSquareMeters": 1 }
+      ],
+      "edges": [
+        { "regions": [0, 1], "distanceMeters": 1 },
+        { "regions": [1, 2], "distanceMeters": 1 },
+        { "regions": [2, 3], "distanceMeters": 1 },
+        { "regions": [3, 4], "distanceMeters": 1 }
+      ]
+    }
+  },
+  "inputs": [
+    { "region": 4, "volumeCubicMeters": 6 },
+    { "region": 4, "volumeCubicMeters": 1 },
+    { "region": 4, "volumeCubicMeters": 2 },
+    { "region": 4, "volumeCubicMeters": 9 },
+    { "region": 4, "volumeCubicMeters": 5 }
+  ]
+}

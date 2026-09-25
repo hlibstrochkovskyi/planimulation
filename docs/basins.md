@@ -11,7 +11,7 @@ This separates two questions:
 1. At what height can two depressions communicate, and what storage fits below that height?
 2. Given actual, possibly unequal inventories and inflows, where does water move?
 
-Only the first is implemented. An overflowing depression does not immediately turn an unfilled neighbor into a common-level lake. The later transport model must fill that neighbor before using their combined storage branch. Existing initial water must eventually be mapped onto independent inventories rather than redistributed globally each step.
+This analysis implements only the first. An overflowing depression does not immediately turn an unfilled neighbor into a common-level lake. A transport model must fill that neighbor before using their combined storage branch; the standalone reservoir experiments below check restricted cases. Existing initial water must eventually be mapped onto independent inventories rather than redistributed globally each step.
 
 ## Connectivity tree
 
@@ -89,7 +89,7 @@ The regression run also exposed two existing test issues: stale references after
 
 ## Next integration
 
-[C2b](basin-inspection.md) supplies versioned native transport and shared flat/globe inspection, keeping spill thresholds distinct from actual water levels. [C3a](reservoir-experiment.md) and [C3b](reservoir-pair.md) add reservoir experiments. [C3c](spill-connections.md) derives the geometric child–plateau graph and potential passages while preserving this analysis and its canonical witnesses. Active receiver descent, general nested/multiway allocation, splitting, and initial planetary reservoir assignment remain future work. Geometry alone is not that solver.
+[C2b](basin-inspection.md) supplies versioned native transport and shared flat/globe inspection, keeping spill thresholds distinct from actual water levels. [C3a](reservoir-experiment.md) and [C3b](reservoir-pair.md) add reservoir experiments. [C3c](spill-connections.md) derives the geometric child–plateau graph while preserving this analysis; [C3d](nested-reservoir.md) adds bounded binary nested filling with unique contacts and exclusive inventories. General multiway/alternative-outlet allocation, splitting, and initial planetary reservoir assignment remain future work. Geometry alone is not that solver.
 
 ## Research context
 

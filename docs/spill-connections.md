@@ -83,4 +83,4 @@ Validation completed September 25, 2026:
 
 ## Next increment
 
-Use the explicit entry regions and child–plateau graph to define a small nested filling experiment. Specify active receiver descent and the policy for ambiguous simultaneous outlets before allocating any water. Keep combined-stock accounting, source saturation, no transit through unfilled children, and checkpoint continuation as acceptance conditions. Planetary inventory assignment, flow rates, drying/splitting, and desktop integration remain separate work.
+[C3d nested filling](nested-reservoir.md) now uses explicit entry regions and this graph in a bounded closed binary experiment. It preserves stock and checkpoint continuation, fills nested receivers before merging, and rejects ambiguous outlets rather than selecting an arbitrary recipient. General allocation, planetary inventory assignment, flow rates, drying/splitting, and desktop integration remain separate work.

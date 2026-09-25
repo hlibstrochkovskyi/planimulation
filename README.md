@@ -27,6 +27,7 @@ The application currently includes a desktop surface laboratory, static plate ki
 | [Reservoir experiment](docs/reservoir-experiment.md) | Standalone prescribed-input storage, external collector, budgets, and checkpoints |
 | [Coupled reservoir pair](docs/reservoir-pair.md) | Two-bowl conservative spill, threshold/merged states, and shared storage |
 | [Spill connections](docs/spill-connections.md) | Geometric child–plateau graph, candidate receivers, and actual region passages |
+| [Nested reservoir experiment](docs/nested-reservoir.md) | Bounded binary-hierarchy filling, actual receiver entry, exclusive stocks, and checkpoints |
 
 ## Status
 
@@ -43,9 +44,9 @@ Milestones A, B1–B5, C1, and C2a–C2b implement an Electron desktop applicati
 - Explainable static elevation: crust baseline, convergence uplift, divergence effects, and bounded detail. A displaced globe has shared-corner interpolation and display-only vertical exaggeration; the flat map remains planar.
 - Initial water filling from either a coverage target or a fixed volume. Shared depth/body layers report actual coverage, the largest connected ocean, inland basins, and the resolved inventory. The Land and water layer adds a separate water-surface mesh on the globe; analytical layers expose the bed. Visible shorelines approximate whole-region water data and do not change physical coverage.
 
-The seed field is a coherent **diagnostic signal**, separate from terrain, climate, or biomes. Mesh topology remains fixed at a given resolution. Water dynamics, erosion, climate, and civilization are not implemented. Elevation zero is a reference datum, not sea level. Recipes save generation inputs that reproduce the initial world, not a running diagnostic state.
+The seed field is a coherent **diagnostic signal**, separate from terrain, climate, or biomes. Mesh topology remains fixed at a given resolution. Planetary water dynamics, erosion, climate, and civilization are not implemented. Elevation zero is a reference datum, not sea level. Recipes save generation inputs that reproduce the initial world, not a running diagnostic state.
 
-Static drainage now assigns bed-based receivers, routes equal-height flats without altering elevation, preserves closed dry sinks, and accumulates contributing land area. Catchment and area layers are drainage potential, not flowing rivers; spill heights and lake storage are not computed yet.
+Static drainage assigns bed-based receivers, routes equal-height flats without altering elevation, preserves closed dry sinks, and accumulates contributing land area. Catchment and area layers are drainage potential, not flowing rivers. Basin analysis computes geometric spill thresholds and storage capacities; it does not evolve the world's water inventories.
 
 Plates are not continents, and continental crust is not emerged land. Geology, water, drainage, and basin hierarchy are static initial conditions; diagnostic playback does not evolve them. [Basin inspection](docs/basin-inspection.md) adds branch/threshold layers, parent navigation, contact highlights, and capacity explanations in both views. Current recipes use `basins-1`; older recipes, including `drainage-1`, are explicitly rejected without automatic reinterpretation.
 
@@ -73,6 +74,6 @@ npm run package          # Unpacked desktop application for the current platform
 
 The desktop tests need a graphical session. Linux builds require the usual Electron/Chromium desktop libraries. Run a build before the headless and benchmark commands. Packaging bundles the native executable outside the application archive; the resulting app does not require Rust or Node.js to be installed. Packaging outputs to `release/`; it does not install globally, sign an application, or create a platform installer. Only Linux x64 is currently validated.
 
-Generation and future algorithm proposals are recorded separately from implemented features. [C2a basin analysis](docs/basins.md) and [C2b inspection](docs/basin-inspection.md) provide a native hierarchy of depression connections with shared desktop inspection. [C3a](docs/reservoir-experiment.md) and [C3b](docs/reservoir-pair.md) provide standalone reservoir experiments. [C3c](docs/spill-connections.md) supplies geometric sill connections and candidate passages for future nested routing, not water allocation. None advances desktop water; rivers are not yet computed. Resolved-world-state and image export remain outstanding milestone B work.
+Generation and future algorithm proposals are recorded separately from implemented features. [C2a basin analysis](docs/basins.md) and [C2b inspection](docs/basin-inspection.md) provide a native hierarchy of depression connections with shared desktop inspection. [C3a](docs/reservoir-experiment.md) and [C3b](docs/reservoir-pair.md) provide standalone reservoir experiments. [C3c](docs/spill-connections.md) supplies geometric sill connections; [C3d](docs/nested-reservoir.md) uses them for a bounded binary-hierarchy filling experiment with conserved stock and checkpoints. Ambiguous spill allocation is explicitly rejected. None advances desktop water; rivers are not yet computed. Resolved-world-state and image export remain outstanding milestone B work.
 
 Development, documentation, code comments, and project records use English. Conversation with the project owner uses Russian.

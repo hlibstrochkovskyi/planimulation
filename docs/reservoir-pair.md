@@ -76,4 +76,4 @@ Validation completed September 24; record finalized September 25, 2026:
 
 ## Next step
 
-[C3c](spill-connections.md) now provides geometric sill connections, all lower contacts, and potential passages without treating arbitrary siblings as adjacent. Next define active receiver descent and allocation at simultaneous outlets, then test conservative nested filling. Independent planetary inventory assignment, withdrawals/splitting, finite flow rates, and desktop integration remain separate increments; existing world water must never be replaced by repeated global coverage fitting.
+[C3c](spill-connections.md) provides geometric sill connections without treating arbitrary siblings as adjacent. [C3d](nested-reservoir.md) now uses unique connections for bounded binary nested filling with actual entry descent, conserved stock, and checkpoints; ambiguous outlets are rejected. General allocation, planetary inventory assignment, withdrawals/splitting, finite flow rates, and desktop integration remain separate increments; existing world water must never be replaced by repeated global coverage fitting.
