@@ -26,6 +26,7 @@ The application currently includes a desktop surface laboratory, static plate ki
 | [Basin inspection](docs/basin-inspection.md) | Versioned transport, branch/threshold layers, and parent/capacity inspection |
 | [Reservoir experiment](docs/reservoir-experiment.md) | Standalone prescribed-input storage, external collector, budgets, and checkpoints |
 | [Coupled reservoir pair](docs/reservoir-pair.md) | Two-bowl conservative spill, threshold/merged states, and shared storage |
+| [Spill connections](docs/spill-connections.md) | Geometric child–plateau graph, candidate receivers, and actual region passages |
 
 ## Status
 
@@ -72,6 +73,6 @@ npm run package          # Unpacked desktop application for the current platform
 
 The desktop tests need a graphical session. Linux builds require the usual Electron/Chromium desktop libraries. Run a build before the headless and benchmark commands. Packaging bundles the native executable outside the application archive; the resulting app does not require Rust or Node.js to be installed. Packaging outputs to `release/`; it does not install globally, sign an application, or create a platform installer. Only Linux x64 is currently validated.
 
-Generation and future algorithm proposals are recorded separately from implemented features. [C2a basin analysis](docs/basins.md) and [C2b inspection](docs/basin-inspection.md) provide a native hierarchy of depression connections with shared desktop inspection. [C3a](docs/reservoir-experiment.md) adds a standalone, checkpointable single-reservoir experiment; [C3b](docs/reservoir-pair.md) adds conservative filling, spill, and merging for one closed pair. Neither advances desktop water. Next comes controlled nested routing; rivers are not yet computed. Resolved-world-state and image export remain outstanding milestone B work.
+Generation and future algorithm proposals are recorded separately from implemented features. [C2a basin analysis](docs/basins.md) and [C2b inspection](docs/basin-inspection.md) provide a native hierarchy of depression connections with shared desktop inspection. [C3a](docs/reservoir-experiment.md) and [C3b](docs/reservoir-pair.md) provide standalone reservoir experiments. [C3c](docs/spill-connections.md) supplies geometric sill connections and candidate passages for future nested routing, not water allocation. None advances desktop water; rivers are not yet computed. Resolved-world-state and image export remain outstanding milestone B work.
 
 Development, documentation, code comments, and project records use English. Conversation with the project owner uses Russian.

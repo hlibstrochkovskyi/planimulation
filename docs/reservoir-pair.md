@@ -76,4 +76,4 @@ Validation completed September 24; record finalized September 25, 2026:
 
 ## Next step
 
-Specify and test routing through a small nested basin hierarchy, including actual receiving paths and simultaneous multiway contacts. The isolated pair's single declared connection must not become an arbitrary sibling-selection rule in a larger tree. Independent planetary inventory assignment, withdrawals/splitting, finite flow rates, and desktop integration remain separate increments; existing world water must never be replaced by repeated global coverage fitting.
+[C3c](spill-connections.md) now provides geometric sill connections, all lower contacts, and potential passages without treating arbitrary siblings as adjacent. Next define active receiver descent and allocation at simultaneous outlets, then test conservative nested filling. Independent planetary inventory assignment, withdrawals/splitting, finite flow rates, and desktop integration remain separate increments; existing world water must never be replaced by repeated global coverage fitting.

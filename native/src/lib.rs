@@ -357,6 +357,7 @@ pub mod crust;
 pub mod drainage;
 pub mod reservoir;
 pub mod reservoir_pair;
+pub mod spill_connections;
 pub mod tectonics;
 pub mod terrain;
 pub mod water;
