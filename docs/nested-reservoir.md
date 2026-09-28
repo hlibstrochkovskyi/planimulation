@@ -91,4 +91,4 @@ Validation completed September 25, 2026:
 
 ## Next increment
 
-[C3e shared-sill allocation](spill-junction.md) now tests a separate versioned receiver-weighted policy for leaf reservoirs sharing one connected plateau, including simultaneous inputs and order comparisons. It does not relax C3d's rejection rules or support general alternative outlets. Next combine allocation and nested receiving paths in a controlled connected network. Full-world inventory initialization, scalable state, finite rates, withdrawals/splitting, and desktop integration remain separate increments.
+[C3e shared-sill allocation](spill-junction.md) tests a separate versioned receiver-weighted policy. [C3f spill networks](spill-network.md) combine nested receiving paths, multiple plateaus and saturated transit in a bounded ordered experiment, without changing C3d's rules. Simultaneous network forcing, ambiguous nested entries, full-world initialization, scalable state, finite rates, withdrawals/splitting, and desktop integration remain separate work.

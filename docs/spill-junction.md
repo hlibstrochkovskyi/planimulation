@@ -105,4 +105,4 @@ Validation completed September 28, 2026:
 
 ## Next increment
 
-Define a controlled network combining this explicit allocation policy with nested receiver entry and more than one sill plateau. Receiver eligibility and transit through saturated bowls must be derived from actual connections, not copied from this all-to-all shared-plateau case. Preserve the existing experiment versions as references; planetary initialization and scalable state storage remain separate integration tasks.
+[C3f spill networks](spill-network.md) now combine nested entry and multiple plateaus in a separate event-driven, ordered policy. Receivers are recomputed when a saturated bowl opens a route. C3e's order-independence comparisons do not generalize: C3f records an exact order-sensitive case. Simultaneous network forcing, ambiguous entry allocation, planetary initialization and scalable storage remain separate work.

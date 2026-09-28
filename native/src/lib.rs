@@ -360,6 +360,7 @@ pub mod reservoir;
 pub mod reservoir_pair;
 pub mod spill_connections;
 pub mod spill_junction;
+pub mod spill_network;
 pub mod tectonics;
 pub mod terrain;
 pub mod water;

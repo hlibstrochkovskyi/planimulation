@@ -1,0 +1,47 @@
+{
+  "start": {
+    "dry": {
+      "policyVersion": "frontier-weighted-events-1",
+      "geometry": {
+        "columns": [
+          { "bedMeters": 0, "areaSquareMeters": 1 },
+          { "bedMeters": 5, "areaSquareMeters": 1 },
+          { "bedMeters": 1, "areaSquareMeters": 1 },
+          { "bedMeters": 2, "areaSquareMeters": 1 },
+          { "bedMeters": 0.5, "areaSquareMeters": 1 },
+          { "bedMeters": 5, "areaSquareMeters": 1 },
+          { "bedMeters": 2, "areaSquareMeters": 1 },
+          { "bedMeters": 5, "areaSquareMeters": 1 },
+          { "bedMeters": 3, "areaSquareMeters": 1 }
+        ],
+        "edges": [
+          { "regions": [0, 1], "distanceMeters": 1 },
+          { "regions": [1, 2], "distanceMeters": 1 },
+          { "regions": [2, 3], "distanceMeters": 1 },
+          { "regions": [3, 4], "distanceMeters": 1 },
+          { "regions": [2, 5], "distanceMeters": 1 },
+          { "regions": [5, 6], "distanceMeters": 1 },
+          { "regions": [0, 7], "distanceMeters": 1 },
+          { "regions": [7, 8], "distanceMeters": 1 }
+        ]
+      },
+      "weights": [
+        { "branch": 0, "weight": 1 },
+        { "branch": 1, "weight": 1 },
+        { "branch": 2, "weight": 1 },
+        { "branch": 3, "weight": 1 },
+        { "branch": 4, "weight": 1 },
+        { "branch": 5, "weight": 1 }
+      ]
+    }
+  },
+  "inputs": [
+    { "region": 0, "volumeCubicMeters": 5 },
+    { "region": 0, "volumeCubicMeters": 1 },
+    { "region": 0, "volumeCubicMeters": 1 },
+    { "region": 0, "volumeCubicMeters": 2 },
+    { "region": 0, "volumeCubicMeters": 9.5 },
+    { "region": 0, "volumeCubicMeters": 3 },
+    { "region": 0, "volumeCubicMeters": 9 }
+  ]
+}

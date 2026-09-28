@@ -29,6 +29,7 @@ The application currently includes a desktop surface laboratory, static plate ki
 | [Spill connections](docs/spill-connections.md) | Geometric child–plateau graph, candidate receivers, and actual region passages |
 | [Nested reservoir experiment](docs/nested-reservoir.md) | Bounded binary-hierarchy filling, actual receiver entry, exclusive stocks, and checkpoints |
 | [Shared-sill allocation](docs/spill-junction.md) | Explicit capped receiver weights, simultaneous inputs, and order comparisons at one junction |
+| [Spill network experiment](docs/spill-network.md) | Event-driven receiving frontiers, saturated transit, nested entry, and explicit pulse-order effects |
 
 ## Status
 
@@ -75,6 +76,6 @@ npm run package          # Unpacked desktop application for the current platform
 
 The desktop tests need a graphical session. Linux builds require the usual Electron/Chromium desktop libraries. Run a build before the headless and benchmark commands. Packaging bundles the native executable outside the application archive; the resulting app does not require Rust or Node.js to be installed. Packaging outputs to `release/`; it does not install globally, sign an application, or create a platform installer. Only Linux x64 is currently validated.
 
-Generation and future algorithm proposals are recorded separately from implemented features. [C2a basin analysis](docs/basins.md) and [C2b inspection](docs/basin-inspection.md) provide a native hierarchy of depression connections with shared desktop inspection. [C3a](docs/reservoir-experiment.md) and [C3b](docs/reservoir-pair.md) provide standalone reservoir experiments. [C3c](docs/spill-connections.md) supplies geometric sill connections; [C3d](docs/nested-reservoir.md) provides bounded binary nested filling. [C3e](docs/spill-junction.md) separately tests explicit weighted allocation among leaf reservoirs sharing one sill plateau. General nested/multiple-sill allocation remains unimplemented. None advances desktop water; rivers are not yet computed. Resolved-world-state and image export remain outstanding milestone B work.
+Generation and future algorithm proposals are recorded separately from implemented features. [C2a basin analysis](docs/basins.md) and [C2b inspection](docs/basin-inspection.md) provide a native hierarchy of depression connections with shared desktop inspection. [C3a](docs/reservoir-experiment.md)–[C3e](docs/spill-junction.md) provide standalone storage, connection, and allocation experiments. [C3f](docs/spill-network.md) combines nested entry and multiple sill plateaus in a bounded, ordered receiving-frontier model; ambiguous nested entries are rejected. Simultaneous network forcing and planetary inventory integration remain unimplemented. None advances desktop water; rivers are not yet computed. Resolved-world-state and image export remain outstanding milestone B work.
 
 Development, documentation, code comments, and project records use English. Conversation with the project owner uses Russian.
