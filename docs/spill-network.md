@@ -113,4 +113,4 @@ No packaging run, new visual feature, physical calibration or planetary network 
 
 ## Next increment
 
-Specify simultaneous network forcing before mapping rainfall or initial planetary inventories onto this model. Preserve the exact order-sensitive case as a comparison, and decide how sub-precision residuals would be retained if small time-step inputs are required. A scalable storage representation, ambiguous nested entry allocation, finite discharge, drying/splitting, and desktop visualization remain separate work.
+[C3g concurrent forcing](simultaneous-network.md) now specifies a separate constant-input interval policy with global saturation events. It preserves this ordered experiment and uses the exact order-sensitive case as a comparison. Sub-precision updates still fail atomically; explicit pending-input storage and timing remain future work. Scalable storage, planetary inventory integration, ambiguous nested entries, finite discharge, drying/splitting and desktop visualization remain separate work.

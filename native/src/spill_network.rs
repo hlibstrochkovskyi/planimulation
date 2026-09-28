@@ -7,6 +7,8 @@ use crate::spill_connections::SpillConnections;
 use crate::spill_junction::Weight;
 use serde::{Deserialize, Serialize};
 
+pub mod simultaneous;
+
 pub const EXPERIMENT_VERSION: &str = "spill-network-1";
 pub const POLICY_VERSION: &str = "frontier-weighted-events-1";
 

@@ -22,6 +22,8 @@ The diagnostic diffusion mode exists to exercise stateful native calculation, sm
 
 [C3f spill networks](spill-network.md) combine nested entry, distinct sill plateaus, saturated transit and event-driven weighted frontiers. Run `cargo run --release --locked --manifest-path native/Cargo.toml --example spill_network -- docs/scenarios/spill-network.json`. Inputs are ordered and can be history-dependent; they are not simultaneous rainfall. Ambiguous nested entries and unrepresentable numerical updates fail atomically.
 
+[C3g concurrent forcing](simultaneous-network.md) separately supplies constant regional inputs over normalized intervals, advancing all active stocks to global saturation events. Run `cargo run --release --locked --manifest-path native/Cargo.toml --example simultaneous_network -- docs/scenarios/simultaneous-network.json`. Input-list order is not a source priority; rates are per normalized interval, not physical discharge.
+
 ## Daily workflow
 
 Prerequisites: Node.js 22.12+, npm, Rust and a platform linker, a graphical session for desktop tests, and WebGL 2 for viewing. Linux x64 is the validated target. Rust 1.98.1 is the tested toolchain; other targets/toolchains are not claimed to be bitwise equivalent.
@@ -67,6 +69,7 @@ Packaging produces an unpacked app under `release/`; it neither installs globall
 - `native/src/nested_reservoir.rs`: bounded binary-hierarchy filling, unique spill routes, exclusive active stocks, and checkpoints; `native/examples/nested_reservoir.rs` runs ordered entry pulses.
 - `native/src/spill_junction.rs`: shared-sill leaf allocation with explicit weights, capped redistribution, simultaneous batches, and checkpoints; `native/examples/spill_junction.rs` emits the developer report.
 - `native/src/spill_network.rs`: bounded event-driven receiving frontiers, nested storage, saturated transit witnesses, ordered input and checkpoints; `native/examples/spill_network.rs` emits the network experiment report.
+- `native/src/spill_network/simultaneous.rs`: separately versioned concurrent forcing, global saturation events and audited interval transactions; `native/examples/simultaneous_network.rs` emits the developer report.
 - `native/src/wire.rs`, `native/src/main.rs`: versioned, bounded command and binary-output adapter.
 - `src/native/client.ts`: process lifecycle, framing, validation, generation transactions, headless integration.
 - `src/electron/`: trusted sender checks, native process ownership, native recipe dialogs, sandboxed preload.
@@ -105,6 +108,7 @@ No arbitrary filesystem path, shell command, raw IPC method, or Node.js object i
 | Nested filling | Near-before-far entry, source saturation, merge thresholds, exclusive stocks, 4,000 weighted oracle pulses, 500 mixed-entry/scaling/relabeling checks, JSON continuation, malformed frontiers, atomic failures, and bounded depth; ambiguous outlets rejected |
 | Shared-sill allocation | Weighted/equal splits, capped receivers, local-first simultaneous inputs, 2,400 oracle updates, order/partition comparisons before merging, distinct transfer histories, repeated contacts, 127 leaves, C3b pair agreement, atomic errors, and exact continuation |
 | Spill network | Frontier changes at first saturation, blocked/long transit, cycles/alternatives, nested entry, 1,200 analytic oracle updates, 60 independent raw-region reachability cases, explicit order sensitivity, C3d/C3e agreement, exact continuation and atomic precision rejection |
+| Concurrent forcing | Input permutation, proportional subdivision, relabeling, 100 analytical weighted forks, 60 independent component-rate oracles, nested entry, multiple sources, threshold ties, C3e/C3f limits, exact continuation, and atomic failures |
 | Appearance | Review flat/globe screenshots; numerical tests alone cannot establish readable graphics |
 
 Numerical comparisons use justified tolerances. Repeated operation in the same supported binary is exact. Native boundary rings start at a fixed incident face, avoiding an arbitrary change of starting vertex at the `atan2` ±π branch cut.
@@ -138,6 +142,6 @@ The displayed fingerprint covers the **initial** recipe and native arrays. It is
 
 ## Next increment
 
-C1 supplies static drainage structure; C2a and C2b supply basin analysis and desktop inspection. C3a–C3f supply standalone experiments, including a bounded ordered network that recomputes receiving frontiers at saturation events. Next specify simultaneous network forcing and treatment of sub-precision remainders before planetary inventory integration. Scalable storage, ambiguous nested entry allocation, and dynamic-world persistence remain separate work. Resolved-world-state and image export remain outstanding milestone B work.
+C1 supplies static drainage structure; C2a and C2b supply basin analysis and desktop inspection. C3a–C3g supply standalone experiments, including bounded ordered and constant concurrent network policies. Next specify pending-input ownership and timing before accepting sub-precision forcing, then test initial inventories and entry restrictions on generated geometries. Scalable storage and dynamic-world persistence remain separate work. Resolved-world-state and image export remain outstanding milestone B work.
 
 Keep commits coherent, messages and project records in English, and the owner's configured Git identity. Never add assistant attribution or co-author trailers.
