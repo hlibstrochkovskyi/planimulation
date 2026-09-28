@@ -31,6 +31,7 @@ The application currently includes a desktop surface laboratory, static plate ki
 | [Shared-sill allocation](docs/spill-junction.md) | Explicit capped receiver weights, simultaneous inputs, and order comparisons at one junction |
 | [Spill network experiment](docs/spill-network.md) | Event-driven receiving frontiers, saturated transit, nested entry, and explicit pulse-order effects |
 | [Concurrent network forcing](docs/simultaneous-network.md) | Constant simultaneous inputs, global saturation events, and input-order invariance |
+| [Generated-world readiness](docs/spill-readiness.md) | Measured integration restrictions, conflicting entry witnesses, and next product gates |
 
 ## Status
 

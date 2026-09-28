@@ -102,4 +102,4 @@ The existing Vite chunk-size advisory remains. No new packaging run, visual feat
 
 ## Next increment
 
-Specify explicit pending-input ownership and timing before attempting sub-precision forcing, then test initial-inventory mapping and ambiguous receiving entries on generated basin geometries. Planetary-scale storage, timed discharge, drying/splitting and desktop water animation remain separate work. Concurrent laboratory forcing is not yet a planetary water cycle.
+[C3h integration screening](spill-readiness.md) now records pending-stock requirements and measures receiving-entry restrictions on generated worlds. Every tested seed in its 20-world sample has conflicting nested entries. An explicit multiple-entry policy is therefore the immediate integration priority; a pending-input wrapper is not implemented. Initial-inventory mapping, scalable storage, numerical robustness, timed discharge, drying/splitting and desktop water animation remain separate gates. Concurrent laboratory forcing is not yet a planetary water cycle.
