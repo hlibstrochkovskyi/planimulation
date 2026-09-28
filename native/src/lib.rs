@@ -359,6 +359,7 @@ pub mod nested_reservoir;
 pub mod reservoir;
 pub mod reservoir_pair;
 pub mod spill_connections;
+pub mod spill_junction;
 pub mod tectonics;
 pub mod terrain;
 pub mod water;

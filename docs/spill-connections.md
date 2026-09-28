@@ -83,4 +83,4 @@ Validation completed September 25, 2026:
 
 ## Next increment
 
-[C3d nested filling](nested-reservoir.md) now uses explicit entry regions and this graph in a bounded closed binary experiment. It preserves stock and checkpoint continuation, fills nested receivers before merging, and rejects ambiguous outlets rather than selecting an arbitrary recipient. General allocation, planetary inventory assignment, flow rates, drying/splitting, and desktop integration remain separate work.
+[C3d nested filling](nested-reservoir.md) uses explicit entry regions and this graph in a bounded closed binary experiment. [C3e shared-sill allocation](spill-junction.md) separately uses the graph to verify a single common plateau before allocating by explicit receiver weights. Neither treats arbitrary siblings as adjacent. General nested/multiple-sill allocation, planetary inventory assignment, flow rates, drying/splitting, and desktop integration remain separate work.

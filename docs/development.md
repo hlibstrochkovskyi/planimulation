@@ -18,6 +18,8 @@ The diagnostic diffusion mode exists to exercise stateful native calculation, sm
 
 [C3d nested filling](nested-reservoir.md) combines explicit passages and active storage in a closed, initially dry binary-hierarchy experiment of at most 128 regions. Run `cargo run --release --locked --manifest-path native/Cargo.toml --example nested_reservoir -- docs/scenarios/nested-reservoir.json`. Ambiguous outlets are rejected; this is not planetary hydrology or a desktop control.
 
+[C3e shared-sill allocation](spill-junction.md) tests explicit capped receiver weights and simultaneous input batches in a separate single-plateau leaf junction. Run `cargo run --release --locked --manifest-path native/Cargo.toml --example spill_junction -- docs/scenarios/spill-junction.json`. It does not change C3d's supported topology or infer hydraulic conductance from mesh contacts.
+
 ## Daily workflow
 
 Prerequisites: Node.js 22.12+, npm, Rust and a platform linker, a graphical session for desktop tests, and WebGL 2 for viewing. Linux x64 is the validated target. Rust 1.98.1 is the tested toolchain; other targets/toolchains are not claimed to be bitwise equivalent.
@@ -61,6 +63,7 @@ Packaging produces an unpacked app under `release/`; it neither installs globall
 - `native/src/reservoir_pair.rs`: closed-pair inventories, conservative transfer, threshold/merged states, and checkpoint validation; `native/examples/reservoir_pair.rs` runs its bounded scenario.
 - `native/src/spill_connections.rs`: standalone child–plateau incidence, direct candidate receivers, and sill-only passage queries; `native/examples/spill_connections.rs` emits its recipe-based report.
 - `native/src/nested_reservoir.rs`: bounded binary-hierarchy filling, unique spill routes, exclusive active stocks, and checkpoints; `native/examples/nested_reservoir.rs` runs ordered entry pulses.
+- `native/src/spill_junction.rs`: shared-sill leaf allocation with explicit weights, capped redistribution, simultaneous batches, and checkpoints; `native/examples/spill_junction.rs` emits the developer report.
 - `native/src/wire.rs`, `native/src/main.rs`: versioned, bounded command and binary-output adapter.
 - `src/native/client.ts`: process lifecycle, framing, validation, generation transactions, headless integration.
 - `src/electron/`: trusted sender checks, native process ownership, native recipe dialogs, sandboxed preload.
@@ -97,6 +100,7 @@ No arbitrary filesystem path, shell command, raw IPC method, or Node.js object i
 | Coupled pair | Receiver filling, reverse/simultaneous inputs, exact sill state, connection-area storage, symmetry, pulse partitioning, 90 seeded sequences, independent prism sums, physical-chain comparison, transactional errors, and checkpoint replay; no general network claim |
 | Spill connections | No skipping lower children, nested entry regions, dead-end and alternative contacts, deterministic plateau paths, 72 independent raw-height reachability cases, deep/wide graph stress, finest generated world, unchanged water/wire state; no water-allocation claim |
 | Nested filling | Near-before-far entry, source saturation, merge thresholds, exclusive stocks, 4,000 weighted oracle pulses, 500 mixed-entry/scaling/relabeling checks, JSON continuation, malformed frontiers, atomic failures, and bounded depth; ambiguous outlets rejected |
+| Shared-sill allocation | Weighted/equal splits, capped receivers, local-first simultaneous inputs, 2,400 oracle updates, order/partition comparisons before merging, distinct transfer histories, repeated contacts, 127 leaves, C3b pair agreement, atomic errors, and exact continuation |
 | Appearance | Review flat/globe screenshots; numerical tests alone cannot establish readable graphics |
 
 Numerical comparisons use justified tolerances. Repeated operation in the same supported binary is exact. Native boundary rings start at a fixed incident face, avoiding an arbitrary change of starting vertex at the `atan2` ±π branch cut.
@@ -130,6 +134,6 @@ The displayed fingerprint covers the **initial** recipe and native arrays. It is
 
 ## Next increment
 
-C1 supplies static drainage structure; C2a and C2b supply basin analysis and desktop inspection. C3a–C3d supply standalone geometry and reservoir experiments, including bounded binary nested filling with conserved stock and checkpoints. Next specify and test multiway/alternative-outlet allocation and pulse-order sensitivity without silently widening C3d's model. Planetary inventory assignment, a scalable dynamic representation, and dynamic-world persistence remain separate work. Resolved-world-state and image export remain outstanding milestone B work.
+C1 supplies static drainage structure; C2a and C2b supply basin analysis and desktop inspection. C3a–C3e supply standalone geometry and reservoir experiments, including binary nested filling and a separate explicitly weighted shared-sill junction. Next specify a controlled network combining allocation, nested entry and distinct sill plateaus without treating all siblings as adjacent. Planetary inventory assignment, a scalable dynamic representation, and dynamic-world persistence remain separate work. Resolved-world-state and image export remain outstanding milestone B work.
 
 Keep commits coherent, messages and project records in English, and the owner's configured Git identity. Never add assistant attribution or co-author trailers.

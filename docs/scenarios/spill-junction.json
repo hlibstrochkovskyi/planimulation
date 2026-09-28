@@ -1,0 +1,32 @@
+{
+  "start": {
+    "dry": {
+      "policyVersion": "receiver-weighted-capped-1",
+      "geometry": {
+        "columns": [
+          { "bedMeters": 0, "areaSquareMeters": 1 },
+          { "bedMeters": 1, "areaSquareMeters": 1 },
+          { "bedMeters": 2, "areaSquareMeters": 1 },
+          { "bedMeters": 4, "areaSquareMeters": 1 }
+        ],
+        "edges": [
+          { "regions": [0, 3], "distanceMeters": 1 },
+          { "regions": [1, 3], "distanceMeters": 1 },
+          { "regions": [2, 3], "distanceMeters": 1 }
+        ]
+      },
+      "weights": [
+        { "branch": 0, "weight": 1 },
+        { "branch": 1, "weight": 1 },
+        { "branch": 2, "weight": 3 }
+      ]
+    }
+  },
+  "inputs": [
+    [{ "branch": 0, "volumeCubicMeters": 4 }, { "branch": 1, "volumeCubicMeters": 0 }, { "branch": 2, "volumeCubicMeters": 0 }],
+    [{ "branch": 0, "volumeCubicMeters": 2 }, { "branch": 1, "volumeCubicMeters": 0 }, { "branch": 2, "volumeCubicMeters": 0 }],
+    [{ "branch": 0, "volumeCubicMeters": 2 }, { "branch": 1, "volumeCubicMeters": 0 }, { "branch": 2, "volumeCubicMeters": 0 }],
+    [{ "branch": 0, "volumeCubicMeters": 1 }, { "branch": 1, "volumeCubicMeters": 0 }, { "branch": 2, "volumeCubicMeters": 0 }],
+    [{ "branch": 0, "volumeCubicMeters": 4 }, { "branch": 1, "volumeCubicMeters": 0 }, { "branch": 2, "volumeCubicMeters": 0 }]
+  ]
+}

@@ -91,4 +91,4 @@ Validation completed September 25, 2026:
 
 ## Next increment
 
-Specify and test a separate allocation policy for simultaneous multiway/alternative outlets, with explicit comparison cases and pulse-order sensitivity checks. Do not relax C3d's rejection rules without a model-version decision. Full-world inventory initialization, a scalable active-state representation, finite rates, withdrawals/splitting, and desktop integration remain separate increments.
+[C3e shared-sill allocation](spill-junction.md) now tests a separate versioned receiver-weighted policy for leaf reservoirs sharing one connected plateau, including simultaneous inputs and order comparisons. It does not relax C3d's rejection rules or support general alternative outlets. Next combine allocation and nested receiving paths in a controlled connected network. Full-world inventory initialization, scalable state, finite rates, withdrawals/splitting, and desktop integration remain separate increments.

@@ -24,7 +24,7 @@ pub struct Geometry {
 }
 
 impl Geometry {
-    fn surface(&self) -> Result<Surface, String> {
+    pub(crate) fn surface(&self) -> Result<Surface, String> {
         let n = self.columns.len();
         if n == 0
             || n > MAX_REGIONS
