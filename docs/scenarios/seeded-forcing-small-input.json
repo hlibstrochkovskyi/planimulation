@@ -1,0 +1,34 @@
+{
+  "recipe": {
+    "schemaVersion": 1,
+    "modelVersion": "basins-1",
+    "randomVersion": "fnv1a-utf8-mulberry32-1",
+    "seed": "first-light",
+    "subdivision": 5,
+    "radiusMeters": 6371000,
+    "plateCount": 12,
+    "maxPlateSpeedCmPerYear": 8,
+    "continentalFraction": 0.38,
+    "continentalScale": 1,
+    "reliefScale": 1,
+    "boundaryWidthKm": 300,
+    "detailAmplitudeMeters": 300,
+    "water": { "mode": "coverage", "fraction": 0.25 }
+  },
+  "weightPolicyVersion": "unit-branch-and-entry-weights-1",
+  "profiles": [
+    [
+      { "region": 3, "volumeCubicMeters": 50000000 },
+      { "region": 10, "volumeCubicMeters": 50000000 },
+      { "region": 30, "volumeCubicMeters": 50000000 },
+      { "region": 60, "volumeCubicMeters": 50000000 }
+    ],
+    [
+      { "region": 7, "volumeCubicMeters": 100000000 },
+      { "region": 20, "volumeCubicMeters": 50000000 },
+      { "region": 90, "volumeCubicMeters": 50000000 }
+    ]
+  ],
+  "intervalCount": 100,
+  "replayAfter": 50
+}

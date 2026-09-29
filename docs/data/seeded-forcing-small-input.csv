@@ -1,0 +1,21 @@
+seed,status,completedIntervals,firstRejectedInterval,reason
+profile-00,accepted,100,,
+profile-01,accepted,100,,
+profile-02,accepted,100,,
+profile-03,rejectedDuringInterval,0,1,Shared level cannot represent the requested storage precisely.
+profile-04,rejectedDuringInterval,0,1,Shared level cannot represent the requested storage precisely.
+profile-05,accepted,100,,
+profile-06,accepted,100,,
+profile-07,accepted,100,,
+profile-08,accepted,100,,
+profile-09,accepted,100,,
+profile-10,accepted,100,,
+profile-11,accepted,100,,
+profile-12,accepted,100,,
+profile-13,rejectedDuringInterval,0,1,Shared level cannot represent the requested storage precisely.
+profile-14,accepted,100,,
+profile-15,rejectedDuringInterval,0,1,Shared level cannot represent the requested storage precisely.
+profile-16,rejectedDuringInterval,1,2,Shared level cannot represent the requested storage precisely.
+profile-17,rejectedDuringInterval,0,1,Shared level cannot represent the requested storage precisely.
+profile-18,rejectedDuringInterval,0,1,Shared level cannot represent the requested storage precisely.
+profile-19,accepted,100,,

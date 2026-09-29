@@ -65,7 +65,7 @@ fn run(input: impl Read) -> Result<Value, Box<dyn std::error::Error>> {
     }
     Ok(json!({
         "reportVersion": 1,
-        "scope": "Closed <=128-region seeded network, unit branch/entry weights, prescribed normalized intervals. No climate, finite-rate hydraulics, planet-scale solver or desktop dynamics.",
+        "scope": "Closed bounded seeded network (up to 10,242 regions in v4; earlier versions retain their limits), unit branch/entry weights, prescribed normalized intervals. No climate, finite-rate hydraulics, unrestricted planet-scale solver or desktop dynamics.",
         "initialCheckpoint": initial_checkpoint,
         "initialSnapshot": initial_snapshot,
         "intervals": intervals,

@@ -1,0 +1,21 @@
+seed,status,completedIntervals,firstRejectedInterval,reason,finalBudgetResidualCubicMeters,maximumAbsoluteBudgetResidualCubicMeters,replayCheckedIntervals
+profile-00,accepted,100,,,4,4,50
+profile-01,accepted,100,,,-20,21,50
+profile-02,accepted,100,,,-20,20,50
+profile-03,rejectedDuringInterval,7,8,Concurrent event budget does not balance.,8,8,0
+profile-04,accepted,100,,,2,2,50
+profile-05,accepted,100,,,3,3,50
+profile-06,accepted,100,,,10,10,50
+profile-07,accepted,100,,,-6,8,50
+profile-08,accepted,100,,,-16,16,50
+profile-09,accepted,100,,,18,18,50
+profile-10,rejectedDuringInterval,83,84,Concurrent event budget does not balance.,15,15,34
+profile-11,rejectedDuringInterval,42,43,Concurrent event budget does not balance.,-2,2,0
+profile-12,accepted,100,,,0,1,50
+profile-13,rejectedDuringInterval,3,4,Concurrent event budget does not balance.,-15,15,0
+profile-14,accepted,100,,,11,11,50
+profile-15,rejectedDuringInterval,1,2,Concurrent event budget does not balance.,-11,11,0
+profile-16,rejectedDuringInterval,82,83,Concurrent event budget does not balance.,-8,9,33
+profile-17,accepted,100,,,-14,15,50
+profile-18,rejectedDuringInterval,19,20,Concurrent event budget does not balance.,22,22,0
+profile-19,rejectedDuringInterval,3,4,Concurrent event budget does not balance.,6,6,0
