@@ -98,3 +98,44 @@ fn exact_units_cross_the_tied_followup_but_still_break_label_symmetry() {
     assert_eq!(advanced.iter().sum::<i128>(), supplied + 3 * followup);
     assert_ne!([full[1], full[2], full[0]], full);
 }
+
+#[test]
+fn a_shared_thirds_denominator_crosses_the_same_tie_symmetrically() {
+    let capacity_units = exact_units(100. / 3.).unwrap();
+    let initial_input_units = exact_units(100.).unwrap();
+    let capacity_thirds = capacity_units.checked_mul(3).unwrap();
+    let remaining_total_units = capacity_thirds - initial_input_units;
+    assert_eq!(remaining_total_units, 512);
+
+    // Each local stock owns its own numerator in thirds of a fixed-point
+    // unit. An integer external input split equally adds the same numerator
+    // to each child; summing three child numerators and dividing by three
+    // recovers the exact external ledger without choosing a remainder owner.
+    let mut children_thirds = [initial_input_units; 3];
+    assert_eq!(
+        children_thirds.iter().sum::<i128>() / 3,
+        initial_input_units
+    );
+    assert!(children_thirds.iter().all(|stock| *stock < capacity_thirds));
+
+    let first_followup_units = 510;
+    for child in &mut children_thirds {
+        *child = child.checked_add(first_followup_units).unwrap();
+    }
+    assert!(children_thirds.iter().all(|stock| *stock < capacity_thirds));
+    assert_eq!(
+        children_thirds.iter().sum::<i128>() / 3,
+        initial_input_units + first_followup_units
+    );
+    assert_eq!(capacity_thirds - children_thirds[0], 2);
+
+    let final_followup_units = 2;
+    for child in &mut children_thirds {
+        *child = child.checked_add(final_followup_units).unwrap();
+    }
+    assert_eq!(children_thirds, [capacity_thirds; 3]);
+    assert_eq!(
+        initial_input_units + first_followup_units + final_followup_units,
+        capacity_units * 3
+    );
+}
