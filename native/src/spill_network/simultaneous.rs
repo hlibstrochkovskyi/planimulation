@@ -422,6 +422,7 @@ impl SimultaneousNetwork {
 #[cfg(test)]
 mod threshold_tests {
     use super::commit_event_stock;
+    use crate::reservoir::{add, tolerance};
 
     #[test]
     fn exact_limit_commits_only_a_checked_endpoint() {
@@ -445,5 +446,47 @@ mod threshold_tests {
             commit_event_stock(old, grant + 100., Some(cap), true, true).unwrap_err(),
             "Concurrent limiting grant cannot be represented."
         );
+    }
+
+    #[test]
+    fn generated_event_witness_has_no_one_ulp_stock_only_budget_repair() {
+        // profile-15, second interval, second internal event. The limiting
+        // stock is held at its validated capacity; other stocks are already
+        // rounded to the nearest representable values.
+        let old = [
+            543_587_840_477_296.5,
+            854_124_433_587.218_5,
+            // This decimal rounds to the measured .1875 f64 value.
+            247_378_574_803_164.2,
+        ];
+        let grants = [
+            2_043_857_909.161499,
+            2_043_857_909.161499,
+            4_087_715_818.322998,
+        ];
+        let cap = 856_168_291_496.38;
+        let values = [
+            commit_event_stock(old[0], grants[0], None, false, true).unwrap(),
+            commit_event_stock(old[1], cap - old[1], Some(cap), true, true).unwrap(),
+            commit_event_stock(old[2], grants[2], None, false, true).unwrap(),
+        ];
+        let step = 8_175_431_636.645996;
+        let actual = values
+            .iter()
+            .zip(old)
+            .try_fold(0., |sum, (&value, old)| add(sum, value - old))
+            .unwrap();
+        assert_eq!(actual - step, 0.0155029296875);
+        assert!(actual - step > tolerance(step));
+        assert_eq!(values[0] - values[0].next_down(), 0.0625);
+        assert_eq!(values[2] - values[2].next_down(), 0.03125);
+
+        for first in [values[0].next_down(), values[0], values[0].next_up()] {
+            for third in [values[2].next_down(), values[2], values[2].next_up()] {
+                let repaired =
+                    add(add(first - old[0], cap - old[1]).unwrap(), third - old[2]).unwrap();
+                assert!((repaired - step).abs() > tolerance(step));
+            }
+        }
     }
 }
