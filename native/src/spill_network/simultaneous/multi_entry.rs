@@ -53,7 +53,14 @@ pub struct Checkpoint {
 
 /// Inspect required targets without assuming weights or running a solver.
 pub fn entry_targets(geometry: &Geometry) -> Result<Vec<EntryTarget>, String> {
-    let surface = geometry.surface()?;
+    entry_targets_with_limit(geometry, crate::nested_reservoir::MAX_REGIONS)
+}
+
+fn entry_targets_with_limit(
+    geometry: &Geometry,
+    max_regions: usize,
+) -> Result<Vec<EntryTarget>, String> {
+    let surface = geometry.surface_with_limit(max_regions)?;
     let heights: Vec<_> = geometry.columns.iter().map(|c| c.bed_meters).collect();
     let connections = SpillConnections::build(&surface, &heights)?;
     let drainage = Drainage::build(&surface, &heights, &vec![0; heights.len()]);

@@ -73,7 +73,7 @@ Compensated arithmetic and temporally batched pending storage remain candidate a
 After that:
 
 1. [C3j](initial-water-inventory.md) maps existing initial water into read-only exclusive active inventories without refitting coverage or double-counting nested storage, and validates regional reconstruction and total volume. [C3k](seeded-network.md) connects it to a separately versioned bounded dynamic checkpoint; full generated-world integration remains open.
-2. Replace or bound the duplicated storage representation and measure headless forcing on generated worlds. Resolve relevant numerical failures explicitly; passing a structural screen is not enough.
+2. [C3l](expanded-seeded-network.md) removes the dense membership matrix, bounds duplicated curves and measures conditional headless forcing at 10,242 regions. Its 20-seed sample retains four rejected worlds; a scalable storage index and the measured numeric failure remain open. Passing a structural screen is not enough.
 3. Integrate a deliberately limited desktop water demonstration: prescribed input, run/pause, visible lake-level change on flat map/globe, budget and event inspection, and reproducible replay. Climate-derived rain, erosion and the full water cycle remain later work.
 
 The next visible acceptance target is that water demonstration, not a growing count of isolated experiments. Before widening scope, require one documented generated recipe to preserve initial inventory and advance prescribed inputs headlessly; unsupported cases must remain explicit.

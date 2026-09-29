@@ -11,6 +11,12 @@ pub mod simultaneous;
 
 pub const EXPERIMENT_VERSION: &str = "spill-network-1";
 pub const POLICY_VERSION: &str = "frontier-weighted-events-1";
+const LABORATORY_REGIONS: usize = crate::nested_reservoir::MAX_REGIONS;
+pub(crate) const EXPANDED_REGIONS: usize = 10_242;
+pub(crate) const EXPANDED_CURVE_REFERENCES: usize = 500_000;
+const EXPANDED_EDGES: usize = 100_000;
+const EXPANDED_BRANCHES: usize = 2_048;
+const EXPANDED_DEPTH: usize = 128;
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -70,7 +76,8 @@ pub struct SpillNetwork {
     curves: Vec<Reservoir>,
     capacities: Vec<Option<f64>>,
     birth_volumes: Vec<f64>,
-    contains: Vec<Vec<bool>>,
+    enter: Vec<usize>,
+    leave: Vec<usize>,
     entry_leaves: Vec<usize>,
     incident: Vec<Vec<usize>>,
     receiver_leaves: Vec<Option<usize>>,
@@ -93,6 +100,8 @@ impl SpillNetwork {
             },
             multiple_entries,
             0.,
+            LABORATORY_REGIONS,
+            usize::MAX,
         )?;
         result.checkpoint.inventory.active = result
             .connections
@@ -116,14 +125,28 @@ impl SpillNetwork {
         checkpoint: Checkpoint,
         multiple_entries: bool,
     ) -> Result<Self, String> {
-        Self::restore_with_initial(checkpoint, multiple_entries, 0.)
+        Self::restore_with_initial(
+            checkpoint,
+            multiple_entries,
+            0.,
+            LABORATORY_REGIONS,
+            usize::MAX,
+        )
     }
     fn restore_with_initial(
         checkpoint: Checkpoint,
         multiple_entries: bool,
         initial_volume_cubic_meters: f64,
+        max_regions: usize,
+        max_curve_references: usize,
     ) -> Result<Self, String> {
-        let result = Self::prepare(checkpoint, multiple_entries, initial_volume_cubic_meters)?;
+        let result = Self::prepare(
+            checkpoint,
+            multiple_entries,
+            initial_volume_cubic_meters,
+            max_regions,
+            max_curve_references,
+        )?;
         result.snapshot()?;
         Ok(result)
     }
@@ -131,6 +154,8 @@ impl SpillNetwork {
         checkpoint: Checkpoint,
         multiple_entries: bool,
         initial_volume_cubic_meters: f64,
+        max_regions: usize,
+        max_curve_references: usize,
     ) -> Result<Self, String> {
         if checkpoint.experiment_version != EXPERIMENT_VERSION
             || checkpoint.setup.policy_version != POLICY_VERSION
@@ -141,12 +166,38 @@ impl SpillNetwork {
             return Err("Initial network volume must be finite and nonnegative.".into());
         }
         let g = &checkpoint.setup.geometry;
-        let surface = g.surface()?;
+        if max_regions > LABORATORY_REGIONS && g.edges.len() > EXPANDED_EDGES {
+            return Err("Expanded network exceeds its edge budget.".into());
+        }
+        let surface = g.surface_with_limit(max_regions)?;
         let heights: Vec<_> = g.columns.iter().map(|c| c.bed_meters).collect();
         let connections = SpillConnections::build(&surface, &heights)?;
         let basins = connections.basins();
         let nodes = basins.nodes();
         let k = nodes.len();
+        if max_regions > LABORATORY_REGIONS && k > EXPANDED_BRANCHES {
+            return Err("Expanded network exceeds its branch budget.".into());
+        }
+        if max_curve_references != usize::MAX {
+            let mut members = vec![0usize; k];
+            for &owner in basins.region_nodes() {
+                members[owner] += 1;
+            }
+            let mut references = 0usize;
+            for (id, node) in nodes.iter().enumerate() {
+                for &child in &node.children {
+                    members[id] = members[id]
+                        .checked_add(members[child])
+                        .ok_or("Network storage reference count overflowed.")?;
+                }
+                references = references
+                    .checked_add(members[id])
+                    .ok_or("Network storage reference count overflowed.")?;
+            }
+            if references > max_curve_references {
+                return Err("Expanded network exceeds its duplicated curve-column budget.".into());
+            }
+        }
         // C2a creates parents after children and the single root last.
         if checkpoint.setup.weights.len() != k - 1
             || checkpoint
@@ -160,16 +211,30 @@ impl SpillNetwork {
                 "Specify a finite positive weight for every ordered non-root branch.".into(),
             );
         }
-        let mut contains = vec![vec![false; k]; k];
-        for id in 0..k {
-            contains[id][id] = true;
-            for &child in &nodes[id].children {
-                let (earlier, current) = contains.split_at_mut(id);
-                for (included, &descendant) in current[0].iter_mut().zip(&earlier[child]) {
-                    *included |= descendant;
+        let mut enter = vec![0; k];
+        let mut leave = vec![0; k];
+        let mut clock = 0;
+        let mut pending = vec![(basins.root(), false, 0usize)];
+        while let Some((id, closing, depth)) = pending.pop() {
+            if closing {
+                leave[id] = clock;
+            } else {
+                if max_regions > LABORATORY_REGIONS && depth > EXPANDED_DEPTH {
+                    return Err(
+                        "Expanded network exceeds its recursive routing depth budget.".into(),
+                    );
+                }
+                enter[id] = clock;
+                clock += 1;
+                pending.push((id, true, depth));
+                for &child in nodes[id].children.iter().rev() {
+                    pending.push((child, false, depth + 1));
                 }
             }
         }
+        let includes = |outer: usize, inner: usize| {
+            enter[outer] <= enter[inner] && enter[inner] < leave[outer]
+        };
         let drainage = Drainage::build(&surface, &heights, &vec![0; heights.len()]);
         let entry_leaves: Vec<_> = drainage
             .outlets
@@ -192,7 +257,7 @@ impl SpillNetwork {
             for contact in &p.contacts {
                 let child = contact.child_branch;
                 let leaf = entry_leaves[contact.edge[1] as usize];
-                if !contains[child][leaf]
+                if !includes(child, leaf)
                     || (!multiple_entries && receiver_leaves[child].is_some_and(|old| old != leaf))
                 {
                     return Err("Alternative entries into different nested leaves require a separate entry policy.".into());
@@ -206,25 +271,24 @@ impl SpillNetwork {
         let mut curves = Vec::new();
         let mut capacities: Vec<Option<f64>> = Vec::new();
         let mut birth_volumes = Vec::new();
-        for id in 0..k {
+        for (id, node) in nodes.iter().enumerate() {
             let columns = g
                 .columns
                 .iter()
                 .enumerate()
-                .filter(|(r, _)| contains[id][basins.region_nodes()[*r]])
+                .filter(|(r, _)| includes(id, basins.region_nodes()[*r]))
                 .map(|(_, c)| c.clone())
                 .collect();
             let curve = Reservoir::new(columns, Boundary::Closed, 0.)?;
-            let capacity = nodes[id]
+            let capacity = node
                 .spill_level_meters
                 .map(|h| curve.volume_at_level(h))
                 .transpose()?;
-            let birth = nodes[id]
+            let birth = node
                 .children
                 .iter()
                 .try_fold(0., |v, &child| add(v, capacities[child].unwrap()))?;
-            if (curve.volume_at_level(nodes[id].birth_level_meters)? - birth).abs()
-                > tolerance(birth)
+            if (curve.volume_at_level(node.birth_level_meters)? - birth).abs() > tolerance(birth)
                 || capacity.is_some_and(|cap| cap <= birth)
             {
                 return Err("Network storage interval cannot be resolved precisely.".into());
@@ -240,7 +304,8 @@ impl SpillNetwork {
             curves,
             capacities,
             birth_volumes,
-            contains,
+            enter,
+            leave,
             entry_leaves,
             incident,
             receiver_leaves,
@@ -270,11 +335,14 @@ impl SpillNetwork {
     fn full(&self, id: usize, stocks: &[Option<f64>]) -> bool {
         self.capacities[id].is_some() && stocks[id] == self.capacities[id]
     }
+    fn contains(&self, outer: usize, inner: usize) -> bool {
+        self.enter[outer] <= self.enter[inner] && self.enter[inner] < self.leave[outer]
+    }
     fn total_in(&self, id: usize, stocks: &[Option<f64>]) -> Result<f64, String> {
         stocks
             .iter()
             .enumerate()
-            .filter(|(child, _)| self.contains[id][*child])
+            .filter(|(child, _)| self.contains(id, *child))
             .try_fold(0., |total, (_, stock)| add(total, stock.unwrap_or(0.)))
     }
 
@@ -427,7 +495,7 @@ impl SpillNetwork {
         let children = &self.connections.basins().nodes()[id].children;
         let source = *children
             .iter()
-            .find(|&&c| self.contains[c][leaf])
+            .find(|&&c| self.contains(c, leaf))
             .ok_or("Entry is outside the requested subtree.")?;
         let mut excess = self.fill(source, leaf, input, stocks, stages)?;
         for _ in 0..children.len() {
@@ -508,7 +576,7 @@ impl SpillNetwork {
                 return Err("Active stock is outside its branch interval.".into());
             }
             for (leaf, n) in nodes.iter().enumerate() {
-                if n.children.is_empty() && self.contains[id][leaf] {
+                if n.children.is_empty() && self.contains(id, leaf) {
                     if covered[leaf] {
                         return Err("Nested stock is counted more than once.".into());
                     }

@@ -46,7 +46,7 @@ fn run(input: impl Read) -> Result<Value, Box<dyn std::error::Error>> {
             if generated.weight_policy_version != UNIT_WEIGHT_POLICY_VERSION {
                 return Err("Unsupported generated-world weight policy.".into());
             }
-            if generated.recipe.subdivision > 1 {
+            if generated.recipe.subdivision > 5 {
                 return Err(
                     "Generated world exceeds the bounded seeded-network laboratory.".into(),
                 );
@@ -137,7 +137,7 @@ mod tests {
         request["start"]["generated"]["weightPolicyVersion"] = json!("future");
         assert!(run(serde_json::to_vec(&request).unwrap().as_slice()).is_err());
         let mut request: Value = serde_json::from_str(FIXTURE).unwrap();
-        request["start"]["generated"]["recipe"]["subdivision"] = json!(2);
+        request["start"]["generated"]["recipe"]["subdivision"] = json!(6);
         assert!(run(serde_json::to_vec(&request).unwrap().as_slice()).is_err());
         let mut request: Value = serde_json::from_str(FIXTURE).unwrap();
         request["intervals"]

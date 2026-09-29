@@ -25,9 +25,13 @@ pub struct Geometry {
 
 impl Geometry {
     pub(crate) fn surface(&self) -> Result<Surface, String> {
+        self.surface_with_limit(MAX_REGIONS)
+    }
+
+    pub(crate) fn surface_with_limit(&self, max_regions: usize) -> Result<Surface, String> {
         let n = self.columns.len();
         if n == 0
-            || n > MAX_REGIONS
+            || n > max_regions
             || self.edges.len() > n * (n - 1) / 2
             || self.columns.iter().any(|c| {
                 !c.bed_meters.is_finite()
@@ -35,7 +39,9 @@ impl Geometry {
                     || c.area_square_meters <= 0.
             })
         {
-            return Err("Nested experiment requires 1–128 finite positive-area columns.".into());
+            return Err(format!(
+                "Nested experiment requires 1–{max_regions} finite positive-area columns."
+            ));
         }
         let mut seen = BTreeSet::new();
         let mut lists = vec![Vec::new(); n];

@@ -1,0 +1,21 @@
+seed,subdivision,regions,branches,curve_column_references,status,preparation_ms,interval_ms,peak_rss_kib,budget_residual_cubic_meters,rejection_reason
+profile-00,5,10242,369,440672,accepted,161.081917,0.255911,37664,4,
+profile-01,5,10242,352,391606,rejectedDuringInterval,159.902706,0.197682,34532,,Concurrent update exceeds capacity.
+profile-02,5,10242,417,481756,accepted,164.304583,0.408670,38192,-20,
+profile-03,5,10242,349,410754,accepted,155.937209,0.367833,35600,8,
+profile-04,5,10242,275,247868,accepted,136.057554,0.137980,26664,2,
+profile-05,5,10242,405,416201,accepted,165.952362,0.267614,34948,3,
+profile-06,5,10242,441,505861,rejectedDuringPreparation,104.291291,,21928,,Expanded network exceeds its duplicated curve-column budget.
+profile-07,5,10242,349,390945,accepted,156.102056,0.835824,32524,-6,
+profile-08,5,10242,347,380521,accepted,164.549248,0.274627,34676,-14,
+profile-09,5,10242,366,384734,accepted,154.523493,0.184588,34664,16,
+profile-10,5,10242,391,471880,accepted,171.489940,0.242607,39008,14,
+profile-11,5,10242,347,384476,accepted,157.397091,0.184858,34676,-2,
+profile-12,5,10242,388,375282,accepted,154.440404,0.188405,34196,-1,
+profile-13,5,10242,341,366131,accepted,150.713936,0.171252,33320,-15,
+profile-14,5,10242,383,407809,accepted,160.066914,0.608235,36192,11,
+profile-15,5,10242,424,457920,accepted,168.636765,0.356211,37848,-11,
+profile-16,5,10242,411,518299,rejectedDuringPreparation,108.557957,,22160,,Expanded network exceeds its duplicated curve-column budget.
+profile-17,5,10242,424,564505,rejectedDuringPreparation,108.256199,,22320,,Expanded network exceeds its duplicated curve-column budget.
+profile-18,5,10242,305,276208,accepted,142.481607,0.185359,29316,22,
+profile-19,5,10242,339,393065,accepted,153.593552,0.197382,34492,6,

@@ -7,20 +7,21 @@ use crate::{
     nested_reservoir::{Edge, Geometry, Input, Inventory, MAX_REGIONS, Snapshot, Stock},
     reservoir::Column,
     spill_junction::Weight,
-    spill_network::{self, Receiver, SpillNetwork},
+    spill_network::{self, EXPANDED_CURVE_REFERENCES, EXPANDED_REGIONS, Receiver, SpillNetwork},
 };
 use serde::{Deserialize, Serialize};
 
 use super::super::Interval;
 
 pub const EXPERIMENT_VERSION: &str = "seeded-multi-entry-network-1";
+pub const EXPANDED_EXPERIMENT_VERSION: &str = "seeded-multi-entry-network-2";
 pub const UNIT_WEIGHT_POLICY_VERSION: &str = "unit-branch-and-entry-weights-1";
 
 /// Explicit laboratory policy for a small generated world. Unit weights are
 /// not inferred hydraulic conductance or a calibrated planetary law.
 pub fn generated_unit_setup(world: &World) -> Result<Setup, String> {
     let n = world.surface.areas.len();
-    if n > MAX_REGIONS {
+    if n > EXPANDED_REGIONS {
         return Err("Generated world exceeds the bounded seeded-network laboratory.".into());
     }
     let geometry = Geometry {
@@ -43,7 +44,7 @@ pub fn generated_unit_setup(world: &World) -> Result<Setup, String> {
             })
             .collect(),
     };
-    let targets = super::entry_targets(&geometry)?;
+    let targets = super::entry_targets_with_limit(&geometry, EXPANDED_REGIONS)?;
     Ok(Setup {
         geometry,
         policy_version: super::POLICY_VERSION.into(),
@@ -79,6 +80,7 @@ pub struct SeededNetwork {
     model: MultiEntryNetwork,
     initial_water: InitialWaterInventory,
     origin_recipe: Option<Recipe>,
+    experiment_version: String,
 }
 
 impl SeededNetwork {
@@ -114,7 +116,11 @@ impl SeededNetwork {
             pulse_count: 0,
         };
         Self::restore(Checkpoint {
-            experiment_version: EXPERIMENT_VERSION.into(),
+            experiment_version: if setup.geometry.columns.len() > MAX_REGIONS {
+                EXPANDED_EXPERIMENT_VERSION.into()
+            } else {
+                EXPERIMENT_VERSION.into()
+            },
             origin_recipe,
             setup,
             initial_water,
@@ -123,11 +129,14 @@ impl SeededNetwork {
     }
 
     pub fn restore(checkpoint: Checkpoint) -> Result<Self, String> {
-        if checkpoint.experiment_version != EXPERIMENT_VERSION {
-            return Err("Unsupported seeded-network experiment version.".into());
-        }
+        let (max_regions, max_curve_references, max_subdivision) =
+            match checkpoint.experiment_version.as_str() {
+                EXPERIMENT_VERSION => (MAX_REGIONS, usize::MAX, 1),
+                EXPANDED_EXPERIMENT_VERSION => (EXPANDED_REGIONS, EXPANDED_CURVE_REFERENCES, 5),
+                _ => return Err("Unsupported seeded-network experiment version.".into()),
+            };
         if let Some(recipe) = &checkpoint.origin_recipe {
-            if recipe.subdivision > 1 {
+            if recipe.subdivision > max_subdivision {
                 return Err(
                     "Generated world exceeds the bounded seeded-network laboratory.".into(),
                 );
@@ -147,7 +156,7 @@ impl SeededNetwork {
             }
         }
         let geometry = &checkpoint.setup.geometry;
-        let surface = geometry.surface()?;
+        let surface = geometry.surface_with_limit(max_regions)?;
         let heights: Vec<_> = geometry.columns.iter().map(|c| c.bed_meters).collect();
         let basins = crate::basins::Basins::build(&surface, &heights)?;
         checkpoint
@@ -182,6 +191,8 @@ impl SeededNetwork {
             },
             true,
             checkpoint.initial_water.initial_volume_cubic_meters,
+            max_regions,
+            max_curve_references,
         )?;
         let model = MultiEntryNetwork::finish(core, checkpoint.setup.entry_weights)?;
         if model.checkpoint().inventory.pulse_count == 0 {
@@ -199,6 +210,7 @@ impl SeededNetwork {
             model,
             initial_water: checkpoint.initial_water,
             origin_recipe: checkpoint.origin_recipe,
+            experiment_version: checkpoint.experiment_version,
         })
     }
 
@@ -207,7 +219,7 @@ impl SeededNetwork {
             setup, inventory, ..
         } = self.model.checkpoint();
         Checkpoint {
-            experiment_version: EXPERIMENT_VERSION.into(),
+            experiment_version: self.experiment_version.clone(),
             origin_recipe: self.origin_recipe.clone(),
             setup,
             initial_water: self.initial_water.clone(),
@@ -217,6 +229,10 @@ impl SeededNetwork {
 
     pub fn snapshot(&self) -> Result<Snapshot, String> {
         self.model.snapshot()
+    }
+
+    pub fn experiment_version(&self) -> &str {
+        &self.experiment_version
     }
 
     pub fn add_interval(&mut self, inputs: Vec<Input>) -> Result<Interval, String> {

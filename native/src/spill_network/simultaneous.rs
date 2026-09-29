@@ -123,7 +123,7 @@ impl SimultaneousNetwork {
         inputs
             .iter()
             .enumerate()
-            .filter(|(leaf, _)| self.core.contains[id][*leaf])
+            .filter(|(leaf, _)| self.core.contains(id, *leaf))
             .try_fold(0., |sum, (_, &rate)| add(sum, rate))
     }
 
