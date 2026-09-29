@@ -35,6 +35,30 @@ impl ExperimentalVolume {
         self.add_scalar(other.high).add_scalar(other.low)
     }
 
+    fn checked_add_scalar(self, amount: f64) -> Result<Self, &'static str> {
+        if !self.high.is_finite() || !self.low.is_finite() || !amount.is_finite() {
+            return Err("Nonfinite experimental volume.");
+        }
+        let (high, first_error) = two_sum(self.high, amount);
+        let (low, second_error) = two_sum(self.low, first_error);
+        let (high, carried) = two_sum(high, low);
+        let (low, lost) = two_sum(carried, second_error);
+        if lost != 0. {
+            return Err("Input is below two-float precision.");
+        }
+        let (high, low) = two_sum(high, low);
+        let result = Self { high, low };
+        if !high.is_finite() || !low.is_finite() || (amount != 0. && result == self) {
+            return Err("Input is below two-float precision.");
+        }
+        Ok(result)
+    }
+
+    fn checked_add_pair(self, other: Self) -> Result<Self, &'static str> {
+        self.checked_add_scalar(other.high)?
+            .checked_add_scalar(other.low)
+    }
+
     fn subtract_pair(self, other: Self) -> Self {
         self.add_scalar(-other.high).add_scalar(-other.low)
     }
@@ -217,16 +241,17 @@ impl ExclusiveMergeExperiment {
         {
             return Err("Nonfinite or negative laboratory input.");
         }
-        let granted = grants
-            .into_iter()
-            .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair);
+        let granted = grants.into_iter().try_fold(
+            ExperimentalVolume::new(0.),
+            ExperimentalVolume::checked_add_pair,
+        )?;
         if granted != supplied {
             return Err("Laboratory grants do not match supplied input.");
         }
         let mut next = self.clone();
         let children = next.children.as_mut().ok_or("Parent is already active.")?;
         for (id, grant) in grants.into_iter().enumerate() {
-            children[id] = children[id].add_pair(grant);
+            children[id] = children[id].checked_add_pair(grant)?;
             if children[id].compare_to_capacity(next.capacities[id]) == Ordering::Greater {
                 return Err("Laboratory child exceeds capacity.");
             }
@@ -236,21 +261,21 @@ impl ExclusiveMergeExperiment {
             .zip(next.capacities)
             .all(|(child, capacity)| child.compare_to_capacity(capacity) == Ordering::Equal)
         {
-            next.parent = Some(
-                children
-                    .iter()
-                    .copied()
-                    .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair),
-            );
+            next.parent = Some(children.iter().copied().try_fold(
+                ExperimentalVolume::new(0.),
+                ExperimentalVolume::checked_add_pair,
+            )?);
             next.children = None;
         }
-        next.accepted_input = next.accepted_input.add_pair(supplied);
-        let active_total = next.parent.unwrap_or_else(|| {
-            next.children
-                .unwrap()
-                .into_iter()
-                .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair)
-        });
+        next.accepted_input = next.accepted_input.checked_add_pair(supplied)?;
+        let active_total = if let Some(parent) = next.parent {
+            parent
+        } else {
+            next.children.unwrap().into_iter().try_fold(
+                ExperimentalVolume::new(0.),
+                ExperimentalVolume::checked_add_pair,
+            )?
+        };
         if active_total != next.accepted_input {
             return Err("Laboratory exclusive stocks do not balance input.");
         }
@@ -592,6 +617,51 @@ fn distributed_tie_deficit_preserves_saturation_topology() {
             .iter()
             .all(|child| child.compare_to_capacity(capacity) == Ordering::Less)
     );
+}
+
+#[test]
+fn compensated_stock_exposes_a_capacity_deficit_hidden_by_f64() {
+    let capacity = 500_000_000_000_000.;
+    let missing = 1. / 1024.;
+    let stock = ExperimentalVolume::new(capacity).add_scalar(-missing);
+    assert_eq!(stock.high, capacity);
+    assert_eq!(capacity - stock.high, 0.);
+    let deficit = ExperimentalVolume::new(capacity).subtract_pair(stock);
+    assert_eq!(deficit, ExperimentalVolume::new(missing));
+    assert_eq!(stock.compare_to_capacity(capacity), Ordering::Less);
+    let filled = stock.add_pair(deficit);
+    assert_eq!(filled, ExperimentalVolume::new(capacity));
+}
+
+#[test]
+fn a_two_float_stock_still_has_an_explicit_subprecision_boundary() {
+    let large = 500_000_000_000_000.;
+    let stock = ExperimentalVolume::new(large).add_scalar(1e-300);
+    assert_eq!(stock.high, large);
+    assert_eq!(stock.low, 1e-300);
+    let tiny_positive_input = 1e-320;
+    assert!(tiny_positive_input > 0.);
+    // The current experimental add is unchecked: this positive input is
+    // lost when added to an already nonzero low component. A production
+    // transition must reject or explicitly queue it, never commit it.
+    assert_eq!(stock.add_scalar(tiny_positive_input), stock);
+    assert_eq!(
+        stock.checked_add_scalar(tiny_positive_input),
+        Err("Input is below two-float precision.")
+    );
+}
+
+#[test]
+fn subprecision_input_rejects_without_changing_the_exclusive_checkpoint() {
+    let mut model = ExclusiveMergeExperiment::new([2e15, 1., 1.]);
+    model.apply(1e15, [1e15, 0., 0.]).unwrap();
+    model.apply(1e-300, [1e-300, 0., 0.]).unwrap();
+    let checkpoint = model.clone();
+    assert_eq!(
+        model.apply(1e-320, [1e-320, 0., 0.]),
+        Err("Input is below two-float precision.")
+    );
+    assert_eq!(model, checkpoint);
 }
 
 #[test]
