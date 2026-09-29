@@ -1,7 +1,8 @@
 //! Isolated arithmetic experiment, not the production water stock or solver.
 //! It tests whether a two-float local stock can retain contributions that a
 //! single f64 stock loses. A closed exclusive-merge transition validates
-//! supplied grants; rate-based grant construction and routing are not modeled.
+//! supplied grants. A guarded rate-to-grant candidate is exercised here, but
+//! route selection and a general event-time policy are not modeled.
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
@@ -34,11 +35,139 @@ impl ExperimentalVolume {
         self.add_scalar(other.high).add_scalar(other.low)
     }
 
+    fn subtract_pair(self, other: Self) -> Self {
+        self.add_scalar(-other.high).add_scalar(-other.low)
+    }
+
     fn compare_to_capacity(self, capacity: f64) -> Ordering {
         match self.high.total_cmp(&capacity) {
             Ordering::Equal => self.low.total_cmp(&0.),
             order => order,
         }
+    }
+
+    fn compare_pair(self, other: Self) -> Ordering {
+        match self.high.total_cmp(&other.high) {
+            Ordering::Equal => self.low.total_cmp(&other.low),
+            order => order,
+        }
+    }
+}
+
+/// Candidate only: preserve exact limiting grants and assign the checked
+/// rounding remainder to the last nonlimiting receiver in canonical order.
+/// Reject when this changes any nominal share by over eight local f64 steps.
+fn guarded_rate_grants(
+    supplied: ExperimentalVolume,
+    rates: [f64; 3],
+    limiting: [Option<ExperimentalVolume>; 3],
+    available: [ExperimentalVolume; 3],
+) -> Result<[ExperimentalVolume; 3], &'static str> {
+    if !supplied.high.is_finite()
+        || !supplied.low.is_finite()
+        || supplied.compare_to_capacity(0.) != Ordering::Greater
+        || rates.iter().any(|rate| !rate.is_finite() || *rate <= 0.)
+        || available.iter().any(|stock| {
+            !stock.high.is_finite()
+                || !stock.low.is_finite()
+                || stock.compare_to_capacity(0.) != Ordering::Greater
+        })
+    {
+        return Err("Invalid candidate event input or rates.");
+    }
+    let total_rate: f64 = rates.into_iter().sum();
+    if !total_rate.is_finite() || total_rate <= 0. {
+        return Err("Invalid candidate total rate.");
+    }
+    let nominal = rates.map(|rate| (rate / total_rate) * supplied.high);
+    if nominal
+        .iter()
+        .any(|share| !share.is_finite() || *share <= 0.)
+    {
+        return Err("Candidate rate share cannot be represented.");
+    }
+    let remainder_owner = limiting.iter().rposition(Option::is_none);
+    let adjustable: Vec<_> = (0..3)
+        .filter(|&id| limiting[id].is_none() && Some(id) != remainder_owner)
+        .collect();
+    let offsets = |slot: usize| {
+        if slot < adjustable.len() {
+            (-8..=8).collect::<Vec<i32>>()
+        } else {
+            vec![0]
+        }
+    };
+    let shift = |mut value: f64, offset: i32| {
+        for _ in 0..offset.unsigned_abs() {
+            value = if offset < 0 {
+                value.next_down()
+            } else {
+                value.next_up()
+            };
+        }
+        value
+    };
+    let mut best: Option<(u32, [ExperimentalVolume; 3])> = None;
+    let mut missing_owner = false;
+    for first_offset in offsets(0) {
+        for second_offset in offsets(1) {
+            let mut grants = [ExperimentalVolume::new(0.); 3];
+            let mut assigned = ExperimentalVolume::new(0.);
+            for id in 0..3 {
+                if Some(id) == remainder_owner {
+                    continue;
+                }
+                let offset = adjustable
+                    .iter()
+                    .position(|&candidate| candidate == id)
+                    .map_or(0, |slot| {
+                        if slot == 0 {
+                            first_offset
+                        } else {
+                            second_offset
+                        }
+                    });
+                grants[id] = limiting[id]
+                    .unwrap_or_else(|| ExperimentalVolume::new(shift(nominal[id], offset)));
+                assigned = assigned.add_pair(grants[id]);
+            }
+            if let Some(owner) = remainder_owner {
+                grants[owner] = supplied.subtract_pair(assigned);
+            } else if assigned != supplied {
+                missing_owner = true;
+                continue;
+            }
+            let valid = (0..3).all(|id| {
+                let grant = grants[id];
+                let deviation = grant.add_scalar(-nominal[id]);
+                let bound = 8. * (nominal[id].next_up() - nominal[id]);
+                grant.high.is_finite()
+                    && grant.low.is_finite()
+                    && grant.compare_to_capacity(0.) == Ordering::Greater
+                    && grant.compare_pair(available[id]) != Ordering::Greater
+                    && limiting[id].is_none_or(|fixed| fixed == available[id])
+                    && bound.is_finite()
+                    && deviation.compare_to_capacity(bound) != Ordering::Greater
+                    && deviation.compare_to_capacity(-bound) != Ordering::Less
+            });
+            let reconciled = grants
+                .into_iter()
+                .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair);
+            if !valid || reconciled != supplied {
+                continue;
+            }
+            let cost = first_offset.unsigned_abs() + second_offset.unsigned_abs();
+            if best.as_ref().is_none_or(|(current, _)| cost < *current) {
+                best = Some((cost, grants));
+            }
+        }
+    }
+    if let Some((_, grants)) = best {
+        Ok(grants)
+    } else if missing_owner {
+        Err("No unsaturated recipient owns the event remainder.")
+    } else {
+        Err("No bounded capacity-safe rate allocation exists.")
     }
 }
 
@@ -66,22 +195,38 @@ impl ExclusiveMergeExperiment {
     }
 
     fn apply(&mut self, supplied: f64, grants: [f64; 3]) -> Result<(), &'static str> {
-        if !supplied.is_finite()
-            || supplied < 0.
-            || grants.iter().any(|grant| !grant.is_finite() || *grant < 0.)
+        self.apply_pair_grants(
+            ExperimentalVolume::new(supplied),
+            grants.map(ExperimentalVolume::new),
+        )
+    }
+
+    fn apply_pair_grants(
+        &mut self,
+        supplied: ExperimentalVolume,
+        grants: [ExperimentalVolume; 3],
+    ) -> Result<(), &'static str> {
+        if !supplied.high.is_finite()
+            || !supplied.low.is_finite()
+            || supplied.compare_to_capacity(0.) == Ordering::Less
+            || grants.iter().any(|grant| {
+                !grant.high.is_finite()
+                    || !grant.low.is_finite()
+                    || grant.compare_to_capacity(0.) == Ordering::Less
+            })
         {
             return Err("Nonfinite or negative laboratory input.");
         }
         let granted = grants
             .into_iter()
-            .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_scalar);
-        if granted != ExperimentalVolume::new(supplied) {
+            .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair);
+        if granted != supplied {
             return Err("Laboratory grants do not match supplied input.");
         }
         let mut next = self.clone();
         let children = next.children.as_mut().ok_or("Parent is already active.")?;
         for (id, grant) in grants.into_iter().enumerate() {
-            children[id] = children[id].add_scalar(grant);
+            children[id] = children[id].add_pair(grant);
             if children[id].compare_to_capacity(next.capacities[id]) == Ordering::Greater {
                 return Err("Laboratory child exceeds capacity.");
             }
@@ -99,7 +244,7 @@ impl ExclusiveMergeExperiment {
             );
             next.children = None;
         }
-        next.accepted_input = next.accepted_input.add_scalar(supplied);
+        next.accepted_input = next.accepted_input.add_pair(supplied);
         let active_total = next.parent.unwrap_or_else(|| {
             next.children
                 .unwrap()
@@ -280,4 +425,115 @@ fn exclusive_merge_waits_for_exact_capacity_and_replays_atomically() {
     let parent = model.parent.unwrap();
     let represented_units = (parent.high * scale) as i128 + (parent.low * scale) as i128;
     assert_eq!(represented_units, expected_units);
+}
+
+#[test]
+fn guarded_rate_grants_balance_and_preserve_limiting_endpoints() {
+    let input = ExperimentalVolume::new(100.);
+    let share = 100. / 3.;
+    let grants = guarded_rate_grants(
+        input,
+        [1.; 3],
+        [None; 3],
+        [ExperimentalVolume::new(share); 3],
+    )
+    .unwrap();
+    let mut partial = ExclusiveMergeExperiment::new([share; 3]);
+    partial.apply_pair_grants(input, grants).unwrap();
+    assert!(partial.parent.is_none());
+    assert!(
+        partial
+            .children
+            .unwrap()
+            .iter()
+            .any(|child| child.compare_to_capacity(share) == Ordering::Less)
+    );
+
+    let fixed = [None, None, Some(ExperimentalVolume::new(share))];
+    let grants = guarded_rate_grants(
+        input,
+        [1.; 3],
+        fixed,
+        [
+            ExperimentalVolume::new(100.),
+            ExperimentalVolume::new(100.),
+            ExperimentalVolume::new(share),
+        ],
+    )
+    .unwrap();
+    assert_eq!(grants[2], ExperimentalVolume::new(share));
+    let mut one_full = ExclusiveMergeExperiment::new([100., 100., share]);
+    one_full.apply_pair_grants(input, grants).unwrap();
+    assert_eq!(
+        one_full.children.unwrap()[2].compare_to_capacity(share),
+        Ordering::Equal
+    );
+
+    let exact_caps = [25., 25., 50.];
+    let full = exact_caps.map(|cap| Some(ExperimentalVolume::new(cap)));
+    let grants = guarded_rate_grants(
+        input,
+        [1., 1., 2.],
+        full,
+        exact_caps.map(ExperimentalVolume::new),
+    )
+    .unwrap();
+    let mut merged = ExclusiveMergeExperiment::new(exact_caps);
+    merged.apply_pair_grants(input, grants).unwrap();
+    assert_eq!(merged.parent, Some(input));
+}
+
+#[test]
+fn guarded_rate_grants_reject_missing_owner_or_large_rate_deviation() {
+    let input = ExperimentalVolume::new(100.);
+    let share = 100. / 3.;
+    let all_limiting = [Some(ExperimentalVolume::new(share)); 3];
+    assert_eq!(
+        guarded_rate_grants(
+            input,
+            [1.; 3],
+            all_limiting,
+            [ExperimentalVolume::new(share); 3],
+        ),
+        Err("No unsaturated recipient owns the event remainder.")
+    );
+    assert!(
+        guarded_rate_grants(
+            input,
+            [1.; 3],
+            [Some(ExperimentalVolume::new(1.)), None, None],
+            [
+                ExperimentalVolume::new(1.),
+                ExperimentalVolume::new(100.),
+                ExperimentalVolume::new(100.),
+            ],
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn guarded_rate_grants_reconcile_the_measured_three_recipient_event() {
+    let supplied = ExperimentalVolume::new(8_175_431_636.645996);
+    let limiting = [
+        None,
+        Some(ExperimentalVolume::new(2_043_857_909.161499)),
+        None,
+    ];
+    let grants = guarded_rate_grants(
+        supplied,
+        [1., 1., 2.],
+        limiting,
+        [
+            ExperimentalVolume::new(1e10),
+            limiting[1].unwrap(),
+            ExperimentalVolume::new(1e10),
+        ],
+    )
+    .unwrap();
+    assert_eq!(grants[1], limiting[1].unwrap());
+    let total = grants
+        .into_iter()
+        .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair);
+    assert_eq!(total, supplied);
 }
