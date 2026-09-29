@@ -25,6 +25,18 @@ impl ExperimentalVolume {
         Self { high, low: 0. }
     }
 
+    fn is_canonical(self) -> bool {
+        if !self.high.is_finite()
+            || !self.low.is_finite()
+            || (self.high == 0. && self.high.is_sign_negative())
+            || (self.low == 0. && self.low.is_sign_negative())
+        {
+            return false;
+        }
+        let (high, low) = two_sum(self.high, self.low);
+        high.to_bits() == self.high.to_bits() && low.to_bits() == self.low.to_bits()
+    }
+
     fn add_scalar(self, amount: f64) -> Self {
         let (high, roundoff) = two_sum(self.high, amount);
         let (high, low) = two_sum(high, self.low + roundoff);
@@ -36,8 +48,8 @@ impl ExperimentalVolume {
     }
 
     fn checked_add_scalar(self, amount: f64) -> Result<Self, &'static str> {
-        if !self.high.is_finite() || !self.low.is_finite() || !amount.is_finite() {
-            return Err("Nonfinite experimental volume.");
+        if !self.is_canonical() || !amount.is_finite() {
+            return Err("Invalid experimental volume.");
         }
         let (high, first_error) = two_sum(self.high, amount);
         let (low, second_error) = two_sum(self.low, first_error);
@@ -48,13 +60,16 @@ impl ExperimentalVolume {
         }
         let (high, low) = two_sum(high, low);
         let result = Self { high, low };
-        if !high.is_finite() || !low.is_finite() || (amount != 0. && result == self) {
+        if !result.is_canonical() || (amount != 0. && result == self) {
             return Err("Input is below two-float precision.");
         }
         Ok(result)
     }
 
     fn checked_add_pair(self, other: Self) -> Result<Self, &'static str> {
+        if !other.is_canonical() {
+            return Err("Invalid experimental volume.");
+        }
         self.checked_add_scalar(other.high)?
             .checked_add_scalar(other.low)
     }
@@ -225,11 +240,61 @@ impl ExclusiveMergeExperiment {
         )
     }
 
+    fn validate_checkpoint(&self) -> Result<(), &'static str> {
+        if self
+            .capacities
+            .iter()
+            .any(|capacity| !capacity.is_finite() || *capacity <= 0.)
+            || !self.accepted_input.is_canonical()
+            || self.accepted_input.compare_to_capacity(0.) == Ordering::Less
+        {
+            return Err("Invalid laboratory checkpoint.");
+        }
+        let represented = match (self.children, self.parent) {
+            (Some(children), None) => {
+                if children
+                    .iter()
+                    .zip(self.capacities)
+                    .any(|(child, capacity)| {
+                        !child.is_canonical()
+                            || child.compare_to_capacity(0.) == Ordering::Less
+                            || child.compare_to_capacity(capacity) == Ordering::Greater
+                    })
+                {
+                    return Err("Invalid laboratory checkpoint.");
+                }
+                children.into_iter().try_fold(
+                    ExperimentalVolume::new(0.),
+                    ExperimentalVolume::checked_add_pair,
+                )?
+            }
+            (None, Some(parent)) => {
+                if !parent.is_canonical() || parent.compare_to_capacity(0.) == Ordering::Less {
+                    return Err("Invalid laboratory checkpoint.");
+                }
+                let full = self.capacities.into_iter().try_fold(
+                    ExperimentalVolume::new(0.),
+                    ExperimentalVolume::checked_add_scalar,
+                )?;
+                if parent != full {
+                    return Err("Invalid laboratory checkpoint.");
+                }
+                parent
+            }
+            _ => return Err("Invalid laboratory checkpoint."),
+        };
+        if represented != self.accepted_input {
+            return Err("Invalid laboratory checkpoint.");
+        }
+        Ok(())
+    }
+
     fn apply_pair_grants(
         &mut self,
         supplied: ExperimentalVolume,
         grants: [ExperimentalVolume; 3],
     ) -> Result<(), &'static str> {
+        self.validate_checkpoint()?;
         if !supplied.high.is_finite()
             || !supplied.low.is_finite()
             || supplied.compare_to_capacity(0.) == Ordering::Less
@@ -662,6 +727,35 @@ fn subprecision_input_rejects_without_changing_the_exclusive_checkpoint() {
         Err("Input is below two-float precision.")
     );
     assert_eq!(model, checkpoint);
+}
+
+#[test]
+fn malformed_serialized_pair_cannot_resume_or_hide_over_capacity_water() {
+    let mut valid = ExclusiveMergeExperiment::new([100., 1., 1.]);
+    valid.apply(99., [99., 0., 0.]).unwrap();
+    let mut malformed = valid.clone();
+    malformed.children.as_mut().unwrap()[0] = ExperimentalVolume { high: 99., low: 2. };
+    let serialized = serde_json::to_vec(&malformed).unwrap();
+    let mut restored: ExclusiveMergeExperiment = serde_json::from_slice(&serialized).unwrap();
+    assert_eq!(
+        restored.children.unwrap()[0].compare_to_capacity(100.),
+        Ordering::Less
+    );
+    assert!(!restored.children.unwrap()[0].is_canonical());
+    assert_eq!(
+        restored.validate_checkpoint(),
+        Err("Invalid laboratory checkpoint.")
+    );
+    let before_rejection = restored.clone();
+    assert_eq!(
+        restored.apply(0., [0.; 3]),
+        Err("Invalid laboratory checkpoint.")
+    );
+    assert_eq!(restored, before_rejection);
+
+    let negative_zero = ExperimentalVolume { high: -0., low: 0. };
+    assert_eq!(negative_zero.compare_to_capacity(0.), Ordering::Less);
+    assert!(!negative_zero.is_canonical());
 }
 
 #[test]
