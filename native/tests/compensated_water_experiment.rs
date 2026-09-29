@@ -537,3 +537,99 @@ fn guarded_rate_grants_reconcile_the_measured_three_recipient_event() {
         .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair);
     assert_eq!(total, supplied);
 }
+
+#[test]
+fn canonical_remainder_owner_exposes_saturation_label_bias() {
+    let supplied = ExperimentalVolume::new(100.);
+    let capacity = 100. / 3.;
+    let grants = guarded_rate_grants(
+        supplied,
+        [1.; 3],
+        [None; 3],
+        [ExperimentalVolume::new(capacity); 3],
+    )
+    .unwrap();
+    let full = grants.map(|grant| grant.compare_to_capacity(capacity) == Ordering::Equal);
+    assert!(full.contains(&true) && full.contains(&false));
+
+    // All three physical receivers are indistinguishable here. Reordering
+    // their IDs leaves the input arrays unchanged, yet moves the one-ULP
+    // deficit to a different physical receiver after mapping IDs back.
+    let relabeled_back = [full[1], full[2], full[0]];
+    assert_ne!(full, relabeled_back);
+}
+
+#[test]
+fn distributed_tie_deficit_preserves_saturation_topology() {
+    let supplied = ExperimentalVolume::new(100.);
+    let capacity = 100. / 3.;
+    let total_capacity = [capacity; 3]
+        .into_iter()
+        .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_scalar);
+    let deficit = total_capacity.subtract_pair(supplied);
+    assert_eq!(deficit.high, 7.105_427_357_601_002e-15);
+    let equal_deficit = deficit.high / 3.;
+    let first = ExperimentalVolume::new(capacity).add_scalar(-equal_deficit);
+    let third = supplied.subtract_pair(first.add_pair(first));
+    let grants = [first, first, third];
+    let total = grants
+        .into_iter()
+        .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair);
+    assert_eq!(total, supplied);
+    assert!(
+        grants
+            .iter()
+            .all(|grant| grant.compare_to_capacity(capacity) == Ordering::Less)
+    );
+    assert_ne!(first, third); // Exact bitwise symmetry is still unavailable.
+    let mut model = ExclusiveMergeExperiment::new([capacity; 3]);
+    model.apply_pair_grants(supplied, grants).unwrap();
+    assert!(model.parent.is_none());
+    assert!(
+        model
+            .children
+            .unwrap()
+            .iter()
+            .all(|child| child.compare_to_capacity(capacity) == Ordering::Less)
+    );
+}
+
+#[test]
+fn diverse_guarded_grants_are_conservative_or_explicitly_rejected() {
+    let mut state = 0x7d_65_f8_u64;
+    let mut accepted = 0usize;
+    let mut rejected = 0usize;
+    for index in 0..512 {
+        let mut draw = || {
+            state = state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1);
+            state >> 32
+        };
+        let rates = [
+            1. + (draw() % 997) as f64,
+            1. + (draw() % 997) as f64,
+            1. + (draw() % 997) as f64,
+        ];
+        let scale = 10_f64.powi(index % 9);
+        let supplied = ExperimentalVolume::new((1 + draw() % 1_000_000) as f64 * scale);
+        let plan = guarded_rate_grants(supplied, rates, [None; 3], [supplied; 3]);
+        match plan {
+            Ok(grants) => {
+                accepted += 1;
+                assert!(grants.iter().all(|grant| {
+                    grant.compare_to_capacity(0.) == Ordering::Greater
+                        && grant.compare_pair(supplied) != Ordering::Greater
+                }));
+                let total = grants
+                    .into_iter()
+                    .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair);
+                assert_eq!(total, supplied, "case {index}");
+            }
+            Err(_) => rejected += 1,
+        }
+    }
+    assert_eq!(accepted + rejected, 512);
+    assert_eq!(accepted, 505);
+    assert_eq!(rejected, 7);
+}
