@@ -64,4 +64,4 @@ The existing Vite chunk-size advisory remains. No packaging run, visual feature,
 
 ## Next gate
 
-Map the existing initial water to exclusive active inventories without refitting the global water level. Compare reconstructed depth, connected water bodies and total volume with the generated world. Then replace or bound duplicated storage and measure a headless prescribed-input run at a generated-world scale. Only after these gates should the model drive a limited run/pause and water-level display in the desktop app.
+[C3j](initial-water-inventory.md) maps the existing initial water to read-only exclusive active inventories without refitting the global water level and compares reconstructed depth, connected water bodies and total volume with the generated world. It does not initialize this experiment. Next reconcile dynamic checkpoint semantics, replace or bound duplicated storage and measure a headless prescribed-input run at a generated-world scale. Only after these gates should the model drive a limited run/pause and water-level display in the desktop app.

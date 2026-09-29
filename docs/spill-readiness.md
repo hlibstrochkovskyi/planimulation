@@ -72,7 +72,7 @@ Compensated arithmetic and temporally batched pending storage remain candidate a
 
 After that:
 
-1. Map existing initial water into exclusive active inventories without refitting coverage or double-counting nested storage. Validate regional reconstruction and total volume.
+1. [C3j](initial-water-inventory.md) now maps existing initial water into read-only exclusive active inventories without refitting coverage or double-counting nested storage, and validates regional reconstruction and total volume. Dynamic checkpoint integration remains open.
 2. Replace or bound the duplicated storage representation and measure headless forcing on generated worlds. Resolve relevant numerical failures explicitly; passing a structural screen is not enough.
 3. Integrate a deliberately limited desktop water demonstration: prescribed input, run/pause, visible lake-level change on flat map/globe, budget and event inspection, and reproducible replay. Climate-derived rain, erosion and the full water cycle remain later work.
 

@@ -355,6 +355,7 @@ impl World {
 pub mod basins;
 pub mod crust;
 pub mod drainage;
+pub mod initial_water_inventory;
 pub mod nested_reservoir;
 pub mod reservoir;
 pub mod reservoir_pair;
