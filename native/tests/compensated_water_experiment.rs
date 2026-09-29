@@ -790,6 +790,45 @@ fn topology_guard_keeps_identical_nonlimiting_receivers_below_capacity() {
 }
 
 #[test]
+fn tiny_equal_followup_at_a_tied_threshold_rejects_atomically() {
+    let supplied = ExperimentalVolume::new(100.);
+    let capacity = 100. / 3.;
+    let grants = topology_guarded_rate_grants(
+        supplied,
+        [1.; 3],
+        [None; 3],
+        [ExperimentalVolume::new(capacity); 3],
+    )
+    .unwrap();
+    let remaining = grants.map(|grant| ExperimentalVolume::new(capacity).subtract_pair(grant));
+    let equal_followup = *remaining
+        .iter()
+        .min_by(|left, right| left.compare_pair(**right))
+        .unwrap();
+    assert_eq!(equal_followup.compare_to_capacity(0.), Ordering::Greater);
+    assert!(
+        remaining
+            .iter()
+            .any(|deficit| deficit.compare_pair(equal_followup) == Ordering::Greater)
+    );
+    let followup_total = [equal_followup; 3]
+        .into_iter()
+        .try_fold(
+            ExperimentalVolume::new(0.),
+            ExperimentalVolume::checked_add_pair,
+        )
+        .unwrap();
+    let mut model = ExclusiveMergeExperiment::new([capacity; 3]);
+    model.apply_pair_grants(supplied, grants).unwrap();
+    let checkpoint = model.clone();
+    assert_eq!(
+        model.apply_pair_grants(followup_total, [equal_followup; 3]),
+        Err("Input is below two-float precision.")
+    );
+    assert_eq!(model, checkpoint);
+}
+
+#[test]
 fn topology_guard_preserves_explicit_limiting_recipient() {
     let supplied = ExperimentalVolume::new(100.);
     let share = 100. / 3.;
