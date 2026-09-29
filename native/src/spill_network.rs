@@ -76,15 +76,21 @@ pub struct SpillNetwork {
 
 impl SpillNetwork {
     pub fn new(setup: Setup) -> Result<Self, String> {
-        let mut result = Self::prepare(Checkpoint {
-            experiment_version: EXPERIMENT_VERSION.into(),
-            setup,
-            inventory: Inventory {
-                active: vec![],
-                input_cubic_meters: 0.,
-                pulse_count: 0,
+        Self::new_with_entries(setup, false)
+    }
+    fn new_with_entries(setup: Setup, multiple_entries: bool) -> Result<Self, String> {
+        let mut result = Self::prepare(
+            Checkpoint {
+                experiment_version: EXPERIMENT_VERSION.into(),
+                setup,
+                inventory: Inventory {
+                    active: vec![],
+                    input_cubic_meters: 0.,
+                    pulse_count: 0,
+                },
             },
-        })?;
+            multiple_entries,
+        )?;
         result.checkpoint.inventory.active = result
             .connections
             .basins()
@@ -101,11 +107,17 @@ impl SpillNetwork {
         Ok(result)
     }
     pub fn restore(checkpoint: Checkpoint) -> Result<Self, String> {
-        let result = Self::prepare(checkpoint)?;
+        Self::restore_with_entries(checkpoint, false)
+    }
+    fn restore_with_entries(
+        checkpoint: Checkpoint,
+        multiple_entries: bool,
+    ) -> Result<Self, String> {
+        let result = Self::prepare(checkpoint, multiple_entries)?;
         result.snapshot()?;
         Ok(result)
     }
-    fn prepare(checkpoint: Checkpoint) -> Result<Self, String> {
+    fn prepare(checkpoint: Checkpoint, multiple_entries: bool) -> Result<Self, String> {
         if checkpoint.experiment_version != EXPERIMENT_VERSION
             || checkpoint.setup.policy_version != POLICY_VERSION
         {
@@ -163,7 +175,9 @@ impl SpillNetwork {
             for contact in &p.contacts {
                 let child = contact.child_branch;
                 let leaf = entry_leaves[contact.edge[1] as usize];
-                if !contains[child][leaf] || receiver_leaves[child].is_some_and(|old| old != leaf) {
+                if !contains[child][leaf]
+                    || (!multiple_entries && receiver_leaves[child].is_some_and(|old| old != leaf))
+                {
                     return Err("Alternative entries into different nested leaves require a separate entry policy.".into());
                 }
                 receiver_leaves[child] = Some(leaf);

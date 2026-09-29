@@ -7,6 +7,8 @@ use crate::spill_connections::SpillConnections;
 use crate::spill_junction::Weight;
 use serde::{Deserialize, Serialize};
 
+pub mod multi_entry;
+
 pub const EXPERIMENT_VERSION: &str = "simultaneous-network-1";
 pub const POLICY_VERSION: &str = "constant-forcing-frontiers-1";
 
@@ -62,6 +64,8 @@ pub struct Interval {
 pub struct SimultaneousNetwork {
     // Reuse geometry, frontier queries and stock validation, not ordered fill.
     core: SpillNetwork,
+    /// Only the separately versioned multi-entry wrapper can enable this policy.
+    entry_weights: Option<Vec<multi_entry::EntryWeight>>,
 }
 
 impl Setup {
@@ -81,6 +85,7 @@ impl SimultaneousNetwork {
     pub fn new(setup: Setup) -> Result<Self, String> {
         Ok(Self {
             core: SpillNetwork::new(setup.core()?)?,
+            entry_weights: None,
         })
     }
     pub fn restore(checkpoint: Checkpoint) -> Result<Self, String> {
@@ -93,6 +98,7 @@ impl SimultaneousNetwork {
                 setup: checkpoint.setup.core()?,
                 inventory: checkpoint.inventory,
             })?,
+            entry_weights: None,
         })
     }
     pub fn checkpoint(&self) -> Checkpoint {
@@ -148,6 +154,14 @@ impl SimultaneousNetwork {
             }
             let input = self.supplied(source, inputs)?;
             if input == 0. {
+                continue;
+            }
+            if let Some(weights) = &self.entry_weights {
+                for transfer in multi_entry::allocate(&self.core, weights, source, stocks, input)? {
+                    let leaf = transfer.receiver.entry_leaf;
+                    combined[leaf] = add(combined[leaf], transfer.cubic_meters_per_interval)?;
+                    transfers.push(transfer);
+                }
                 continue;
             }
             let receivers = self.core.frontier(source, stocks)?;

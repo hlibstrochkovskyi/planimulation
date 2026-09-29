@@ -68,7 +68,7 @@ Compensated arithmetic and temporally batched pending storage remain candidate a
 
 ## Next integration gates
 
-The immediate implementation priority is an explicit multiple-entry allocation policy, with this screen's witnesses as motivating fixtures. Preserve the previous experiments as references. Do not raise the size bound, discard contacts, alter terrain or use initial ocean labels merely to make the gate pass.
+[C3i multiple-entry allocation](multi-entry-network.md) now supplies a separately versioned bounded policy using explicit branch and internal-entry weights. Thirteen conflicting subtrees extracted from four generated worlds were accepted and advanced in that experiment. This screen still describes C3f/C3g restrictions and must not be treated as proof that C3i is ready for planetary dynamics. Preserve the previous experiments as references; neither the size bound nor initial-world inventory mapping is resolved.
 
 After that:
 

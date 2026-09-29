@@ -26,6 +26,8 @@ The diagnostic diffusion mode exists to exercise stateful native calculation, sm
 
 [C3h integration screening](spill-readiness.md) checks the existing region bound and nested-entry restriction against generated beds without constructing or running the bounded solver. Run `cargo run --release --locked --manifest-path native/Cargo.toml --example spill_readiness -- docs/scenarios/spill-connections.json`. Passing these necessary checks does not certify dynamic readiness.
 
+[C3i multiple entries](multi-entry-network.md) adds a separately versioned branch-then-entry weight policy to bounded concurrent forcing. Run `cargo run --release --locked --manifest-path native/Cargo.toml --example multi_entry_network -- docs/scenarios/multi-entry-network.json`. It accepts different internal receiving leaves and retains the old C3f/C3g contracts.
+
 ## Daily workflow
 
 Prerequisites: Node.js 22.12+, npm, Rust and a platform linker, a graphical session for desktop tests, and WebGL 2 for viewing. Linux x64 is the validated target. Rust 1.98.1 is the tested toolchain; other targets/toolchains are not claimed to be bitwise equivalent.
@@ -73,6 +75,7 @@ Packaging produces an unpacked app under `release/`; it neither installs globall
 - `native/src/spill_network.rs`: bounded event-driven receiving frontiers, nested storage, saturated transit witnesses, ordered input and checkpoints; `native/examples/spill_network.rs` emits the network experiment report.
 - `native/src/spill_network/simultaneous.rs`: separately versioned concurrent forcing, global saturation events and audited interval transactions; `native/examples/simultaneous_network.rs` emits the developer report.
 - `native/src/spill_readiness.rs`: read-only generated-bed restriction screening, conflicting entry witnesses and logical storage counts; `native/examples/spill_readiness.rs` emits the recipe-based report.
+- `native/src/spill_network/simultaneous/multi_entry.rs`: explicit branch and inner-entry weights, reachable-entry witnesses and bounded concurrent intervals; `native/examples/multi_entry_network.rs` emits its developer report.
 - `native/src/wire.rs`, `native/src/main.rs`: versioned, bounded command and binary-output adapter.
 - `src/native/client.ts`: process lifecycle, framing, validation, generation transactions, headless integration.
 - `src/electron/`: trusted sender checks, native process ownership, native recipe dialogs, sandboxed preload.
@@ -113,6 +116,7 @@ No arbitrary filesystem path, shell command, raw IPC method, or Node.js object i
 | Spill network | Frontier changes at first saturation, blocked/long transit, cycles/alternatives, nested entry, 1,200 analytic oracle updates, 60 independent raw-region reachability cases, explicit order sensitivity, C3d/C3e agreement, exact continuation and atomic precision rejection |
 | Concurrent forcing | Input permutation, proportional subdivision, relabeling, 100 analytical weighted forks, 60 independent component-rate oracles, nested entry, multiple sources, threshold ties, C3e/C3f limits, exact continuation, and atomic failures |
 | Integration screening | Witness paths, dead-end exclusion, 60 bounded solver-admission comparisons, independent ancestry counts, deep iterative hierarchy, generated worlds through subdivision 6, unchanged wire state, and water-setting independence |
+| Multiple entries | Two-stage weighted oracle, distinct-sill gating, repeated-contact deduplication, inner/outer thresholds, exact continuation, C3g agreement, relabeling, 127-region bound, cycles, atomic failures and generated conflicting subtrees |
 | Appearance | Review flat/globe screenshots; numerical tests alone cannot establish readable graphics |
 
 Numerical comparisons use justified tolerances. Repeated operation in the same supported binary is exact. Native boundary rings start at a fixed incident face, avoiding an arbitrary change of starting vertex at the `atan2` ±π branch cut.
@@ -146,6 +150,6 @@ The displayed fingerprint covers the **initial** recipe and native arrays. It is
 
 ## Next increment
 
-C1 supplies static drainage structure; C2a/C2b supply analysis and desktop inspection; C3a–C3g remain standalone routing experiments. C3h measures generated-world restrictions and records pending-input requirements without implementing accumulation. Next address multiple nested receiving entries, then initial-inventory mapping and measured headless scaling/numerics. The next visible target is a bounded prescribed-water desktop demonstration with budgets and replay. Resolved-world-state and image export remain outstanding milestone B work.
+C1 supplies static drainage structure; C2a/C2b supply analysis and desktop inspection; C3a–C3g remain standalone routing experiments. C3h measures generated-world restrictions; C3i separately resolves multiple nested receiving entries under explicit weights in bounded experiments. Next map initial water into exclusive inventories and measure headless scaling/numerics. The next visible target is a limited prescribed-water desktop demonstration with budgets and replay. Resolved-world-state and image export remain outstanding milestone B work.
 
 Keep commits coherent, messages and project records in English, and the owner's configured Git identity. Never add assistant attribution or co-author trailers.
