@@ -77,6 +77,7 @@ pub struct SpillNetwork {
     connections: SpillConnections,
     curves: Vec<Reservoir>,
     shared_storage: Option<SharedStorageIndex>,
+    resolution_aware_level: bool,
     capacities: Vec<Option<f64>>,
     birth_volumes: Vec<f64>,
     enter: Vec<usize>,
@@ -105,6 +106,7 @@ impl SpillNetwork {
             0.,
             LABORATORY_REGIONS,
             usize::MAX,
+            false,
             false,
         )?;
         result.checkpoint.inventory.active = result
@@ -136,6 +138,7 @@ impl SpillNetwork {
             LABORATORY_REGIONS,
             usize::MAX,
             false,
+            false,
         )
     }
     fn restore_with_initial(
@@ -145,6 +148,7 @@ impl SpillNetwork {
         max_regions: usize,
         max_curve_references: usize,
         shared_storage: bool,
+        resolution_aware_level: bool,
     ) -> Result<Self, String> {
         let result = Self::prepare(
             checkpoint,
@@ -153,6 +157,7 @@ impl SpillNetwork {
             max_regions,
             max_curve_references,
             shared_storage,
+            resolution_aware_level,
         )?;
         result.snapshot()?;
         Ok(result)
@@ -164,6 +169,7 @@ impl SpillNetwork {
         max_regions: usize,
         max_curve_references: usize,
         shared_storage: bool,
+        resolution_aware_level: bool,
     ) -> Result<Self, String> {
         if checkpoint.experiment_version != EXPERIMENT_VERSION
             || checkpoint.setup.policy_version != POLICY_VERSION
@@ -324,6 +330,7 @@ impl SpillNetwork {
             connections,
             curves,
             shared_storage,
+            resolution_aware_level,
             capacities,
             birth_volumes,
             enter,
@@ -351,7 +358,12 @@ impl SpillNetwork {
     }
     fn level_for_volume(&self, id: usize, volume: f64) -> Result<Option<f64>, String> {
         if let Some(shared) = &self.shared_storage {
-            shared.level_for_volume(&self.checkpoint.setup.geometry.columns, id, volume)
+            shared.level_for_volume(
+                &self.checkpoint.setup.geometry.columns,
+                id,
+                volume,
+                self.resolution_aware_level,
+            )
         } else {
             self.curves[id].level_for_volume(volume)
         }

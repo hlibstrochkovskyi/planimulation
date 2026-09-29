@@ -17,6 +17,7 @@ pub const EXPERIMENT_VERSION: &str = "seeded-multi-entry-network-1";
 pub const EXPANDED_EXPERIMENT_VERSION: &str = "seeded-multi-entry-network-2";
 pub const EXACT_LIMIT_EXPERIMENT_VERSION: &str = "seeded-multi-entry-network-3";
 pub const SHARED_STORAGE_EXPERIMENT_VERSION: &str = "seeded-multi-entry-network-4";
+pub const RESOLUTION_AWARE_EXPERIMENT_VERSION: &str = "seeded-multi-entry-network-5";
 pub const UNIT_WEIGHT_POLICY_VERSION: &str = "unit-branch-and-entry-weights-1";
 
 /// Explicit laboratory policy for a small generated world. Unit weights are
@@ -91,19 +92,43 @@ impl SeededNetwork {
     }
 
     pub fn from_generated(world: &World, setup: Setup) -> Result<Self, String> {
+        Self::from_generated_with_version(world, setup, None)
+    }
+
+    /// Explicitly opt into a seeded experiment version. `None` preserves the
+    /// established size-dependent default and its checkpoint semantics.
+    pub fn from_generated_with_version(
+        world: &World,
+        setup: Setup,
+        requested_version: Option<&str>,
+    ) -> Result<Self, String> {
         let initial_water = InitialWaterInventory::from_water(
             &world.surface,
             &world.terrain.elevation,
             &world.water,
             &world.basins,
         )?;
-        Self::start(setup, initial_water, Some(world.recipe.clone()))
+        Self::start_with_version(
+            setup,
+            initial_water,
+            Some(world.recipe.clone()),
+            requested_version,
+        )
     }
 
     fn start(
         setup: Setup,
         initial_water: InitialWaterInventory,
         origin_recipe: Option<Recipe>,
+    ) -> Result<Self, String> {
+        Self::start_with_version(setup, initial_water, origin_recipe, None)
+    }
+
+    fn start_with_version(
+        setup: Setup,
+        initial_water: InitialWaterInventory,
+        origin_recipe: Option<Recipe>,
+        requested_version: Option<&str>,
     ) -> Result<Self, String> {
         let inventory = Inventory {
             active: initial_water
@@ -118,11 +143,13 @@ impl SeededNetwork {
             pulse_count: 0,
         };
         Self::restore(Checkpoint {
-            experiment_version: if setup.geometry.columns.len() > MAX_REGIONS {
-                SHARED_STORAGE_EXPERIMENT_VERSION.into()
-            } else {
-                EXPERIMENT_VERSION.into()
-            },
+            experiment_version: requested_version.map(str::to_owned).unwrap_or_else(|| {
+                if setup.geometry.columns.len() > MAX_REGIONS {
+                    SHARED_STORAGE_EXPERIMENT_VERSION.into()
+                } else {
+                    EXPERIMENT_VERSION.into()
+                }
+            }),
             origin_recipe,
             setup,
             initial_water,
@@ -131,16 +158,22 @@ impl SeededNetwork {
     }
 
     pub fn restore(checkpoint: Checkpoint) -> Result<Self, String> {
-        let (max_regions, max_curve_references, max_subdivision, shared_storage) = match checkpoint
-            .experiment_version
-            .as_str()
-        {
-            EXPERIMENT_VERSION => (MAX_REGIONS, usize::MAX, 1, false),
-            EXPANDED_EXPERIMENT_VERSION => (EXPANDED_REGIONS, EXPANDED_CURVE_REFERENCES, 5, false),
-            EXACT_LIMIT_EXPERIMENT_VERSION => {
-                (EXPANDED_REGIONS, EXPANDED_CURVE_REFERENCES, 5, false)
+        let (
+            max_regions,
+            max_curve_references,
+            max_subdivision,
+            shared_storage,
+            resolution_aware_level,
+        ) = match checkpoint.experiment_version.as_str() {
+            EXPERIMENT_VERSION => (MAX_REGIONS, usize::MAX, 1, false, false),
+            EXPANDED_EXPERIMENT_VERSION => {
+                (EXPANDED_REGIONS, EXPANDED_CURVE_REFERENCES, 5, false, false)
             }
-            SHARED_STORAGE_EXPERIMENT_VERSION => (EXPANDED_REGIONS, usize::MAX, 5, true),
+            EXACT_LIMIT_EXPERIMENT_VERSION => {
+                (EXPANDED_REGIONS, EXPANDED_CURVE_REFERENCES, 5, false, false)
+            }
+            SHARED_STORAGE_EXPERIMENT_VERSION => (EXPANDED_REGIONS, usize::MAX, 5, true, false),
+            RESOLUTION_AWARE_EXPERIMENT_VERSION => (EXPANDED_REGIONS, usize::MAX, 5, true, true),
             _ => return Err("Unsupported seeded-network experiment version.".into()),
         };
         if let Some(recipe) = &checkpoint.origin_recipe {
@@ -202,9 +235,11 @@ impl SeededNetwork {
             max_regions,
             max_curve_references,
             shared_storage,
+            resolution_aware_level,
         )?;
         let model = if checkpoint.experiment_version == EXACT_LIMIT_EXPERIMENT_VERSION
             || checkpoint.experiment_version == SHARED_STORAGE_EXPERIMENT_VERSION
+            || checkpoint.experiment_version == RESOLUTION_AWARE_EXPERIMENT_VERSION
         {
             MultiEntryNetwork::finish_with_exact_limit(core, checkpoint.setup.entry_weights)?
         } else {

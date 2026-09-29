@@ -3,7 +3,8 @@ use planimulation_core::{
     Recipe, World,
     nested_reservoir::Input,
     spill_network::simultaneous::multi_entry::seeded::{
-        SeededNetwork, UNIT_WEIGHT_POLICY_VERSION, generated_unit_setup,
+        RESOLUTION_AWARE_EXPERIMENT_VERSION, SeededNetwork, UNIT_WEIGHT_POLICY_VERSION,
+        generated_unit_setup,
     },
 };
 use serde::Deserialize;
@@ -23,6 +24,8 @@ struct Request {
     /// Serialize and restore after this many accepted intervals, then compare
     /// both continuations exactly at every later interval.
     replay_after: Option<usize>,
+    /// Optional opt-in; omitted requests retain the original seeded version.
+    experiment_version: Option<String>,
 }
 
 fn peak_rss_kib() -> Option<u64> {
@@ -58,6 +61,10 @@ fn run(input: impl Read) -> Result<Value, Box<dyn std::error::Error>> {
         || request
             .replay_after
             .is_some_and(|at| at == 0 || at >= request.interval_count)
+        || request
+            .experiment_version
+            .as_deref()
+            .is_some_and(|version| version != RESOLUTION_AWARE_EXPERIMENT_VERSION)
     {
         return Err("Invalid bounded forcing probe request.".into());
     }
@@ -100,7 +107,11 @@ fn run(input: impl Read) -> Result<Value, Box<dyn std::error::Error>> {
             return Ok(report);
         }
     };
-    let mut model = match SeededNetwork::from_generated(&world, setup) {
+    let mut model = match SeededNetwork::from_generated_with_version(
+        &world,
+        setup,
+        request.experiment_version.as_deref(),
+    ) {
         Ok(model) => model,
         Err(reason) => {
             report["status"] = json!("rejectedDuringPreparation");
@@ -275,6 +286,23 @@ mod tests {
     }
 
     #[test]
+    fn explicit_resolution_aware_version_replays_the_level_witness() {
+        let mut request: Value = serde_json::from_str(SMALL_INPUT).unwrap();
+        request["recipe"]["seed"] = json!("profile-03");
+        request["experimentVersion"] = json!(RESOLUTION_AWARE_EXPERIMENT_VERSION);
+        request["intervalCount"] = json!(4);
+        request["replayAfter"] = json!(2);
+        let report = run(serde_json::to_vec(&request).unwrap().as_slice()).unwrap();
+        assert_eq!(
+            report["experimentVersion"],
+            RESOLUTION_AWARE_EXPERIMENT_VERSION
+        );
+        assert_eq!(report["status"], "accepted");
+        assert_eq!(report["completedIntervals"], 4);
+        assert_eq!(report["replayCheckedIntervals"], 2);
+    }
+
+    #[test]
     fn invalid_requests_fail_before_a_report() {
         assert!(run(&b"{}"[..]).is_err());
         assert!(run(vec![b' '; 32769].as_slice()).is_err());
@@ -292,6 +320,9 @@ mod tests {
         invalid["profiles"] = json!([
             [{"region":3,"volumeCubicMeters":1.}, {"region":3,"volumeCubicMeters":2.}]
         ]);
+        assert!(run(serde_json::to_vec(&invalid).unwrap().as_slice()).is_err());
+        invalid["profiles"] = json!([[{"region":3,"volumeCubicMeters":1.}]]);
+        invalid["experimentVersion"] = json!("seeded-multi-entry-network-unknown");
         assert!(run(serde_json::to_vec(&invalid).unwrap().as_slice()).is_err());
     }
 }

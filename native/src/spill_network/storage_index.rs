@@ -133,6 +133,7 @@ impl SharedStorageIndex {
         columns: &[Column],
         branch: usize,
         volume: f64,
+        resolution_aware: bool,
     ) -> Result<Option<f64>, String> {
         if !volume.is_finite() || volume < 0. {
             return Err("Storage outside shared storage range.".into());
@@ -160,7 +161,41 @@ impl SharedStorageIndex {
         }
         let level = lower + (volume - base) / area;
         let resolved = self.volume_at_level(columns, branch, level)?;
-        if (resolved - volume).abs() > 1e-9_f64.max(volume * 1e-10) || resolved == 0. {
+        let strict_tolerance = 1e-9_f64.max(volume * 1e-10);
+        if resolved != 0. && (resolved - volume).abs() <= strict_tolerance {
+            return Ok(Some(level));
+        }
+        if resolution_aware {
+            // An absolute f64 level has a finite spacing. Accept only the
+            // nearest representable level, and only while its volume error
+            // remains small relative to the authoritative stored volume.
+            let candidates = [level.next_down(), level, level.next_up()];
+            let mut best = None;
+            for candidate in candidates {
+                if candidate < self.minimum[branch] {
+                    continue;
+                }
+                let represented = self.volume_at_level(columns, branch, candidate)?;
+                if represented == 0. {
+                    continue;
+                }
+                let previous = self.volume_at_level(columns, branch, candidate.next_down())?;
+                let next = self.volume_at_level(columns, branch, candidate.next_up())?;
+                if volume < previous || volume > next {
+                    continue;
+                }
+                let error = (represented - volume).abs();
+                if best.is_none_or(|(_, current_error)| error < current_error) {
+                    best = Some((candidate, error));
+                }
+            }
+            if let Some((candidate, error)) = best
+                && error <= volume * 1e-9
+            {
+                return Ok(Some(candidate));
+            }
+        }
+        if (resolved - volume).abs() > strict_tolerance || resolved == 0. {
             return Err("Shared level cannot represent the requested storage precisely.".into());
         }
         Ok(Some(level))
@@ -175,6 +210,31 @@ mod tests {
         basins::Basins,
         reservoir::{Boundary, Column, Reservoir},
     };
+
+    #[test]
+    fn resolution_aware_inverse_keeps_stock_without_accepting_unresolvable_tiny_input() {
+        let bed = -4053.65;
+        let columns = [Column {
+            bed_meters: bed,
+            area_square_meters: 46_600_000_000.,
+        }];
+        let index = SharedStorageIndex {
+            ordered_regions: vec![0],
+            ranges: std::iter::once(0..1).collect(),
+            minimum: vec![bed],
+            maximum: vec![bed],
+            heights: vec![bed],
+        };
+        let volume = 50_000_000.;
+        assert!(index.level_for_volume(&columns, 0, volume, false).is_err());
+        let level = index
+            .level_for_volume(&columns, 0, volume, true)
+            .unwrap()
+            .unwrap();
+        let represented = index.volume_at_level(&columns, 0, level).unwrap();
+        assert!((represented - volume).abs() <= volume * 1e-9);
+        assert!(index.level_for_volume(&columns, 0, 0.0001, true).is_err());
+    }
 
     #[test]
     fn one_region_order_reconstructs_each_nested_prism() {
@@ -248,7 +308,7 @@ mod tests {
             }
             for volume in [0.5, 2., 10.] {
                 let level = index
-                    .level_for_volume(&columns, id, volume)
+                    .level_for_volume(&columns, id, volume, false)
                     .unwrap()
                     .unwrap();
                 assert!(

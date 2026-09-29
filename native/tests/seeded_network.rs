@@ -438,3 +438,60 @@ fn shared_storage_distributed_intervals_replay_from_serialized_checkpoint() {
     }
     assert_eq!(model.checkpoint().inventory.input_cubic_meters, total_input);
 }
+
+#[test]
+fn resolution_aware_generated_levels_preserve_v4_rejection_and_v5_replay() {
+    let mut recipe: Recipe =
+        serde_json::from_str(include_str!("../../docs/scenarios/spill-connections.json")).unwrap();
+    recipe.seed = "profile-03".into();
+    recipe.subdivision = 5;
+    recipe.water = WaterSettings::Coverage { fraction: 0.25 };
+    let world = World::generate(recipe).unwrap();
+    let setup = seeded::generated_unit_setup(&world).unwrap();
+    let profile = vec![
+        input(3, 50_000_000.),
+        input(10, 50_000_000.),
+        input(30, 50_000_000.),
+        input(60, 50_000_000.),
+    ];
+    let mut v4 = seeded::SeededNetwork::from_generated(&world, setup.clone()).unwrap();
+    let original = v4.checkpoint();
+    assert_eq!(
+        v4.experiment_version(),
+        seeded::SHARED_STORAGE_EXPERIMENT_VERSION
+    );
+    assert_eq!(
+        v4.add_interval(profile.clone()).unwrap_err(),
+        "Shared level cannot represent the requested storage precisely."
+    );
+    assert_eq!(v4.checkpoint(), original);
+
+    let mut v5 = seeded::SeededNetwork::from_generated_with_version(
+        &world,
+        setup,
+        Some(seeded::RESOLUTION_AWARE_EXPERIMENT_VERSION),
+    )
+    .unwrap();
+    assert_eq!(
+        v5.experiment_version(),
+        seeded::RESOLUTION_AWARE_EXPERIMENT_VERSION
+    );
+    let before = v5.checkpoint();
+    v5.add_interval(profile.clone()).unwrap();
+    assert_eq!(v5.checkpoint().inventory.input_cubic_meters, 200_000_000.);
+    let saved = serde_json::to_vec(&v5.checkpoint()).unwrap();
+    let mut replay =
+        seeded::SeededNetwork::restore(serde_json::from_slice(&saved).unwrap()).unwrap();
+    assert_eq!(replay.checkpoint(), v5.checkpoint());
+    let second = vec![
+        input(7, 100_000_000.),
+        input(20, 50_000_000.),
+        input(90, 50_000_000.),
+    ];
+    assert_eq!(
+        v5.add_interval(second.clone()).unwrap(),
+        replay.add_interval(second).unwrap()
+    );
+    assert_eq!(v5.checkpoint(), replay.checkpoint());
+    assert_eq!(before.inventory.input_cubic_meters, 0.);
+}
