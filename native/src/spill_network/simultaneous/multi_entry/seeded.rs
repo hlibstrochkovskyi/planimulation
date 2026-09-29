@@ -15,6 +15,7 @@ use super::super::Interval;
 
 pub const EXPERIMENT_VERSION: &str = "seeded-multi-entry-network-1";
 pub const EXPANDED_EXPERIMENT_VERSION: &str = "seeded-multi-entry-network-2";
+pub const EXACT_LIMIT_EXPERIMENT_VERSION: &str = "seeded-multi-entry-network-3";
 pub const UNIT_WEIGHT_POLICY_VERSION: &str = "unit-branch-and-entry-weights-1";
 
 /// Explicit laboratory policy for a small generated world. Unit weights are
@@ -117,7 +118,7 @@ impl SeededNetwork {
         };
         Self::restore(Checkpoint {
             experiment_version: if setup.geometry.columns.len() > MAX_REGIONS {
-                EXPANDED_EXPERIMENT_VERSION.into()
+                EXACT_LIMIT_EXPERIMENT_VERSION.into()
             } else {
                 EXPERIMENT_VERSION.into()
             },
@@ -133,6 +134,7 @@ impl SeededNetwork {
             match checkpoint.experiment_version.as_str() {
                 EXPERIMENT_VERSION => (MAX_REGIONS, usize::MAX, 1),
                 EXPANDED_EXPERIMENT_VERSION => (EXPANDED_REGIONS, EXPANDED_CURVE_REFERENCES, 5),
+                EXACT_LIMIT_EXPERIMENT_VERSION => (EXPANDED_REGIONS, EXPANDED_CURVE_REFERENCES, 5),
                 _ => return Err("Unsupported seeded-network experiment version.".into()),
             };
         if let Some(recipe) = &checkpoint.origin_recipe {
@@ -194,7 +196,11 @@ impl SeededNetwork {
             max_regions,
             max_curve_references,
         )?;
-        let model = MultiEntryNetwork::finish(core, checkpoint.setup.entry_weights)?;
+        let model = if checkpoint.experiment_version == EXACT_LIMIT_EXPERIMENT_VERSION {
+            MultiEntryNetwork::finish_with_exact_limit(core, checkpoint.setup.entry_weights)?
+        } else {
+            MultiEntryNetwork::finish(core, checkpoint.setup.entry_weights)?
+        };
         if model.checkpoint().inventory.pulse_count == 0 {
             let snapshot = model.snapshot()?;
             for active in &snapshot.active {

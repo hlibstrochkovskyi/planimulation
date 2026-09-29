@@ -143,8 +143,17 @@ impl MultiEntryNetwork {
             model: SimultaneousNetwork {
                 core,
                 entry_weights: Some(entry_weights),
+                exact_limit_commit: false,
             },
         })
+    }
+    fn finish_with_exact_limit(
+        core: SpillNetwork,
+        entry_weights: Vec<EntryWeight>,
+    ) -> Result<Self, String> {
+        let mut result = Self::finish(core, entry_weights)?;
+        result.model.exact_limit_commit = true;
+        Ok(result)
     }
     pub fn checkpoint(&self) -> Checkpoint {
         let core = self.model.core.checkpoint();

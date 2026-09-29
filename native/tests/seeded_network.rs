@@ -276,9 +276,10 @@ fn expanded_generated_worlds_preserve_versions_and_budgets() {
         let mut model = seeded::SeededNetwork::from_generated(&world, setup).unwrap();
         assert_eq!(
             model.experiment_version(),
-            seeded::EXPANDED_EXPERIMENT_VERSION
+            seeded::EXACT_LIMIT_EXPERIMENT_VERSION
         );
         let initial = model.snapshot().unwrap().total_stored_cubic_meters;
+        let original_checkpoint = model.checkpoint();
         let interval = model.add_interval(vec![input(3, 2e14)]).unwrap();
         let stored = interval.snapshot.total_stored_cubic_meters;
         assert!((stored - initial - 2e14).abs() <= 2e14 * 1e-10);
@@ -292,6 +293,10 @@ fn expanded_generated_worlds_preserve_versions_and_budgets() {
             seeded::SeededNetwork::restore(serde_json::from_slice(&saved).unwrap()).unwrap();
         assert_eq!(resumed.checkpoint(), model.checkpoint());
         if subdivision == 2 {
+            let mut legacy = original_checkpoint;
+            legacy.experiment_version = seeded::EXPANDED_EXPERIMENT_VERSION.into();
+            let mut legacy = seeded::SeededNetwork::restore(legacy).unwrap();
+            assert_eq!(legacy.add_interval(vec![input(3, 2e14)]).unwrap(), interval);
             let mut downgraded = model.checkpoint();
             downgraded.experiment_version = seeded::EXPERIMENT_VERSION.into();
             assert!(seeded::SeededNetwork::restore(downgraded).is_err());
@@ -311,11 +316,29 @@ fn measured_expanded_restrictions_are_explicit_and_atomic() {
     let setup = seeded::generated_unit_setup(&world).unwrap();
     let mut model = seeded::SeededNetwork::from_generated(&world, setup).unwrap();
     let before = model.checkpoint();
+    let mut old_checkpoint = before.clone();
+    old_checkpoint.experiment_version = seeded::EXPANDED_EXPERIMENT_VERSION.into();
+    let mut old_model = seeded::SeededNetwork::restore(old_checkpoint).unwrap();
+    let old_before = old_model.checkpoint();
     assert_eq!(
-        model.add_interval(vec![input(3, 2e14)]).unwrap_err(),
+        old_model.add_interval(vec![input(3, 2e14)]).unwrap_err(),
         "Concurrent update exceeds capacity."
     );
-    assert_eq!(model.checkpoint(), before);
+    assert_eq!(old_model.checkpoint(), old_before);
+    let interval = model.add_interval(vec![input(3, 2e14)]).unwrap();
+    assert!(
+        interval
+            .events
+            .iter()
+            .any(|event| event.saturated.contains(&254))
+    );
+    assert_eq!(model.checkpoint().inventory.input_cubic_meters, 2e14);
+    assert!(interval.snapshot.budget_residual_cubic_meters.abs() <= 2e14 * 1e-12);
+    let saved = serde_json::to_vec(&before).unwrap();
+    let mut replay =
+        seeded::SeededNetwork::restore(serde_json::from_slice(&saved).unwrap()).unwrap();
+    assert_eq!(replay.add_interval(vec![input(3, 2e14)]).unwrap(), interval);
+    assert_eq!(replay.checkpoint(), model.checkpoint());
 
     let mut bounded_recipe = baseline;
     bounded_recipe.seed = "profile-06".into();

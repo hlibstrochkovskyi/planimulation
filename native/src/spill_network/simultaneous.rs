@@ -66,6 +66,37 @@ pub struct SimultaneousNetwork {
     core: SpillNetwork,
     /// Only the separately versioned multi-entry wrapper can enable this policy.
     entry_weights: Option<Vec<multi_entry::EntryWeight>>,
+    /// Seeded v3 commits an exactly limiting event at its stored capacity.
+    exact_limit_commit: bool,
+}
+
+fn commit_event_stock(
+    old: f64,
+    grant: f64,
+    capacity: Option<f64>,
+    limiting: bool,
+    exact_limit_commit: bool,
+) -> Result<f64, String> {
+    let value = if exact_limit_commit && limiting {
+        let cap = capacity.ok_or("Missing limiting capacity.")?;
+        let rounded = add(old, grant)?;
+        if cap <= old
+            || grant != cap - old
+            || !cap.next_up().is_finite()
+            || (rounded - cap).abs() > cap.next_up() - cap
+        {
+            return Err("Concurrent limiting grant cannot be represented.".into());
+        }
+        // The endpoint is the already validated capacity; its reported
+        // retained amount below is the actual stock difference, not `grant`.
+        cap
+    } else {
+        add(old, grant)?
+    };
+    if capacity.is_some_and(|cap| value > cap) {
+        return Err("Concurrent update exceeds capacity.".into());
+    }
+    Ok(value)
 }
 
 impl Setup {
@@ -86,6 +117,7 @@ impl SimultaneousNetwork {
         Ok(Self {
             core: SpillNetwork::new(setup.core()?)?,
             entry_weights: None,
+            exact_limit_commit: false,
         })
     }
     pub fn restore(checkpoint: Checkpoint) -> Result<Self, String> {
@@ -99,6 +131,7 @@ impl SimultaneousNetwork {
                 inventory: checkpoint.inventory,
             })?,
             entry_weights: None,
+            exact_limit_commit: false,
         })
     }
     pub fn checkpoint(&self) -> Checkpoint {
@@ -310,10 +343,13 @@ impl SimultaneousNetwork {
                 if !grant.is_finite() || grant <= 0. {
                     return Err("Concurrent grant is below numeric precision.".into());
                 }
-                let value = add(old, grant)?;
-                if self.core.capacities[id].is_some_and(|cap| value > cap) {
-                    return Err("Concurrent update exceeds capacity.".into());
-                }
+                let value = commit_event_stock(
+                    old,
+                    grant,
+                    self.core.capacities[id],
+                    event_inputs[id] == step,
+                    self.exact_limit_commit,
+                )?;
                 stocks[id] = Some(value);
                 if self.core.full(id, &stocks) {
                     saturated.push(id);
@@ -380,5 +416,34 @@ impl SimultaneousNetwork {
         };
         self.core.checkpoint.inventory = next;
         Ok(report)
+    }
+}
+
+#[cfg(test)]
+mod threshold_tests {
+    use super::commit_event_stock;
+
+    #[test]
+    fn exact_limit_commits_only_a_checked_endpoint() {
+        let old = 5.297_262_581_291_787e12;
+        let cap = 2.839_427_442_824_685_5e13;
+        let grant = cap - old;
+        assert_eq!(old + grant, 2.839_427_442_824_686e13);
+        assert_eq!(
+            commit_event_stock(old, grant, Some(cap), true, false).unwrap_err(),
+            "Concurrent update exceeds capacity."
+        );
+        assert_eq!(
+            commit_event_stock(old, grant, Some(cap), true, true).unwrap(),
+            cap
+        );
+        assert_eq!(
+            commit_event_stock(old, grant, Some(cap), false, true).unwrap_err(),
+            "Concurrent update exceeds capacity."
+        );
+        assert_eq!(
+            commit_event_stock(old, grant + 100., Some(cap), true, true).unwrap_err(),
+            "Concurrent limiting grant cannot be represented."
+        );
     }
 }
