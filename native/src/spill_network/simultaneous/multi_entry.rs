@@ -14,6 +14,8 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const EXPERIMENT_VERSION: &str = "multi-entry-network-1";
 pub const POLICY_VERSION: &str = "branch-then-entry-weights-1";
 
+pub mod seeded;
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EntryTarget {

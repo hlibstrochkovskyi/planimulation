@@ -64,6 +64,8 @@ pub struct Pulse {
 #[derive(Clone, Debug, PartialEq)]
 pub struct SpillNetwork {
     checkpoint: Checkpoint,
+    /// Separately accounted pre-existing stock; zero in the original experiments.
+    initial_volume_cubic_meters: f64,
     connections: SpillConnections,
     curves: Vec<Reservoir>,
     capacities: Vec<Option<f64>>,
@@ -90,6 +92,7 @@ impl SpillNetwork {
                 },
             },
             multiple_entries,
+            0.,
         )?;
         result.checkpoint.inventory.active = result
             .connections
@@ -113,15 +116,29 @@ impl SpillNetwork {
         checkpoint: Checkpoint,
         multiple_entries: bool,
     ) -> Result<Self, String> {
-        let result = Self::prepare(checkpoint, multiple_entries)?;
+        Self::restore_with_initial(checkpoint, multiple_entries, 0.)
+    }
+    fn restore_with_initial(
+        checkpoint: Checkpoint,
+        multiple_entries: bool,
+        initial_volume_cubic_meters: f64,
+    ) -> Result<Self, String> {
+        let result = Self::prepare(checkpoint, multiple_entries, initial_volume_cubic_meters)?;
         result.snapshot()?;
         Ok(result)
     }
-    fn prepare(checkpoint: Checkpoint, multiple_entries: bool) -> Result<Self, String> {
+    fn prepare(
+        checkpoint: Checkpoint,
+        multiple_entries: bool,
+        initial_volume_cubic_meters: f64,
+    ) -> Result<Self, String> {
         if checkpoint.experiment_version != EXPERIMENT_VERSION
             || checkpoint.setup.policy_version != POLICY_VERSION
         {
             return Err("Unsupported spill-network experiment or policy version.".into());
+        }
+        if !initial_volume_cubic_meters.is_finite() || initial_volume_cubic_meters < 0. {
+            return Err("Initial network volume must be finite and nonnegative.".into());
         }
         let g = &checkpoint.setup.geometry;
         let surface = g.surface()?;
@@ -218,6 +235,7 @@ impl SpillNetwork {
         }
         Ok(Self {
             checkpoint,
+            initial_volume_cubic_meters,
             connections,
             curves,
             capacities,
@@ -483,7 +501,9 @@ impl SpillNetwork {
                 || !v.is_finite()
                 || v < self.birth_volumes[id]
                 || self.capacities[id].is_some_and(|cap| v > cap)
-                || (i.pulse_count == 0 && (v != 0. || !nodes[id].children.is_empty()))
+                || (i.pulse_count == 0
+                    && self.initial_volume_cubic_meters == 0.
+                    && (v != 0. || !nodes[id].children.is_empty()))
             {
                 return Err("Active stock is outside its branch interval.".into());
             }
@@ -529,8 +549,9 @@ impl SpillNetwork {
                 return Err("Full siblings must be represented by their active parent.".into());
             }
         }
-        let residual = i.input_cubic_meters - total;
-        if residual.abs() > tolerance(i.input_cubic_meters)
+        let expected = add(self.initial_volume_cubic_meters, i.input_cubic_meters)?;
+        let residual = expected - total;
+        if residual.abs() > tolerance(expected)
             || (resolved - total).abs() > 1e-9_f64.max(total * 1e-10)
         {
             return Err("Nested storage or water budget does not balance.".into());
