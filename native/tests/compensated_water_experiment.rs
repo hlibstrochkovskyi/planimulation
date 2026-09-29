@@ -1,6 +1,7 @@
 //! Isolated arithmetic experiment, not the production water stock or solver.
 //! It tests whether a two-float local stock can retain contributions that a
-//! single f64 stock loses. Routing and grant reconciliation are not modeled.
+//! single f64 stock loses. A closed exclusive-merge transition validates
+//! supplied grants; rate-based grant construction and routing are not modeled.
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
@@ -38,6 +39,79 @@ impl ExperimentalVolume {
             Ordering::Equal => self.low.total_cmp(&0.),
             order => order,
         }
+    }
+}
+
+/// Minimal closed three-child accounting transition. This deliberately has
+/// no geography, routing, time coordinate or production checkpoint contract.
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ExclusiveMergeExperiment {
+    capacities: [f64; 3],
+    children: Option<[ExperimentalVolume; 3]>,
+    parent: Option<ExperimentalVolume>,
+    accepted_input: ExperimentalVolume,
+    event_count: u64,
+}
+
+impl ExclusiveMergeExperiment {
+    fn new(capacities: [f64; 3]) -> Self {
+        Self {
+            capacities,
+            children: Some([ExperimentalVolume::new(0.); 3]),
+            parent: None,
+            accepted_input: ExperimentalVolume::new(0.),
+            event_count: 0,
+        }
+    }
+
+    fn apply(&mut self, supplied: f64, grants: [f64; 3]) -> Result<(), &'static str> {
+        if !supplied.is_finite()
+            || supplied < 0.
+            || grants.iter().any(|grant| !grant.is_finite() || *grant < 0.)
+        {
+            return Err("Nonfinite or negative laboratory input.");
+        }
+        let granted = grants
+            .into_iter()
+            .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_scalar);
+        if granted != ExperimentalVolume::new(supplied) {
+            return Err("Laboratory grants do not match supplied input.");
+        }
+        let mut next = self.clone();
+        let children = next.children.as_mut().ok_or("Parent is already active.")?;
+        for (id, grant) in grants.into_iter().enumerate() {
+            children[id] = children[id].add_scalar(grant);
+            if children[id].compare_to_capacity(next.capacities[id]) == Ordering::Greater {
+                return Err("Laboratory child exceeds capacity.");
+            }
+        }
+        if children
+            .iter()
+            .zip(next.capacities)
+            .all(|(child, capacity)| child.compare_to_capacity(capacity) == Ordering::Equal)
+        {
+            next.parent = Some(
+                children
+                    .iter()
+                    .copied()
+                    .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair),
+            );
+            next.children = None;
+        }
+        next.accepted_input = next.accepted_input.add_scalar(supplied);
+        let active_total = next.parent.unwrap_or_else(|| {
+            next.children
+                .unwrap()
+                .into_iter()
+                .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair)
+        });
+        if active_total != next.accepted_input {
+            return Err("Laboratory exclusive stocks do not balance input.");
+        }
+        next.event_count += 1;
+        *self = next;
+        Ok(())
     }
 }
 
@@ -165,4 +239,45 @@ fn varied_dyadic_grants_match_an_independent_integer_ledger() {
         let represented_units = (stock.high * scale) as i128 + (stock.low * scale) as i128;
         assert_eq!(represented_units, exact_units, "grant {index}");
     }
+}
+
+#[test]
+fn exclusive_merge_waits_for_exact_capacity_and_replays_atomically() {
+    let supplied = 100.;
+    let capacity = supplied / 3.;
+    let grants = [capacity, capacity, supplied - (capacity + capacity)];
+    let mut model = ExclusiveMergeExperiment::new([capacity; 3]);
+    model.apply(supplied, grants).unwrap();
+    assert!(model.parent.is_none());
+    assert_eq!(model.event_count, 1);
+    assert_eq!(
+        model.children.unwrap()[2].compare_to_capacity(capacity),
+        Ordering::Less
+    );
+    let serialized = serde_json::to_vec(&model).unwrap();
+    let mut replay: ExclusiveMergeExperiment = serde_json::from_slice(&serialized).unwrap();
+    assert_eq!(replay, model);
+
+    let before_rejection = model.clone();
+    assert!(model.apply(supplied, [capacity; 3]).is_err());
+    assert_eq!(model, before_rejection);
+    let missing = capacity - grants[2];
+    assert!(missing > 0.);
+    assert_eq!(
+        model.apply(missing * 2., [0., 0., missing * 2.]),
+        Err("Laboratory child exceeds capacity.")
+    );
+    assert_eq!(model, before_rejection);
+
+    model.apply(missing, [0., 0., missing]).unwrap();
+    replay.apply(missing, [0., 0., missing]).unwrap();
+    assert_eq!(model, replay);
+    assert!(model.children.is_none());
+    assert_eq!(model.event_count, 2);
+    assert_eq!(model.parent, Some(model.accepted_input));
+    let scale = 2_f64.powi(47);
+    let expected_units = 3 * ((capacity * scale) as i128);
+    let parent = model.parent.unwrap();
+    let represented_units = (parent.high * scale) as i128 + (parent.low * scale) as i128;
+    assert_eq!(represented_units, expected_units);
 }
