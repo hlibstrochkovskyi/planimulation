@@ -16,6 +16,7 @@ use super::super::Interval;
 pub const EXPERIMENT_VERSION: &str = "seeded-multi-entry-network-1";
 pub const EXPANDED_EXPERIMENT_VERSION: &str = "seeded-multi-entry-network-2";
 pub const EXACT_LIMIT_EXPERIMENT_VERSION: &str = "seeded-multi-entry-network-3";
+pub const SHARED_STORAGE_EXPERIMENT_VERSION: &str = "seeded-multi-entry-network-4";
 pub const UNIT_WEIGHT_POLICY_VERSION: &str = "unit-branch-and-entry-weights-1";
 
 /// Explicit laboratory policy for a small generated world. Unit weights are
@@ -118,7 +119,7 @@ impl SeededNetwork {
         };
         Self::restore(Checkpoint {
             experiment_version: if setup.geometry.columns.len() > MAX_REGIONS {
-                EXACT_LIMIT_EXPERIMENT_VERSION.into()
+                SHARED_STORAGE_EXPERIMENT_VERSION.into()
             } else {
                 EXPERIMENT_VERSION.into()
             },
@@ -130,13 +131,18 @@ impl SeededNetwork {
     }
 
     pub fn restore(checkpoint: Checkpoint) -> Result<Self, String> {
-        let (max_regions, max_curve_references, max_subdivision) =
-            match checkpoint.experiment_version.as_str() {
-                EXPERIMENT_VERSION => (MAX_REGIONS, usize::MAX, 1),
-                EXPANDED_EXPERIMENT_VERSION => (EXPANDED_REGIONS, EXPANDED_CURVE_REFERENCES, 5),
-                EXACT_LIMIT_EXPERIMENT_VERSION => (EXPANDED_REGIONS, EXPANDED_CURVE_REFERENCES, 5),
-                _ => return Err("Unsupported seeded-network experiment version.".into()),
-            };
+        let (max_regions, max_curve_references, max_subdivision, shared_storage) = match checkpoint
+            .experiment_version
+            .as_str()
+        {
+            EXPERIMENT_VERSION => (MAX_REGIONS, usize::MAX, 1, false),
+            EXPANDED_EXPERIMENT_VERSION => (EXPANDED_REGIONS, EXPANDED_CURVE_REFERENCES, 5, false),
+            EXACT_LIMIT_EXPERIMENT_VERSION => {
+                (EXPANDED_REGIONS, EXPANDED_CURVE_REFERENCES, 5, false)
+            }
+            SHARED_STORAGE_EXPERIMENT_VERSION => (EXPANDED_REGIONS, usize::MAX, 5, true),
+            _ => return Err("Unsupported seeded-network experiment version.".into()),
+        };
         if let Some(recipe) = &checkpoint.origin_recipe {
             if recipe.subdivision > max_subdivision {
                 return Err(
@@ -195,8 +201,11 @@ impl SeededNetwork {
             checkpoint.initial_water.initial_volume_cubic_meters,
             max_regions,
             max_curve_references,
+            shared_storage,
         )?;
-        let model = if checkpoint.experiment_version == EXACT_LIMIT_EXPERIMENT_VERSION {
+        let model = if checkpoint.experiment_version == EXACT_LIMIT_EXPERIMENT_VERSION
+            || checkpoint.experiment_version == SHARED_STORAGE_EXPERIMENT_VERSION
+        {
             MultiEntryNetwork::finish_with_exact_limit(core, checkpoint.setup.entry_weights)?
         } else {
             MultiEntryNetwork::finish(core, checkpoint.setup.entry_weights)?

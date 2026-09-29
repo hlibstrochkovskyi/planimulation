@@ -118,6 +118,7 @@ No arbitrary filesystem path, shell command, raw IPC method, or Node.js object i
 | Integration screening | Witness paths, dead-end exclusion, 60 bounded solver-admission comparisons, independent ancestry counts, deep iterative hierarchy, generated worlds through subdivision 6, unchanged wire state, and water-setting independence |
 | Multiple entries | Two-stage weighted oracle, distinct-sill gating, repeated-contact deduplication, inner/outer thresholds, exact continuation, C3g agreement, relabeling, 127-region bound, cycles, atomic failures and generated conflicting subtrees |
 | Seeded expansion | Separate initial/external ledgers, generated provenance, v1/v2/v3 replay, exact-endpoint arithmetic witness, unchanged legacy rejection, guarded 10,242-region sample and explicit storage-cap failures; no desktop water or long forcing claim |
+| Shared storage | Single region-ID index, weighted-prism comparison, v1–v4 replay, previously capped generated seeds, 20-seed release profile and short distributed-input continuation; no long-running planetary claim |
 | Appearance | Review flat/globe screenshots; numerical tests alone cannot establish readable graphics |
 
 Numerical comparisons use justified tolerances. Repeated operation in the same supported binary is exact. Native boundary rings start at a fixed incident face, avoiding an arbitrary change of starting vertex at the `atan2` ±π branch cut.
@@ -151,6 +152,6 @@ The displayed fingerprint covers the **initial** recipe and native arrays. It is
 
 ## Next increment
 
-C1 supplies static drainage structure; C2a/C2b supply analysis and desktop inspection; C3a–C3g remain standalone routing experiments. C3h measures generated-world restrictions; C3i separately resolves multiple nested receiving entries under explicit weights in bounded experiments. C3j–C3m import initial water, run bounded generated worlds, and correct one measured exact-threshold failure under a new version. Next replace duplicated storage curves, test distributed and long forcing, and measure more generated worlds. The next visible target remains a limited prescribed-water desktop demonstration with budgets and replay. Resolved-world-state and image export remain outstanding milestone B work.
+C1 supplies static drainage structure; C2a/C2b supply analysis and desktop inspection; C3a–C3g remain standalone routing experiments. C3h measures generated-world restrictions; C3i separately resolves multiple nested receiving entries under explicit weights in bounded experiments. C3j–C3n import initial water, run bounded generated worlds, correct one measured exact-threshold failure, and remove duplicated branch curves in a versioned representation. Next test more forcing regimes, many-interval stability and small-input precision before desktop integration. The next visible target remains a limited prescribed-water desktop demonstration with budgets and replay. Resolved-world-state and image export remain outstanding milestone B work.
 
 Keep commits coherent, messages and project records in English, and the owner's configured Git identity. Never add assistant attribution or co-author trailers.

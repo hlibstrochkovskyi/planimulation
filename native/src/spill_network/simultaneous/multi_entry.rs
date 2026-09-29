@@ -183,7 +183,7 @@ impl MultiEntryNetwork {
     }
     pub fn receivers(&self, source: usize) -> Result<Vec<Receiver>, String> {
         let core = &self.model.core;
-        let mut stocks = vec![None; core.curves.len()];
+        let mut stocks = vec![None; core.capacities.len()];
         for s in &core.checkpoint.inventory.active {
             stocks[s.branch] = Some(s.volume_cubic_meters);
         }

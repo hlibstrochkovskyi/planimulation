@@ -8,6 +8,8 @@ use crate::spill_junction::Weight;
 use serde::{Deserialize, Serialize};
 
 pub mod simultaneous;
+mod storage_index;
+use storage_index::SharedStorageIndex;
 
 pub const EXPERIMENT_VERSION: &str = "spill-network-1";
 pub const POLICY_VERSION: &str = "frontier-weighted-events-1";
@@ -74,6 +76,7 @@ pub struct SpillNetwork {
     initial_volume_cubic_meters: f64,
     connections: SpillConnections,
     curves: Vec<Reservoir>,
+    shared_storage: Option<SharedStorageIndex>,
     capacities: Vec<Option<f64>>,
     birth_volumes: Vec<f64>,
     enter: Vec<usize>,
@@ -102,6 +105,7 @@ impl SpillNetwork {
             0.,
             LABORATORY_REGIONS,
             usize::MAX,
+            false,
         )?;
         result.checkpoint.inventory.active = result
             .connections
@@ -131,6 +135,7 @@ impl SpillNetwork {
             0.,
             LABORATORY_REGIONS,
             usize::MAX,
+            false,
         )
     }
     fn restore_with_initial(
@@ -139,6 +144,7 @@ impl SpillNetwork {
         initial_volume_cubic_meters: f64,
         max_regions: usize,
         max_curve_references: usize,
+        shared_storage: bool,
     ) -> Result<Self, String> {
         let result = Self::prepare(
             checkpoint,
@@ -146,6 +152,7 @@ impl SpillNetwork {
             initial_volume_cubic_meters,
             max_regions,
             max_curve_references,
+            shared_storage,
         )?;
         result.snapshot()?;
         Ok(result)
@@ -156,6 +163,7 @@ impl SpillNetwork {
         initial_volume_cubic_meters: f64,
         max_regions: usize,
         max_curve_references: usize,
+        shared_storage: bool,
     ) -> Result<Self, String> {
         if checkpoint.experiment_version != EXPERIMENT_VERSION
             || checkpoint.setup.policy_version != POLICY_VERSION
@@ -268,32 +276,45 @@ impl SpillNetwork {
                 }
             }
         }
+        let shared_storage = shared_storage
+            .then(|| SharedStorageIndex::new(&g.columns, basins, &enter, &leave))
+            .transpose()?;
         let mut curves = Vec::new();
         let mut capacities: Vec<Option<f64>> = Vec::new();
         let mut birth_volumes = Vec::new();
         for (id, node) in nodes.iter().enumerate() {
-            let columns = g
-                .columns
-                .iter()
-                .enumerate()
-                .filter(|(r, _)| includes(id, basins.region_nodes()[*r]))
-                .map(|(_, c)| c.clone())
-                .collect();
-            let curve = Reservoir::new(columns, Boundary::Closed, 0.)?;
-            let capacity = node
-                .spill_level_meters
-                .map(|h| curve.volume_at_level(h))
-                .transpose()?;
+            let curve = if shared_storage.is_none() {
+                let columns = g
+                    .columns
+                    .iter()
+                    .enumerate()
+                    .filter(|(r, _)| includes(id, basins.region_nodes()[*r]))
+                    .map(|(_, c)| c.clone())
+                    .collect();
+                Some(Reservoir::new(columns, Boundary::Closed, 0.)?)
+            } else {
+                None
+            };
+            let volume_at = |height| {
+                if let Some(shared) = &shared_storage {
+                    shared.volume_at_level(&g.columns, id, height)
+                } else {
+                    curve.as_ref().unwrap().volume_at_level(height)
+                }
+            };
+            let capacity = node.spill_level_meters.map(volume_at).transpose()?;
             let birth = node
                 .children
                 .iter()
                 .try_fold(0., |v, &child| add(v, capacities[child].unwrap()))?;
-            if (curve.volume_at_level(node.birth_level_meters)? - birth).abs() > tolerance(birth)
+            if (volume_at(node.birth_level_meters)? - birth).abs() > tolerance(birth)
                 || capacity.is_some_and(|cap| cap <= birth)
             {
                 return Err("Network storage interval cannot be resolved precisely.".into());
             }
-            curves.push(curve);
+            if let Some(curve) = curve {
+                curves.push(curve);
+            }
             capacities.push(capacity);
             birth_volumes.push(birth);
         }
@@ -302,6 +323,7 @@ impl SpillNetwork {
             initial_volume_cubic_meters,
             connections,
             curves,
+            shared_storage,
             capacities,
             birth_volumes,
             enter,
@@ -320,13 +342,27 @@ impl SpillNetwork {
     pub fn snapshot(&self) -> Result<Snapshot, String> {
         self.audit(&self.checkpoint.inventory)
     }
+    fn volume_at_level(&self, id: usize, level: f64) -> Result<f64, String> {
+        if let Some(shared) = &self.shared_storage {
+            shared.volume_at_level(&self.checkpoint.setup.geometry.columns, id, level)
+        } else {
+            self.curves[id].volume_at_level(level)
+        }
+    }
+    fn level_for_volume(&self, id: usize, volume: f64) -> Result<Option<f64>, String> {
+        if let Some(shared) = &self.shared_storage {
+            shared.level_for_volume(&self.checkpoint.setup.geometry.columns, id, volume)
+        } else {
+            self.curves[id].level_for_volume(volume)
+        }
+    }
     /// Inspect the current receiving frontier without advancing the experiment.
     /// A retired child, an underfilled branch, and the closed root cannot spill.
     pub fn receivers(&self, source: usize) -> Result<Vec<Receiver>, String> {
-        if source >= self.curves.len() {
+        if source >= self.capacities.len() {
             return Err("Invalid network source branch.".into());
         }
-        let mut stocks = vec![None; self.curves.len()];
+        let mut stocks = vec![None; self.capacities.len()];
         for stock in &self.checkpoint.inventory.active {
             stocks[stock.branch] = Some(stock.volume_cubic_meters);
         }
@@ -591,7 +627,7 @@ impl SpillNetwork {
             } else if self.capacities[id] == Some(v) {
                 nodes[id].spill_level_meters
             } else {
-                self.curves[id].level_for_volume(v)?
+                self.level_for_volume(id, v)?
             };
             if let Some(h) = level {
                 if (v > self.birth_volumes[id] && h <= nodes[id].birth_level_meters)
@@ -600,7 +636,7 @@ impl SpillNetwork {
                 {
                     return Err("Nested level cannot resolve its threshold interval.".into());
                 }
-                resolved = add(resolved, self.curves[id].volume_at_level(h)?)?;
+                resolved = add(resolved, self.volume_at_level(id, h)?)?;
             }
             total = add(total, v)?;
             active.push(ActiveLevel {
@@ -647,7 +683,7 @@ impl SpillNetwork {
             .pulse_count
             .checked_add(1)
             .ok_or("Nested pulse counter overflowed.")?;
-        let mut stocks = vec![None; self.curves.len()];
+        let mut stocks = vec![None; self.capacities.len()];
         for s in &old.active {
             stocks[s.branch] = Some(s.volume_cubic_meters);
         }

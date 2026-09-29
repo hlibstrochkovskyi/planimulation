@@ -3,7 +3,8 @@ use planimulation_core::{
     Recipe, World,
     nested_reservoir::Input,
     spill_network::simultaneous::multi_entry::seeded::{
-        SeededNetwork, UNIT_WEIGHT_POLICY_VERSION, generated_unit_setup,
+        SHARED_STORAGE_EXPERIMENT_VERSION, SeededNetwork, UNIT_WEIGHT_POLICY_VERSION,
+        generated_unit_setup,
     },
 };
 use serde::Deserialize;
@@ -90,12 +91,12 @@ fn run(input: impl Read) -> Result<Value, Box<dyn std::error::Error>> {
     let prepared = SeededNetwork::from_generated(&world, setup);
     let preparation_ms = baseline.elapsed().as_secs_f64() * 1000.;
     let common = json!({
-        "reportVersion": 1,
+        "reportVersion": 2,
         "scope": "Observational single-process timings and Linux peak RSS when available; one normalized interval, no desktop or climate model.",
         "recipe": world.recipe,
         "regionCount": world.surface.areas.len(),
         "branchCount": world.basins.nodes().len(),
-        "curveColumnReferences": references,
+        "logicalSubtreeColumnReferences": references,
         "initialVolumeCubicMeters": initial_volume,
         "generationMilliseconds": generation_ms,
         "setupMilliseconds": setup_ms,
@@ -109,6 +110,13 @@ fn run(input: impl Read) -> Result<Value, Box<dyn std::error::Error>> {
         }
         Ok(mut model) => {
             report["experimentVersion"] = json!(model.experiment_version());
+            report["storageRepresentation"] = json!(if model.experiment_version()
+                == SHARED_STORAGE_EXPERIMENT_VERSION
+            {
+                "shared-subtree-region-index-1"
+            } else {
+                "duplicated-branch-curves-1"
+            });
             let baseline = Instant::now();
             match model.add_interval(request.intervals.into_iter().next().unwrap()) {
                 Err(reason) => {
@@ -164,7 +172,13 @@ mod tests {
     fn profile_reports_conservative_generated_run_and_rejection() {
         let accepted = run(FIXTURE.as_bytes()).unwrap();
         assert_eq!(accepted["status"], "accepted");
+        assert_eq!(accepted["reportVersion"], 2);
         assert_eq!(accepted["regionCount"], 42);
+        assert_eq!(accepted["logicalSubtreeColumnReferences"], 72);
+        assert_eq!(
+            accepted["storageRepresentation"],
+            "duplicated-branch-curves-1"
+        );
         assert_eq!(
             accepted["finalStoredCubicMeters"],
             4_592_913_244_410_118_f64
@@ -178,6 +192,19 @@ mod tests {
             rejected["initialVolumeCubicMeters"],
             accepted["initialVolumeCubicMeters"]
         );
+        let mut expanded: Value = serde_json::from_str(FIXTURE).unwrap();
+        expanded["start"]["generated"]["recipe"]["subdivision"] = json!(2);
+        let shared = run(serde_json::to_vec(&expanded).unwrap().as_slice()).unwrap();
+        assert_eq!(shared["status"], "accepted");
+        assert_eq!(
+            shared["experimentVersion"],
+            SHARED_STORAGE_EXPERIMENT_VERSION
+        );
+        assert_eq!(
+            shared["storageRepresentation"],
+            "shared-subtree-region-index-1"
+        );
+        assert_eq!(shared["logicalSubtreeColumnReferences"], 879);
     }
 
     #[test]

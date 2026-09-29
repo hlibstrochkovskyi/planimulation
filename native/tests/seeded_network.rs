@@ -276,7 +276,7 @@ fn expanded_generated_worlds_preserve_versions_and_budgets() {
         let mut model = seeded::SeededNetwork::from_generated(&world, setup).unwrap();
         assert_eq!(
             model.experiment_version(),
-            seeded::EXACT_LIMIT_EXPERIMENT_VERSION
+            seeded::SHARED_STORAGE_EXPERIMENT_VERSION
         );
         let initial = model.snapshot().unwrap().total_stored_cubic_meters;
         let original_checkpoint = model.checkpoint();
@@ -296,7 +296,28 @@ fn expanded_generated_worlds_preserve_versions_and_budgets() {
             let mut legacy = original_checkpoint;
             legacy.experiment_version = seeded::EXPANDED_EXPERIMENT_VERSION.into();
             let mut legacy = seeded::SeededNetwork::restore(legacy).unwrap();
-            assert_eq!(legacy.add_interval(vec![input(3, 2e14)]).unwrap(), interval);
+            let legacy_interval = legacy.add_interval(vec![input(3, 2e14)]).unwrap();
+            assert!(
+                (legacy_interval.snapshot.total_stored_cubic_meters - stored).abs()
+                    <= stored * 1e-10
+            );
+            assert_eq!(
+                legacy_interval.snapshot.active.len(),
+                interval.snapshot.active.len()
+            );
+            for (old, new) in legacy_interval
+                .snapshot
+                .active
+                .iter()
+                .zip(&interval.snapshot.active)
+            {
+                assert_eq!(old.stock.branch, new.stock.branch);
+                let scale = old.stock.volume_cubic_meters;
+                assert!(
+                    (old.stock.volume_cubic_meters - new.stock.volume_cubic_meters).abs()
+                        <= 1e-9_f64.max(scale * 1e-10)
+                );
+            }
             let mut downgraded = model.checkpoint();
             downgraded.experiment_version = seeded::EXPERIMENT_VERSION.into();
             assert!(seeded::SeededNetwork::restore(downgraded).is_err());
@@ -325,6 +346,10 @@ fn measured_expanded_restrictions_are_explicit_and_atomic() {
         "Concurrent update exceeds capacity."
     );
     assert_eq!(old_model.checkpoint(), old_before);
+    let mut v3_checkpoint = before.clone();
+    v3_checkpoint.experiment_version = seeded::EXACT_LIMIT_EXPERIMENT_VERSION.into();
+    let mut v3_model = seeded::SeededNetwork::restore(v3_checkpoint).unwrap();
+    assert!(v3_model.add_interval(vec![input(3, 2e14)]).is_ok());
     let interval = model.add_interval(vec![input(3, 2e14)]).unwrap();
     assert!(
         interval
@@ -346,9 +371,70 @@ fn measured_expanded_restrictions_are_explicit_and_atomic() {
     bounded_recipe.water = WaterSettings::Coverage { fraction: 0.25 };
     let world = World::generate(bounded_recipe).unwrap();
     let setup = seeded::generated_unit_setup(&world).unwrap();
+    let mut initial = seeded::SeededNetwork::from_generated(&world, setup).unwrap();
+    let mut old = initial.checkpoint();
+    old.experiment_version = seeded::EXACT_LIMIT_EXPERIMENT_VERSION.into();
     assert!(
-        seeded::SeededNetwork::from_generated(&world, setup)
+        seeded::SeededNetwork::restore(old)
             .unwrap_err()
             .contains("duplicated curve-column budget")
     );
+    let before = initial.snapshot().unwrap().total_stored_cubic_meters;
+    let after = initial
+        .add_interval(vec![input(3, 2e14)])
+        .unwrap()
+        .snapshot
+        .total_stored_cubic_meters;
+    assert!((after - before - 2e14).abs() <= 2e14 * 1e-10);
+}
+
+#[test]
+fn shared_storage_admits_both_other_previously_capped_seeds() {
+    let baseline: Recipe =
+        serde_json::from_str(include_str!("../../docs/scenarios/spill-connections.json")).unwrap();
+    for seed in ["profile-16", "profile-17"] {
+        let mut recipe = baseline.clone();
+        recipe.seed = seed.into();
+        recipe.subdivision = 5;
+        recipe.water = WaterSettings::Coverage { fraction: 0.25 };
+        let world = World::generate(recipe).unwrap();
+        let setup = seeded::generated_unit_setup(&world).unwrap();
+        let mut model = seeded::SeededNetwork::from_generated(&world, setup).unwrap();
+        let before = model.snapshot().unwrap().total_stored_cubic_meters;
+        let after = model
+            .add_interval(vec![input(3, 2e14)])
+            .unwrap()
+            .snapshot
+            .total_stored_cubic_meters;
+        assert!((after - before - 2e14).abs() <= 2e14 * 1e-10, "{seed}");
+    }
+}
+
+#[test]
+fn shared_storage_distributed_intervals_replay_from_serialized_checkpoint() {
+    let mut recipe: Recipe =
+        serde_json::from_str(include_str!("../../docs/scenarios/spill-connections.json")).unwrap();
+    recipe.subdivision = 3;
+    recipe.water = WaterSettings::Coverage { fraction: 0.25 };
+    let world = World::generate(recipe).unwrap();
+    let setup = seeded::generated_unit_setup(&world).unwrap();
+    let mut model = seeded::SeededNetwork::from_generated(&world, setup).unwrap();
+    let batches = [
+        vec![input(3, 2e13), input(10, 1e13), input(30, 1e13)],
+        vec![input(5, 3e13), input(60, 2e13)],
+        vec![input(3, 2e13), input(20, 1e13)],
+        vec![input(7, 3e13), input(90, 1e13)],
+    ];
+    let mut total_input = 0.;
+    for batch in batches {
+        let saved = serde_json::to_vec(&model.checkpoint()).unwrap();
+        let mut replay =
+            seeded::SeededNetwork::restore(serde_json::from_slice(&saved).unwrap()).unwrap();
+        total_input += batch.iter().map(|i| i.volume_cubic_meters).sum::<f64>();
+        let interval = model.add_interval(batch.clone()).unwrap();
+        assert_eq!(replay.add_interval(batch).unwrap(), interval);
+        assert_eq!(replay.checkpoint(), model.checkpoint());
+        assert!(interval.snapshot.budget_residual_cubic_meters.abs() <= total_input * 1e-12);
+    }
+    assert_eq!(model.checkpoint().inventory.input_cubic_meters, total_input);
 }

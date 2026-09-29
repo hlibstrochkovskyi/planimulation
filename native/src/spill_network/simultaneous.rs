@@ -259,7 +259,7 @@ impl SimultaneousNetwork {
         if inputs.windows(2).any(|w| w[0].region == w[1].region) {
             return Err("Specify each forcing region at most once.".into());
         }
-        let n = self.core.curves.len();
+        let n = self.core.capacities.len();
         let mut forcing = vec![0.; n];
         let mut total = 0.;
         for input in &inputs {
