@@ -102,6 +102,61 @@ fn guarded_rate_grants(
     limiting: [Option<ExperimentalVolume>; 3],
     available: [ExperimentalVolume; 3],
 ) -> Result<[ExperimentalVolume; 3], &'static str> {
+    rate_grants_with_topology_guard(supplied, rates, limiting, available, false)
+}
+
+/// Test-only stricter variant: nonlimiting receivers must retain positive
+/// capacity headroom. This guards the immediate saturation mask, not the
+/// eventual numerical trajectory or the event-time decision.
+fn topology_guarded_rate_grants(
+    supplied: ExperimentalVolume,
+    rates: [f64; 3],
+    limiting: [Option<ExperimentalVolume>; 3],
+    available: [ExperimentalVolume; 3],
+) -> Result<[ExperimentalVolume; 3], &'static str> {
+    let mut order = [0, 1, 2];
+    order.sort_by(|&left, &right| {
+        rates[left]
+            .total_cmp(&rates[right])
+            .then_with(|| available[left].compare_pair(available[right]))
+            .then_with(|| match (limiting[left], limiting[right]) {
+                (None, None) => Ordering::Equal,
+                (None, Some(_)) => Ordering::Less,
+                (Some(_), None) => Ordering::Greater,
+                (Some(left), Some(right)) => left.compare_pair(right),
+            })
+    });
+    let ordered_grants = rate_grants_with_topology_guard(
+        supplied,
+        order.map(|id| rates[id]),
+        order.map(|id| limiting[id]),
+        order.map(|id| available[id]),
+        true,
+    )?;
+    let mut grants = [ExperimentalVolume::new(0.); 3];
+    for (slot, id) in order.into_iter().enumerate() {
+        grants[id] = ordered_grants[slot];
+    }
+    Ok(grants)
+}
+
+fn rate_grants_with_topology_guard(
+    supplied: ExperimentalVolume,
+    rates: [f64; 3],
+    limiting: [Option<ExperimentalVolume>; 3],
+    available: [ExperimentalVolume; 3],
+    preserve_headroom: bool,
+) -> Result<[ExperimentalVolume; 3], &'static str> {
+    if preserve_headroom
+        && (!supplied.is_canonical()
+            || available.iter().any(|volume| !volume.is_canonical())
+            || limiting
+                .iter()
+                .flatten()
+                .any(|volume| !volume.is_canonical()))
+    {
+        return Err("Invalid candidate event input or rates.");
+    }
     if !supplied.high.is_finite()
         || !supplied.low.is_finite()
         || supplied.compare_to_capacity(0.) != Ordering::Greater
@@ -114,7 +169,13 @@ fn guarded_rate_grants(
     {
         return Err("Invalid candidate event input or rates.");
     }
-    let total_rate: f64 = rates.into_iter().sum();
+    let total_rate: f64 = if preserve_headroom {
+        let mut ordered = rates;
+        ordered.sort_by(f64::total_cmp);
+        ordered.into_iter().sum()
+    } else {
+        rates.into_iter().sum()
+    };
     if !total_rate.is_finite() || total_rate <= 0. {
         return Err("Invalid candidate total rate.");
     }
@@ -125,6 +186,41 @@ fn guarded_rate_grants(
     {
         return Err("Candidate rate share cannot be represented.");
     }
+    let valid_grants = |grants: [ExperimentalVolume; 3]| {
+        let valid = (0..3).all(|id| {
+            let grant = grants[id];
+            let deviation = grant.add_scalar(-nominal[id]);
+            let bound = 8. * (nominal[id].next_up() - nominal[id]);
+            let capacity_status = if limiting[id].is_some() {
+                grant.compare_pair(available[id]) != Ordering::Greater
+            } else if preserve_headroom {
+                grant.compare_pair(available[id]) == Ordering::Less
+            } else {
+                grant.compare_pair(available[id]) != Ordering::Greater
+            };
+            grant.high.is_finite()
+                && grant.low.is_finite()
+                && (!preserve_headroom || grant.is_canonical())
+                && grant.compare_to_capacity(0.) == Ordering::Greater
+                && capacity_status
+                && limiting[id].is_none_or(|fixed| fixed == available[id])
+                && bound.is_finite()
+                && deviation.compare_to_capacity(bound) != Ordering::Greater
+                && deviation.compare_to_capacity(-bound) != Ordering::Less
+        });
+        if preserve_headroom {
+            valid
+                && grants.into_iter().try_fold(
+                    ExperimentalVolume::new(0.),
+                    ExperimentalVolume::checked_add_pair,
+                ) == Ok(supplied)
+        } else {
+            let reconciled = grants
+                .into_iter()
+                .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair);
+            valid && reconciled == supplied
+        }
+    };
     let remainder_owner = limiting.iter().rposition(Option::is_none);
     let adjustable: Vec<_> = (0..3)
         .filter(|&id| limiting[id].is_none() && Some(id) != remainder_owner)
@@ -176,23 +272,7 @@ fn guarded_rate_grants(
                 missing_owner = true;
                 continue;
             }
-            let valid = (0..3).all(|id| {
-                let grant = grants[id];
-                let deviation = grant.add_scalar(-nominal[id]);
-                let bound = 8. * (nominal[id].next_up() - nominal[id]);
-                grant.high.is_finite()
-                    && grant.low.is_finite()
-                    && grant.compare_to_capacity(0.) == Ordering::Greater
-                    && grant.compare_pair(available[id]) != Ordering::Greater
-                    && limiting[id].is_none_or(|fixed| fixed == available[id])
-                    && bound.is_finite()
-                    && deviation.compare_to_capacity(bound) != Ordering::Greater
-                    && deviation.compare_to_capacity(-bound) != Ordering::Less
-            });
-            let reconciled = grants
-                .into_iter()
-                .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair);
-            if !valid || reconciled != supplied {
+            if !valid_grants(grants) {
                 continue;
             }
             let cost = first_offset.unsigned_abs() + second_offset.unsigned_abs();
@@ -203,6 +283,31 @@ fn guarded_rate_grants(
     }
     if let Some((_, grants)) = best {
         Ok(grants)
+    } else if preserve_headroom && limiting.iter().all(Option::is_none) {
+        // This narrow fallback distributes a positive aggregate headroom
+        // across receivers instead of allowing a canonical ID to determine
+        // which otherwise equivalent receiver touches its threshold.
+        let total_available = available
+            .into_iter()
+            .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair);
+        let slack = total_available.subtract_pair(supplied);
+        let mut grants = [ExperimentalVolume::new(0.); 3];
+        let mut assigned = ExperimentalVolume::new(0.);
+        if slack.high.is_finite()
+            && slack.low.is_finite()
+            && slack.compare_to_capacity(0.) == Ordering::Greater
+        {
+            for id in 0..2 {
+                let share = slack.high * (rates[id] / total_rate);
+                grants[id] = available[id].subtract_pair(ExperimentalVolume::new(share));
+                assigned = assigned.add_pair(grants[id]);
+            }
+            grants[2] = supplied.subtract_pair(assigned);
+            if valid_grants(grants) {
+                return Ok(grants);
+            }
+        }
+        Err("No bounded capacity-safe rate allocation exists.")
     } else if missing_owner {
         Err("No unsaturated recipient owns the event remainder.")
     } else {
@@ -610,22 +715,28 @@ fn guarded_rate_grants_reconcile_the_measured_three_recipient_event() {
         Some(ExperimentalVolume::new(2_043_857_909.161499)),
         None,
     ];
-    let grants = guarded_rate_grants(
-        supplied,
-        [1., 1., 2.],
-        limiting,
-        [
-            ExperimentalVolume::new(1e10),
-            limiting[1].unwrap(),
-            ExperimentalVolume::new(1e10),
-        ],
-    )
-    .unwrap();
+    let available = [
+        ExperimentalVolume::new(1e10),
+        limiting[1].unwrap(),
+        ExperimentalVolume::new(1e10),
+    ];
+    let grants = guarded_rate_grants(supplied, [1., 1., 2.], limiting, available).unwrap();
     assert_eq!(grants[1], limiting[1].unwrap());
     let total = grants
         .into_iter()
         .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair);
     assert_eq!(total, supplied);
+    let guarded =
+        topology_guarded_rate_grants(supplied, [1., 1., 2.], limiting, available).unwrap();
+    assert_eq!(guarded[1], limiting[1].unwrap());
+    assert_eq!(guarded[0].compare_pair(available[0]), Ordering::Less);
+    assert_eq!(guarded[2].compare_pair(available[2]), Ordering::Less);
+    assert_eq!(
+        guarded
+            .into_iter()
+            .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair),
+        supplied
+    );
 }
 
 #[test]
@@ -647,6 +758,187 @@ fn canonical_remainder_owner_exposes_saturation_label_bias() {
     // deficit to a different physical receiver after mapping IDs back.
     let relabeled_back = [full[1], full[2], full[0]];
     assert_ne!(full, relabeled_back);
+}
+
+#[test]
+fn topology_guard_keeps_identical_nonlimiting_receivers_below_capacity() {
+    let supplied = ExperimentalVolume::new(100.);
+    let capacity = 100. / 3.;
+    let grants = topology_guarded_rate_grants(
+        supplied,
+        [1.; 3],
+        [None; 3],
+        [ExperimentalVolume::new(capacity); 3],
+    )
+    .unwrap();
+    assert!(
+        grants
+            .iter()
+            .all(|grant| grant.compare_to_capacity(capacity) == Ordering::Less)
+    );
+    let total = grants
+        .into_iter()
+        .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair);
+    assert_eq!(total, supplied);
+    let mut model = ExclusiveMergeExperiment::new([capacity; 3]);
+    model.apply_pair_grants(supplied, grants).unwrap();
+    assert!(model.parent.is_none());
+    let full = grants.map(|grant| grant.compare_to_capacity(capacity) == Ordering::Equal);
+    assert_eq!(full, [false; 3]);
+    assert_eq!([full[1], full[2], full[0]], full);
+    assert_ne!([grants[1], grants[2], grants[0]], grants);
+}
+
+#[test]
+fn topology_guard_preserves_explicit_limiting_recipient() {
+    let supplied = ExperimentalVolume::new(100.);
+    let share = 100. / 3.;
+    let limiting = [None, Some(ExperimentalVolume::new(share)), None];
+    let available = [
+        ExperimentalVolume::new(100.),
+        ExperimentalVolume::new(share),
+        ExperimentalVolume::new(100.),
+    ];
+    let grants = topology_guarded_rate_grants(supplied, [1.; 3], limiting, available).unwrap();
+    assert_eq!(grants[1], available[1]);
+    assert!(grants[0].compare_pair(available[0]) == Ordering::Less);
+    assert!(grants[2].compare_pair(available[2]) == Ordering::Less);
+    assert_eq!(
+        grants
+            .into_iter()
+            .fold(ExperimentalVolume::new(0.), ExperimentalVolume::add_pair),
+        supplied
+    );
+}
+
+#[test]
+fn topology_guard_keeps_limiting_status_under_receiver_permutations() {
+    let supplied = ExperimentalVolume::new(100.);
+    let rates = [1., 1., 2.];
+    let available = [
+        ExperimentalVolume::new(100.),
+        ExperimentalVolume::new(25.),
+        ExperimentalVolume::new(100.),
+    ];
+    let limiting = [None, Some(ExperimentalVolume::new(25.)), None];
+    let permutations = [
+        [0, 1, 2],
+        [0, 2, 1],
+        [1, 0, 2],
+        [1, 2, 0],
+        [2, 0, 1],
+        [2, 1, 0],
+    ];
+    let mut reference_grants = None;
+    for permutation in permutations {
+        let grants = topology_guarded_rate_grants(
+            supplied,
+            permutation.map(|id| rates[id]),
+            permutation.map(|id| limiting[id]),
+            permutation.map(|id| available[id]),
+        )
+        .unwrap();
+        let mut physical_full = [false; 3];
+        let mut physical_grants = [ExperimentalVolume::new(0.); 3];
+        for (local_id, physical_id) in permutation.into_iter().enumerate() {
+            physical_full[physical_id] =
+                grants[local_id].compare_pair(available[physical_id]) == Ordering::Equal;
+            physical_grants[physical_id] = grants[local_id];
+        }
+        assert_eq!(physical_full, [false, true, false]);
+        if let Some(reference) = reference_grants {
+            assert_eq!(physical_grants, reference);
+        } else {
+            reference_grants = Some(physical_grants);
+        }
+    }
+}
+
+#[test]
+fn topology_guard_rejects_an_unmarked_exact_joint_endpoint() {
+    let supplied = ExperimentalVolume::new(100.);
+    let available = [25., 25., 50.].map(ExperimentalVolume::new);
+    assert_eq!(
+        topology_guarded_rate_grants(supplied, [1., 1., 2.], [None; 3], available),
+        Err("No bounded capacity-safe rate allocation exists.")
+    );
+    assert_eq!(
+        topology_guarded_rate_grants(supplied, [1., 1., 2.], available.map(Some), available,)
+            .unwrap(),
+        available
+    );
+}
+
+#[test]
+fn topology_guard_acceptance_is_stable_across_sampled_relabelings() {
+    let permutations = [
+        [0, 1, 2],
+        [0, 2, 1],
+        [1, 0, 2],
+        [1, 2, 0],
+        [2, 0, 1],
+        [2, 1, 0],
+    ];
+    let mut state = 0x91_7a_f3_u64;
+    let mut accepted_cases = 0;
+    let mut rejected_cases = 0;
+    let mut raw_order_disagreements = 0;
+    for case in 0..256 {
+        let mut draw = || {
+            state = state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1);
+            state >> 32
+        };
+        let rates = [
+            1. + (draw() % 100) as f64,
+            1. + (draw() % 100) as f64,
+            1. + (draw() % 100) as f64,
+        ];
+        let supplied = ExperimentalVolume::new((100 + draw() % 100_000) as f64);
+        let rate_sum: f64 = rates.into_iter().sum();
+        let available = rates.map(|rate| {
+            let mut cap = supplied.high * (rate / rate_sum);
+            for _ in 0..draw() % 3 {
+                cap = cap.next_up();
+            }
+            ExperimentalVolume::new(cap)
+        });
+        let accepted = permutations.map(|permutation| {
+            topology_guarded_rate_grants(
+                supplied,
+                permutation.map(|id| rates[id]),
+                [None; 3],
+                permutation.map(|id| available[id]),
+            )
+            .is_ok()
+        });
+        let raw_accepted = permutations.map(|permutation| {
+            rate_grants_with_topology_guard(
+                supplied,
+                permutation.map(|id| rates[id]),
+                [None; 3],
+                permutation.map(|id| available[id]),
+                true,
+            )
+            .is_ok()
+        });
+        if raw_accepted.iter().any(|value| *value != raw_accepted[0]) {
+            raw_order_disagreements += 1;
+        }
+        assert!(
+            accepted.iter().all(|value| *value == accepted[0]),
+            "case {case}: {accepted:?}"
+        );
+        if accepted[0] {
+            accepted_cases += 1;
+        } else {
+            rejected_cases += 1;
+        }
+    }
+    assert!(accepted_cases > 0);
+    assert!(rejected_cases > 0);
+    assert!(raw_order_disagreements > 0);
 }
 
 #[test]
