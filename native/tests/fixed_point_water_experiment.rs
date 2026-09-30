@@ -4,6 +4,89 @@
 
 const FRACTION_BITS: u32 = 56;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct RationalUnits {
+    numerator: i128,
+    denominator: i128,
+}
+
+fn gcd(mut left: i128, mut right: i128) -> i128 {
+    while right != 0 {
+        (left, right) = (right, left % right);
+    }
+    left
+}
+
+impl RationalUnits {
+    fn new(numerator: i128, denominator: i128) -> Result<Self, &'static str> {
+        if numerator < 0 || denominator <= 0 {
+            return Err("Invalid rational water amount.");
+        }
+        let divisor = gcd(numerator, denominator);
+        Ok(Self {
+            numerator: numerator / divisor,
+            denominator: denominator / divisor,
+        })
+    }
+
+    fn integer(units: i128) -> Self {
+        Self::new(units, 1).unwrap()
+    }
+
+    fn checked_add(self, other: Self) -> Result<Self, &'static str> {
+        let common = gcd(self.denominator, other.denominator);
+        let left_factor = other.denominator / common;
+        let right_factor = self.denominator / common;
+        let numerator = self
+            .numerator
+            .checked_mul(left_factor)
+            .and_then(|left| {
+                other
+                    .numerator
+                    .checked_mul(right_factor)
+                    .and_then(|right| left.checked_add(right))
+            })
+            .ok_or("Rational water numerator overflowed.")?;
+        let denominator = self
+            .denominator
+            .checked_mul(left_factor)
+            .ok_or("Rational water denominator overflowed.")?;
+        Self::new(numerator, denominator)
+    }
+
+    fn checked_sub(self, other: Self) -> Result<Self, &'static str> {
+        let common = gcd(self.denominator, other.denominator);
+        let left_factor = other.denominator / common;
+        let right_factor = self.denominator / common;
+        let numerator = self
+            .numerator
+            .checked_mul(left_factor)
+            .and_then(|left| {
+                other
+                    .numerator
+                    .checked_mul(right_factor)
+                    .and_then(|right| left.checked_sub(right))
+            })
+            .ok_or("Rational water numerator overflowed.")?;
+        let denominator = self
+            .denominator
+            .checked_mul(left_factor)
+            .ok_or("Rational water denominator overflowed.")?;
+        Self::new(numerator, denominator)
+    }
+
+    fn split_equal(self, recipients: i128) -> Result<Self, &'static str> {
+        if recipients <= 0 {
+            return Err("Invalid equal split size.");
+        }
+        let denominator = self
+            .denominator
+            .checked_mul(recipients)
+            .ok_or("Rational water denominator overflowed.")?;
+        Self::new(self.numerator, denominator)
+    }
+}
+
 /// Convert only exactly representable, nonnegative f64 multiples of 2^-56 m³.
 /// A production version would need a policy for all other inputs and geometry.
 fn exact_units(volume_cubic_meters: f64) -> Result<i128, &'static str> {
@@ -138,4 +221,81 @@ fn a_shared_thirds_denominator_crosses_the_same_tie_symmetrically() {
         initial_input_units + first_followup_units + final_followup_units,
         capacity_units * 3
     );
+}
+
+#[test]
+fn local_rationals_keep_the_ledger_when_one_child_breaks_the_tie() {
+    let capacity = RationalUnits::integer(exact_units(100. / 3.).unwrap());
+    let initial = RationalUnits::integer(exact_units(100.).unwrap());
+    let shared = initial.split_equal(3).unwrap();
+    let mut children = [shared; 3];
+    let sum = |stocks: [RationalUnits; 3]| {
+        stocks
+            .into_iter()
+            .try_fold(RationalUnits::integer(0), RationalUnits::checked_add)
+            .unwrap()
+    };
+    assert_eq!(sum(children), initial);
+
+    // This input is physically addressed to child zero, so subsequent
+    // asymmetry is causal rather than introduced by a remainder owner.
+    let local_input = RationalUnits::integer(1);
+    children[0] = children[0].checked_add(local_input).unwrap();
+    let common_input = RationalUnits::integer(509);
+    let equal_share = common_input.split_equal(3).unwrap();
+    for child in &mut children {
+        *child = child.checked_add(equal_share).unwrap();
+    }
+    assert_eq!(children[0], capacity);
+    assert_eq!(
+        capacity.checked_sub(children[1]),
+        Ok(RationalUnits::integer(1))
+    );
+    assert_eq!(
+        capacity.checked_sub(children[2]),
+        Ok(RationalUnits::integer(1))
+    );
+    assert_eq!(
+        sum(children),
+        initial
+            .checked_add(local_input)
+            .unwrap()
+            .checked_add(common_input)
+            .unwrap()
+    );
+
+    children[1] = children[1].checked_add(RationalUnits::integer(1)).unwrap();
+    children[2] = children[2].checked_add(RationalUnits::integer(1)).unwrap();
+    assert_eq!(children, [capacity; 3]);
+    assert_eq!(
+        sum(children),
+        RationalUnits::integer(capacity.numerator * 3)
+    );
+}
+
+#[test]
+fn repeated_exact_splits_hit_an_explicit_denominator_bound() {
+    let mut branch = RationalUnits::integer(1);
+    let mut successful_splits = 0;
+    loop {
+        let before = branch;
+        match branch.split_equal(3) {
+            Ok(share) => {
+                let reconstructed = [share; 3]
+                    .into_iter()
+                    .try_fold(RationalUnits::integer(0), RationalUnits::checked_add)
+                    .unwrap();
+                assert_eq!(reconstructed, before);
+                branch = share;
+                successful_splits += 1;
+            }
+            Err(error) => {
+                assert_eq!(error, "Rational water denominator overflowed.");
+                assert_eq!(branch, before);
+                break;
+            }
+        }
+    }
+    assert_eq!(successful_splits, 80);
+    assert!(branch.denominator > 1_000_000_000_000_000_000);
 }
