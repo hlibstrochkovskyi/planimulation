@@ -2,11 +2,12 @@
 //! Integer units remove stock-addition roundoff within a declared range but
 //! cannot make an indivisible remainder symmetric among identical receivers.
 use planimulation_core::{Recipe, World, initial_water_inventory::InitialWaterInventory};
+use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
 const FRACTION_BITS: u32 = 56;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct RationalUnits {
     numerator: i128,
     denominator: i128,
@@ -164,14 +165,18 @@ impl RationalUnits {
     }
 }
 
-/// Closed three-recipient event coordinate only. Rates are positive integer
-/// weights; there is no geography, transit, or policy for already full stocks.
+/// Closed three-recipient event coordinate only. Active rates are positive
+/// integer weights; a zero-rate full stock remains owned but receives nothing.
+/// There is no geography, transit, or policy for choosing the active rates.
 fn first_exact_event(
     stocks: [RationalUnits; 3],
     capacities: [i128; 3],
     rates: [i128; 3],
 ) -> Result<(RationalUnits, [RationalUnits; 3], [bool; 3]), &'static str> {
-    if rates.iter().any(|rate| *rate <= 0) || capacities.iter().any(|capacity| *capacity <= 0) {
+    if rates.iter().any(|rate| *rate < 0)
+        || rates.iter().all(|rate| *rate == 0)
+        || capacities.iter().any(|capacity| *capacity <= 0)
+    {
         return Err("Invalid laboratory event inputs.");
     }
     let total_rate = rates
@@ -184,8 +189,16 @@ fn first_exact_event(
     let mut earliest_unscaled = None;
     for id in 0..3 {
         let capacity = RationalUnits::integer(capacities[id]);
-        if stocks[id].cmp_exact(capacity) != Ordering::Less {
+        if stocks[id].cmp_exact(capacity) == Ordering::Greater
+            || (rates[id] > 0 && stocks[id].cmp_exact(capacity) != Ordering::Less)
+        {
             return Err("Laboratory receiver is already full.");
+        }
+        if rates[id] == 0 {
+            if stocks[id].cmp_exact(capacity) != Ordering::Equal {
+                return Err("Inactive laboratory receiver is not full.");
+            }
+            continue;
         }
         let deficit = capacity.checked_sub(stocks[id])?;
         let candidate = deficit.checked_div_integer(rates[id])?;
@@ -217,6 +230,158 @@ fn first_exact_event(
         return Err("Laboratory event did not conserve or reach a threshold.");
     }
     Ok((coordinate, next, full))
+}
+
+/// Test-only closed frontier: three child stocks become one parent only when
+/// all three reach capacity. There is no spill route or geometric level here.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct TieLifecycle {
+    version: String,
+    child_capacity: i128,
+    parent_capacity: i128,
+    children: [RationalUnits; 3],
+    parent: Option<RationalUnits>,
+    input_ledger: RationalUnits,
+    event_count: u64,
+}
+
+impl TieLifecycle {
+    fn new(child_capacity: i128, initial: i128) -> Result<Self, &'static str> {
+        if initial < 0 {
+            return Err("Invalid laboratory initial stock.");
+        }
+        let initial = RationalUnits::integer(initial);
+        let state = Self {
+            version: "tie-lifecycle-lab-1".into(),
+            child_capacity,
+            parent_capacity: child_capacity
+                .checked_mul(3)
+                .and_then(|sum| sum.checked_add(10))
+                .ok_or("Laboratory parent capacity overflowed.")?,
+            children: [initial.split_equal(3)?; 3],
+            parent: None,
+            input_ledger: initial,
+            event_count: 0,
+        };
+        state.validate()?;
+        Ok(state)
+    }
+
+    fn validate(&self) -> Result<(), &'static str> {
+        if self.version != "tie-lifecycle-lab-1"
+            || self.child_capacity <= 0
+            || self.parent_capacity
+                != self
+                    .child_capacity
+                    .checked_mul(3)
+                    .and_then(|sum| sum.checked_add(10))
+                    .ok_or("Laboratory parent capacity overflowed.")?
+            || self.input_ledger
+                != RationalUnits::new(self.input_ledger.numerator, self.input_ledger.denominator)?
+            || self
+                .children
+                .iter()
+                .any(|stock| RationalUnits::new(stock.numerator, stock.denominator) != Ok(*stock))
+        {
+            return Err("Invalid laboratory checkpoint.");
+        }
+        let stored = if let Some(parent) = self.parent {
+            if RationalUnits::new(parent.numerator, parent.denominator) != Ok(parent)
+                || self.children != [RationalUnits::integer(0); 3]
+                || parent.cmp_exact(RationalUnits::integer(self.child_capacity * 3))
+                    == Ordering::Less
+                || parent.cmp_exact(RationalUnits::integer(self.parent_capacity))
+                    == Ordering::Greater
+            {
+                return Err("Invalid laboratory parent frontier.");
+            }
+            parent
+        } else {
+            if self.children.iter().any(|stock| {
+                stock.cmp_exact(RationalUnits::integer(self.child_capacity)) == Ordering::Greater
+            }) {
+                return Err("Laboratory child exceeds capacity.");
+            }
+            if self.children.iter().all(|stock| {
+                stock.cmp_exact(RationalUnits::integer(self.child_capacity)) == Ordering::Equal
+            }) {
+                return Err("Full laboratory children must be merged.");
+            }
+            self.children
+                .into_iter()
+                .try_fold(RationalUnits::integer(0), RationalUnits::checked_add)?
+        };
+        if stored != self.input_ledger {
+            return Err("Laboratory checkpoint does not conserve input.");
+        }
+        Ok(())
+    }
+
+    fn restore(self) -> Result<Self, &'static str> {
+        self.validate()?;
+        Ok(self)
+    }
+
+    fn local_input(&mut self, child: usize, units: i128) -> Result<(), &'static str> {
+        if self.parent.is_some() || child >= 3 || units <= 0 {
+            return Err("Invalid laboratory local input.");
+        }
+        let mut next = self.clone();
+        let input = RationalUnits::integer(units);
+        next.children[child] = next.children[child].checked_add(input)?;
+        next.input_ledger = next.input_ledger.checked_add(input)?;
+        next.event_count = next
+            .event_count
+            .checked_add(1)
+            .ok_or("Event count overflowed.")?;
+        next.validate()?;
+        *self = next;
+        Ok(())
+    }
+
+    fn advance_to_threshold(&mut self, rates: [i128; 3]) -> Result<RationalUnits, &'static str> {
+        if self.parent.is_some() {
+            return Err("Child frontier is already merged.");
+        }
+        let (input, children, full) =
+            first_exact_event(self.children, [self.child_capacity; 3], rates)?;
+        let mut next = self.clone();
+        next.children = children;
+        next.input_ledger = next.input_ledger.checked_add(input)?;
+        next.event_count = next
+            .event_count
+            .checked_add(1)
+            .ok_or("Event count overflowed.")?;
+        if full == [true; 3] {
+            next.parent = Some(
+                children
+                    .into_iter()
+                    .try_fold(RationalUnits::integer(0), RationalUnits::checked_add)?,
+            );
+            next.children = [RationalUnits::integer(0); 3];
+        }
+        next.validate()?;
+        *self = next;
+        Ok(input)
+    }
+
+    fn parent_input(&mut self, units: i128) -> Result<(), &'static str> {
+        if units <= 0 || self.parent.is_none() {
+            return Err("Invalid laboratory parent input.");
+        }
+        let mut next = self.clone();
+        let input = RationalUnits::integer(units);
+        next.parent = Some(next.parent.unwrap().checked_add(input)?);
+        next.input_ledger = next.input_ledger.checked_add(input)?;
+        next.event_count = next
+            .event_count
+            .checked_add(1)
+            .ok_or("Event count overflowed.")?;
+        next.validate()?;
+        *self = next;
+        Ok(())
+    }
 }
 
 /// Preserve the exact ratios of three finite positive binary64 rates when
@@ -550,6 +715,113 @@ fn exact_event_time_keeps_a_tie_and_a_causally_broken_tie_distinct() {
         }
         assert_eq!(physical_next, next);
         assert_eq!(physical_full, full);
+    }
+}
+
+#[test]
+fn closed_tie_lifecycle_merges_only_after_all_children_fill() {
+    let capacity = exact_units(100. / 3.).unwrap();
+    let initial = exact_units(100.).unwrap();
+    let mut symmetric = TieLifecycle::new(capacity, initial).unwrap();
+    let before_rejected = symmetric.clone();
+    assert_eq!(
+        symmetric.advance_to_threshold([0, 1, 1]),
+        Err("Inactive laboratory receiver is not full.")
+    );
+    assert_eq!(symmetric, before_rejected);
+    assert_eq!(
+        symmetric.advance_to_threshold([1; 3]),
+        Ok(RationalUnits::integer(512))
+    );
+    assert_eq!(symmetric.parent, Some(RationalUnits::integer(capacity * 3)));
+    assert_eq!(symmetric.children, [RationalUnits::integer(0); 3]);
+    assert_eq!(symmetric.input_ledger, symmetric.parent.unwrap());
+    let mut unmerged = symmetric.clone();
+    unmerged.children = [RationalUnits::integer(capacity); 3];
+    unmerged.parent = None;
+    assert_eq!(
+        unmerged.restore(),
+        Err("Full laboratory children must be merged.")
+    );
+    assert_eq!(
+        symmetric.advance_to_threshold([1; 3]),
+        Err("Child frontier is already merged.")
+    );
+
+    for permutation in [
+        [0, 1, 2],
+        [0, 2, 1],
+        [1, 0, 2],
+        [1, 2, 0],
+        [2, 0, 1],
+        [2, 1, 0],
+    ] {
+        let mut state = TieLifecycle::new(capacity, initial).unwrap();
+        let physical_zero = permutation.iter().position(|&id| id == 0).unwrap();
+        state.local_input(physical_zero, 1).unwrap();
+        assert_eq!(
+            state.advance_to_threshold([1; 3]),
+            Ok(RationalUnits::integer(509))
+        );
+        assert!(state.parent.is_none());
+        let mut physical_stocks = [RationalUnits::integer(0); 3];
+        for (slot, id) in permutation.into_iter().enumerate() {
+            physical_stocks[id] = state.children[slot];
+        }
+        assert_eq!(physical_stocks[0], RationalUnits::integer(capacity));
+        assert_eq!(physical_stocks[1], physical_stocks[2]);
+        assert_eq!(
+            RationalUnits::integer(capacity).checked_sub(physical_stocks[1]),
+            Ok(RationalUnits::integer(1))
+        );
+
+        let before_rejected = state.clone();
+        assert_eq!(
+            state.advance_to_threshold([1; 3]),
+            Err("Laboratory receiver is already full.")
+        );
+        assert_eq!(state, before_rejected);
+        assert_eq!(
+            state.local_input(physical_zero, 1),
+            Err("Laboratory child exceeds capacity.")
+        );
+        assert_eq!(state, before_rejected);
+
+        let serialized = serde_json::to_string(&state).unwrap();
+        state = serde_json::from_str::<TieLifecycle>(&serialized)
+            .unwrap()
+            .restore()
+            .unwrap();
+        let remaining_rates = std::array::from_fn(|slot| i128::from(slot != physical_zero));
+        assert_eq!(
+            state.advance_to_threshold(remaining_rates),
+            Ok(RationalUnits::integer(2))
+        );
+        assert_eq!(state.parent, symmetric.parent);
+        assert_eq!(state.input_ledger, symmetric.input_ledger);
+        assert_eq!(state.event_count, 3);
+        assert_eq!(state.parent_input(5), Ok(()));
+        assert_eq!(state.parent, Some(RationalUnits::integer(capacity * 3 + 5)));
+        assert_eq!(state.input_ledger, state.parent.unwrap());
+        let before_rejected = state.clone();
+        assert_eq!(
+            state.parent_input(6),
+            Err("Invalid laboratory parent frontier.")
+        );
+        assert_eq!(state, before_rejected);
+
+        let mut corrupted = state.clone();
+        corrupted.input_ledger = RationalUnits::integer(1);
+        assert_eq!(
+            corrupted.restore(),
+            Err("Laboratory checkpoint does not conserve input.")
+        );
+        let mut corrupted = state.clone();
+        corrupted.children[0] = RationalUnits::integer(1);
+        assert_eq!(
+            corrupted.restore(),
+            Err("Invalid laboratory parent frontier.")
+        );
     }
 }
 
