@@ -35,7 +35,7 @@ pub struct Reconstruction {
     pub main_ocean_id: u32,
 }
 
-fn frontier(basins: &Basins, level: f64) -> (Vec<usize>, Vec<Option<usize>>) {
+pub(crate) fn frontier(basins: &Basins, level: f64) -> (Vec<usize>, Vec<Option<usize>>) {
     let nodes = basins.nodes();
     let mut active = vec![false; nodes.len()];
     let mut pending = vec![basins.root()];

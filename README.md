@@ -33,6 +33,7 @@ The application currently includes a desktop surface laboratory, static plate ki
 | [Concurrent network forcing](docs/simultaneous-network.md) | Constant simultaneous inputs, global saturation events, and input-order invariance |
 | [Generated-world readiness](docs/spill-readiness.md) | Measured integration restrictions, conflicting entry witnesses, and next product gates |
 | [Initial-water inventory](docs/initial-water-inventory.md) | Read-only transfer and audit of generated water into exclusive basin stocks |
+| [Exact initial accounting](docs/exact-initial-accounting.md) | Opt-in local initial-water units, legacy reconciliation and strict replay audit; no dynamic water |
 | [Seeded bounded network](docs/seeded-network.md) | Headless generated-water continuation with separate initial and external-input ledgers |
 | [Guarded larger network](docs/expanded-seeded-network.md) | Versioned 10,242-region cap, compact branch index, measurements and retained failures |
 | [Exact limiting-capacity commit](docs/exact-limit-commit.md) | Versioned correction of a measured floating-point saturation failure |
