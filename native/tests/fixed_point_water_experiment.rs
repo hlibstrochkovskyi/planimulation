@@ -1,6 +1,7 @@
 //! Isolated fixed-point feasibility experiment, not a production water model.
 //! Integer units remove stock-addition roundoff within a declared range but
 //! cannot make an indivisible remainder symmetric among identical receivers.
+use std::cmp::Ordering;
 
 const FRACTION_BITS: u32 = 56;
 
@@ -85,6 +86,97 @@ impl RationalUnits {
             .ok_or("Rational water denominator overflowed.")?;
         Self::new(self.numerator, denominator)
     }
+
+    fn checked_mul_integer(self, factor: i128) -> Result<Self, &'static str> {
+        if factor < 0 {
+            return Err("Invalid rational water factor.");
+        }
+        let common = gcd(factor, self.denominator);
+        let numerator = self
+            .numerator
+            .checked_mul(factor / common)
+            .ok_or("Rational water numerator overflowed.")?;
+        Self::new(numerator, self.denominator / common)
+    }
+
+    fn checked_div_integer(self, divisor: i128) -> Result<Self, &'static str> {
+        if divisor <= 0 {
+            return Err("Invalid rational water divisor.");
+        }
+        let common = gcd(self.numerator, divisor);
+        let denominator = self
+            .denominator
+            .checked_mul(divisor / common)
+            .ok_or("Rational water denominator overflowed.")?;
+        Self::new(self.numerator / common, denominator)
+    }
+
+    fn checked_cmp(self, other: Self) -> Result<Ordering, &'static str> {
+        let common = gcd(self.denominator, other.denominator);
+        let left = self
+            .numerator
+            .checked_mul(other.denominator / common)
+            .ok_or("Rational water comparison overflowed.")?;
+        let right = other
+            .numerator
+            .checked_mul(self.denominator / common)
+            .ok_or("Rational water comparison overflowed.")?;
+        Ok(left.cmp(&right))
+    }
+}
+
+/// Closed three-recipient event coordinate only. Rates are positive integer
+/// weights; there is no geography, transit, or policy for already full stocks.
+fn first_exact_event(
+    stocks: [RationalUnits; 3],
+    capacities: [i128; 3],
+    rates: [i128; 3],
+) -> Result<(RationalUnits, [RationalUnits; 3], [bool; 3]), &'static str> {
+    if rates.iter().any(|rate| *rate <= 0) || capacities.iter().any(|capacity| *capacity <= 0) {
+        return Err("Invalid laboratory event inputs.");
+    }
+    let total_rate = rates
+        .into_iter()
+        .try_fold(0_i128, i128::checked_add)
+        .ok_or("Laboratory rate sum overflowed.")?;
+    let mut coordinate = None;
+    for id in 0..3 {
+        let capacity = RationalUnits::integer(capacities[id]);
+        if stocks[id].checked_cmp(capacity)? != Ordering::Less {
+            return Err("Laboratory receiver is already full.");
+        }
+        let deficit = capacity.checked_sub(stocks[id])?;
+        let candidate = deficit
+            .checked_mul_integer(total_rate)?
+            .checked_div_integer(rates[id])?;
+        let earlier = match coordinate {
+            None => true,
+            Some(current) => candidate.checked_cmp(current)? == Ordering::Less,
+        };
+        if earlier {
+            coordinate = Some(candidate);
+        }
+    }
+    let coordinate = coordinate.ok_or("No laboratory event coordinate.")?;
+    let mut next = stocks;
+    let mut full = [false; 3];
+    let mut granted = RationalUnits::integer(0);
+    for id in 0..3 {
+        let grant = coordinate
+            .checked_mul_integer(rates[id])?
+            .checked_div_integer(total_rate)?;
+        next[id] = next[id].checked_add(grant)?;
+        granted = granted.checked_add(grant)?;
+        match next[id].checked_cmp(RationalUnits::integer(capacities[id]))? {
+            Ordering::Greater => return Err("Laboratory event exceeded capacity."),
+            Ordering::Equal => full[id] = true,
+            Ordering::Less => {}
+        }
+    }
+    if granted != coordinate || !full.contains(&true) {
+        return Err("Laboratory event did not conserve or reach a threshold.");
+    }
+    Ok((coordinate, next, full))
 }
 
 /// Convert only exactly representable, nonnegative f64 multiples of 2^-56 m³.
@@ -298,4 +390,96 @@ fn repeated_exact_splits_hit_an_explicit_denominator_bound() {
     }
     assert_eq!(successful_splits, 80);
     assert!(branch.denominator > 1_000_000_000_000_000_000);
+}
+
+#[test]
+fn exact_event_time_keeps_a_tie_and_a_causally_broken_tie_distinct() {
+    let capacity = exact_units(100. / 3.).unwrap();
+    let initial = RationalUnits::integer(exact_units(100.).unwrap())
+        .split_equal(3)
+        .unwrap();
+    let stocks = [initial; 3];
+    let (coordinate, next, full) = first_exact_event(stocks, [capacity; 3], [1; 3]).unwrap();
+    assert_eq!(coordinate, RationalUnits::integer(512));
+    assert_eq!(next, [RationalUnits::integer(capacity); 3]);
+    assert_eq!(full, [true; 3]);
+
+    let mut physically_broken = stocks;
+    physically_broken[0] = physically_broken[0]
+        .checked_add(RationalUnits::integer(1))
+        .unwrap();
+    let (coordinate, next, full) =
+        first_exact_event(physically_broken, [capacity; 3], [1; 3]).unwrap();
+    assert_eq!(coordinate, RationalUnits::integer(509));
+    assert_eq!(full, [true, false, false]);
+    assert_eq!(next[0], RationalUnits::integer(capacity));
+    assert_eq!(
+        RationalUnits::integer(capacity).checked_sub(next[1]),
+        Ok(RationalUnits::integer(1))
+    );
+    assert_eq!(next[1], next[2]);
+
+    for permutation in [
+        [0, 1, 2],
+        [0, 2, 1],
+        [1, 0, 2],
+        [1, 2, 0],
+        [2, 0, 1],
+        [2, 1, 0],
+    ] {
+        let (other_coordinate, permuted_next, permuted_full) = first_exact_event(
+            permutation.map(|id| physically_broken[id]),
+            [capacity; 3],
+            [1; 3],
+        )
+        .unwrap();
+        assert_eq!(other_coordinate, coordinate);
+        let mut physical_next = [RationalUnits::integer(0); 3];
+        let mut physical_full = [false; 3];
+        for (slot, id) in permutation.into_iter().enumerate() {
+            physical_next[id] = permuted_next[slot];
+            physical_full[id] = permuted_full[slot];
+        }
+        assert_eq!(physical_next, next);
+        assert_eq!(physical_full, full);
+    }
+}
+
+#[test]
+fn exact_event_time_marks_simultaneous_weighted_limits_without_id_priority() {
+    let stocks = [RationalUnits::integer(0); 3];
+    let capacities = [10, 20, 60];
+    let rates = [1, 2, 3];
+    let (coordinate, next, full) = first_exact_event(stocks, capacities, rates).unwrap();
+    assert_eq!(coordinate, RationalUnits::integer(60));
+    assert_eq!(next, [10, 20, 30].map(RationalUnits::integer));
+    assert_eq!(full, [true, true, false]);
+    for permutation in [
+        [0, 1, 2],
+        [0, 2, 1],
+        [1, 0, 2],
+        [1, 2, 0],
+        [2, 0, 1],
+        [2, 1, 0],
+    ] {
+        let (other_coordinate, permuted_next, permuted_full) = first_exact_event(
+            permutation.map(|id| stocks[id]),
+            permutation.map(|id| capacities[id]),
+            permutation.map(|id| rates[id]),
+        )
+        .unwrap();
+        let mut physical_next = stocks;
+        let mut physical_full = [false; 3];
+        for (slot, id) in permutation.into_iter().enumerate() {
+            physical_next[id] = permuted_next[slot];
+            physical_full[id] = permuted_full[slot];
+        }
+        assert_eq!(other_coordinate, coordinate);
+        assert_eq!(physical_next, next);
+        assert_eq!(physical_full, full);
+    }
+    assert_eq!(
+        first_exact_event(stocks, [10, 20, 60], [i128::MAX, 1, 1]),
+        Err("Laboratory rate sum overflowed.")
+    );
 }
