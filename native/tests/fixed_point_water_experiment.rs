@@ -1,6 +1,7 @@
 //! Isolated fixed-point feasibility experiment, not a production water model.
 //! Integer units remove stock-addition roundoff within a declared range but
 //! cannot make an indivisible remainder symmetric among identical receivers.
+use planimulation_core::{Recipe, World, initial_water_inventory::InitialWaterInventory};
 use std::cmp::Ordering;
 
 const FRACTION_BITS: u32 = 56;
@@ -665,4 +666,39 @@ fn finite_binary64_rates_have_exact_weights_only_within_a_bounded_range() {
         first_exact_event([RationalUnits::integer(0); 3], [10; 3], rates).unwrap();
     assert_eq!(full, [false, true, false]);
     assert_eq!(stocks[1], RationalUnits::integer(10));
+}
+
+#[test]
+fn generated_initial_stock_import_is_not_an_exact_global_ledger() {
+    let base: Recipe =
+        serde_json::from_str(include_str!("../../docs/scenarios/spill-connections.json")).unwrap();
+    let mut mismatch_count = 0;
+    let mut max_abs_delta = 0_i128;
+    for seed in 0..20 {
+        let mut recipe = base.clone();
+        recipe.seed = format!("accounting-import-{seed}");
+        let world = World::generate(recipe).unwrap();
+        let inventory = InitialWaterInventory::from_water(
+            &world.surface,
+            &world.terrain.elevation,
+            &world.water,
+            &world.basins,
+        )
+        .unwrap();
+        let stock_units = inventory
+            .stocks
+            .iter()
+            .map(|stock| exact_units(stock.volume_cubic_meters).unwrap())
+            .try_fold(0_i128, i128::checked_add)
+            .unwrap();
+        let total_units = exact_units(inventory.initial_volume_cubic_meters).unwrap();
+        let delta = stock_units - total_units;
+        mismatch_count += usize::from(delta != 0);
+        max_abs_delta = max_abs_delta.max(delta.abs());
+    }
+    // The current floating-point import is valid under its own tolerance, but
+    // converting each represented stock to exact units does not reconstruct
+    // the independently rounded global total in this fixed sample.
+    assert_eq!(mismatch_count, 4);
+    assert_eq!(max_abs_delta, 11_065_344_284_449_308_672);
 }
