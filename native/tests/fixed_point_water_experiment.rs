@@ -200,16 +200,23 @@ fn exact_rate_weights(rates: [f64; 3]) -> Result<[i128; 3], &'static str> {
         reduced[id] = (significand >> trailing, exponent + trailing);
     }
     let smallest_exponent = reduced.iter().map(|(_, exponent)| *exponent).min().unwrap();
+    // Every reduced significand is odd, so the common factor of the aligned
+    // weights is exactly their common odd significand factor. Remove it before
+    // shifting: otherwise a valid reduced weight can overflow prematurely.
+    let common = reduced
+        .iter()
+        .map(|(significand, _)| *significand as i128)
+        .reduce(gcd)
+        .unwrap();
     let mut weights = [0_i128; 3];
     for (id, (significand, exponent)) in reduced.into_iter().enumerate() {
         let shift = (exponent - smallest_exponent) as u32;
+        let significand = (significand as i128) / common;
         if shift >= 127 || (significand as u128) > ((i128::MAX as u128) >> shift) {
             return Err("Exact laboratory rate weights exceed i128.");
         }
-        weights[id] = (significand as i128) << shift;
+        weights[id] = significand << shift;
     }
-    let common = gcd(gcd(weights[0], weights[1]), weights[2]);
-    let weights = weights.map(|weight| weight / common);
     weights
         .into_iter()
         .try_fold(0_i128, i128::checked_add)
@@ -535,8 +542,26 @@ fn finite_binary64_rates_have_exact_weights_only_within_a_bounded_range() {
         Err("Invalid laboratory rate.")
     );
     assert_eq!(
+        exact_rate_weights([f64::NAN, 1., 2.]),
+        Err("Invalid laboratory rate.")
+    );
+    let smallest_subnormal = f64::from_bits(1);
+    assert_eq!(
+        exact_rate_weights([smallest_subnormal, f64::from_bits(2), smallest_subnormal]),
+        Ok([1, 2, 1])
+    );
+    assert_eq!(
         exact_rate_weights([1e-300, 1., 1e300]),
         Err("Exact laboratory rate weights exceed i128.")
+    );
+    // The unreduced 3 * 2^126 does not fit i128, but the exact rate ratio does.
+    assert_eq!(
+        exact_rate_weights([3., 3. * 2_f64.powi(126), 3.]),
+        Ok([1, 1_i128 << 126, 1])
+    );
+    assert_eq!(
+        exact_rate_weights([1., 2_f64.powi(126), 2_f64.powi(126)]),
+        Err("Exact laboratory rate sum exceeds i128.")
     );
 
     let rates = exact_rate_weights([1., next, 1.]).unwrap();
