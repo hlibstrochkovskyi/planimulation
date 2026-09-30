@@ -179,6 +179,44 @@ fn first_exact_event(
     Ok((coordinate, next, full))
 }
 
+/// Preserve the exact ratios of three finite positive binary64 rates when
+/// their shared integer weights and sum fit i128. This does not validate the
+/// physical rate calculation that produced those binary64 values.
+fn exact_rate_weights(rates: [f64; 3]) -> Result<[i128; 3], &'static str> {
+    let mut reduced = [(0_u64, 0_i32); 3];
+    for (id, rate) in rates.into_iter().enumerate() {
+        if !rate.is_finite() || rate <= 0. {
+            return Err("Invalid laboratory rate.");
+        }
+        let bits = rate.to_bits();
+        let exponent_bits = ((bits >> 52) & 0x7ff) as i32;
+        let fraction = bits & ((1_u64 << 52) - 1);
+        let (significand, exponent) = if exponent_bits == 0 {
+            (fraction, -1074)
+        } else {
+            ((1_u64 << 52) | fraction, exponent_bits - 1023 - 52)
+        };
+        let trailing = significand.trailing_zeros() as i32;
+        reduced[id] = (significand >> trailing, exponent + trailing);
+    }
+    let smallest_exponent = reduced.iter().map(|(_, exponent)| *exponent).min().unwrap();
+    let mut weights = [0_i128; 3];
+    for (id, (significand, exponent)) in reduced.into_iter().enumerate() {
+        let shift = (exponent - smallest_exponent) as u32;
+        if shift >= 127 || (significand as u128) > ((i128::MAX as u128) >> shift) {
+            return Err("Exact laboratory rate weights exceed i128.");
+        }
+        weights[id] = (significand as i128) << shift;
+    }
+    let common = gcd(gcd(weights[0], weights[1]), weights[2]);
+    let weights = weights.map(|weight| weight / common);
+    weights
+        .into_iter()
+        .try_fold(0_i128, i128::checked_add)
+        .ok_or("Exact laboratory rate sum exceeds i128.")?;
+    Ok(weights)
+}
+
 /// Convert only exactly representable, nonnegative f64 multiples of 2^-56 m³.
 /// A production version would need a policy for all other inputs and geometry.
 fn exact_units(volume_cubic_meters: f64) -> Result<i128, &'static str> {
@@ -482,4 +520,28 @@ fn exact_event_time_marks_simultaneous_weighted_limits_without_id_priority() {
         first_exact_event(stocks, [10, 20, 60], [i128::MAX, 1, 1]),
         Err("Laboratory rate sum overflowed.")
     );
+}
+
+#[test]
+fn finite_binary64_rates_have_exact_weights_only_within_a_bounded_range() {
+    assert_eq!(exact_rate_weights([1., 1., 2.]), Ok([1, 1, 2]));
+    let next = 1_f64.next_up();
+    assert_eq!(
+        exact_rate_weights([1., next, 2.]),
+        Ok([1_i128 << 52, (1_i128 << 52) + 1, 1_i128 << 53])
+    );
+    assert_eq!(
+        exact_rate_weights([0., 1., 2.]),
+        Err("Invalid laboratory rate.")
+    );
+    assert_eq!(
+        exact_rate_weights([1e-300, 1., 1e300]),
+        Err("Exact laboratory rate weights exceed i128.")
+    );
+
+    let rates = exact_rate_weights([1., next, 1.]).unwrap();
+    let (_, stocks, full) =
+        first_exact_event([RationalUnits::integer(0); 3], [10; 3], rates).unwrap();
+    assert_eq!(full, [false, true, false]);
+    assert_eq!(stocks[1], RationalUnits::integer(10));
 }
