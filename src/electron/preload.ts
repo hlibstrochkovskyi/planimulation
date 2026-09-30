@@ -4,6 +4,7 @@ import type { DesktopAPI } from '../shared/desktop-api';
 const api: DesktopAPI = {
   openRecipe: () => ipcRenderer.invoke('recipe:open'),
   saveRecipe: (recipe) => ipcRenderer.invoke('recipe:save', recipe),
+  exportView: (rect) => ipcRenderer.invoke('view:export', rect),
   generate: (recipe) => ipcRenderer.invoke('world:generate', recipe),
   cancelGeneration: () => ipcRenderer.invoke('world:cancel'),
   acceptWorld: (epoch) => ipcRenderer.invoke('world:accept', epoch),

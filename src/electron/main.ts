@@ -5,6 +5,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseRecipe, serializeRecipe } from '../core/recipe';
 import { NativeController } from '../native/client';
+import { parseCaptureRect } from '../shared/capture';
 
 const rendererFile = path.join(__dirname, '../renderer/index.html');
 const rendererURL = pathToFileURL(rendererFile).href;
@@ -70,6 +71,19 @@ void app.whenReady().then(() => {
     const result = await dialog.showSaveDialog(window, { defaultPath: 'world-recipe.json', filters: [{ name: 'World recipe', extensions: ['json'] }] });
     if (result.canceled || !result.filePath) return false;
     await writeFile(result.filePath, contents, 'utf8');
+    return true;
+  });
+  ipcMain.handle('view:export', async (event, value: unknown) => {
+    const window = senderWindow(event);
+    const bounds = window.getContentBounds();
+    const rect = parseCaptureRect(value, bounds);
+    const result = await dialog.showSaveDialog(window, { defaultPath: 'world-view.png', filters: [{ name: 'PNG image', extensions: ['png'] }] });
+    if (result.canceled || !result.filePath) return false;
+    const image = await window.webContents.capturePage(rect);
+    if (image.isEmpty()) throw new Error('The map view could not be captured.');
+    const png = image.toPNG();
+    if (png.length > 32 * 1024 * 1024) throw new Error('The map image exceeds the 32 MiB export limit.');
+    await writeFile(result.filePath, png);
     return true;
   });
   createWindow();

@@ -48,9 +48,24 @@ try {
   }, { ...DEFAULT_RECIPE });
   assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'generate', 'openRecipe', 'saveRecipe']);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'openRecipe', 'saveRecipe']);
+  assert.equal(await page.evaluate(async () => {
+    try { await window.desktop.exportView({ x: -1, y: 0, width: 100, height: 100 }); return false; }
+    catch { return true; }
+  }), true, 'The desktop bridge rejects an invalid map region before opening a save dialog.');
 
   const canvas = page.locator('#map');
+  const atlasExportPath = path.join(temp, 'atlas-export.png');
+  await app.evaluate(({ dialog }, destination) => {
+    dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
+  }, atlasExportPath);
+  await page.locator('#export-view').click();
+  await expect(page.locator('#status')).toContainText('exported as PNG');
+  const atlasPng = await readFile(atlasExportPath);
+  assert.deepEqual(atlasPng.subarray(0, 8), Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  assert.ok(atlasPng.readUInt32BE(16) > 200 && atlasPng.readUInt32BE(20) > 200);
+  assert.ok(atlasPng.length > 10_000, 'The exported atlas must contain more than a blank background.');
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   const clickAtlas = async (sample: { x: number; y: number }) => {
     const bounds = await canvas.boundingBox();
     assert.ok(bounds);
@@ -80,6 +95,18 @@ try {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
   await expect(canvas).toHaveAttribute('data-view', 'globe');
+  const globeExportPath = path.join(temp, 'globe-export.png');
+  await app.evaluate(({ dialog }, destination) => {
+    dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
+  }, globeExportPath);
+  await page.locator('#export-view').click();
+  await expect(page.locator('#status')).toContainText('exported as PNG');
+  const globePng = await readFile(globeExportPath);
+  assert.deepEqual(globePng.subarray(0, 8), atlasPng.subarray(0, 8));
+  assert.ok(globePng.length > 10_000, 'The exported globe must contain more than a blank background.');
+  assert.notDeepEqual(globePng, atlasPng);
+  await expect(canvas).toHaveAttribute('data-view', 'globe');
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await expect(page.locator('#selection-title')).toHaveText(selectedRegion);
   await expect(page.locator('#selection-details')).toHaveText(selectedDetails, { useInnerText: true });
   await expect(page.locator('#crust-note')).toHaveText(crustExplanation);

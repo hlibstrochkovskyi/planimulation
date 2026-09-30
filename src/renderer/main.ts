@@ -35,6 +35,7 @@ const waterVolumeInput = element<HTMLInputElement>('water-volume');
 const status = element('status');
 const cancel = element<HTMLButtonElement>('cancel');
 const save = element<HTMLButtonElement>('save-recipe');
+const exportView = element<HTMLButtonElement>('export-view');
 const number = new Intl.NumberFormat('en', { maximumFractionDigits: 1 });
 let world: World | null = null;
 let generationId = 0;
@@ -224,7 +225,7 @@ async function generate(recipe: Recipe): Promise<void> {
   pause(); map.cancelPreparation();
   const request = ++generationId;
   const start = performance.now();
-  cancel.hidden = false; save.disabled = true;
+  cancel.hidden = false; save.disabled = true; exportView.disabled = true;
   showStatus('Building the surface in the native core…');
   document.body.dataset.state = 'generating';
   element<HTMLButtonElement>('play').disabled = true;
@@ -283,7 +284,7 @@ async function generate(recipe: Recipe): Promise<void> {
     element('crust-summary').textContent = `Continental-dominant crust: ${(crustSummary.continentalAreaFraction * 100).toFixed(2)}% actual / ${(world.recipe.continentalFraction * 100).toFixed(2)}% target · ${crustSummary.continentalPatchCount} connected patches · largest ${number.format(crustSummary.largestContinentalPatchAreaSquareMeters / 1e12)} M km² · not emerged land`;
     element('boundary-note').textContent = 'Select a region to inspect its plate and any inter-plate boundary segments.';
     element('diagnostic-tick').textContent = 'Step 0';
-    updateLegend(); cancel.hidden = true; save.disabled = false;
+    updateLegend(); cancel.hidden = true; save.disabled = false; exportView.disabled = false;
     element<HTMLButtonElement>('play').disabled = false;
     document.body.dataset.state = 'ready';
     showStatus(`${world.recipe.plateCount} connected plates · ${world.tectonics.boundaryTypes.length} boundary segments · ${(world.stats.arrayBytes / 2 ** 20).toFixed(1)} MiB of model arrays · Static kinematics, no geological time integration`);
@@ -291,7 +292,7 @@ async function generate(recipe: Recipe): Promise<void> {
   } catch (error) {
     if (request === generationId) {
       void api.cancelGeneration();
-      cancel.hidden = true; save.disabled = world === null;
+      cancel.hidden = true; save.disabled = world === null; exportView.disabled = world === null;
       element<HTMLButtonElement>('play').disabled = world === null;
       showStatus(error instanceof Error ? error.message : String(error), true);
       document.body.dataset.state = 'error';
@@ -347,7 +348,7 @@ element('recipe-form').addEventListener('submit', (event) => {
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
 });
 cancel.addEventListener('click', () => {
-  generationId++; map.cancelPreparation(); void api.cancelGeneration(); cancel.hidden = true; save.disabled = world === null;
+  generationId++; map.cancelPreparation(); void api.cancelGeneration(); cancel.hidden = true; save.disabled = world === null; exportView.disabled = world === null;
   element<HTMLButtonElement>('play').disabled = world === null;
   document.body.dataset.state = world ? 'ready' : 'idle';
   showStatus(world ? 'Generation canceled. The previous surface is still displayed.' : 'Generation canceled.');
@@ -363,6 +364,23 @@ save.addEventListener('click', async () => {
   if (!world) return;
   try { if (await api.saveRecipe(world.recipe)) showStatus('Recipe saved. Reopen it to reproduce this surface.'); }
   catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
+});
+exportView.addEventListener('click', async () => {
+  if (!world) return;
+  exportView.disabled = true;
+  showStatus('Exporting the current view to PNG…');
+  try {
+    const canvas = element<HTMLCanvasElement>('map');
+    canvas.scrollIntoView({ block: 'center', inline: 'nearest' });
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    const bounds = canvas.getBoundingClientRect();
+    const x = Math.max(0, Math.floor(bounds.left)), y = Math.max(0, Math.floor(bounds.top));
+    const rect = { x, y, width: Math.min(window.innerWidth, Math.ceil(bounds.right)) - x,
+      height: Math.min(window.innerHeight, Math.ceil(bounds.bottom)) - y };
+    if (await api.exportView(rect)) showStatus('Current map or globe view exported as PNG. This is an image, not a world checkpoint.');
+    else showStatus('PNG export canceled.');
+  } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
+  finally { exportView.disabled = world === null || document.body.dataset.state === 'generating'; }
 });
 for (const button of document.querySelectorAll<HTMLButtonElement>('[data-layer]')) {
   button.addEventListener('click', () => {
