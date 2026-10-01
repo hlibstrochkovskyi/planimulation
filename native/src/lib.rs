@@ -358,6 +358,7 @@ pub mod drainage;
 pub mod exact_initial_accounting;
 pub mod initial_water_inventory;
 pub mod nested_reservoir;
+pub mod prescribed_water_inventory;
 pub mod reservoir;
 pub mod reservoir_pair;
 pub mod spill_connections;
