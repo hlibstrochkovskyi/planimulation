@@ -307,6 +307,74 @@ impl MultiPool {
         *self = next;
         Ok(())
     }
+
+    /// First capacity endpoint in external whole-unit coordinates for one
+    /// fixed positive weight vector. This is not elapsed time or a rate law.
+    fn advance_to_first_limit(&mut self, weights: [u8; BRANCHES]) -> Result<i128, &'static str> {
+        self.validate()?;
+        let weights = canonical_weights(weights);
+        let total = total_weight(&weights)?;
+        let geometry = geometry(self.physical_by_slot)?;
+        let mut first: Option<(i128, i128)> = None;
+        for (branch, &weight) in weights.iter().enumerate() {
+            if weight == 0 {
+                continue;
+            }
+            if !self.active[branch] {
+                return Err("Rate targets an inactive multi-pool branch.");
+            }
+            let deficit_sixths = geometry.capacities[branch] * SCALE - self.stock_sixths(branch)?;
+            if deficit_sixths <= 0 {
+                return Err("Rate targets an already full multi-pool branch.");
+            }
+            let numerator = deficit_sixths
+                .checked_mul(total)
+                .ok_or("Multi-pool event coordinate overflowed.")?;
+            let denominator = SCALE * i128::from(weight);
+            let earlier = match first {
+                None => true,
+                Some((old_numerator, old_denominator)) => {
+                    numerator
+                        .checked_mul(old_denominator)
+                        .ok_or("Multi-pool event comparison overflowed.")?
+                        < old_numerator
+                            .checked_mul(denominator)
+                            .ok_or("Multi-pool event comparison overflowed.")?
+                }
+            };
+            if earlier {
+                first = Some((numerator, denominator));
+            }
+        }
+        let (numerator, denominator) = first.ok_or("Empty multi-pool rate group.")?;
+        if numerator % denominator != 0 {
+            return Err("First multi-pool limit is not representable in whole units.");
+        }
+        let input = numerator / denominator;
+        if input <= 0 {
+            return Err("First multi-pool limit has no positive input.");
+        }
+        let mut reaches_limit = false;
+        for (branch, &weight) in weights.iter().enumerate() {
+            if weight == 0 {
+                continue;
+            }
+            let grant_sixths = input
+                .checked_mul(i128::from(weight))
+                .and_then(|value| value.checked_mul(SCALE / total))
+                .ok_or("Multi-pool event grant overflowed.")?;
+            reaches_limit |= self
+                .stock_sixths(branch)?
+                .checked_add(grant_sixths)
+                .ok_or("Multi-pool event grant overflowed.")?
+                == geometry.capacities[branch] * SCALE;
+        }
+        if !reaches_limit {
+            return Err("Multi-pool event has no exact limiting branch.");
+        }
+        self.apply_pool(weights, input)?;
+        Ok(input)
+    }
 }
 
 fn leaf_weights(permutation: [u8; LEAVES], physical: &[u8]) -> [u8; BRANCHES] {
@@ -378,6 +446,70 @@ fn two_distinct_pools_survive_partial_merge_and_a_third_pool_finishes_the_root()
         assert_eq!(state.pools.len(), 1); // all singleton root claims coalesce
         assert_eq!(state.pools[0].units, 15);
     }
+}
+
+#[test]
+fn changing_weights_recompute_first_limit_after_partial_merge() {
+    for permutation in [
+        [0, 1, 2],
+        [0, 2, 1],
+        [1, 0, 2],
+        [1, 2, 0],
+        [2, 0, 1],
+        [2, 1, 0],
+    ] {
+        let mut state = MultiPool::new(permutation).unwrap();
+        state
+            .apply_pool(leaf_weights(permutation, &[0, 1, 2]), 9)
+            .unwrap();
+        state
+            .apply_pool(leaf_weights(permutation, &[0, 1]), 2)
+            .unwrap();
+
+        let outside = permutation.iter().position(|&label| label == 2).unwrap();
+        let mut rates = [0; BRANCHES];
+        rates[3] = 2;
+        rates[outside] = 1;
+        assert_eq!(state.advance_to_first_limit(rates), Ok(3));
+        assert_eq!(state.stock_sixths(3), Ok(60));
+        assert_eq!(state.stock_sixths(outside), Ok(24));
+        assert_eq!(state.input_units, 14);
+        assert!(state.active[3] && state.active[outside] && !state.active[4]);
+
+        let before_rejection = state.clone();
+        assert_eq!(
+            state.advance_to_first_limit(rates),
+            Err("Rate targets an already full multi-pool branch.")
+        );
+        assert_eq!(state, before_rejection);
+
+        let checkpoint = serde_json::to_string(&state).unwrap();
+        state = serde_json::from_str::<MultiPool>(&checkpoint)
+            .unwrap()
+            .restore()
+            .unwrap();
+        let mut remaining_rate = [0; BRANCHES];
+        remaining_rate[outside] = 1;
+        assert_eq!(state.advance_to_first_limit(remaining_rate), Ok(1));
+        assert_eq!(state.active, [false, false, false, false, true]);
+        assert_eq!(state.stock_sixths(4), Ok(90));
+        assert_eq!(state.input_units, 15);
+        assert_eq!(state.event_count, 4);
+        assert_eq!(state.pools.len(), 1);
+        assert_eq!(state.pools[0].units, 15);
+    }
+}
+
+#[test]
+fn first_limit_rejects_fractional_external_input_without_mutation() {
+    let mut state = MultiPool::new([0, 1, 2]).unwrap();
+    state.apply_pool([1, 1, 1, 0, 0], 1).unwrap();
+    let before_rejection = state.clone();
+    assert_eq!(
+        state.advance_to_first_limit([1, 1, 0, 0, 0]),
+        Err("First multi-pool limit is not representable in whole units.")
+    );
+    assert_eq!(state, before_rejection);
 }
 
 #[test]
