@@ -13,6 +13,18 @@ pub struct Drainage {
     pub contributing_area: Vec<f64>,
 }
 
+/// Prescribed runoff accumulated along the static drainage receivers.
+/// Volumes use the caller's integer water unit; this result is not a dynamic
+/// lake inventory or a discharge rate.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RunoffRouting {
+    /// Local runoff plus all upstream runoff passing through each region.
+    pub through_region_units: Vec<i128>,
+    /// Final runoff at canonical wet-body or closed-sink terminal regions.
+    pub terminal_units: Vec<i128>,
+    pub total_input_units: i128,
+}
+
 impl Drainage {
     pub fn build(s: &Surface, heights: &[f64], bodies: &[u32]) -> Self {
         let n = heights.len();
@@ -131,5 +143,89 @@ impl Drainage {
             flat_steps,
             contributing_area,
         }
+    }
+
+    /// Route one prescribed, nonnegative runoff volume per region in the
+    /// existing static receiver graph. Wet-body terminals share their canonical
+    /// outlet; dry closed sinks retain their own input. No water is consumed,
+    /// stored in lakes, delayed, or moved according to a hydraulic rate here.
+    pub fn route_runoff_units(&self, runoff_units: &[i128]) -> Result<RunoffRouting, String> {
+        let count = self.receivers.len();
+        if runoff_units.len() != count || self.outlets.len() != count {
+            return Err("Runoff input does not match drainage regions.".into());
+        }
+        if runoff_units.iter().any(|&volume| volume < 0) {
+            return Err("Runoff volumes must be nonnegative.".into());
+        }
+        let mut incoming = vec![0_u32; count];
+        for (region, &receiver) in self.receivers.iter().enumerate() {
+            let receiver = receiver as usize;
+            if receiver >= count {
+                return Err("Drainage receiver is outside the region graph.".into());
+            }
+            if receiver != region {
+                incoming[receiver] = incoming[receiver]
+                    .checked_add(1)
+                    .ok_or("Drainage dependency count overflowed.")?;
+            }
+        }
+
+        let mut through_region_units = runoff_units.to_vec();
+        let mut order: Vec<_> = (0..count).filter(|&region| incoming[region] == 0).collect();
+        let mut cursor = 0;
+        while cursor < order.len() {
+            let region = order[cursor];
+            cursor += 1;
+            let receiver = self.receivers[region] as usize;
+            if receiver == region {
+                continue;
+            }
+            if self.outlets[region] != self.outlets[receiver] {
+                return Err("Drainage outlet disagrees with its receiver.".into());
+            }
+            through_region_units[receiver] = through_region_units[receiver]
+                .checked_add(through_region_units[region])
+                .ok_or("Runoff accumulation overflowed.")?;
+            incoming[receiver] -= 1;
+            if incoming[receiver] == 0 {
+                order.push(receiver);
+            }
+        }
+        if order.len() != count {
+            return Err("Drainage receiver graph contains a cycle.".into());
+        }
+
+        let mut terminal_units = vec![0_i128; count];
+        for (region, &volume) in through_region_units.iter().enumerate() {
+            if self.receivers[region] as usize != region {
+                continue;
+            }
+            let outlet = self.outlets[region] as usize;
+            if outlet >= count
+                || self.receivers[outlet] as usize != outlet
+                || self.outlets[outlet] as usize != outlet
+            {
+                return Err("Drainage terminal has an invalid canonical outlet.".into());
+            }
+            terminal_units[outlet] = terminal_units[outlet]
+                .checked_add(volume)
+                .ok_or("Runoff terminal sum overflowed.")?;
+        }
+        let total_input_units = runoff_units.iter().try_fold(0_i128, |sum, &volume| {
+            sum.checked_add(volume)
+                .ok_or("Runoff input sum overflowed.")
+        })?;
+        let total_terminal_units = terminal_units.iter().try_fold(0_i128, |sum, &volume| {
+            sum.checked_add(volume)
+                .ok_or("Runoff terminal sum overflowed.")
+        })?;
+        if total_input_units != total_terminal_units {
+            return Err("Runoff routing did not conserve input.".into());
+        }
+        Ok(RunoffRouting {
+            through_region_units,
+            terminal_units,
+            total_input_units,
+        })
     }
 }
