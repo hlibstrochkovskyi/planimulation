@@ -9,13 +9,14 @@ import { buildViewGeometry } from '../src/renderer/view-geometry';
 import { buildSurface } from '../src/core/surface';
 import { speedCmPerYear, summarizeTectonics } from '../src/core/tectonics';
 import { summarizeCrust } from '../src/core/crust';
+import { basinTree } from '../src/core/basins';
 
 const executable = path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core');
 
 test('binary framing handles fragmented headers/bodies, multiple frames, and rejects oversized packets', () => {
   const received: Packet[] = [], reader = new FrameReader((packet) => received.push(packet));
   const body = Buffer.from([1, 2, 3]);
-  const header = Buffer.from(JSON.stringify({ protocol: 7, kind: 'frame', byteLength: body.length }));
+  const header = Buffer.from(JSON.stringify({ protocol: 8, kind: 'frame', byteLength: body.length }));
   const prefix = Buffer.alloc(4); prefix.writeUInt32LE(header.length);
   const packet = Buffer.concat([prefix, header, body]);
   for (const byte of packet) reader.push(Buffer.from([byte]));
@@ -73,6 +74,45 @@ test('cancellation, replacement, step bounds, and backpressure preserve the acti
     core.cancel();
     assert.throws(() => core.accept(prepared.epoch));
     assert.equal((await core.advance(epoch, 1)).tick, 105);
+  } finally { core.close(); }
+});
+
+test('prescribed-water frames display a generated basin spill without changing initial water', async () => {
+  const core = new NativeController(executable);
+  try {
+    const recipe = { ...DEFAULT_RECIPE, subdivision: 2, water: { mode: 'coverage' as const, fraction: 0 } };
+    const { world, epoch } = await core.generate(recipe);
+    core.accept(epoch);
+    const children = basinTree(world.basins).children;
+    const terminal = world.drainage.receivers.findIndex((receiver, region) => {
+      if (receiver !== region) return false;
+      const branch = world.basins.regionNodes[region], parent = world.basins.parents[branch], siblings = children[parent];
+      return siblings.length === 2 && siblings.every((child) => children[child].length === 0)
+        && siblings.every((child) => world.basins.capacities[child] > 1e9);
+    });
+    assert.ok(terminal >= 0);
+    const original = structuredClone(world.water);
+    await assert.rejects(core.prescribeWater(epoch, -1, 'fillToSpill'), /Invalid/);
+    const first = await core.prescribeWater(epoch, terminal, 'fillToSpill');
+    assert.equal(first.step, 1);
+    assert.equal(first.depthMeters.length, world.stats.regionCount);
+    assert.equal(first.surfaceLevelsMeters.length, world.stats.regionCount);
+    assert.equal(first.bodyIds.length, world.stats.regionCount);
+    assert.ok(first.depthMeters[terminal] > 0);
+    assert.ok(first.mainOceanId > 0);
+    const second = await core.prescribeWater(epoch, terminal, 'oneCubicKilometer');
+    assert.equal(second.step, 2);
+    assert.ok(BigInt(second.acceptedInputUnits) > BigInt(first.acceptedInputUnits));
+    assert.ok(second.depthMeters[terminal] >= first.depthMeters[terminal]);
+    assert.deepEqual(world.water, original);
+    const full = await core.generate({ ...DEFAULT_RECIPE, subdivision: 2, water: { mode: 'coverage', fraction: 1 } });
+    core.accept(full.epoch);
+    const fullInitial = structuredClone(full.world.water);
+    await assert.rejects(core.prescribeWater(full.epoch, 0, 'fillToSpill'), /no spill threshold/);
+    const ocean = await core.prescribeWater(full.epoch, 0, 'oneCubicKilometer');
+    assert.equal(ocean.step, 1, 'A rejected command must not advance the native water inventory.');
+    assert.ok(ocean.bodyIds.every((body) => body === ocean.mainOceanId));
+    assert.deepEqual(full.world.water, fullInitial);
   } finally { core.close(); }
 });
 

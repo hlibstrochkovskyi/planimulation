@@ -1,6 +1,6 @@
 # Initial water: milestone B4
 
-The current [C2b basin inspection model](basin-inspection.md) uses `basins-1` and protocol 7. It leaves initial water generation unchanged and appends drainage and basin-analysis arrays. Recipes and measurements in this B4 record are historical.
+The current model uses `basins-1` and protocol 8; [C2b basin inspection](basin-inspection.md) introduced basin arrays in protocol 7, and the [manual prescribed-water view](prescribed-water-desktop.md) adds derived frames without changing initial water generation. Recipes and measurements in this B4 record are historical.
 
 [B5 water-surface display](water-surface.md) now adds a separate globe water mesh without changing this model or protocol. B4 validation measurements below describe the analytical-bed build.
 

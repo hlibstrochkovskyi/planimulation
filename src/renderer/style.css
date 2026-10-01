@@ -4,6 +4,7 @@
 .diagnostic-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; color: var(--muted); font-size: 10px; }
 .diagnostic-controls button { font-size: 11px; padding: 6px 10px; }
 #diagnostic-tick { font-variant-numeric: tabular-nums; white-space: nowrap; }
+#water-step { font-variant-numeric: tabular-nums; }
 #gpu-status { display: none; position: absolute; inset: 0; place-items: center; padding: 25px; background: #101719e8; color: #eda799; text-align: center; }
 canvas[data-gpu="lost"] ~ #gpu-status { display: grid; }
 #plate-count, #plate-speed, #continental-fraction, #continental-scale, #relief-scale, #boundary-width, #detail-amplitude { margin-bottom: 18px; }

@@ -5,6 +5,7 @@ import path from 'node:path';
 import { _electron as electron, expect } from '@playwright/test';
 import { DEFAULT_RECIPE, parseRecipe } from '../src/core/recipe';
 import { NativeController } from '../src/native/client';
+import { basinTree } from '../src/core/basins';
 
 const temp = await mkdtemp(path.join(os.tmpdir(), 'planimulation-desktop-'));
 const recipePath = path.join(temp, 'recipe.json');
@@ -48,7 +49,7 @@ try {
   }, { ...DEFAULT_RECIPE });
   assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'openRecipe', 'saveRecipe']);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'openRecipe', 'prescribeWater', 'saveRecipe']);
   assert.equal(await page.evaluate(async () => {
     try { await window.desktop.exportView({ x: -1, y: 0, width: 100, height: 100 }); return false; }
     catch { return true; }
@@ -275,6 +276,9 @@ try {
   await expect(page.locator('#basin-title')).toContainText('global root');
   await expect(page.locator('#basin-details')).toContainText('No finite spill capacity');
   await expect(page.locator('#basin-parent')).toBeDisabled();
+  await page.locator('#water-spill').click();
+  await expect(page.locator('#status')).toContainText('no spill threshold');
+  await expect(page.locator('#water-step')).toContainText('Select a source region');
   await expect(canvas).toHaveAttribute('data-spill-from', '-1');
   await page.locator('[data-layer="spill"]').click();
   await expect(page.locator('#legend-low')).toHaveText('No finite thresholds');
@@ -364,6 +368,45 @@ try {
   await expect(page.locator('#diagnostic-tick')).not.toHaveText('Step 0');
   await page.locator('#play').click();
   await page.locator('#seed').fill(DEFAULT_RECIPE.seed);
+  await page.locator('#subdivision').selectOption(String(DEFAULT_RECIPE.subdivision));
+  await page.locator('#generate').click();
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
+  const dryRecipe = { ...DEFAULT_RECIPE, subdivision: 2, water: { mode: 'coverage' as const, fraction: 0 } };
+  const spillReference = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
+  let spillSample: { id: number; x: number; y: number };
+  try {
+    const generated = (await spillReference.generate(dryRecipe)).world;
+    const children = basinTree(generated.basins).children;
+    const id = generated.drainage.receivers.findIndex((receiver, region) => {
+      if (receiver !== region) return false;
+      const branch = generated.basins.regionNodes[region], parent = generated.basins.parents[branch];
+      const x = Math.atan2(generated.surface.centers[region * 3 + 2], generated.surface.centers[region * 3]) / Math.PI;
+      const y = Math.asin(generated.surface.centers[region * 3 + 1]) / Math.PI;
+      return Math.abs(x) < .8 && Math.abs(y) < .7 && children[parent].length === 2
+        && children[parent].every((child) => children[child].length === 0 && generated.basins.capacities[child] > 1e9);
+    });
+    assert.ok(id >= 0, 'The generated desktop fixture needs a visible two-leaf spill source.');
+    spillSample = { id, x: Math.atan2(generated.surface.centers[id * 3 + 2], generated.surface.centers[id * 3]) / Math.PI,
+      y: Math.asin(generated.surface.centers[id * 3 + 1]) / Math.PI };
+  } finally { spillReference.close(); }
+  await page.locator('#subdivision').selectOption('2');
+  await page.locator('#water-mode').selectOption('coverage');
+  await page.locator('#water-coverage').fill('0');
+  await page.locator('#generate').click();
+  await expect(page.locator('#region-count')).toHaveText('162');
+  await page.getByRole('button', { name: '2D map', exact: true }).click();
+  await page.getByRole('button', { name: 'Fit map' }).click();
+  await clickAtlas(spillSample);
+  await expect(page.locator('#selection-title')).toHaveText(`Region ${spillSample.id}`);
+  await page.locator('#water-spill').click();
+  await expect(page.locator('#water-step')).toContainText('Prescribed step 1');
+  await expect(page.locator('#water-summary')).toContainText('manual input');
+  await expect(page.locator('#selection-details')).toContainText('Displayed prescribed-water depth');
+  await page.locator('[data-layer="surface"]').click();
+  await page.getByRole('button', { name: 'Globe', exact: true }).click();
+  await page.screenshot({ path: executablePath ? 'artifacts/spill-desktop-packaged.png' : 'artifacts/spill-desktop.png' });
+  await page.getByRole('button', { name: '2D map', exact: true }).click();
+  await page.locator('#water-coverage').fill('71');
   await page.locator('#subdivision').selectOption(String(DEFAULT_RECIPE.subdivision));
   await page.locator('#generate').click();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });

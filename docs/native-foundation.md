@@ -2,7 +2,7 @@
 
 Status: implemented foundation increment, September 20, 2026. Terrain, climate, and civilization remain future work.
 
-Historical baseline: recipe `surface-rust-1` and protocol 1 below describe the foundation increment. B1 adds protocol 2, B2 protocol 3, B3 protocol 4, B4 protocol 5, C1 protocol 6, and C2b now uses `basins-1` with protocol 7. See [Plate kinematics](tectonics.md), [Initial crust](crust.md), [Explainable elevation](terrain.md), [Initial water](water.md), [Drainage structure](drainage.md), and [Basin inspection](basin-inspection.md) for appended fields and checks. Process ownership and the diagnostic update mechanism remain unchanged. The measurements below apply to the earlier surface-only workload.
+Historical baseline: recipe `surface-rust-1` and protocol 1 below describe the foundation increment. B1 adds protocol 2, B2 protocol 3, B3 protocol 4, B4 protocol 5, C1 protocol 6, and C2b introduced `basins-1` with protocol 7. The current [manual prescribed-water view](prescribed-water-desktop.md) uses protocol 8 without changing the initial world arrays. See [Plate kinematics](tectonics.md), [Initial crust](crust.md), [Explainable elevation](terrain.md), [Initial water](water.md), [Drainage structure](drainage.md), and [Basin inspection](basin-inspection.md) for earlier appended fields and checks. Process ownership and the diagnostic update mechanism remain unchanged. The measurements below apply to the earlier surface-only workload.
 
 ## Decision and scope
 

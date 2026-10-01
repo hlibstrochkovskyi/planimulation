@@ -1,0 +1,13 @@
+# Manual prescribed-water desktop view
+
+Status: implemented as a bounded, opt-in desktop demonstration on generated worlds. Native protocol 8 adds a derived water frame; the `basins-1` recipe and initial world arrays are unchanged. This is not seasonal hydrology or timed simulation.
+
+Select a region in either map view. **Add 1 km³ runoff** routes one exact prescribed volume along the frozen initial drainage receivers. **Fill to sill + 1 km³** computes the active terminal basin's exact remaining capacity, then submits enough water to reach its next threshold plus 1 km³. A closed global root has no sill and refuses that second action. Both actions can refuse if the bounded spill policy encounters multiple direct spill sources, multiple open receivers, or another unsupported state. Failure leaves the inventory checkpoint and visible water frame unchanged.
+
+The native core alone owns exact `2^-56 m³` stocks, active basin frontier, accepted-input ledger, and step count. The renderer receives derived regional depths, regional displayed surface levels, and positive-depth connected-body labels. The flat map colors those fields; the globe rebuilds water-only cap geometry at each wet region's displayed level. The original generated bed, initial water arrays, terrain, recipe fingerprint, and diagnostic diffusion field are not changed. Exaggeration applies to the same bed and water display geometry; the shoreline remains a whole-region approximation.
+
+Displayed levels invert existing floating storage curves and can fail to visibly move for a small accepted exact input. Displayed regional `area × depth` is not the accounting authority. The displayed body IDs are recomputed from positive-depth adjacency, so a mathematically connected frontier may still appear disconnected exactly at a zero-depth sill or below display precision. No coast geometry is promoted into a physical cell.
+
+The manual steps have no elapsed time, discharge, rain, evaporation, soil water, or updated wet-region drainage. `Save recipe` and `Open recipe` reproduce **initial** water, not the current manual inventory. The native inventory has a versioned exact JSON checkpoint and replay tests, but the desktop does not yet export or import that checkpoint. The fingerprint continues to identify the initial generated world. A PNG export records only the currently visible view.
+
+Validation includes a generated dry world's sill crossing through the native process and typed binary frame, exact-stock immutability during display derivation, regional-level globe geometry, and desktop checks of both projections. The general simultaneous-allocation and long-running forcing limits remain documented in [water accounting](water-accounting-contract.md).

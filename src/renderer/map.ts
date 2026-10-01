@@ -3,11 +3,12 @@ import { BufferAttribute, BufferGeometry, DataTexture, DoubleSide, FloatType, Gr
   Scene, ShaderMaterial, Vector2, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { World } from '../core/world';
+import type { WaterFrame } from '../shared/desktop-api';
 import { speedCmPerYear } from '../core/tectonics';
 import type { ViewGeometry, ViewPair } from './view-geometry';
 import { displaceDirections, effectiveExaggeration } from './relief';
 import { summarizeTerrain } from '../core/terrain';
-import { pickSurface } from './water-surface';
+import { buildWaterSurface, pickSurface } from './water-surface';
 import { summarizeBasins } from '../core/basins';
 
 export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill';
@@ -62,6 +63,7 @@ export class SurfaceMap {
   private texture: DataTexture | null = null;
   private values = new Float32Array(0);
   private world: World | null = null;
+  private waterFrame: WaterFrame | null = null;
   private mode: ViewMode = 'flat';
   private layer: Layer = 'surface';
   private exaggeration = 10;
@@ -161,7 +163,7 @@ export class SurfaceMap {
     }).finally(() => { worker.terminate(); if (this.worker === worker) { this.worker = null; this.abortPreparation = null; } });
     const next = { flat: this.makeView(pair.flat), globe: this.makeView(pair.globe) };
     this.releaseViews(); this.views = next;
-    this.scene.add(next.flat, next.globe); this.world = world;
+    this.scene.add(next.flat, next.globe); this.world = world; this.waterFrame = null;
     this.appliedExaggeration = NaN;
     this.terrainRange = summarizeTerrain(world.surface, world.terrain);
     this.maximumDepth = world.water.depthMeters.reduce((max, d) => Math.max(max, d), 0);
@@ -180,6 +182,33 @@ export class SurfaceMap {
     this.setBasinContact();
     delete this.canvas.dataset.pickedSurface;
     this.setLayer(this.layer); this.setMode(this.mode); this.setBoundaries(this.boundaries);
+  }
+  setWaterFrame(frame: WaterFrame): void {
+    if (!this.world || !this.views || frame.depthMeters.length !== this.world.stats.regionCount
+      || frame.surfaceLevelsMeters.length !== this.world.stats.regionCount || frame.bodyIds.length !== this.world.stats.regionCount) {
+      throw new Error('Prescribed-water display does not match this world.');
+    }
+    const globe = this.views.globe;
+    const bed = (globe.children[0] as Mesh<BufferGeometry>).geometry;
+    const base = bed.userData.base as Float32Array;
+    const regions = bed.getAttribute('region').array as Float32Array;
+    const data = buildWaterSurface(base, regions, frame, this.world.recipe.radiusMeters);
+    const water = new BufferGeometry();
+    water.setAttribute('position', new BufferAttribute(data.waterPositions, 3));
+    water.setAttribute('region', new BufferAttribute(data.waterRegions, 1));
+    water.userData.base = data.waterPositions.slice(); water.userData.offsets = data.waterOffsets;
+    const lines = new BufferGeometry();
+    lines.setAttribute('position', new BufferAttribute(data.waterLines, 3));
+    lines.userData.base = data.waterLines.slice(); lines.userData.offsets = data.waterLineOffsets;
+    const oldWater = globe.children[3] as Mesh<BufferGeometry>;
+    const oldLines = globe.children[4] as LineSegments<BufferGeometry>;
+    oldWater.geometry.dispose(); oldLines.geometry.dispose();
+    oldWater.geometry = water; oldLines.geometry = lines;
+    this.waterFrame = frame;
+    this.maximumDepth = frame.depthMeters.reduce((maximum, depth) => Math.max(maximum, depth), 0);
+    this.appliedExaggeration = NaN;
+    this.setExaggeration(this.exaggeration);
+    this.refreshField();
   }
   setMode(mode: ViewMode): void {
     this.mode = mode; this.canvas.dataset.view = mode;
@@ -209,6 +238,8 @@ export class SurfaceMap {
   refreshField(): void {
     if (!this.world || !this.texture) return;
     const w = this.world;
+    const depth = this.waterFrame?.depthMeters ?? w.water.depthMeters;
+    const bodyIds = this.waterFrame?.bodyIds ?? w.water.bodyIds;
     for (let id = 0; id < w.stats.regionCount; id++) {
       this.values[id] = this.layer === 'plates' || this.layer === 'boundaries' ? w.tectonics.owners[id]
         : this.layer === 'basins' ? w.basins.regionNodes[id]
@@ -216,10 +247,10 @@ export class SurfaceMap {
           : (w.basins.spillLevels[w.basins.regionNodes[id]] - this.spillRange.minimum) / Math.max(1, this.spillRange.maximum - this.spillRange.minimum))
         : this.layer === 'catchments' ? w.drainage.outlets[id]
         : this.layer === 'contributingArea' ? Math.log1p(w.drainage.contributingArea[id] / 1e6) / Math.max(1e-30, Math.log1p(this.maximumContributingArea / 1e6))
-        : this.layer === 'surface' ? (w.water.bodyIds[id] ? -Math.max(1e-6, w.water.depthMeters[id] / Math.max(1e-30, this.maximumDepth))
+        : this.layer === 'surface' ? (bodyIds[id] ? -Math.max(1e-6, depth[id] / Math.max(1e-30, this.maximumDepth))
           : Math.max(0, w.terrain.elevation[id] - w.water.levelMeters) / Math.max(1, this.terrainRange.maximumMeters - w.water.levelMeters))
-        : this.layer === 'depth' ? (w.water.bodyIds[id] ? w.water.depthMeters[id] / Math.max(1e-30, this.maximumDepth) : -1)
-        : this.layer === 'waterBodies' ? w.water.bodyIds[id]
+        : this.layer === 'depth' ? (bodyIds[id] ? depth[id] / Math.max(1e-30, this.maximumDepth) : -1)
+        : this.layer === 'waterBodies' ? bodyIds[id]
         : this.layer === 'elevation' ? (w.terrain.elevation[id] - this.terrainRange.minimumMeters) / Math.max(1, this.terrainRange.maximumMeters - this.terrainRange.minimumMeters)
         : this.layer === 'uplift' ? w.terrain.convergence[id] / 12000
         : this.layer === 'crust' ? w.crust.continentality[id]
@@ -245,8 +276,11 @@ export class SurfaceMap {
     this.draw();
   }
   setExaggeration(requested: number): number {
+    const waterExtent = this.waterFrame
+      ? this.waterFrame.surfaceLevelsMeters.reduce((maximum, level) => Math.max(maximum, Math.abs(level)), 0)
+      : this.world?.water.mainOceanId ? this.world.water.levelMeters : undefined;
     const applied = this.world ? effectiveExaggeration(requested, this.world.recipe.radiusMeters, this.world.terrain.elevation,
-      this.world.water.mainOceanId ? this.world.water.levelMeters : undefined) : requested;
+      waterExtent) : requested;
     this.exaggeration = requested;
     if (this.appliedExaggeration === applied) return applied;
     this.appliedExaggeration = applied;

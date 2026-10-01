@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { BufferAttribute, BufferGeometry, DoubleSide, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
 import { buildSurface } from '../src/core/surface';
 import type { Water } from '../src/core/water';
+import type { WaterFrame } from '../src/shared/desktop-api';
 import { buildViewGeometry } from '../src/renderer/view-geometry';
 import { buildWaterSurface, pickSurface } from '../src/renderer/water-surface';
 import { displaceDirections, effectiveExaggeration } from '../src/renderer/relief';
@@ -65,6 +66,35 @@ test('fully flooded caps share corners, have a uniform vertex level, and obey th
     assert.deepEqual(points, g.waterPositions);
   }
   assert.throws(() => effectiveExaggeration(10, 100000, heights, NaN));
+});
+
+test('prescribed-water caps use separate regional levels without modifying the globe bed', () => {
+  const surface = buildSurface(1, 100_000), n = surface.areasSquareMeters.length;
+  const bed = buildViewGeometry(surface, undefined, new Float64Array(n).fill(-100)).globe;
+  const frame: WaterFrame = { epoch: 1, step: 1, inputUnits: '1', acceptedInputUnits: '1', mainOceanId: 1,
+    depthMeters: Float64Array.from({ length: n }, (_, id) => id === 0 ? 200 : id === 1 ? 300 : 0),
+    surfaceLevelsMeters: Float64Array.from({ length: n }, (_, id) => id === 0 ? 100 : id === 1 ? 200 : -100),
+    bodyIds: Uint32Array.from({ length: n }, (_, id) => id < 2 ? id + 1 : 0) };
+  const original = structuredClone(bed.positions);
+  const water = buildWaterSurface(bed.positions, bed.regions, frame, surface.radiusMeters);
+  const levels = new Map<number, Set<number>>();
+  for (let i = 0; i < water.waterRegions.length; i++) {
+    const id = water.waterRegions[i], values = levels.get(id) ?? new Set<number>();
+    values.add(water.waterOffsets[i]); levels.set(id, values);
+  }
+  assert.deepEqual([...levels.keys()].sort(), [0, 1]);
+  assert.equal(levels.get(0)!.size, 1);
+  assert.equal(levels.get(1)!.size, 1);
+  assert.ok(Math.abs([...levels.get(0)!][0] - 0.001) < 1e-9);
+  assert.ok(Math.abs([...levels.get(1)!][0] - 0.002) < 1e-9);
+  assert.deepEqual(bed.positions, original);
+  assert.deepEqual(frame.bodyIds.slice(0, 3), Uint32Array.of(1, 2, 0));
+  const bedMesh = mesh(displaceDirections(bed.positions, bed.radialOffsets, 10), bed.regions);
+  const waterMesh = mesh(displaceDirections(water.waterPositions, water.waterOffsets, 10), water.waterRegions);
+  const center = new Vector3(...surface.centers.subarray(0, 3));
+  assert.deepEqual(pickSurface(new Raycaster(center.clone().multiplyScalar(3), center.clone().negate()), bedMesh, waterMesh),
+    { id: 0, surface: 'water' });
+  for (const item of [bedMesh, waterMesh]) { item.geometry.dispose(); item.material.dispose(); }
 });
 
 test('picking selects the visible water or occluding bed, ignores hidden water, and handles coincident surfaces', () => {

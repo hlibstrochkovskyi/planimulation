@@ -6,7 +6,7 @@ import type { World } from '../core/world';
 import { validateWater } from '../core/water';
 import { validateDrainage } from '../core/drainage';
 import { BASIN_ANALYSIS_VERSION, validateBasins } from '../core/basins';
-import type { DiagnosticFrame } from '../shared/desktop-api';
+import type { DiagnosticFrame, PrescribedWaterMode, WaterFrame } from '../shared/desktop-api';
 
 const MAX_BYTES = 32 * 2 ** 20;
 type Header = { protocol: number; byteLength: number; kind: string; [key: string]: unknown };
@@ -44,8 +44,8 @@ export class FrameReader {
       if (this.header === null) {
         if (this.length < this.headerLength) return;
         const h = JSON.parse(this.take(this.headerLength).toString('utf8')) as Header;
-        if (!h || h.protocol !== 7 || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
-          || !['world', 'frame', 'error'].includes(h.kind)) throw new Error('Invalid native protocol header.');
+        if (!h || h.protocol !== 8 || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
+          || !['world', 'frame', 'water', 'error'].includes(h.kind)) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
       if (this.length < this.header.byteLength) return;
@@ -197,6 +197,7 @@ export class NativeController {
   private epoch = 0;
   private count = 0;
   private tick = 0;
+  private waterStep = 0;
   private sequence = 0;
   private prepared: { epoch: number; count: number } | null = null;
   constructor(private readonly executable: string) {}
@@ -215,7 +216,7 @@ export class NativeController {
   accept(epoch: number): void {
     if (!this.candidate || this.prepared?.epoch !== epoch) throw new Error('No matching prepared world.');
     this.active?.close(); this.active = this.candidate; this.candidate = null;
-    this.epoch = epoch; this.count = this.prepared.count; this.tick = 0; this.prepared = null;
+    this.epoch = epoch; this.count = this.prepared.count; this.tick = 0; this.waterStep = 0; this.prepared = null;
   }
   cancel(): void { this.candidate?.close(); this.candidate = null; this.prepared = null; }
   async advance(epoch: number, steps: number): Promise<DiagnosticFrame> {
@@ -230,6 +231,40 @@ export class NativeController {
     }
     this.tick += steps;
     return { epoch, tick: this.tick, relativeMassError: header.relativeMassError, field: floats(bytes) };
+  }
+  async prescribeWater(epoch: number, region: number, mode: PrescribedWaterMode): Promise<WaterFrame> {
+    if (!this.active || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    if (!Number.isSafeInteger(region) || region < 0 || region >= this.count
+      || (mode !== 'oneCubicKilometer' && mode !== 'fillToSpill')) throw new Error('Invalid prescribed-water request.');
+    const session = this.active;
+    const { header, bytes } = await session.request({ command: 'prescribeWater', region, mode });
+    if (this.active !== session || this.epoch !== epoch) throw new Error('Stale prescribed-water frame.');
+    const canonical = (value: unknown): value is string => typeof value === 'string' && /^(0|[1-9][0-9]*)$/.test(value);
+    if (header.kind !== 'water' || bytes.length !== this.count * 20 || header.step !== this.waterStep + 1
+      || !Number.isSafeInteger(header.step) || !canonical(header.inputUnits) || !canonical(header.acceptedInputUnits)
+      || !Number.isSafeInteger(header.mainOceanId) || (header.mainOceanId as number) < 0
+      || (header.mainOceanId as number) > this.count) {
+      session.close(); throw new Error('Invalid prescribed-water frame.');
+    }
+    const depthMeters = floats(bytes.subarray(0, this.count * 8));
+    const surfaceLevelsMeters = floats(bytes.subarray(this.count * 8, this.count * 16));
+    const bodyIds = new Uint32Array(this.count);
+    for (let i = 0; i < this.count; i++) {
+      bodyIds[i] = bytes.readUInt32LE(this.count * 16 + i * 4);
+      if (!Number.isFinite(depthMeters[i]) || !Number.isFinite(surfaceLevelsMeters[i])
+        || depthMeters[i] < 0 || bodyIds[i] > this.count || (depthMeters[i] > 0) !== (bodyIds[i] > 0)) {
+        session.close(); throw new Error('Invalid prescribed-water region.');
+      }
+    }
+    const hasWet = bodyIds.some((id) => id !== 0);
+    if ((hasWet && (header.mainOceanId === 0 || !bodyIds.includes(header.mainOceanId as number)))
+      || (!hasWet && header.mainOceanId !== 0)) {
+      session.close(); throw new Error('Invalid prescribed-water main ocean.');
+    }
+    this.waterStep = header.step as number;
+    return { epoch, step: this.waterStep, inputUnits: header.inputUnits as string,
+      acceptedInputUnits: header.acceptedInputUnits as string, depthMeters, surfaceLevelsMeters, bodyIds,
+      mainOceanId: header.mainOceanId as number };
   }
   close(): void { this.cancel(); this.active?.close(); this.active = null; }
 }

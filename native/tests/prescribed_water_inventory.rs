@@ -257,6 +257,9 @@ fn generated_basin_spills_to_one_neighbor_then_merges_and_replays() {
     };
     assert_eq!(stock(&after_first, source), source_capacity);
     assert_eq!(stock(&after_first, receiver), 1);
+    let first_display = state.display(&world).unwrap();
+    assert_eq!(first_display.depth_meters.len(), world.surface.areas.len());
+    assert!(first_display.depth_meters[terminal] > 0.);
     assert_eq!(
         after_first.accepted_input_units,
         (source_capacity + 1).to_string()
@@ -267,6 +270,20 @@ fn generated_basin_spills_to_one_neighbor_then_merges_and_replays() {
     let mut uninterrupted = state;
     uninterrupted.apply_runoff(&second_input).unwrap();
     let after_merge = uninterrupted.checkpoint();
+    let merged_display = uninterrupted.display(&world).unwrap();
+    assert!(merged_display.depth_meters[terminal] >= first_display.depth_meters[terminal]);
+    assert!(merged_display.body_ids[terminal] > 0);
+    assert!(
+        merged_display
+            .depth_meters
+            .iter()
+            .zip(&merged_display.surface_levels_meters)
+            .enumerate()
+            .all(|(region, (&depth, &level))| depth >= 0.
+                && level.is_finite()
+                && (depth == 0. || depth == level - world.terrain.elevation[region]))
+    );
+    assert_eq!(uninterrupted.checkpoint(), after_merge);
     assert!(
         after_merge
             .stocks

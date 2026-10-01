@@ -1,4 +1,4 @@
-use crate::World;
+use crate::{World, prescribed_water_inventory::WaterDisplay};
 use serde_json::json;
 use std::io::{self, Write};
 
@@ -107,10 +107,10 @@ pub fn arrays(w: &World) -> Vec<u8> {
     );
     out
 }
-/// v7: u32 header byte count, JSON header, fixed-order little-endian arrays.
+/// v8: adds derived prescribed-water display frames; world arrays are unchanged.
 pub fn send(out: &mut impl Write, header: serde_json::Value, bytes: &[u8]) -> io::Result<()> {
     let mut header = header;
-    header["protocol"] = json!(7);
+    header["protocol"] = json!(8);
     header["byteLength"] = json!(bytes.len());
     let encoded = serde_json::to_vec(&header)?;
     out.write_all(&(encoded.len() as u32).to_le_bytes())?;
@@ -146,6 +146,25 @@ pub fn frame(out: &mut impl Write, w: &World) -> io::Result<()> {
         out,
         json!({"kind":"frame","tick":w.tick,
         "relativeMassError":(w.mass()/w.initial_mass-1.).abs()}),
+        &bytes,
+    )
+}
+
+pub fn water_frame(
+    out: &mut impl Write,
+    display: &WaterDisplay,
+    step: u64,
+    input_units: i128,
+    accepted_input_units: &str,
+) -> io::Result<()> {
+    let mut bytes = Vec::with_capacity(display.depth_meters.len() * 20);
+    f64s(&mut bytes, display.depth_meters.iter().copied());
+    f64s(&mut bytes, display.surface_levels_meters.iter().copied());
+    u32s(&mut bytes, &display.body_ids);
+    send(
+        out,
+        json!({"kind":"water", "step":step, "inputUnits":input_units.to_string(),
+            "acceptedInputUnits":accepted_input_units, "mainOceanId":display.main_ocean_id}),
         &bytes,
     )
 }

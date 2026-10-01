@@ -2,7 +2,7 @@ import './style.css';
 import { DEFAULT_RECIPE, parseRecipe } from '../core/recipe';
 import type { Recipe } from '../core/recipe';
 import type { World } from '../core/world';
-import type { DesktopAPI } from '../shared/desktop-api';
+import type { DesktopAPI, PrescribedWaterMode, WaterFrame } from '../shared/desktop-api';
 import { SurfaceMap } from './map';
 import type { Layer, ViewMode } from './map';
 import { BOUNDARY_NAMES, speedCmPerYear } from '../core/tectonics';
@@ -36,8 +36,12 @@ const status = element('status');
 const cancel = element<HTMLButtonElement>('cancel');
 const save = element<HTMLButtonElement>('save-recipe');
 const exportView = element<HTMLButtonElement>('export-view');
+const waterAdd = element<HTMLButtonElement>('water-add');
+const waterSpill = element<HTMLButtonElement>('water-spill');
 const number = new Intl.NumberFormat('en', { maximumFractionDigits: 1 });
 let world: World | null = null;
+let waterFrame: WaterFrame | null = null;
+let waterBusy = false;
 let generationId = 0;
 let epoch = 0;
 let selected: number | null = null;
@@ -62,6 +66,7 @@ function showStatus(message: string, error = false): void {
 function inspect(id: number, preserveBasin = false): void {
   if (!world) return;
   selected = id;
+  waterAdd.disabled = waterBusy || document.body.dataset.state === 'generating'; waterSpill.disabled = waterAdd.disabled;
   inspectBasin(preserveBasin && inspectedBasin !== null ? inspectedBasin : world.basins.regionNodes[id]);
   const s = world.surface, x = s.centers[id * 3], y = s.centers[id * 3 + 1], z = s.centers[id * 3 + 2];
   const lat = Math.asin(y) * 180 / Math.PI, lon = Math.atan2(z, x) * 180 / Math.PI;
@@ -82,6 +87,10 @@ function inspect(id: number, preserveBasin = false): void {
     ['Elevation (reference datum)', `${number.format(world.terrain.elevation[id])} m`],
     ['Initial water depth', `${number.format(world.water.depthMeters[id])} m`],
     ['Initial water body', world.water.bodyIds[id] === 0 ? 'Dry land' : `Body ${world.water.bodyIds[id]} · ${world.water.bodyIds[id] === world.water.mainOceanId ? 'main ocean' : 'inland basin'}`],
+    ...(waterFrame ? [
+      ['Displayed prescribed-water depth', `${number.format(waterFrame.depthMeters[id])} m · approximate view`],
+      ['Displayed water body', waterFrame.bodyIds[id] ? `Body ${waterFrame.bodyIds[id]}` : 'Dry land'],
+    ] : []),
     ['Drainage receiver', world.drainage.receivers[id] === id ? 'Terminal' : `Region ${world.drainage.receivers[id]}`],
     ['Catchment outlet', `Region ${world.drainage.outlets[id]} · ${world.water.bodyIds[world.drainage.outlets[id]] ? `water body ${world.water.bodyIds[world.drainage.outlets[id]]}` : 'closed dry sink'}`],
     ['Contributing land area', `${number.format(world.drainage.contributingArea[id] / 1e6)} km² · not discharge`],
@@ -99,11 +108,13 @@ function inspect(id: number, preserveBasin = false): void {
     const row = document.createElement('li'); row.textContent = `${label}: ${value.toFixed(2)} m`; elevationDetails.append(row);
   }
   element('crust-note').textContent = `Seeded spherical potential ${world.crust.potential[id].toFixed(6)}; fitted threshold ${world.crust.threshold.toFixed(6)}; smooth transition width 0.12. Continentality blends the 7–35 km thickness and 3,000–2,800 kg/m³ density endmembers. These are initial model approximations, not elevation or water depth.`;
-  element('water-note').textContent = `Initial level ${world.water.levelMeters.toFixed(2)} m − bed ${world.terrain.elevation[id].toFixed(2)} m → depth max(0, level − bed) = ${world.water.depthMeters[id].toFixed(2)} m. Regional stock: ${(world.water.depthMeters[id] * s.areasSquareMeters[id] / 1e9).toFixed(3)} km³ using reference-sphere area. Positive-depth neighbors form water bodies; disconnected bodies share only this initial level, not a permanent connection.`;
+  element('water-note').textContent = waterFrame
+    ? `Prescribed runoff follows the frozen initial drainage outlet ${world.drainage.outlets[id]}. The displayed level here is ${waterFrame.surfaceLevelsMeters[id].toFixed(2)} m and the approximate depth is ${waterFrame.depthMeters[id].toFixed(2)} m. Exact basin stocks remain in the native core; visible depth can lag tiny accepted inputs. No elapsed time or climate forcing is implied.`
+    : `Initial level ${world.water.levelMeters.toFixed(2)} m − bed ${world.terrain.elevation[id].toFixed(2)} m → depth max(0, level − bed) = ${world.water.depthMeters[id].toFixed(2)} m. Regional stock: ${(world.water.depthMeters[id] * s.areasSquareMeters[id] / 1e9).toFixed(3)} km³ using reference-sphere area. Positive-depth neighbors form water bodies; disconnected bodies share only this initial level, not a permanent connection.`;
   const receiver = world.drainage.receivers[id], steps = world.drainage.flatSteps[id];
   element('drainage-note').textContent = receiver === id
-    ? world.water.bodyIds[id] ? 'Existing water is a terminal receiver. Incoming land area is counted here; water-body area itself is excluded. No underwater routing or overflow is inferred.'
-      : 'Closed dry sink: no lower exit from this equal-height component. A closed flat uses its smallest region ID as the analysis outlet. The bed is not filled or raised. Separate basin analysis describes possible connections, not actual lake storage.'
+    ? world.water.bodyIds[id] ? 'Initial water is a terminal receiver. Incoming land area is counted here; water-body area itself is excluded. The frozen receiver graph does not represent underwater flow.'
+      : 'Initial closed dry sink: no lower exit from this equal-height component. A closed flat uses its smallest region ID as the analysis outlet. Manual water can fill this basin, but the bed and initial receiver graph stay unchanged.'
     : steps ? `Equal-height routing: ${steps} graph hops to a downhill exit or closed-flat sink. The receiver has one fewer hop. This deterministic tie-break is not a measured hydraulic gradient and changes no bed heights.`
       : `Steepest bed descent to region ${receiver}: ${(world.terrain.elevation[id] - world.terrain.elevation[receiver]).toFixed(2)} m drop over ${number.format(s.neighborDistancesMeters[s.neighborOffsets[id] + neighbors.indexOf(receiver)] / 1000)} km. Gradient ties prefer the smaller region ID. Area accumulation assumes connectivity only, not rain, travel time, or discharge.`;
   boundaryDetails.replaceChildren();
@@ -160,7 +171,7 @@ const map = createMap();
 
 function updateLegend(): void {
   const legends: Record<Layer, [string, string, string]> = {
-    surface: ['Land and water surface · globe shoreline is a display approximation · colors are not biomes', '', ''],
+    surface: [`Land and water surface${waterFrame ? ' · prescribed-water display' : ''} · globe shoreline is a display approximation · colors are not biomes`, '', ''],
     signal: ['Seed field · dimensionless diagnostic', '−1', '+1'],
     area: ['Region area · true spherical area', world ? `${number.format(world.stats.minimumAreaSquareMeters / 1e6)} km²` : 'min', world ? `${number.format(world.stats.maximumAreaSquareMeters / 1e6)} km²` : 'max'],
     latitude: ['Latitude · distance from the equator', '90°', '0°'],
@@ -171,8 +182,8 @@ function updateLegend(): void {
     thickness: ['Crust thickness · initial approximation, not elevation', '7 km', '35 km'],
     elevation: ['Elevation · reference datum, not sea level · world-relative color scale', `${number.format(terrainStats.minimumMeters)} m`, `${number.format(terrainStats.maximumMeters)} m`],
     uplift: ['Convergence uplift · strongest attenuated source, not accumulated history', '0 m', '12,000 m'],
-    depth: ['Initial water depth · gray = dry · globe shows the bed, not a water-surface mesh', '0 m', `${number.format(maximumWaterDepth)} m`],
-    waterBodies: [`Connected water bodies · gray = dry · main ocean = body ${world?.water.mainOceanId || 'none'}`, '', ''],
+    depth: [`${waterFrame ? 'Prescribed-water display depth' : 'Initial water depth'} · gray = dry · globe shows the bed, not a water-surface mesh`, '0 m', `${number.format(maximumWaterDepth)} m`],
+    waterBodies: [`${waterFrame ? 'Connected displayed water bodies' : 'Connected water bodies'} · gray = dry · main ocean = body ${waterFrame?.mainOceanId || world?.water.mainOceanId || 'none'}`, '', ''],
     catchments: ['Drainage catchments · colors identify terminal outlets, not states or rivers', '', ''],
     contributingArea: ['Contributing dry-land area · logarithmic color scale · not river discharge', '0 km²', `${number.format(maximumContributingArea / 1e6)} km²`],
     basins: ['Basin branches · exclusive ownership, not full nested footprints or current lakes', '', ''],
@@ -225,7 +236,7 @@ async function generate(recipe: Recipe): Promise<void> {
   pause(); map.cancelPreparation();
   const request = ++generationId;
   const start = performance.now();
-  cancel.hidden = false; save.disabled = true; exportView.disabled = true;
+  cancel.hidden = false; save.disabled = true; exportView.disabled = true; waterAdd.disabled = true; waterSpill.disabled = true;
   showStatus('Building the surface in the native core…');
   document.body.dataset.state = 'generating';
   element<HTMLButtonElement>('play').disabled = true;
@@ -239,7 +250,7 @@ async function generate(recipe: Recipe): Promise<void> {
     // Queue acceptance before any subsequent UI action; no await between view
     // publication and this request. The old native world survives preparation.
     const accepted = api.acceptWorld(result.epoch);
-    world = result.world; epoch = result.epoch; selected = null;
+    world = result.world; epoch = result.epoch; selected = null; waterFrame = null; waterBusy = false;
     terrainStats = summarizeTerrain(world.surface, world.terrain);
     const waterStats = summarizeWater(world.surface, world.water);
     maximumWaterDepth = waterStats.maximumDepthMeters;
@@ -284,6 +295,8 @@ async function generate(recipe: Recipe): Promise<void> {
     element('crust-summary').textContent = `Continental-dominant crust: ${(crustSummary.continentalAreaFraction * 100).toFixed(2)}% actual / ${(world.recipe.continentalFraction * 100).toFixed(2)}% target · ${crustSummary.continentalPatchCount} connected patches · largest ${number.format(crustSummary.largestContinentalPatchAreaSquareMeters / 1e12)} M km² · not emerged land`;
     element('boundary-note').textContent = 'Select a region to inspect its plate and any inter-plate boundary segments.';
     element('diagnostic-tick').textContent = 'Step 0';
+    element('water-step').textContent = 'Select a source region · manual input, no elapsed time';
+    element('model-label').textContent = 'BASINS-1 · STATIC INITIAL CONDITIONS';
     updateLegend(); cancel.hidden = true; save.disabled = false; exportView.disabled = false;
     element<HTMLButtonElement>('play').disabled = false;
     document.body.dataset.state = 'ready';
@@ -296,9 +309,46 @@ async function generate(recipe: Recipe): Promise<void> {
       element<HTMLButtonElement>('play').disabled = world === null;
       showStatus(error instanceof Error ? error.message : String(error), true);
       document.body.dataset.state = 'error';
+      waterAdd.disabled = world === null || selected === null || waterBusy;
+      waterSpill.disabled = waterAdd.disabled;
     }
   }
 }
+
+async function prescribeWater(mode: PrescribedWaterMode): Promise<void> {
+  if (!world || selected === null || waterBusy || document.body.dataset.state === 'generating') return;
+  pause(); waterBusy = true; waterAdd.disabled = true; waterSpill.disabled = true;
+  const request = generationId, activeEpoch = epoch, source = selected;
+  try {
+    const frame = await api.prescribeWater(activeEpoch, source, mode);
+    if (request !== generationId || frame.epoch !== epoch || !world) return;
+    map.setWaterFrame(frame); waterFrame = frame;
+    maximumWaterDepth = frame.depthMeters.reduce((maximum, depth) => Math.max(maximum, depth), 0);
+    let displayedWetArea = 0;
+    for (let region = 0; region < frame.bodyIds.length; region++) {
+      if (frame.bodyIds[region]) displayedWetArea += world.surface.areasSquareMeters[region];
+    }
+    element('water-summary').textContent = `Initial water stock ${number.format(world.water.resolvedVolumeCubicMeters / 1e9)} km³ · manual input ≈ ${number.format(Number(frame.acceptedInputUnits) / 2 ** 56 / 1e9)} km³ · displayed wet area ${(displayedWetArea / world.stats.totalAreaSquareMeters * 100).toFixed(2)}% · displayed main body ${frame.mainOceanId || 'none'}`;
+    element('water-step').textContent = `Prescribed step ${frame.step} · cumulative input ≈ ${number.format(Number(frame.acceptedInputUnits) / 2 ** 56 / 1e9)} km³`;
+    element('water-step').title = `Exact cumulative input: ${frame.acceptedInputUnits} units of 2^-56 m³`;
+    element('model-label').textContent = 'BASINS-1 · BOUNDED PRESCRIBED WATER';
+    element('basin-summary').textContent = `Basins: ${basinStats?.leafCount ?? 0} minima · ${basinStats?.nodeCount ?? 0} hierarchy branches · bounded prescribed-water spill/merge enabled; no climate or elapsed time`;
+    if (selected !== null) inspect(selected, true);
+    updateLegend();
+    showStatus(`Prescribed runoff accepted at region ${source}. Exact basin stocks remain native; rendered water is an approximation.`);
+  } catch (error) {
+    if (request === generationId) showStatus(error instanceof Error ? error.message : String(error), true);
+  } finally {
+    if (epoch === activeEpoch) {
+      waterBusy = false;
+      if (world && selected !== null && document.body.dataset.state !== 'generating') {
+        waterAdd.disabled = false; waterSpill.disabled = false;
+      }
+    }
+  }
+}
+waterAdd.addEventListener('click', () => void prescribeWater('oneCubicKilometer'));
+waterSpill.addEventListener('click', () => void prescribeWater('fillToSpill'));
 
 function pause(): void {
   playing = false; clearTimeout(playbackTimer);
@@ -351,6 +401,8 @@ cancel.addEventListener('click', () => {
   generationId++; map.cancelPreparation(); void api.cancelGeneration(); cancel.hidden = true; save.disabled = world === null; exportView.disabled = world === null;
   element<HTMLButtonElement>('play').disabled = world === null;
   document.body.dataset.state = world ? 'ready' : 'idle';
+  waterAdd.disabled = world === null || selected === null || waterBusy;
+  waterSpill.disabled = waterAdd.disabled;
   showStatus(world ? 'Generation canceled. The previous surface is still displayed.' : 'Generation canceled.');
 });
 element('new-seed').addEventListener('click', () => { seedInput.value = crypto.randomUUID().slice(0, 8); });

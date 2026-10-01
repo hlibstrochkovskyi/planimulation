@@ -9,5 +9,6 @@ const api: DesktopAPI = {
   cancelGeneration: () => ipcRenderer.invoke('world:cancel'),
   acceptWorld: (epoch) => ipcRenderer.invoke('world:accept', epoch),
   advance: (epoch, steps) => ipcRenderer.invoke('world:advance', epoch, steps),
+  prescribeWater: (epoch, region, mode) => ipcRenderer.invoke('world:prescribeWater', epoch, region, mode),
 };
 contextBridge.exposeInMainWorld('desktop', api);

@@ -45,6 +45,11 @@ void app.whenReady().then(() => {
   ipcMain.handle('world:cancel', (event) => { senderWindow(event); core.cancel(); });
   ipcMain.handle('world:accept', (event, epoch: number) => { senderWindow(event); core.accept(epoch); });
   ipcMain.handle('world:advance', (event, epoch: number, steps: number) => { senderWindow(event); return core.advance(epoch, steps); });
+  ipcMain.handle('world:prescribeWater', (event, epoch: number, region: number, mode: unknown) => {
+    senderWindow(event);
+    if (mode !== 'oneCubicKilometer' && mode !== 'fillToSpill') throw new Error('Invalid prescribed-water mode.');
+    return core.prescribeWater(epoch, region, mode);
+  });
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),
     { label: 'File', submenu: [{ role: 'quit' }] },

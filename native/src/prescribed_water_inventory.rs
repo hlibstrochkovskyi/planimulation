@@ -39,6 +39,14 @@ pub struct Step {
     pub affected_branches: Vec<usize>,
 }
 
+/// Approximate render fields derived from exact stocks; never an accounting source.
+pub struct WaterDisplay {
+    pub depth_meters: Vec<f64>,
+    pub surface_levels_meters: Vec<f64>,
+    pub body_ids: Vec<u32>,
+    pub main_ocean_id: u32,
+}
+
 pub struct PrescribedWaterInventory {
     origin: ExactInitialAccounting,
     initial_total_units: i128,
@@ -566,5 +574,90 @@ impl PrescribedWaterInventory {
 
     pub fn origin_recipe(&self) -> &Recipe {
         &self.origin.origin_recipe
+    }
+
+    pub fn runoff_branch(&self, region: usize) -> Result<usize, String> {
+        let terminal = *self
+            .drainage
+            .outlets
+            .get(region)
+            .ok_or("Runoff source is outside the generated world.")?
+            as usize;
+        self.owner_of_region(terminal, &self.stocks)
+            .ok_or_else(|| "Runoff terminal has no active basin owner.".into())
+    }
+
+    /// The display can lose sub-resolution water, but its input stock cannot.
+    pub fn display(&self, world: &World) -> Result<WaterDisplay, String> {
+        if world.recipe != self.origin.origin_recipe
+            || world.basins != self.basins
+            || world.terrain.elevation != self.heights
+            || world.surface.areas != self.areas
+        {
+            return Err("Water display requires its original generated world.".into());
+        }
+        let mut levels = BTreeMap::new();
+        for &branch in self.stocks.keys() {
+            levels.insert(branch, self.level_meters(branch)?);
+        }
+        let count = self.heights.len();
+        let mut depth_meters = vec![0.; count];
+        let mut surface_levels_meters = self.heights.clone();
+        for region in 0..count {
+            if let Some(branch) = self.owner_of_region(region, &self.stocks)
+                && let Some(level) = levels[&branch]
+            {
+                let depth = (level - self.heights[region]).max(0.);
+                if !depth.is_finite() {
+                    return Err("Water display depth is not finite.".into());
+                }
+                depth_meters[region] = depth;
+                if depth > 0. {
+                    surface_levels_meters[region] = level;
+                }
+            }
+        }
+        let mut body_ids = vec![0_u32; count];
+        let mut largest_area = 0.;
+        let mut main_ocean_id = 0;
+        let mut next_id = 0_u32;
+        let mut queue = Vec::new();
+        for start in 0..count {
+            if depth_meters[start] == 0. || body_ids[start] != 0 {
+                continue;
+            }
+            next_id = next_id
+                .checked_add(1)
+                .ok_or("Too many displayed water bodies.")?;
+            queue.clear();
+            queue.push(start);
+            body_ids[start] = next_id;
+            let mut cursor = 0;
+            let mut area = 0.;
+            while cursor < queue.len() {
+                let region = queue[cursor];
+                cursor += 1;
+                area += self.areas[region];
+                for index in world.surface.offsets[region] as usize
+                    ..world.surface.offsets[region + 1] as usize
+                {
+                    let neighbor = world.surface.neighbors[index] as usize;
+                    if depth_meters[neighbor] > 0. && body_ids[neighbor] == 0 {
+                        body_ids[neighbor] = next_id;
+                        queue.push(neighbor);
+                    }
+                }
+            }
+            if area > largest_area {
+                largest_area = area;
+                main_ocean_id = next_id;
+            }
+        }
+        Ok(WaterDisplay {
+            depth_meters,
+            surface_levels_meters,
+            body_ids,
+            main_ocean_id,
+        })
     }
 }
