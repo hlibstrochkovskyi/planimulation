@@ -1,6 +1,7 @@
 use planimulation_core::{
     Recipe, World,
     prescribed_water_inventory::{Checkpoint, PrescribedWaterInventory},
+    spill_connections::SpillConnections,
     water::WaterSettings,
 };
 
@@ -145,7 +146,7 @@ fn dry_sink_begins_to_hold_water_without_spilling() {
 }
 
 #[test]
-fn unsupported_spills_invalid_inputs_and_corrupt_checkpoints_are_atomic() {
+fn invalid_inputs_and_corrupt_checkpoints_are_atomic() {
     let mut input = recipe();
     input.water = WaterSettings::Coverage { fraction: 0. };
     let world = World::generate(input).unwrap();
@@ -157,28 +158,6 @@ fn unsupported_spills_invalid_inputs_and_corrupt_checkpoints_are_atomic() {
     assert!(state.apply_runoff(&invalid).is_err());
     invalid[0] = i128::MAX / 2;
     assert!(state.apply_runoff(&invalid).is_err());
-    invalid.fill(0);
-    let (terminal, remaining) = world
-        .drainage
-        .receivers
-        .iter()
-        .enumerate()
-        .filter(|(region, receiver)| *region == **receiver as usize)
-        .find_map(|(region, _)| {
-            let branch = world.basins.region_nodes()[region];
-            state
-                .remaining_before_spill_units(branch)
-                .ok()
-                .flatten()
-                .filter(|&remaining| remaining > 0)
-                .map(|remaining| (region, remaining))
-        })
-        .unwrap();
-    invalid[terminal] = remaining;
-    assert_eq!(
-        state.apply_runoff(&invalid),
-        Err("Prescribed runoff reaches an unsupported basin spill limit.".into())
-    );
     assert_eq!(state.checkpoint(), before);
 
     let mut bad = before.clone();
@@ -202,4 +181,146 @@ fn unsupported_spills_invalid_inputs_and_corrupt_checkpoints_are_atomic() {
     let mut bad = before;
     bad.accepted_input_units = "1".into();
     assert!(PrescribedWaterInventory::restore(bad).is_err());
+}
+
+#[test]
+fn generated_basin_spills_to_one_neighbor_then_merges_and_replays() {
+    let mut input = recipe();
+    input.water = WaterSettings::Coverage { fraction: 0. };
+    let world = World::generate(input).unwrap();
+    let passages = SpillConnections::build(&world.surface, &world.terrain.elevation).unwrap();
+    let mut state = PrescribedWaterInventory::from_world(&world).unwrap();
+    let (source, receiver, parent, terminal, source_capacity, receiver_capacity) =
+        world
+            .basins
+            .nodes()
+            .iter()
+            .enumerate()
+            .find_map(|(parent, node)| {
+                if node.children.len() != 2
+                    || !node
+                        .children
+                        .iter()
+                        .all(|&child| world.basins.nodes()[child].children.is_empty())
+                {
+                    return None;
+                }
+                let source = node.children[0];
+                let receiver = node.children[1];
+                if passages.receivers(source).ok()?.len() != 1 {
+                    return None;
+                }
+                let terminal = world.drainage.receivers.iter().enumerate().find_map(
+                    |(region, &downhill)| {
+                        (region == downhill as usize
+                            && world.basins.region_nodes()[region] == source)
+                            .then_some(region)
+                    },
+                )?;
+                let a = state.remaining_before_spill_units(source).ok()??;
+                let b = state.remaining_before_spill_units(receiver).ok()??;
+                (a > 0 && b > 1).then_some((source, receiver, parent, terminal, a, b))
+            })
+            .expect("generated world needs a directed two-leaf spill fixture");
+    let initial = state.checkpoint();
+    let receiver_terminal = world
+        .drainage
+        .receivers
+        .iter()
+        .enumerate()
+        .find_map(|(region, &downhill)| {
+            (region == downhill as usize && world.basins.region_nodes()[region] == receiver)
+                .then_some(region)
+        })
+        .unwrap();
+    let mut simultaneous = vec![0; world.surface.areas.len()];
+    simultaneous[terminal] = source_capacity;
+    simultaneous[receiver_terminal] = receiver_capacity;
+    assert_eq!(
+        state.apply_runoff(&simultaneous),
+        Err("Simultaneous spill sources need an allocation policy.".into())
+    );
+    assert_eq!(state.checkpoint(), initial);
+    let mut first_input = vec![0; world.surface.areas.len()];
+    first_input[terminal] = source_capacity + 1;
+    state.apply_runoff(&first_input).unwrap();
+    let after_first = state.checkpoint();
+    let stock = |checkpoint: &Checkpoint, branch| -> i128 {
+        checkpoint
+            .stocks
+            .iter()
+            .find(|stock| stock.branch == branch)
+            .unwrap()
+            .volume_units
+            .parse()
+            .unwrap()
+    };
+    assert_eq!(stock(&after_first, source), source_capacity);
+    assert_eq!(stock(&after_first, receiver), 1);
+    assert_eq!(
+        after_first.accepted_input_units,
+        (source_capacity + 1).to_string()
+    );
+
+    let mut second_input = vec![0; first_input.len()];
+    second_input[terminal] = receiver_capacity;
+    let mut uninterrupted = state;
+    uninterrupted.apply_runoff(&second_input).unwrap();
+    let after_merge = uninterrupted.checkpoint();
+    assert!(
+        after_merge
+            .stocks
+            .iter()
+            .any(|stock| stock.branch == parent)
+    );
+    assert!(
+        after_merge
+            .stocks
+            .iter()
+            .all(|stock| stock.branch != source && stock.branch != receiver)
+    );
+    assert_eq!(
+        stock(&after_merge, parent),
+        source_capacity + receiver_capacity + 1
+    );
+    assert_eq!(
+        after_merge.accepted_input_units,
+        (source_capacity + receiver_capacity + 1).to_string()
+    );
+    assert_ne!(after_merge.stocks, initial.stocks);
+    let mut one_shot = PrescribedWaterInventory::from_world(&world).unwrap();
+    let mut combined_input = vec![0; first_input.len()];
+    combined_input[terminal] = source_capacity + receiver_capacity + 1;
+    one_shot.apply_runoff(&combined_input).unwrap();
+    assert_eq!(one_shot.checkpoint().stocks, after_merge.stocks);
+
+    let mut overlapping = after_merge.clone();
+    overlapping
+        .stocks
+        .push(planimulation_core::prescribed_water_inventory::BasinStock {
+            branch: source,
+            volume_units: "0".into(),
+        });
+    overlapping.stocks.sort_by_key(|stock| stock.branch);
+    assert!(PrescribedWaterInventory::restore(overlapping).is_err());
+    let mut unbalanced = after_merge.clone();
+    unbalanced
+        .stocks
+        .iter_mut()
+        .find(|stock| stock.branch == parent)
+        .unwrap()
+        .volume_units = (source_capacity + receiver_capacity).to_string();
+    assert!(PrescribedWaterInventory::restore(unbalanced).is_err());
+
+    let json = serde_json::to_string(&after_first).unwrap();
+    let restored: Checkpoint = serde_json::from_str(&json).unwrap();
+    let mut resumed = PrescribedWaterInventory::restore(restored).unwrap();
+    resumed.apply_runoff(&second_input).unwrap();
+    assert_eq!(resumed.checkpoint(), after_merge);
+    assert_eq!(
+        PrescribedWaterInventory::restore(after_merge.clone())
+            .unwrap()
+            .checkpoint(),
+        after_merge
+    );
 }

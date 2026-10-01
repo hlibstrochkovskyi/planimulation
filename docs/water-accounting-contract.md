@@ -1,6 +1,6 @@
 # Versioned water accounting: design gate
 
-Status: design proposal with isolated arithmetic and exclusive-merge experiments, a separately versioned [read-only exact initial-water import](exact-initial-accounting.md), and an opt-in [sub-spill prescribed-water inventory](prescribed-water-inventory.md). There is no general exact dynamic solver or production checkpoint format for spill/merge. Updated October 1, 2026. This record separates the product requirement of conserved, reproducible water from candidate arithmetic mechanisms. No desktop dynamics are enabled by it.
+Status: design proposal with isolated arithmetic and exclusive-merge experiments, a separately versioned [read-only exact initial-water import](exact-initial-accounting.md), and an opt-in [bounded prescribed-water inventory](prescribed-water-inventory.md) that now supports a unique sill transfer and full-child merge. There is no general exact dynamic solver or production checkpoint format for arbitrary simultaneous spill/merge. Updated October 1, 2026. This record separates the product requirement of conserved, reproducible water from candidate arithmetic mechanisms. No desktop dynamics are enabled by it.
 
 ## Why the current representation is insufficient
 

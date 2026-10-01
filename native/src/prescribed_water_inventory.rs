@@ -1,15 +1,17 @@
-//! Bounded, exact prescribed-runoff additions to generated basin stocks.
-//! This does not route overflow, update drainage, or model elapsed time.
+//! Exact prescribed-runoff stocks with bounded, unambiguous sill transfers.
+//! This does not update drainage or model elapsed time.
 use crate::{
     Recipe, World,
     basins::Basins,
     drainage::Drainage,
     exact_initial_accounting::{ExactInitialAccounting, FRACTION_BITS, exact_units},
     initial_water_inventory::frontier,
+    spill_connections::SpillConnections,
 };
 use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, BTreeSet};
 
-pub const INVENTORY_VERSION: &str = "prescribed-water-inventory-1";
+pub const INVENTORY_VERSION: &str = "prescribed-water-inventory-2";
 const UNITS_PER_CUBIC_METER: i128 = 1_i128 << FRACTION_BITS;
 const MAX_JSON_EXACT_STEP: u64 = (1_u64 << 53) - 1;
 
@@ -42,12 +44,16 @@ pub struct PrescribedWaterInventory {
     initial_total_units: i128,
     step: u64,
     accepted_input_units: i128,
-    stocks: Vec<i128>,
+    stocks: BTreeMap<usize, i128>,
     capacities: Vec<Option<i128>>,
-    slots_by_region: Vec<Option<usize>>,
-    branches: Vec<usize>,
+    initial_branches: Vec<usize>,
+    heights: Vec<f64>,
+    areas: Vec<f64>,
+    enter: Vec<usize>,
+    leave: Vec<usize>,
     drainage: Drainage,
     basins: Basins,
+    connections: SpillConnections,
 }
 
 fn parse_units(value: &str) -> Result<i128, String> {
@@ -116,37 +122,65 @@ impl PrescribedWaterInventory {
                     .ok_or("Prescribed-water capacity overflowed.")?,
             );
         }
-        let stocks = origin
+        let initial_stocks = origin
             .stocks
             .iter()
             .map(|stock| parse_units(&stock.volume_units))
             .collect::<Result<Vec<_>, _>>()?;
         let initial_total_units = parse_units(&origin.exact_total_units)?;
-        let initial_stock_sum = stocks.iter().try_fold(0_i128, |sum, &volume| {
+        let initial_stock_sum = initial_stocks.iter().try_fold(0_i128, |sum, &volume| {
             sum.checked_add(volume)
                 .ok_or("Prescribed-water initial stock sum overflowed.")
         })?;
         if initial_stock_sum != initial_total_units {
             return Err("Prescribed-water initial stocks do not balance.".into());
         }
-        if stocks
+        if initial_stocks
             .iter()
             .zip(&capacities)
             .any(|(&stock, &capacity)| capacity.is_some_and(|limit| stock > limit))
         {
             return Err("Initial exact basin stock exceeds its represented capacity.".into());
         }
+        let mut enter = vec![0; world.basins.nodes().len()];
+        let mut leave = enter.clone();
+        let mut stack = vec![(world.basins.root(), false)];
+        let mut clock = 0;
+        while let Some((branch, closing)) = stack.pop() {
+            if closing {
+                leave[branch] = clock;
+                continue;
+            }
+            enter[branch] = clock;
+            clock += 1;
+            stack.push((branch, true));
+            for &child in world.basins.nodes()[branch].children.iter().rev() {
+                stack.push((child, false));
+            }
+        }
+        let connections = SpillConnections::build(&world.surface, &world.terrain.elevation)?;
+        if connections.basins() != &world.basins {
+            return Err("Spill passages do not match the generated basin hierarchy.".into());
+        }
+        let mut capacity_by_branch = vec![None; world.basins.nodes().len()];
+        for (slot, &branch) in branches.iter().enumerate() {
+            capacity_by_branch[branch] = capacities[slot];
+        }
         Ok(Self {
             origin,
             initial_total_units,
             step: 0,
             accepted_input_units: 0,
-            stocks,
-            capacities,
-            slots_by_region,
-            branches,
+            stocks: branches.iter().copied().zip(initial_stocks).collect(),
+            capacities: capacity_by_branch,
+            initial_branches: branches,
+            heights: world.terrain.elevation.clone(),
+            areas: world.surface.areas.clone(),
+            enter,
+            leave,
             drainage: world.drainage.clone(),
             basins: world.basins.clone(),
+            connections,
         })
     }
 
@@ -159,33 +193,75 @@ impl PrescribedWaterInventory {
         }
         let world = World::generate(checkpoint.origin.origin_recipe.clone())?;
         let mut state = Self::from_world(&world)?;
-        if checkpoint.origin != state.origin || checkpoint.stocks.len() != state.stocks.len() {
+        if checkpoint.origin != state.origin || checkpoint.stocks.is_empty() {
             return Err("Prescribed-water checkpoint origin does not match its world.".into());
         }
         let accepted = parse_units(&checkpoint.accepted_input_units)?;
-        let mut total = 0_i128;
-        for (slot, saved) in checkpoint.stocks.iter().enumerate() {
-            if saved.branch != state.branches[slot] {
-                return Err("Prescribed-water checkpoint frontier changed.".into());
-            }
-            let volume = parse_units(&saved.volume_units)?;
-            if volume < state.stocks[slot]
-                || state.capacities[slot]
-                    .is_some_and(|capacity| volume >= capacity && volume > state.stocks[slot])
+        let mut saved_stocks = BTreeMap::new();
+        let mut previous = None;
+        for saved in &checkpoint.stocks {
+            if saved.branch >= state.basins.nodes().len()
+                || previous.is_some_and(|branch| saved.branch <= branch)
             {
+                return Err("Prescribed-water checkpoint frontier is not canonical.".into());
+            }
+            previous = Some(saved.branch);
+            let volume = parse_units(&saved.volume_units)?;
+            saved_stocks.insert(saved.branch, volume);
+        }
+        for (&branch, &stock) in &saved_stocks {
+            if saved_stocks
+                .keys()
+                .any(|&other| other != branch && state.is_descendant(other, branch))
+            {
+                return Err("Prescribed-water checkpoint has overlapping branches.".into());
+            }
+            let initial = state
+                .origin
+                .stocks
+                .iter()
+                .find(|entry| entry.branch == branch)
+                .map(|entry| parse_units(&entry.volume_units))
+                .transpose()?;
+            let minimum = match initial {
+                Some(initial) => initial,
+                None => state.birth_capacity_units(branch)?,
+            };
+            if stock < minimum
+                || state
+                    .capacity_units(branch)?
+                    .is_some_and(|capacity| stock > capacity)
+            {
+                return Err("Prescribed-water checkpoint stock exceeds its basin bounds.".into());
+            }
+        }
+        for &initial in &state.initial_branches {
+            let mut current = Some(initial);
+            while let Some(branch) = current {
+                if saved_stocks.contains_key(&branch) {
+                    break;
+                }
+                current = state.basins.nodes()[branch].parent;
+            }
+            if current.is_none() {
                 return Err(
-                    "Prescribed-water checkpoint stock is outside its supported interval.".into(),
+                    "Prescribed-water checkpoint does not cover the initial frontier.".into(),
                 );
             }
-            total = total
-                .checked_add(volume - state.stocks[slot])
-                .ok_or("Prescribed-water checkpoint ledger overflowed.")?;
-            state.stocks[slot] = volume;
         }
-        if total != accepted || (checkpoint.step == 0 && accepted != 0) {
+        if saved_stocks.keys().any(|&branch| {
+            !state
+                .initial_branches
+                .iter()
+                .any(|&initial| state.is_descendant(branch, initial))
+        }) {
+            return Err("Prescribed-water checkpoint contains an alien branch.".into());
+        }
+        if checkpoint.step == 0 && (accepted != 0 || saved_stocks != state.stocks) {
             return Err("Prescribed-water checkpoint input ledger does not balance.".into());
         }
-        state.check_balance(accepted, &state.stocks)?;
+        state.check_balance(accepted, &saved_stocks)?;
+        state.stocks = saved_stocks;
         state.step = checkpoint.step;
         state.accepted_input_units = accepted;
         Ok(state)
@@ -198,9 +274,8 @@ impl PrescribedWaterInventory {
             step: self.step,
             accepted_input_units: self.accepted_input_units.to_string(),
             stocks: self
-                .branches
+                .stocks
                 .iter()
-                .zip(&self.stocks)
                 .map(|(&branch, &units)| BasinStock {
                     branch,
                     volume_units: units.to_string(),
@@ -213,22 +288,41 @@ impl PrescribedWaterInventory {
     pub fn apply_runoff(&mut self, prescribed_units: &[i128]) -> Result<Step, String> {
         let routed = self.drainage.route_runoff_units(prescribed_units)?;
         let mut next = self.stocks.clone();
-        let mut affected = vec![false; next.len()];
+        let mut capacities = self.capacities.clone();
+        let mut direct = BTreeMap::<usize, i128>::new();
         for (region, &units) in routed.terminal_units.iter().enumerate() {
             if units == 0 {
                 continue;
             }
-            let slot = self.slots_by_region[region]
-                .ok_or("Runoff terminal has no initial active basin owner.")?;
-            next[slot] = next[slot]
+            let branch = self
+                .owner_of_region(region, &next)
+                .ok_or("Runoff terminal has no active basin owner.")?;
+            let entry = direct.entry(branch).or_default();
+            *entry = entry
+                .checked_add(units)
+                .ok_or("Prescribed-water direct input overflowed.")?;
+        }
+        let mut spilling = Vec::new();
+        let mut affected = BTreeSet::new();
+        for (&branch, &units) in &direct {
+            let previous = next[&branch];
+            let volume = previous
                 .checked_add(units)
                 .ok_or("Prescribed-water stock overflowed.")?;
-            affected[slot] = true;
-        }
-        for (slot, &volume) in next.iter().enumerate() {
-            if affected[slot] && self.capacities[slot].is_some_and(|capacity| volume >= capacity) {
-                return Err("Prescribed runoff reaches an unsupported basin spill limit.".into());
+            next.insert(branch, volume);
+            affected.insert(branch);
+            if self
+                .cached_capacity_units(branch, &mut capacities)?
+                .is_some_and(|capacity| volume >= capacity)
+            {
+                spilling.push(branch);
             }
+        }
+        if spilling.len() > 1 {
+            return Err("Simultaneous spill sources need an allocation policy.".into());
+        }
+        if let Some(branch) = spilling.pop() {
+            self.resolve_spill(branch, &mut next, &mut capacities, &mut affected)?;
         }
         let accepted = self
             .accepted_input_units
@@ -243,35 +337,183 @@ impl PrescribedWaterInventory {
             return Err("Prescribed-water step exceeds exact JSON integer range.".into());
         }
         self.stocks = next;
+        self.capacities = capacities;
         self.accepted_input_units = accepted;
         self.step = step;
         Ok(Step {
             input_units: routed.total_input_units,
-            affected_branches: self
-                .branches
-                .iter()
-                .enumerate()
-                .filter_map(|(slot, &branch)| affected[slot].then_some(branch))
-                .collect(),
+            affected_branches: affected.into_iter().collect(),
         })
     }
 
     /// Remaining exact capacity before this initial branch's spill threshold.
     /// None denotes the closed planet's root, which has no external spill.
     pub fn remaining_before_spill_units(&self, branch: usize) -> Result<Option<i128>, String> {
-        let slot = self
-            .branches
-            .binary_search(&branch)
-            .map_err(|_| "Branch has no active prescribed-water stock.")?;
-        Ok(self.capacities[slot].map(|capacity| capacity - self.stocks[slot]))
+        let stock = self
+            .stocks
+            .get(&branch)
+            .ok_or("Branch has no active prescribed-water stock.")?;
+        Ok(self
+            .capacity_units(branch)?
+            .map(|capacity| capacity - stock))
     }
 
-    fn check_balance(&self, accepted: i128, stocks: &[i128]) -> Result<(), String> {
+    fn is_descendant(&self, ancestor: usize, descendant: usize) -> bool {
+        self.enter[ancestor] <= self.enter[descendant]
+            && self.enter[descendant] < self.leave[ancestor]
+    }
+
+    fn owner_of_region(&self, region: usize, stocks: &BTreeMap<usize, i128>) -> Option<usize> {
+        let mut current = Some(*self.basins.region_nodes().get(region)?);
+        while let Some(branch) = current {
+            if stocks.contains_key(&branch) {
+                return Some(branch);
+            }
+            current = self.basins.nodes()[branch].parent;
+        }
+        None
+    }
+
+    fn capacity_units(&self, branch: usize) -> Result<Option<i128>, String> {
+        let spill = match self.basins.nodes()[branch].spill_level_meters {
+            Some(spill) => spill,
+            None => return Ok(None),
+        };
+        if let Some(cached) = self.capacities[branch] {
+            return Ok(Some(cached));
+        }
+        let mut total = 0_i128;
+        for (region, &node) in self.basins.region_nodes().iter().enumerate() {
+            if self.is_descendant(branch, node) {
+                let depth = (spill - self.heights[region]).max(0.);
+                total = total
+                    .checked_add(exact_units(self.areas[region] * depth)?)
+                    .ok_or("Prescribed-water capacity overflowed.")?;
+            }
+        }
+        Ok(Some(total))
+    }
+
+    fn cached_capacity_units(
+        &self,
+        branch: usize,
+        capacities: &mut [Option<i128>],
+    ) -> Result<Option<i128>, String> {
+        if capacities[branch].is_none() {
+            capacities[branch] = self.capacity_units(branch)?;
+        }
+        Ok(capacities[branch])
+    }
+
+    fn birth_capacity_units(&self, branch: usize) -> Result<i128, String> {
+        let children = &self.basins.nodes()[branch].children;
+        if children.is_empty() {
+            return Err("A leaf cannot be restored as a newly merged basin.".into());
+        }
+        children.iter().try_fold(0_i128, |total, &child| {
+            total
+                .checked_add(
+                    self.capacity_units(child)?
+                        .ok_or("Merged child has no spill capacity.")?,
+                )
+                .ok_or_else(|| "Prescribed-water merge capacity overflowed.".into())
+        })
+    }
+
+    fn resolve_spill(
+        &self,
+        mut source: usize,
+        stocks: &mut BTreeMap<usize, i128>,
+        capacities: &mut [Option<i128>],
+        affected: &mut BTreeSet<usize>,
+    ) -> Result<(), String> {
+        for _ in 0..self.basins.nodes().len() * 2 {
+            let Some(limit) = self.cached_capacity_units(source, capacities)? else {
+                return Ok(());
+            };
+            let volume = stocks[&source];
+            if volume < limit {
+                return Ok(());
+            }
+            let excess = volume - limit;
+            stocks.insert(source, limit);
+            let parent = self.basins.nodes()[source]
+                .parent
+                .ok_or("A closed root cannot spill.")?;
+            let children = &self.basins.nodes()[parent].children;
+            let mut all_full = true;
+            for &child in children {
+                let Some(&stock) = stocks.get(&child) else {
+                    all_full = false;
+                    break;
+                };
+                if Some(stock) != self.cached_capacity_units(child, capacities)? {
+                    all_full = false;
+                    break;
+                }
+            }
+            if all_full {
+                let mut merged = excess;
+                for &child in children {
+                    merged = merged
+                        .checked_add(stocks.remove(&child).unwrap())
+                        .ok_or("Prescribed-water merged stock overflowed.")?;
+                }
+                stocks.insert(parent, merged);
+                affected.insert(parent);
+                source = parent;
+                continue;
+            }
+            if excess == 0 {
+                return Ok(());
+            }
+            let mut receivers = BTreeSet::new();
+            for candidate in self.connections.receivers(source)? {
+                for plateau in candidate.plateaus {
+                    for contact in &self.connections.plateaus()[plateau].contacts {
+                        if contact.child_branch != candidate.branch {
+                            continue;
+                        }
+                        let receiver = self
+                            .owner_of_region(contact.edge[1] as usize, stocks)
+                            .ok_or("Spill contact has no active receiving basin.")?;
+                        if receiver != source
+                            && self
+                                .cached_capacity_units(receiver, capacities)?
+                                .is_none_or(|capacity| stocks[&receiver] < capacity)
+                        {
+                            receivers.insert(receiver);
+                        }
+                    }
+                }
+            }
+            if receivers.len() != 1 {
+                return Err(if receivers.is_empty() {
+                    "Spill has no open geographic receiver."
+                } else {
+                    "Spill has multiple geographic receivers."
+                }
+                .into());
+            }
+            let receiver = *receivers.first().unwrap();
+            stocks.insert(
+                receiver,
+                stocks[&receiver]
+                    .checked_add(excess)
+                    .ok_or("Prescribed-water receiving stock overflowed.")?,
+            );
+            affected.insert(receiver);
+            source = receiver;
+        }
+        Err("Prescribed-water spill exceeded its finite transition bound.".into())
+    }
+
+    fn check_balance(&self, accepted: i128, stocks: &BTreeMap<usize, i128>) -> Result<(), String> {
         let expected = self
             .initial_total_units
             .checked_add(accepted)
             .ok_or("Prescribed-water total ledger overflowed.")?;
-        let actual = stocks.iter().try_fold(0_i128, |sum, &volume| {
+        let actual = stocks.values().try_fold(0_i128, |sum, &volume| {
             sum.checked_add(volume)
                 .ok_or("Prescribed-water stock sum overflowed.")
         })?;
@@ -284,11 +526,10 @@ impl PrescribedWaterInventory {
     /// Approximate level for inspection only. Exact integer stock remains the
     /// physical accounting authority, including sub-display-resolution input.
     pub fn level_meters(&self, branch: usize) -> Result<Option<f64>, String> {
-        let slot = self
-            .branches
-            .binary_search(&branch)
-            .map_err(|_| "Branch has no active prescribed-water stock.")?;
-        let units = self.stocks[slot];
+        let units = *self
+            .stocks
+            .get(&branch)
+            .ok_or("Branch has no active prescribed-water stock.")?;
         if units == 0 {
             return Ok(None);
         }
