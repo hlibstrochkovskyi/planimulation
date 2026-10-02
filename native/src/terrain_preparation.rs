@@ -1,5 +1,5 @@
 //! Bounded, area-accounted dry slope relaxation before water fitting.
-//! This kernel is not yet part of the versioned generated-world pipeline.
+//! `terrain-prep-1` applies this kernel before initial water fitting.
 use crate::Surface;
 
 pub const MAX_PASSES: u32 = 16;
