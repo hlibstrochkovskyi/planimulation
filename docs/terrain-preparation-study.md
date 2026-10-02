@@ -42,7 +42,7 @@ Refining the spherical mesh preserves the earlier vertices as the first region c
 | 4 → 5 | 2,562 | 319.65 m | 16.79 m | 0 m | 74.89 m |
 | 5 → 6 | 10,242 | 348.30 m | 16.18 m | 0 m | 43.43 m |
 
-The generated world's *input bed* changes substantially even at shared positions. One known cause is that plate roots are selected from the mesh using its region count; the same RNG draw therefore maps to different candidate regions at different resolutions. Other upstream discretization effects may contribute. Generated-world paired differences cannot by themselves measure convergence of the preparation kernel. On the fixed analytic bed, the preparation difference decreases with refinement but is still 43.43 m between subdivisions 5 and 6 after four passes. Four data points on one synthetic field are insufficient to extrapolate a converged limit.
+The generated world's *input bed* changes substantially even at shared positions. One known cause is that plate roots are selected from the mesh using its region count; the same RNG draw therefore maps to different candidate regions at different resolutions. A separate [continuous plate-root candidate](plate-root-candidate.md) measures how much a mesh-independent root selection improves plate and raw-height stability, without changing current worlds. Other upstream discretization effects remain. Generated-world paired differences cannot by themselves measure convergence of the preparation kernel. On the fixed analytic bed, the preparation difference decreases with refinement but is still 43.43 m between subdivisions 5 and 6 after four passes. Four data points on one synthetic field are insufficient to extrapolate a converged limit.
 
 ## Engineering conclusion
 

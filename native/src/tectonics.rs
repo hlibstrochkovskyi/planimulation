@@ -108,6 +108,45 @@ impl Tectonics {
                 }
             }
         }
+        Self::build_from_seeds(surface, seed, count, max_speed_cm_year, radius, seeds)
+    }
+
+    /// Experimental alternative. Generated-world recipes still use `build`.
+    pub fn build_with_continuous_roots(
+        surface: &Surface,
+        seed: &str,
+        count: u32,
+        max_speed_cm_year: f64,
+        radius: f64,
+    ) -> Result<Self, String> {
+        if !radius.is_finite()
+            || radius <= 0.
+            || !max_speed_cm_year.is_finite()
+            || !(0. ..=20.).contains(&max_speed_cm_year)
+        {
+            return Err("Invalid continuous-root plate speed or radius.".into());
+        }
+        let directions = crate::plate_roots::directions(seed, count)?;
+        let seeds = crate::plate_roots::project(surface, &directions)?;
+        Ok(Self::build_from_seeds(
+            surface,
+            seed,
+            count,
+            max_speed_cm_year,
+            radius,
+            seeds,
+        ))
+    }
+
+    fn build_from_seeds(
+        surface: &Surface,
+        seed: &str,
+        count: u32,
+        max_speed_cm_year: f64,
+        radius: f64,
+        seeds: Vec<u32>,
+    ) -> Self {
+        let n = surface.centers.len();
         let mut resistance_rng = Random::stream(seed, "tectonics.partition-resistance");
         let modes: Vec<_> = (0..6)
             .map(|_| {

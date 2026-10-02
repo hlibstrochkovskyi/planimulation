@@ -273,6 +273,8 @@ try {
 
   await page.locator('#seed').fill('desktop-roundtrip');
   await page.locator('#subdivision').selectOption('3');
+  const advancedSettings = page.locator('details.advanced-settings');
+  if (await advancedSettings.count()) await advancedSettings.locator('summary').click();
   await page.locator('#plate-count').fill('7');
   await page.locator('#plate-speed').fill('0');
   await page.locator('#continental-fraction').fill('0');
