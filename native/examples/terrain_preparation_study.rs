@@ -55,19 +55,117 @@ fn slope_diagnostics(surface: &Surface, heights: &[f64]) -> (usize, f64, f64) {
     (count, (weighted_square / edge_weight).sqrt(), maximum)
 }
 
+struct PreviousLevel {
+    subdivision: u32,
+    centers: Vec<[f64; 3]>,
+    areas: Vec<f64>,
+    raw: Vec<f64>,
+    deltas: Vec<Vec<f64>>,
+}
+
+fn paired_locations(
+    previous: &PreviousLevel,
+    surface: &Surface,
+    raw: &[f64],
+    delta: &[f64],
+    pass_index: usize,
+    passes: u32,
+) -> Result<Value, String> {
+    let n = previous.raw.len();
+    if previous.centers != surface.centers[..n]
+        || previous.areas.len() != n
+        || previous.deltas[pass_index].len() != n
+        || raw.len() < n
+        || delta.len() < n
+    {
+        return Err("Refined mesh did not retain the coarse sample locations.".into());
+    }
+    let mut raw_difference = 0.;
+    let mut preparation_difference = 0.;
+    let mut activation_disagreement = 0.;
+    let total_area: f64 = previous.areas.iter().sum();
+    for region in 0..n {
+        let area = previous.areas[region];
+        let coarse_delta = previous.deltas[pass_index][region];
+        let fine_delta = delta[region];
+        raw_difference += area * (raw[region] - previous.raw[region]).abs();
+        preparation_difference += area * (fine_delta - coarse_delta).abs();
+        if (coarse_delta.abs() > 1e-9) != (fine_delta.abs() > 1e-9) {
+            activation_disagreement += area;
+        }
+    }
+    Ok(json!({
+        "coarseSubdivision": previous.subdivision,
+        "fineSubdivision": previous.subdivision + 1,
+        "commonLocations": n,
+        "requestedPasses": passes,
+        "meanAbsoluteRawDifferenceMeters": raw_difference / total_area,
+        "meanAbsolutePreparationDifferenceMeters": preparation_difference / total_area,
+        "activationDisagreementAreaFraction": activation_disagreement / total_area,
+    }))
+}
+
+fn analytic_height(center: [f64; 3]) -> f64 {
+    let [x, y, z] = center;
+    4000. * (11. * x + 3. * y).sin()
+        + 3000. * (7. * y - 5. * z).cos()
+        + 2000. * (13. * z - 4. * x).sin()
+}
+
+fn analytic_pairs(levels: &[u32], passes: &[u32]) -> Result<Vec<Value>, String> {
+    let mut previous: Option<PreviousLevel> = None;
+    let mut pairs = Vec::new();
+    for &level in levels {
+        let surface = Surface::build(level, 6_371_000.);
+        let raw: Vec<f64> = surface
+            .centers
+            .iter()
+            .copied()
+            .map(analytic_height)
+            .collect();
+        let mut deltas = Vec::new();
+        for (pass_index, &count) in passes.iter().enumerate() {
+            let result = prepare(&surface, &raw, count)?;
+            let delta: Vec<f64> = result
+                .elevation_meters
+                .iter()
+                .zip(&raw)
+                .map(|(a, b)| a - b)
+                .collect();
+            if let Some(coarse) = &previous {
+                pairs.push(paired_locations(
+                    coarse, &surface, &raw, &delta, pass_index, count,
+                )?);
+            }
+            deltas.push(delta);
+        }
+        previous = Some(PreviousLevel {
+            subdivision: level,
+            centers: surface.centers,
+            areas: surface.areas,
+            raw,
+            deltas,
+        });
+    }
+    Ok(pairs)
+}
+
 fn run(seed_count: usize, levels: &[u32], passes: &[u32]) -> Result<Value, String> {
     if seed_count == 0
         || seed_count > 12
         || levels.is_empty()
         || passes.is_empty()
         || levels.iter().any(|&level| !(2..=6).contains(&level))
+        || levels.windows(2).any(|pair| pair[1] != pair[0] + 1)
         || passes.iter().any(|&count| count > MAX_PASSES)
     {
         return Err("Invalid bounded terrain-preparation study parameters.".into());
     }
     let mut samples = Vec::new();
+    let mut generated_pairs = Vec::new();
     for seed_id in 0..seed_count {
         let seed = format!("terrain-study-{seed_id:02}");
+        let mut previous: Option<PreviousLevel> = None;
         for &level in levels {
             let settings = recipe(&seed, level);
             settings.validate()?;
@@ -97,9 +195,17 @@ fn run(seed_count: usize, levels: &[u32], passes: &[u32]) -> Result<Value, Strin
                 .sum();
             let (steep_before, rms_slope_before, max_slope_before) =
                 slope_diagnostics(&surface, &raw);
-            for &count in passes {
+            let mut deltas = Vec::new();
+            for (pass_index, &count) in passes.iter().enumerate() {
                 let result = prepare(&surface, &raw, count)?;
                 let after = &result.elevation_meters;
+                let delta: Vec<f64> = after.iter().zip(&raw).map(|(a, b)| a - b).collect();
+                if let Some(coarse) = &previous {
+                    let mut pair =
+                        paired_locations(coarse, &surface, &raw, &delta, pass_index, count)?;
+                    pair["seed"] = json!(seed);
+                    generated_pairs.push(pair);
+                }
                 let prepared_water = Water::generate(&surface, after, &settings.water)?;
                 let mut changed_area = 0.;
                 let mut weighted_abs = 0.;
@@ -136,11 +242,20 @@ fn run(seed_count: usize, levels: &[u32], passes: &[u32]) -> Result<Value, Strin
                         (prepared_water.resolved_volume_cubic_meters - raw_water.resolved_volume_cubic_meters)
                             / raw_water.resolved_volume_cubic_meters.max(1.),
                 }));
+                deltas.push(delta);
             }
+            previous = Some(PreviousLevel {
+                subdivision: level,
+                centers: surface.centers,
+                areas: surface.areas,
+                raw,
+                deltas,
+            });
         }
     }
+    let analytic_pairs = analytic_pairs(levels, passes)?;
     Ok(json!({
-        "reportVersion": 1,
+        "reportVersion": 2,
         "scope": "Dry initial-world preparation sensitivity, not elapsed-time erosion or resolution convergence proof",
         "seedCount": seed_count,
         "levels": levels,
@@ -149,6 +264,9 @@ fn run(seed_count: usize, levels: &[u32], passes: &[u32]) -> Result<Value, Strin
             "maximumChangePerPassMeters": MAX_CHANGE_PER_PASS_METERS},
         "recipeTemplate": recipe("terrain-study-00", 2),
         "samples": samples,
+        "pairedGeneratedLocations": generated_pairs,
+        "pairedAnalyticLocations": analytic_pairs,
+        "analyticBed": "4000*sin(11*x+3*y)+3000*cos(7*y-5*z)+2000*sin(13*z-4*x), unit-sphere coordinates, meters",
     }))
 }
 
@@ -186,5 +304,31 @@ mod tests {
         );
         assert!(run(1, &[7], &[4]).is_err());
         assert!(run(1, &[4], &[17]).is_err());
+    }
+
+    #[test]
+    fn common_locations_separate_upstream_changes_from_kernel_resolution_effects() {
+        let report = run(1, &[2, 3], &[0, 4]).unwrap();
+        assert_eq!(report["reportVersion"], 2);
+        let generated = report["pairedGeneratedLocations"].as_array().unwrap();
+        let analytic = report["pairedAnalyticLocations"].as_array().unwrap();
+        assert_eq!((generated.len(), analytic.len()), (2, 2));
+        assert_eq!(generated[0]["commonLocations"], 162);
+        assert_eq!(generated[0]["meanAbsolutePreparationDifferenceMeters"], 0.);
+        assert!(
+            generated[0]["meanAbsoluteRawDifferenceMeters"]
+                .as_f64()
+                .unwrap()
+                > 0.
+        );
+        assert_eq!(analytic[0]["meanAbsoluteRawDifferenceMeters"], 0.);
+        assert_eq!(analytic[1]["meanAbsoluteRawDifferenceMeters"], 0.);
+        assert!(
+            analytic[1]["meanAbsolutePreparationDifferenceMeters"]
+                .as_f64()
+                .unwrap()
+                > 0.
+        );
+        assert!(run(1, &[2, 4], &[4]).is_err());
     }
 }
