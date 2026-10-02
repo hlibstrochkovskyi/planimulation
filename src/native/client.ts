@@ -228,6 +228,8 @@ export class NativeController {
   private waterStep = 0;
   private sequence = 0;
   private prepared: { epoch: number; count: number; waterStep: number } | null = null;
+  private preparedWorld: World | null = null;
+  private activeWorld: World | null = null;
   constructor(private readonly executable: string) {}
   async generate(recipe: Recipe): Promise<{ world: World; epoch: number }> {
     this.cancel();
@@ -238,6 +240,7 @@ export class NativeController {
       if (this.candidate !== session) throw new Error('Native task canceled.');
       const epoch = ++this.sequence;
       this.prepared = { epoch, count: world.stats.regionCount, waterStep: 0 };
+      this.preparedWorld = world;
       return { world, epoch };
     } catch (e) { session.close(); if (this.candidate === session) this.candidate = null; throw e; }
   }
@@ -259,18 +262,26 @@ export class NativeController {
       if (this.candidate !== session) throw new Error('Native task canceled.');
       const epoch = ++this.sequence;
       this.prepared = { epoch, count: world.stats.regionCount, waterStep: waterFrame.step };
+      this.preparedWorld = world;
       return { world, waterFrame: { ...waterFrame, epoch }, epoch };
     } catch (error) {
       session.close(); if (this.candidate === session) this.candidate = null; throw error;
     }
   }
   accept(epoch: number): void {
-    if (!this.candidate || this.prepared?.epoch !== epoch) throw new Error('No matching prepared world.');
+    if (!this.candidate || !this.preparedWorld || this.prepared?.epoch !== epoch) throw new Error('No matching prepared world.');
     this.active?.close(); this.active = this.candidate; this.candidate = null;
+    this.activeWorld = this.preparedWorld; this.preparedWorld = null;
     this.epoch = epoch; this.count = this.prepared.count; this.tick = 0;
     this.waterStep = this.prepared.waterStep; this.prepared = null;
   }
-  cancel(): void { this.candidate?.close(); this.candidate = null; this.prepared = null; }
+  cancel(): void { this.candidate?.close(); this.candidate = null; this.prepared = null; this.preparedWorld = null; }
+  resolvedInitialWorld(epoch: number): World {
+    if (!this.active || !this.activeWorld || this.candidate || epoch !== this.epoch) {
+      throw new Error('No matching active world.');
+    }
+    return this.activeWorld;
+  }
   async advance(epoch: number, steps: number): Promise<DiagnosticFrame> {
     if (!this.active || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
     if (!Number.isInteger(steps) || steps < 1 || steps > 100) throw new Error('Steps must be from 1 to 100.');
@@ -342,5 +353,5 @@ export class NativeController {
     return { epoch, step: saved.step as number, initialTotalUnits: saved.origin.exactTotalUnits,
       acceptedInputUnits: saved.acceptedInputUnits, storedTotalUnits: stored.toString(), stocks };
   }
-  close(): void { this.cancel(); this.active?.close(); this.active = null; }
+  close(): void { this.cancel(); this.active?.close(); this.active = null; this.activeWorld = null; }
 }

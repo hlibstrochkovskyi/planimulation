@@ -6,6 +6,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseRecipe, serializeRecipe } from '../core/recipe';
 import { NativeController } from '../native/client';
+import { writeResolvedWorld } from '../native/resolved-export';
 import { parseCaptureRect } from '../shared/capture';
 
 const rendererFile = path.join(__dirname, '../renderer/index.html');
@@ -90,6 +91,16 @@ void app.whenReady().then(() => {
   ipcMain.handle('water:inspectBudget', (event, epoch: number) => {
     senderWindow(event);
     return core.inspectWaterBudget(epoch);
+  });
+  ipcMain.handle('world:saveResolved', async (event, epoch: number) => {
+    const window = senderWindow(event);
+    const world = core.resolvedInitialWorld(epoch);
+    const result = await dialog.showSaveDialog(window, { defaultPath: 'resolved-initial-world.json',
+      filters: [{ name: 'Resolved initial world', extensions: ['json'] }] });
+    if (result.canceled || !result.filePath) return false;
+    if (core.resolvedInitialWorld(epoch) !== world) throw new Error('World changed during resolved-state export.');
+    await writeResolvedWorld(result.filePath, world);
+    return true;
   });
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),

@@ -36,6 +36,7 @@ const waterVolumeInput = element<HTMLInputElement>('water-volume');
 const status = element('status');
 const cancel = element<HTMLButtonElement>('cancel');
 const save = element<HTMLButtonElement>('save-recipe');
+const saveResolved = element<HTMLButtonElement>('save-resolved');
 const exportView = element<HTMLButtonElement>('export-view');
 const waterAdd = element<HTMLButtonElement>('water-add');
 const waterSpill = element<HTMLButtonElement>('water-spill');
@@ -306,7 +307,8 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
   pause(); map.cancelPreparation();
   const request = ++generationId;
   const start = performance.now();
-  cancel.hidden = false; save.disabled = true; exportView.disabled = true; waterAdd.disabled = true; waterSpill.disabled = true;
+  cancel.hidden = false; save.disabled = true; saveResolved.disabled = true;
+  exportView.disabled = true; waterAdd.disabled = true; waterSpill.disabled = true;
   waterOpen.disabled = true; waterSave.disabled = true; waterBudgetButton.disabled = true;
   showStatus(prepared ? 'Preparing restored world views…' : 'Building the surface in the native core…');
   document.body.dataset.state = 'generating';
@@ -374,7 +376,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     element('model-label').textContent = 'BASINS-1 · STATIC INITIAL CONDITIONS';
     renderWaterBudget();
     if (restoredFrame) applyWaterFrame(restoredFrame, false);
-    updateLegend(); cancel.hidden = true; save.disabled = false; exportView.disabled = false;
+    updateLegend(); cancel.hidden = true; save.disabled = false; saveResolved.disabled = false; exportView.disabled = false;
     waterOpen.disabled = false; waterSave.disabled = false; waterBudgetButton.disabled = false;
     element<HTMLButtonElement>('play').disabled = false;
     document.body.dataset.state = 'ready';
@@ -384,7 +386,8 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
   } catch (error) {
     if (request === generationId) {
       void api.cancelGeneration();
-      cancel.hidden = true; save.disabled = world === null; exportView.disabled = world === null;
+      cancel.hidden = true; save.disabled = world === null; saveResolved.disabled = world === null;
+      exportView.disabled = world === null;
       waterOpen.disabled = false; waterSave.disabled = world === null || waterBusy;
       waterBudgetButton.disabled = world === null || budgetBusyEpoch === epoch;
       element<HTMLButtonElement>('play').disabled = world === null;
@@ -531,7 +534,8 @@ element('recipe-form').addEventListener('submit', (event) => {
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
 });
 cancel.addEventListener('click', () => {
-  generationId++; map.cancelPreparation(); void api.cancelGeneration(); cancel.hidden = true; save.disabled = world === null; exportView.disabled = world === null;
+  generationId++; map.cancelPreparation(); void api.cancelGeneration(); cancel.hidden = true;
+  save.disabled = world === null; saveResolved.disabled = world === null; exportView.disabled = world === null;
   waterOpen.disabled = false; waterSave.disabled = world === null || waterBusy;
   waterBudgetButton.disabled = world === null || budgetBusyEpoch === epoch;
   element<HTMLButtonElement>('play').disabled = world === null;
@@ -551,6 +555,15 @@ save.addEventListener('click', async () => {
   if (!world) return;
   try { if (await api.saveRecipe(world.recipe)) showStatus('Recipe saved. Reopen it to reproduce this surface.'); }
   catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
+});
+saveResolved.addEventListener('click', async () => {
+  if (!world || document.body.dataset.state === 'generating') return;
+  pause(); saveResolved.disabled = true;
+  try {
+    if (await api.saveResolvedWorld(epoch)) showStatus('Calculated initial world data exported. Manual water steps and diagnostic state are separate.');
+    else showStatus('World-data export canceled.');
+  } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
+  finally { saveResolved.disabled = world === null || document.body.dataset.state === 'generating'; }
 });
 exportView.addEventListener('click', async () => {
   if (!world) return;

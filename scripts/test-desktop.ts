@@ -49,7 +49,7 @@ try {
   }, { ...DEFAULT_RECIPE });
   assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'inspectWaterBudget', 'openRecipe', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveWaterCheckpoint']);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'inspectWaterBudget', 'openRecipe', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveWaterCheckpoint']);
   await page.locator('#water-budget-refresh').click();
   await expect(page.locator('#water-budget-note')).toContainText('Prescribed step 0');
   await expect(page.locator('#water-budget-details')).toContainText('Exact balance residual');
@@ -58,6 +58,20 @@ try {
     try { await window.desktop.exportView({ x: -1, y: 0, width: 100, height: 100 }); return false; }
     catch { return true; }
   }), true, 'The desktop bridge rejects an invalid map region before opening a save dialog.');
+
+  const resolvedPath = path.join(temp, 'resolved-initial-world.json');
+  await app.evaluate(({ dialog }, destination) => {
+    dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
+  }, resolvedPath);
+  await page.locator('#save-resolved').click();
+  await expect(page.locator('#status')).toContainText('Calculated initial world data exported');
+  const resolved = JSON.parse(await readFile(resolvedPath, 'utf8'));
+  assert.equal(resolved.format, 'planimulation-resolved-initial-world');
+  assert.equal(resolved.initialFingerprint, fingerprint);
+  assert.equal(resolved.stats.regionCount, 10_242);
+  assert.equal(resolved.terrain.elevation.length, 10_242);
+  assert.equal(resolved.water.depthMeters.length, 10_242);
+  assert.equal(resolved.basins.regionNodes.length, 10_242);
 
   const canvas = page.locator('#map');
   const atlasExportPath = path.join(temp, 'atlas-export.png');

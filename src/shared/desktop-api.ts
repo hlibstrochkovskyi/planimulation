@@ -22,6 +22,7 @@ export interface DesktopAPI {
   openWaterCheckpoint(): Promise<PreparedWaterWorld | null>;
   saveWaterCheckpoint(epoch: number): Promise<boolean>;
   inspectWaterBudget(epoch: number): Promise<WaterBudget>;
+  saveResolvedWorld(epoch: number): Promise<boolean>;
 }
 
 declare global {

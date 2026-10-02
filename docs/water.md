@@ -24,7 +24,7 @@ Coverage is between 0 and 1 and refers to **all initial water**, not just the la
 
 The default is 71% target coverage. No water RNG is used. Water settings do not change terrain, crust, plates, or the diagnostic field. Native generation stores both the input constraint and the resolved level, volume, depths, and component IDs. Those fields enter the initial fingerprint. Headless output includes requested settings and resolved statistics, including every body's area and volume.
 
-`Save recipe` exports versioned generation inputs, not a state checkpoint or a separate resolved-state archive. Reopening the same recipe with the supported binary recomputes the fitted state exactly. Preserve the headless report when an explicit record of the fitted inventory is needed. Old recipes, including `terrain-1`, are rejected rather than reinterpreted; older model implementations remain in Git history.
+`Save recipe` exports versioned generation inputs, not a state checkpoint. Reopening the same recipe with the supported binary recomputes the fitted state exactly. The later desktop [resolved initial-world report](resolved-world-export.md) records generated fields without making them resumable; the headless report retains compact summary statistics. Old recipes, including `terrain-1`, are rejected rather than reinterpreted; older model implementations remain in Git history.
 
 ## Regional volume approximation
 

@@ -72,4 +72,4 @@ No simultaneous project builds or tests ran during the samples. Each sample cove
 
 ## Next step
 
-Milestone C starts with drainage structure and constructed depression/spill experiments, not climate-derived rivers. Resolved-state/image export also remains outstanding in milestone B. This display change neither advances those systems nor changes water stocks.
+Milestone C starts with drainage structure and constructed depression/spill experiments, not climate-derived rivers. The later desktop [resolved initial-world report](resolved-world-export.md) and PNG export are separate from this display change, which neither advances those systems nor changes water stocks.
