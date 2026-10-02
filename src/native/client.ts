@@ -6,7 +6,7 @@ import type { World } from '../core/world';
 import { validateWater } from '../core/water';
 import { validateDrainage } from '../core/drainage';
 import { BASIN_ANALYSIS_VERSION, validateBasins } from '../core/basins';
-import type { DiagnosticFrame, PreparedWaterWorld, PrescribedWaterMode, WaterFrame } from '../shared/desktop-api';
+import type { DiagnosticFrame, PreparedWaterWorld, PrescribedWaterMode, WaterBudget, WaterFrame } from '../shared/desktop-api';
 
 const MAX_BYTES = 32 * 2 ** 20;
 const MAX_COMMAND_BYTES = 8 * 2 ** 20;
@@ -314,6 +314,33 @@ export class NativeController {
       session.close(); throw new Error('Invalid native water checkpoint.');
     }
     return `${contents}\n`;
+  }
+  async inspectWaterBudget(epoch: number): Promise<WaterBudget> {
+    const saved = JSON.parse(await this.exportWaterCheckpoint(epoch)) as {
+      step?: unknown; acceptedInputUnits?: unknown; origin?: { exactTotalUnits?: unknown };
+      stocks?: Array<{ branch?: unknown; volumeUnits?: unknown }>
+    };
+    const units = (value: unknown): value is string => typeof value === 'string'
+      && /^(0|[1-9][0-9]{0,38})$/.test(value);
+    if (!units(saved.origin?.exactTotalUnits) || !units(saved.acceptedInputUnits)
+      || !Array.isArray(saved.stocks) || saved.stocks.length === 0 || saved.stocks.length > this.count) {
+      this.active?.close(); throw new Error('Invalid native water budget.');
+    }
+    let stored = 0n, previous = -1;
+    const stocks = saved.stocks.map((stock) => {
+      if (!stock || typeof stock !== 'object' || !Number.isSafeInteger(stock.branch) || (stock.branch as number) <= previous
+        || (stock.branch as number) >= 2 * this.count - 1 || !units(stock.volumeUnits)) {
+        this.active?.close(); throw new Error('Invalid native water budget stock.');
+      }
+      previous = stock.branch as number;
+      stored += BigInt(stock.volumeUnits as string);
+      return { branch: stock.branch as number, volumeUnits: stock.volumeUnits as string };
+    });
+    if (stored !== BigInt(saved.origin.exactTotalUnits) + BigInt(saved.acceptedInputUnits)) {
+      this.active?.close(); throw new Error('Native water budget does not balance.');
+    }
+    return { epoch, step: saved.step as number, initialTotalUnits: saved.origin.exactTotalUnits,
+      acceptedInputUnits: saved.acceptedInputUnits, storedTotalUnits: stored.toString(), stocks };
   }
   close(): void { this.cancel(); this.active?.close(); this.active = null; }
 }

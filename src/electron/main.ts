@@ -87,6 +87,10 @@ void app.whenReady().then(() => {
     }
     return true;
   });
+  ipcMain.handle('water:inspectBudget', (event, epoch: number) => {
+    senderWindow(event);
+    return core.inspectWaterBudget(epoch);
+  });
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),
     { label: 'File', submenu: [{ role: 'quit' }] },

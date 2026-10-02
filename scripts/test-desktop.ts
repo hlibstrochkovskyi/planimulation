@@ -49,7 +49,11 @@ try {
   }, { ...DEFAULT_RECIPE });
   assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'openRecipe', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveWaterCheckpoint']);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'inspectWaterBudget', 'openRecipe', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveWaterCheckpoint']);
+  await page.locator('#water-budget-refresh').click();
+  await expect(page.locator('#water-budget-note')).toContainText('Prescribed step 0');
+  await expect(page.locator('#water-budget-details')).toContainText('Exact balance residual');
+  await expect(page.locator('#water-budget-details')).toContainText('0 units');
   assert.equal(await page.evaluate(async () => {
     try { await window.desktop.exportView({ x: -1, y: 0, width: 100, height: 100 }); return false; }
     catch { return true; }
@@ -400,6 +404,9 @@ try {
   await expect(page.locator('#selection-title')).toHaveText(`Region ${spillSample.id}`);
   await page.locator('#water-spill').click();
   await expect(page.locator('#water-step')).toContainText('Prescribed step 1');
+  await expect(page.locator('#water-budget-note')).toContainText('Prescribed step 1');
+  await expect(page.locator('#water-budget-details')).toContainText('Destination branch stock');
+  await expect(page.locator('#water-budget-details')).toContainText('0 units');
   await expect(page.locator('#water-summary')).toContainText('manual input');
   await expect(page.locator('#selection-details')).toContainText('Displayed prescribed-water depth');
   await page.locator('[data-layer="surface"]').click();
@@ -418,6 +425,7 @@ try {
   await page.locator('#water-add').click();
   await expect(page.locator('#water-step')).toContainText('Prescribed step 2');
   const continuedStep = await page.locator('#water-step').innerText();
+  const continuedBudget = await page.locator('#water-budget-details').innerText();
   await page.locator('#seed').fill('unsaved-form-edit');
   await page.locator('#water-coverage').fill('17');
   await app.evaluate(({ dialog }, destination) => {
@@ -426,6 +434,7 @@ try {
   await page.locator('#open-water').click();
   await expect(page.locator('#status')).toContainText('Water checkpoint restored');
   await expect(page.locator('#water-step')).toContainText('Prescribed step 1');
+  await expect(page.locator('#water-budget-note')).toContainText('Prescribed step 1');
   await expect(page.locator('#region-count')).toHaveText('162');
   await expect(page.locator('#seed')).toHaveValue(DEFAULT_RECIPE.seed);
   await expect(page.locator('#water-coverage')).toHaveValue('0');
@@ -433,6 +442,7 @@ try {
   await clickAtlas(spillSample);
   await page.locator('#water-add').click();
   await expect(page.locator('#water-step')).toHaveText(continuedStep);
+  await expect(page.locator('#water-budget-details')).toHaveText(continuedBudget, { useInnerText: true });
   const damagedCheckpointPath = path.join(temp, 'damaged-water-checkpoint.json');
   await writeFile(damagedCheckpointPath, JSON.stringify({ ...savedWater, acceptedInputUnits: '0' }));
   await app.evaluate(({ dialog }, destination) => {

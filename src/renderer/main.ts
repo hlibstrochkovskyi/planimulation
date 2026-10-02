@@ -2,7 +2,7 @@ import './style.css';
 import { DEFAULT_RECIPE, parseRecipe } from '../core/recipe';
 import type { Recipe } from '../core/recipe';
 import type { World } from '../core/world';
-import type { DesktopAPI, PreparedWaterWorld, PrescribedWaterMode, WaterFrame } from '../shared/desktop-api';
+import type { DesktopAPI, PreparedWaterWorld, PrescribedWaterMode, WaterBudget, WaterFrame } from '../shared/desktop-api';
 import { SurfaceMap } from './map';
 import type { Layer, ViewMode } from './map';
 import { BOUNDARY_NAMES, speedCmPerYear } from '../core/tectonics';
@@ -11,6 +11,7 @@ import { summarizeTerrain } from '../core/terrain';
 import { summarizeWater } from '../core/water';
 import { summarizeDrainage } from '../core/drainage';
 import { basinTree, summarizeBasins } from '../core/basins';
+import { approximateCubicKilometers, runoffDestination } from './water-budget';
 
 function element<T extends HTMLElement>(id: string): T {
   const result = document.getElementById(id);
@@ -40,11 +41,15 @@ const waterAdd = element<HTMLButtonElement>('water-add');
 const waterSpill = element<HTMLButtonElement>('water-spill');
 const waterOpen = element<HTMLButtonElement>('open-water');
 const waterSave = element<HTMLButtonElement>('save-water');
+const waterBudgetButton = element<HTMLButtonElement>('water-budget-refresh');
 const number = new Intl.NumberFormat('en', { maximumFractionDigits: 1 });
+const budgetNumber = new Intl.NumberFormat('en', { maximumSignificantDigits: 6 });
 let world: World | null = null;
 let waterFrame: WaterFrame | null = null;
+let waterBudget: WaterBudget | null = null;
 let waterBusy = false;
 let checkpointOpening = false;
+let budgetBusyEpoch: number | null = null;
 let generationId = 0;
 let epoch = 0;
 let selected: number | null = null;
@@ -66,9 +71,71 @@ function showStatus(message: string, error = false): void {
   status.classList.toggle('error', error);
 }
 
+function renderWaterBudget(): void {
+  const details = element('water-budget-details');
+  details.replaceChildren();
+  if (!world || !waterBudget) {
+    element('water-budget-note').textContent = 'Inspect the native inventory. Displayed depths are not used for accounting.';
+    return;
+  }
+  const budget = waterBudget;
+  const add = (label: string, value: string, exact?: string): void => {
+    const dt = document.createElement('dt'), dd = document.createElement('dd');
+    dt.textContent = label; dd.textContent = value;
+    if (exact) dd.title = `${exact} units of 2^-56 m³`;
+    details.append(dt, dd);
+  };
+  const approximate = (units: string): string => {
+    const volume = approximateCubicKilometers(units);
+    return `≈ ${volume !== 0 && volume < 0.001 ? volume.toExponential(3) : budgetNumber.format(volume)} km³`;
+  };
+  add('Initial accounted stock', approximate(budget.initialTotalUnits), budget.initialTotalUnits);
+  add('Accepted manual input', approximate(budget.acceptedInputUnits), budget.acceptedInputUnits);
+  add('Current active stocks', approximate(budget.storedTotalUnits), budget.storedTotalUnits);
+  const residual = BigInt(budget.storedTotalUnits) - BigInt(budget.initialTotalUnits) - BigInt(budget.acceptedInputUnits);
+  add('Exact balance residual', `${residual} units`);
+  add('Active basin branches', String(budget.stocks.length));
+  const largest: Array<{ branch: number; volumeUnits: string; amount: bigint }> = [];
+  for (const stock of budget.stocks) {
+    const amount = BigInt(stock.volumeUnits);
+    if (amount === 0n) continue;
+    const slot = largest.findIndex((entry) => amount > entry.amount || (amount === entry.amount && stock.branch < entry.branch));
+    largest.splice(slot < 0 ? largest.length : slot, 0, { ...stock, amount });
+    if (largest.length > 3) largest.pop();
+  }
+  for (const stock of largest) {
+    add(`Large stock · branch ${stock.branch}`, approximate(stock.volumeUnits), stock.volumeUnits);
+  }
+  if (selected !== null) {
+    const destination = runoffDestination(world, budget, selected);
+    add('Selected source destination', `Region ${destination.terminal} → branch ${destination.branch}`);
+    add('Destination branch stock', approximate(destination.volumeUnits), destination.volumeUnits);
+  }
+  element('water-budget-note').textContent = `Prescribed step ${budget.step} · exact native ledger: initial + accepted = exclusive active stocks. Approximate km³ labels are display only.`;
+}
+
+async function refreshWaterBudget(): Promise<void> {
+  if (!world || budgetBusyEpoch === epoch) return;
+  const request = generationId, activeEpoch = epoch;
+  budgetBusyEpoch = activeEpoch; waterBudgetButton.disabled = true;
+  try {
+    const budget = await api.inspectWaterBudget(activeEpoch);
+    if (request !== generationId || budget.epoch !== epoch) return;
+    waterBudget = budget; renderWaterBudget();
+  } catch (error) {
+    if (request === generationId) showStatus(error instanceof Error ? error.message : String(error), true);
+  } finally {
+    if (budgetBusyEpoch === activeEpoch) {
+      budgetBusyEpoch = null;
+      waterBudgetButton.disabled = document.body.dataset.state === 'generating' || checkpointOpening || waterBusy;
+    }
+  }
+}
+
 function inspect(id: number, preserveBasin = false): void {
   if (!world) return;
   selected = id;
+  if (waterBudget) renderWaterBudget();
   waterAdd.disabled = waterBusy || checkpointOpening || document.body.dataset.state === 'generating'; waterSpill.disabled = waterAdd.disabled;
   inspectBasin(preserveBasin && inspectedBasin !== null ? inspectedBasin : world.basins.regionNodes[id]);
   const s = world.surface, x = s.centers[id * 3], y = s.centers[id * 3 + 1], z = s.centers[id * 3 + 2];
@@ -240,7 +307,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
   const request = ++generationId;
   const start = performance.now();
   cancel.hidden = false; save.disabled = true; exportView.disabled = true; waterAdd.disabled = true; waterSpill.disabled = true;
-  waterOpen.disabled = true; waterSave.disabled = true;
+  waterOpen.disabled = true; waterSave.disabled = true; waterBudgetButton.disabled = true;
   showStatus(prepared ? 'Preparing restored world views…' : 'Building the surface in the native core…');
   document.body.dataset.state = 'generating';
   element<HTMLButtonElement>('play').disabled = true;
@@ -256,7 +323,8 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     // Queue acceptance before any subsequent UI action; no await between view
     // publication and this request. The old native world survives preparation.
     const accepted = api.acceptWorld(result.epoch);
-    world = result.world; epoch = result.epoch; selected = null; waterFrame = null; waterBusy = false;
+    world = result.world; epoch = result.epoch; selected = null; waterFrame = null; waterBudget = null;
+    waterBusy = false; budgetBusyEpoch = null;
     if (prepared) setInputs(world.recipe);
     terrainStats = summarizeTerrain(world.surface, world.terrain);
     const waterStats = summarizeWater(world.surface, world.water);
@@ -304,9 +372,10 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     element('diagnostic-tick').textContent = 'Step 0';
     element('water-step').textContent = 'Select a source region · manual input, no elapsed time';
     element('model-label').textContent = 'BASINS-1 · STATIC INITIAL CONDITIONS';
+    renderWaterBudget();
     if (restoredFrame) applyWaterFrame(restoredFrame, false);
     updateLegend(); cancel.hidden = true; save.disabled = false; exportView.disabled = false;
-    waterOpen.disabled = false; waterSave.disabled = false;
+    waterOpen.disabled = false; waterSave.disabled = false; waterBudgetButton.disabled = false;
     element<HTMLButtonElement>('play').disabled = false;
     document.body.dataset.state = 'ready';
     showStatus(restoredFrame ? `Water checkpoint restored at prescribed step ${restoredFrame.step}. Exact stocks are ready to continue.`
@@ -317,6 +386,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
       void api.cancelGeneration();
       cancel.hidden = true; save.disabled = world === null; exportView.disabled = world === null;
       waterOpen.disabled = false; waterSave.disabled = world === null || waterBusy;
+      waterBudgetButton.disabled = world === null || budgetBusyEpoch === epoch;
       element<HTMLButtonElement>('play').disabled = world === null;
       showStatus(error instanceof Error ? error.message : String(error), true);
       document.body.dataset.state = 'error';
@@ -329,7 +399,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
 function applyWaterFrame(frame: WaterFrame, updateMap = true): void {
   if (!world) throw new Error('No generated world for the prescribed-water display.');
   if (updateMap) map.setWaterFrame(frame);
-  waterFrame = frame;
+  waterFrame = frame; waterBudget = null; renderWaterBudget();
   maximumWaterDepth = frame.depthMeters.reduce((maximum, depth) => Math.max(maximum, depth), 0);
   let displayedWetArea = 0;
   for (let region = 0; region < frame.bodyIds.length; region++) {
@@ -346,19 +416,25 @@ function applyWaterFrame(frame: WaterFrame, updateMap = true): void {
 
 async function prescribeWater(mode: PrescribedWaterMode): Promise<void> {
   if (!world || selected === null || waterBusy || checkpointOpening || document.body.dataset.state === 'generating') return;
-  pause(); waterBusy = true; waterAdd.disabled = true; waterSpill.disabled = true; waterSave.disabled = true;
+  pause(); waterBusy = true; waterAdd.disabled = true; waterSpill.disabled = true;
+  waterSave.disabled = true; waterBudgetButton.disabled = true;
   const request = generationId, activeEpoch = epoch, source = selected;
   try {
     const frame = await api.prescribeWater(activeEpoch, source, mode);
     if (request !== generationId || frame.epoch !== epoch || !world) return;
     applyWaterFrame(frame);
-    showStatus(`Prescribed runoff accepted at region ${source}. Exact basin stocks remain native; rendered water is an approximation.`);
+    await refreshWaterBudget();
+    if (waterBudget?.step === frame.step) {
+      showStatus(`Prescribed runoff accepted at region ${source}. Exact basin stocks remain native; rendered water is an approximation.`);
+    }
   } catch (error) {
     if (request === generationId) showStatus(error instanceof Error ? error.message : String(error), true);
   } finally {
     if (epoch === activeEpoch) {
       waterBusy = false;
       waterSave.disabled = checkpointOpening || document.body.dataset.state === 'generating';
+      waterBudgetButton.disabled = checkpointOpening || budgetBusyEpoch === activeEpoch
+        || document.body.dataset.state === 'generating';
       if (world && selected !== null && !checkpointOpening && document.body.dataset.state !== 'generating') {
         waterAdd.disabled = false; waterSpill.disabled = false;
       }
@@ -370,10 +446,14 @@ waterSpill.addEventListener('click', () => void prescribeWater('fillToSpill'));
 waterOpen.addEventListener('click', async () => {
   if (checkpointOpening || document.body.dataset.state === 'generating') return;
   pause(); checkpointOpening = true;
-  waterOpen.disabled = true; waterAdd.disabled = true; waterSpill.disabled = true; waterSave.disabled = true;
+  waterOpen.disabled = true; waterAdd.disabled = true; waterSpill.disabled = true;
+  waterSave.disabled = true; waterBudgetButton.disabled = true;
   try {
     const prepared = await api.openWaterCheckpoint();
-    if (prepared) await generate(null, prepared);
+    if (prepared) {
+      await generate(null, prepared);
+      if (world && epoch === prepared.epoch) await refreshWaterBudget();
+    }
     else showStatus('Water checkpoint opening canceled.');
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
   finally {
@@ -381,13 +461,21 @@ waterOpen.addEventListener('click', async () => {
     if (document.body.dataset.state !== 'generating') {
       waterOpen.disabled = false;
       waterSave.disabled = world === null || waterBusy;
+      waterBudgetButton.disabled = world === null || budgetBusyEpoch === epoch;
       waterAdd.disabled = world === null || selected === null || waterBusy;
       waterSpill.disabled = waterAdd.disabled;
     }
   }
 });
+waterBudgetButton.addEventListener('click', () => {
+  if (!checkpointOpening && !waterBusy && document.body.dataset.state !== 'generating') {
+    pause();
+    void refreshWaterBudget();
+  }
+});
 waterSave.addEventListener('click', async () => {
   if (!world || waterBusy || checkpointOpening || document.body.dataset.state === 'generating') return;
+  pause();
   waterSave.disabled = true;
   try {
     if (await api.saveWaterCheckpoint(epoch)) showStatus('Exact prescribed-water checkpoint saved.');
@@ -445,6 +533,7 @@ element('recipe-form').addEventListener('submit', (event) => {
 cancel.addEventListener('click', () => {
   generationId++; map.cancelPreparation(); void api.cancelGeneration(); cancel.hidden = true; save.disabled = world === null; exportView.disabled = world === null;
   waterOpen.disabled = false; waterSave.disabled = world === null || waterBusy;
+  waterBudgetButton.disabled = world === null || budgetBusyEpoch === epoch;
   element<HTMLButtonElement>('play').disabled = world === null;
   document.body.dataset.state = world ? 'ready' : 'idle';
   waterAdd.disabled = world === null || selected === null || waterBusy;

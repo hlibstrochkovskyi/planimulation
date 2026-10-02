@@ -1,6 +1,6 @@
 # Bounded prescribed-water inventory
 
-Status: opt-in native-core state and version-2 checkpoint for prescribed runoff with bounded geographic spill and merge. A [manual desktop view](prescribed-water-desktop.md) can drive, display, save, restore, and continue supported steps. It is not a general dynamic water solver or a climate model. Version-1 checkpoints are not silently migrated.
+Status: opt-in native-core state and version-2 checkpoint for prescribed runoff with bounded geographic spill and merge. A [manual desktop view](prescribed-water-desktop.md) can drive, display, save, restore, continue, and inspect the exact ledger of supported steps. It is not a general dynamic water solver or a climate model. Version-1 checkpoints are not silently migrated.
 
 ## Accounting contract
 

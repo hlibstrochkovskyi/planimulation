@@ -10,6 +10,7 @@ import { buildSurface } from '../src/core/surface';
 import { speedCmPerYear, summarizeTectonics } from '../src/core/tectonics';
 import { summarizeCrust } from '../src/core/crust';
 import { basinTree } from '../src/core/basins';
+import { runoffDestination } from '../src/renderer/water-budget';
 
 const executable = path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core');
 
@@ -134,7 +135,15 @@ test('water checkpoint reload preserves exact continuation and rejects damaged s
     const initial = JSON.parse(await original.exportWaterCheckpoint(epoch));
     assert.equal(initial.step, 0);
     assert.equal(initial.acceptedInputUnits, '0');
+    const initialBudget = await original.inspectWaterBudget(epoch);
+    assert.equal(initialBudget.storedTotalUnits, initialBudget.initialTotalUnits);
+    assert.equal(initialBudget.acceptedInputUnits, '0');
     const before = await original.prescribeWater(epoch, source, 'fillToSpill');
+    const budget = await original.inspectWaterBudget(epoch);
+    assert.equal(budget.step, before.step);
+    assert.equal(budget.acceptedInputUnits, before.acceptedInputUnits);
+    assert.equal(BigInt(budget.storedTotalUnits), BigInt(budget.initialTotalUnits) + BigInt(budget.acceptedInputUnits));
+    assert.ok(BigInt(runoffDestination(world, budget, source).volumeUnits) > 0n);
     const contents = await original.exportWaterCheckpoint(epoch);
     const checkpoint = JSON.parse(contents);
     assert.equal(checkpoint.inventoryVersion, 'prescribed-water-inventory-2');
@@ -148,6 +157,7 @@ test('water checkpoint reload preserves exact continuation and rejects damaged s
     assert.deepEqual(loaded.waterFrame.bodyIds, before.bodyIds);
     resumed.accept(loaded.epoch);
     assert.equal(await resumed.exportWaterCheckpoint(loaded.epoch), contents);
+    assert.deepEqual({ ...await resumed.inspectWaterBudget(loaded.epoch), epoch }, budget);
     const a = await original.prescribeWater(epoch, source, 'oneCubicKilometer');
     const b = await resumed.prescribeWater(loaded.epoch, source, 'oneCubicKilometer');
     assert.deepEqual({ ...b, epoch: epoch }, a);
