@@ -367,5 +367,6 @@ pub mod spill_network;
 pub mod spill_readiness;
 pub mod tectonics;
 pub mod terrain;
+pub mod terrain_preparation;
 pub mod water;
 pub mod wire;

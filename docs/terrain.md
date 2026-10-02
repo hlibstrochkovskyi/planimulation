@@ -2,6 +2,8 @@
 
 Historical B3 record. [B4 initial water](water.md) extended this unchanged elevation algorithm; the current build retains [C2b basin inspection](basin-inspection.md), model `basins-1`, and protocol 9. Measurements below refer to the B3 build.
 
+A later [bounded dry terrain-preparation kernel](terrain-preparation.md) is separate from this generated elevation; it has not changed the versioned world model or the results below.
+
 Implemented model: `terrain-1`, binary protocol 4. B3 adds static elevation and a displaced globe to B1 plates and B2 crust. Water, erosion, geological age, subduction polarity, and geological time integration remain unimplemented.
 
 ## Datum and ownership

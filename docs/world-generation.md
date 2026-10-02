@@ -113,6 +113,8 @@ Closed basins retain water and lose it through evaporation/infiltration. Spillin
 
 ### F. Erosion and terrain preparation
 
+An independent [bounded dry terrain-preparation kernel](terrain-preparation.md) now implements reference-area material transfer on steep graph edges with recorded removal and deposition. It is not yet connected to generation, so current bed, water, drainage, and basin layers remain unchanged.
+
 Start with bounded material transfer on excessively steep slopes. Later add simplified erosion along runoff paths, including transport and deposition. Removed material must be recorded as transported, deposited, or exported from the modeled reservoir.
 
 Early preparation may use explicitly hypothetical moisture input. Once climate exists, erosion can use its mean runoff. Significant terrain changes require recomputing catchments and water levels.
