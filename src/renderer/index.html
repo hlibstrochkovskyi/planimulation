@@ -37,6 +37,8 @@
             <input id="boundary-width" type="number" min="50" max="1000" step="any" value="300" required />
             <label for="detail-amplitude">Detail amplitude bound <span>m</span></label>
             <input id="detail-amplitude" type="number" min="0" max="1000" step="any" value="300" required />
+            <label for="terrain-preparation-passes">Dry terrain preparation <span>0–16 passes · not years</span></label>
+            <input id="terrain-preparation-passes" type="number" min="0" max="16" step="1" value="4" required />
             <label for="water-mode">Initial water constraint</label>
             <select id="water-mode"><option value="coverage">Target total water coverage</option><option value="volume">Fixed water volume</option></select>
             <div id="water-coverage-control"><label for="water-coverage">Water coverage <span>% · all water bodies</span></label><input id="water-coverage" type="number" min="0" max="100" step="any" value="71" required /></div>
@@ -68,7 +70,7 @@
           </div>
           <label class="checkbox"><input id="boundaries" type="checkbox" /> Region boundaries</label>
         </section>
-        <section class="stage-note"><p class="eyebrow">WHAT THIS MODEL MEANS</p><p>Initial water depth follows the geological bed and one fitted level. The largest connected water body is called the main ocean; others are inland basins. This does not model salinity.</p><p>Manual runoff can fill and spill between unambiguous basins. It has no elapsed time, climate forcing, or changing drainage; unsupported routes are rejected. Save recipe returns to initial water; a water checkpoint saves this manual inventory separately.</p><p>Land and water shows a separate water surface on the globe, limited to displayed wet regions and occluded by the interpolated bed. Its shoreline and levels are visual approximations; exact basin stocks remain in the native core. Depth and geology layers show the bed. Land colors are elevation-based, not biomes.</p><p>Erosion, rivers, and climate are not implemented. Diagnostic playback does not change terrain or water.</p></section>
+        <section class="stage-note"><p class="eyebrow">WHAT THIS MODEL MEANS</p><p>Bounded dry slope preparation can move bed material before initial water filling. Its passes are not years or climate-driven erosion. Water, drainage, and basins then use the prepared bed.</p><p>Manual runoff can fill and spill between unambiguous basins. It has no elapsed time, climate forcing, or changing drainage; unsupported routes are rejected. Save recipe returns to initial water; a water checkpoint saves this manual inventory separately.</p><p>Land and water shows a separate water surface on the globe, limited to displayed wet regions and occluded by the interpolated bed. Its shoreline and levels are visual approximations; exact basin stocks remain in the native core. Depth and geology layers show the bed. Land colors are elevation-based, not biomes.</p><p>Rivers, seasonal climate, and ongoing erosion are not implemented. Diagnostic playback does not change terrain or water.</p></section>
         <div class="sidebar-bottom"><span class="status-dot"></span> LOCAL · OFFLINE · REPRODUCIBLE</div>
       </aside>
       <div class="workspace">
@@ -92,7 +94,7 @@
         <section class="boundary-inspector"><p class="eyebrow">WHY WATER HERE?</p><p id="water-note" class="muted">Select a region to inspect initial filling.</p></section>
         <section class="boundary-inspector"><p class="eyebrow">WHERE WOULD RUNOFF GO?</p><p id="drainage-note" class="muted">Select a region to inspect drainage potential, not actual flow.</p></section>
         <section class="inspector"><div><p class="eyebrow">BASIN ANALYSIS · NOT LIVE WATER</p><h3 id="basin-title">Select a region</h3><p id="basin-note" class="muted">Thresholds describe possible connections, not current water levels.</p><button id="basin-parent" disabled>Inspect parent</button><button id="basin-owner" disabled>Region branch</button></div><dl id="basin-details"></dl></section>
-        <section class="boundary-inspector"><p class="eyebrow">WHY THIS ELEVATION?</p><p class="muted">Contributions sum to the native elevation. Display exaggeration changes none of them. Shear alone has no uplift term; subduction polarity and geological age are not modeled.</p><ul id="elevation-details"></ul></section>
+        <section class="boundary-inspector"><p class="eyebrow">WHY THIS ELEVATION?</p><p class="muted">Crust, plate response, detail, and dry preparation sum to the native elevation. Display exaggeration changes none of them. No geological age or climate erosion is modeled.</p><ul id="elevation-details"></ul></section>
         <section class="boundary-inspector"><p class="eyebrow">BOUNDARY EXPLANATION</p><p id="boundary-note" class="muted">Select a region to inspect its plate and any inter-plate boundary segments.</p><ul id="boundary-details"></ul></section>
       </div>
     </main>

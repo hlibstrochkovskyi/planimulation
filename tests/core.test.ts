@@ -33,6 +33,22 @@ test('terrain controls reject missing, non-numeric, non-finite, and out-of-range
   }
 });
 
+test('terrain preparation is versioned, bounded, and never silently added to legacy recipes', () => {
+  for (const passes of [0, 4, 16]) {
+    const recipe = { ...DEFAULT_RECIPE, terrainPreparationPasses: passes };
+    assert.deepEqual(parseRecipe(recipe), recipe);
+  }
+  for (const passes of [-1, 17, 1.5, NaN, '4', undefined]) {
+    assert.throws(() => parseRecipe({ ...DEFAULT_RECIPE, terrainPreparationPasses: passes }), /preparation passes/);
+  }
+  const { terrainPreparationPasses: _passes, ...legacy } = DEFAULT_RECIPE;
+  const legacyRecipe = { ...legacy, modelVersion: 'basins-1' };
+  assert.deepEqual(parseRecipe(legacyRecipe), legacyRecipe);
+  assert.deepEqual(JSON.parse(serializeRecipe(parseRecipe(legacyRecipe))), legacyRecipe);
+  assert.throws(() => parseRecipe({ ...legacyRecipe, terrainPreparationPasses: 0 }), /Unknown recipe field/);
+  assert.throws(() => parseRecipe({ ...DEFAULT_RECIPE, modelVersion: 'basins-1' }), /Unknown recipe field/);
+});
+
 test('FNV-1a known vectors and Mulberry32 reference sequence stay fixed', () => {
   assert.equal(hashString(''), 0x811c9dc5);
   assert.equal(hashString('a'), 0xe40c292c);

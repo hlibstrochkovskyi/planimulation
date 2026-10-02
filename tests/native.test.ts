@@ -168,7 +168,7 @@ test('water checkpoint reload preserves exact continuation and rejects damaged s
   } finally { original.close(); resumed.close(); }
 });
 
-test('native validation rejects legacy recipes and malformed output is not decoded', async () => {
+test('native validation rejects unsupported recipes and malformed output is not decoded', async () => {
   const session = new NativeSession(executable);
   try {
     await assert.rejects(session.request({ command: 'advance', steps: 1 }), /Generate/);
@@ -180,17 +180,37 @@ test('native validation rejects legacy recipes and malformed output is not decod
     assert.throws(() => decodeWorld({ ...packet, header: { ...packet.header, boundarySegmentCount: 1e9 } }), /boundary count/);
     const world = decodeWorld(packet);
     const waterAndDrainageBytes = 20 + world.stats.regionCount * 36 + world.basins.parents.length * 44;
-    const extraBytes = world.stats.regionCount * 4 + world.recipe.plateCount * 28 + Number(packet.header.boundarySegmentCount) * 76 + 8 + world.stats.regionCount * 72 + waterAndDrainageBytes;
+    const terrainBytes = world.stats.regionCount * (world.recipe.modelVersion === 'terrain-prep-1' ? 80 : 72);
+    const extraBytes = world.stats.regionCount * 4 + world.recipe.plateCount * 28 + Number(packet.header.boundarySegmentCount) * 76 + 8 + terrainBytes + waterAndDrainageBytes;
     const corruptedOwner = Buffer.from(packet.bytes);
     corruptedOwner.writeUInt32LE(world.recipe.plateCount, packet.bytes.length - extraBytes);
     assert.throws(() => decodeWorld({ ...packet, bytes: corruptedOwner }), /plate metadata/);
     for (const [offset, value] of [[0, NaN], [8, 2], [8 + 12 * 8, -0.1], [8 + 24 * 8, 1], [8 + 36 * 8, 4000]]) {
       const invalidCrust = Buffer.from(packet.bytes);
-      invalidCrust.writeDoubleLE(value, packet.bytes.length - (8 + 12 * 72) - waterAndDrainageBytes + offset);
+      invalidCrust.writeDoubleLE(value, packet.bytes.length - (8 + terrainBytes) - waterAndDrainageBytes + offset);
       assert.throws(() => decodeWorld({ ...packet, bytes: invalidCrust }), /finite|crust/);
     }
     const invalidHeight = Buffer.from(packet.bytes); invalidHeight.writeDoubleLE(100000, packet.bytes.length - waterAndDrainageBytes - 8);
     assert.throws(() => decodeWorld({ ...packet, bytes: invalidHeight }), /elevation/);
+  } finally { session.close(); }
+});
+
+test('prepared world transport pins protocol, provenance, and preparation metadata', async () => {
+  const session = new NativeSession(executable);
+  try {
+    const packet = await session.request({ command: 'generate', recipe: { ...DEFAULT_RECIPE, subdivision: 3, terrainPreparationPasses: 8 } });
+    const world = decodeWorld(packet);
+    assert.equal(packet.header.protocol, 10);
+    assert.equal(world.terrain.preparation.length, world.stats.regionCount);
+    assert.ok(world.terrain.transportedCubicMeters > 0);
+    assert.ok(world.terrain.appliedPasses > 0);
+    assert.throws(() => decodeWorld({ ...packet, header: { ...packet.header, protocol: 9 } }), /terrain model/);
+    assert.throws(() => decodeWorld({ ...packet, header: { ...packet.header, terrainPreparation: { appliedPasses: 17, transportedCubicMeters: 1 } } }), /preparation metadata/);
+    const waterAndDrainageBytes = 20 + world.stats.regionCount * 36 + world.basins.parents.length * 44;
+    const corrupted = Buffer.from(packet.bytes);
+    const preparationOffset = corrupted.length - waterAndDrainageBytes - world.stats.regionCount * 16;
+    corrupted.writeDoubleLE(world.terrain.preparation[0] + 1, preparationOffset);
+    assert.throws(() => decodeWorld({ ...packet, bytes: corrupted }), /elevation contributions/);
   } finally { session.close(); }
 });
 

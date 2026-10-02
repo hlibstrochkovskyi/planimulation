@@ -18,16 +18,20 @@ pub struct Recipe {
     pub relief_scale: f64,
     pub boundary_width_km: f64,
     pub detail_amplitude_meters: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub terrain_preparation_passes: Option<u32>,
     pub water: water::WaterSettings,
 }
 
 impl Recipe {
     pub fn validate(&self) -> Result<(), String> {
-        if self.schema_version != 1
-            || self.model_version != "basins-1"
-            || self.random_version != "fnv1a-utf8-mulberry32-1"
-        {
-            return Err("Unsupported recipe version; expected basins-1.".into());
+        if self.schema_version != 1 || self.random_version != "fnv1a-utf8-mulberry32-1" {
+            return Err("Unsupported recipe or random version.".into());
+        }
+        match (self.model_version.as_str(), self.terrain_preparation_passes) {
+            ("basins-1", None) => {}
+            ("terrain-prep-1", Some(passes)) if passes <= terrain_preparation::MAX_PASSES => {}
+            _ => return Err("Unsupported terrain model or preparation pass count.".into()),
         }
         if self.seed.trim().is_empty() || self.seed.encode_utf16().count() > 128 {
             return Err("Seed must contain 1–128 UTF-16 code units and cannot be blank.".into());
@@ -266,7 +270,17 @@ impl World {
             recipe.max_plate_speed_cm_per_year,
             recipe.radius_meters,
         );
-        let terrain = terrain::Terrain::build(&surface, &crust, &tectonics, &recipe);
+        let mut terrain = terrain::Terrain::build(&surface, &crust, &tectonics, &recipe);
+        if let Some(passes) = recipe.terrain_preparation_passes {
+            let prepared = terrain_preparation::prepare(&surface, &terrain.elevation, passes)?;
+            for region in 0..terrain.elevation.len() {
+                terrain.preparation[region] =
+                    prepared.elevation_meters[region] - terrain.elevation[region];
+                terrain.elevation[region] = prepared.elevation_meters[region];
+            }
+            terrain.transported_cubic_meters = prepared.transported_cubic_meters;
+            terrain.applied_passes = prepared.applied_passes;
+        }
         let water = water::Water::generate(&surface, &terrain.elevation, &recipe.water)?;
         let drainage = drainage::Drainage::build(&surface, &terrain.elevation, &water.body_ids);
         let basins = basins::Basins::build(&surface, &terrain.elevation)?;

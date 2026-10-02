@@ -6,7 +6,10 @@ export interface Terrain {
   convergence: Float64Array;
   divergence: Float64Array;
   detail: Float64Array;
+  preparation: Float64Array;
   elevation: Float64Array;
+  transportedCubicMeters: number;
+  appliedPasses: number;
 }
 export function summarizeTerrain(surface: Surface, terrain: Terrain): { minimumMeters: number; maximumMeters: number; meanMeters: number } {
   let min = Infinity, max = -Infinity, weighted = 0, area = 0;

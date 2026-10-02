@@ -6,10 +6,10 @@ import { pipeline } from 'node:stream/promises';
 import type { World } from '../core/world';
 
 export const RESOLVED_WORLD_FORMAT = 'planimulation-resolved-initial-world';
-export const RESOLVED_WORLD_FORMAT_VERSION = 1;
+export const RESOLVED_WORLD_FORMAT_VERSION = 2;
 const MAX_REPORT_BYTES = 256 * 2 ** 20;
 
-/** Explicit v1 projection: later model fields cannot silently change this format. */
+/** Explicit v2 projection: later model fields cannot silently change this format. */
 export function resolvedWorldRecord(world: World): object {
   const { surface: s, tectonics: t, crust: c, terrain: h, water: w, drainage: d, basins: b } = world;
   return {
@@ -26,7 +26,8 @@ export function resolvedWorldRecord(world: World): object {
     crust: { threshold: c.threshold, potential: c.potential, continentality: c.continentality,
       thicknessMeters: c.thicknessMeters, densityKgPerCubicMeter: c.densityKgPerCubicMeter },
     terrain: { baseline: h.baseline, convergence: h.convergence, divergence: h.divergence,
-      detail: h.detail, elevation: h.elevation },
+      detail: h.detail, preparation: h.preparation, elevation: h.elevation,
+      transportedCubicMeters: h.transportedCubicMeters, appliedPasses: h.appliedPasses },
     water: { levelMeters: w.levelMeters, resolvedVolumeCubicMeters: w.resolvedVolumeCubicMeters,
       depthMeters: w.depthMeters, bodyIds: w.bodyIds, mainOceanId: w.mainOceanId },
     drainage: { receivers: d.receivers, outlets: d.outlets, flatSteps: d.flatSteps,

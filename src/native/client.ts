@@ -45,7 +45,7 @@ export class FrameReader {
       if (this.header === null) {
         if (this.length < this.headerLength) return;
         const h = JSON.parse(this.take(this.headerLength).toString('utf8')) as Header;
-        if (!h || h.protocol !== 9 || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
+        if (!h || (h.protocol !== 9 && h.protocol !== 10) || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
           || !['world', 'frame', 'water', 'checkpoint', 'error'].includes(h.kind)) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
@@ -71,13 +71,15 @@ export function decodeWorld(packet: Packet): World {
   const { header: h, bytes } = packet;
   if (h.kind !== 'world') throw new Error('Expected native world.');
   const recipe = parseRecipe(h.recipe), n = 10 * 4 ** recipe.subdivision + 2;
+  const prepared = recipe.modelVersion === 'terrain-prep-1';
+  if (h.protocol !== (prepared ? 10 : 9)) throw new Error('Native protocol does not match the terrain model.');
   const neighbors = 6 * n - 12, faces = 60 * 4 ** recipe.subdivision;
   const b = h.boundarySegmentCount;
   if (typeof b !== 'number' || !Number.isInteger(b) || b < 2 || b > neighbors || b % 2) throw new Error('Invalid native boundary count.');
   const k = h.basinNodeCount;
   if (typeof k !== 'number' || !Number.isInteger(k) || k < 1 || k > 2 * n - 1 || h.basinAnalysisVersion !== BASIN_ANALYSIS_VERSION) throw new Error('Invalid native basin metadata.');
   const expectedBytes = n * 24 + faces * 4 + (n + 1) * 8 + neighbors * 12 + n * 16 + neighbors * 48
-    + n * 4 + recipe.plateCount * 28 + b * 76 + 8 + n * 72 + 20 + n * 32 + n * 4 + k * 44;
+    + n * 4 + recipe.plateCount * 28 + b * 76 + 8 + n * (prepared ? 80 : 72) + 20 + n * 32 + n * 4 + k * 44;
   if (bytes.length !== expectedBytes) throw new Error('Invalid native world array lengths.');
   let cursor = 0;
   const f64 = (length: number): Float64Array => {
@@ -95,7 +97,19 @@ export function decodeWorld(packet: Packet): World {
   const tectonics = { owners: u32(n), seeds: u32(recipe.plateCount), angularVelocities: f64(recipe.plateCount * 3),
     boundaryCells: u32(b * 2), boundaryDirections: f64(b * 6), boundaryMotion: f64(b * 2), boundaryTypes: u32(b) };
   const crust = { threshold: f64(1)[0], potential: f64(n), continentality: f64(n), thicknessMeters: f64(n), densityKgPerCubicMeter: f64(n) };
-  const terrain = { baseline: f64(n), convergence: f64(n), divergence: f64(n), detail: f64(n), elevation: f64(n) };
+  const baseline = f64(n), convergence = f64(n), divergence = f64(n), detail = f64(n);
+  const preparation = prepared ? f64(n) : new Float64Array(n);
+  const elevation = f64(n);
+  const metadata = h.terrainPreparation as { appliedPasses?: unknown; transportedCubicMeters?: unknown } | undefined;
+  if ((prepared && (!metadata || !Number.isSafeInteger(metadata.appliedPasses)
+    || (metadata.appliedPasses as number) < 0 || (metadata.appliedPasses as number) > recipe.terrainPreparationPasses!
+    || typeof metadata.transportedCubicMeters !== 'number' || !Number.isFinite(metadata.transportedCubicMeters)
+    || metadata.transportedCubicMeters < 0)) || (!prepared && h.terrainPreparation !== undefined)) {
+    throw new Error('Invalid native terrain-preparation metadata.');
+  }
+  const terrain = { baseline, convergence, divergence, detail, preparation, elevation,
+    appliedPasses: prepared ? metadata!.appliedPasses as number : 0,
+    transportedCubicMeters: prepared ? metadata!.transportedCubicMeters as number : 0 };
   const water = { levelMeters: f64(1)[0], resolvedVolumeCubicMeters: f64(1)[0], depthMeters: f64(n), bodyIds: u32(n), mainOceanId: u32(1)[0] };
   const drainage = { receivers: u32(n), outlets: u32(n), flatSteps: u32(n), contributingArea: f64(n) };
   const basins = { regionNodes: u32(n), parents: u32(k), birthLevels: f64(k), spillLevels: f64(k),
@@ -105,7 +119,9 @@ export function decodeWorld(packet: Packet): World {
       || terrain.convergence[i] < 0 || terrain.convergence[i] > 12000
       || terrain.divergence[i] < -3000 || terrain.divergence[i] > 5000
       || Math.abs(terrain.detail[i]) > recipe.detailAmplitudeMeters + 1e-9
-      || Math.abs(terrain.elevation[i] - (terrain.baseline[i] + terrain.convergence[i] + terrain.divergence[i] + terrain.detail[i])) > 1e-8) {
+      || Math.abs(terrain.preparation[i]) > (recipe.terrainPreparationPasses ?? 0) * 100 + 1e-8
+      || Math.abs(terrain.elevation[i] - (terrain.baseline[i] + terrain.convergence[i] + terrain.divergence[i]
+        + terrain.detail[i] + terrain.preparation[i])) > 1e-8) {
       throw new Error('Invalid native elevation contributions.');
     }
   }

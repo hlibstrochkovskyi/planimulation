@@ -30,6 +30,7 @@ const continentalScaleInput = element<HTMLInputElement>('continental-scale');
 const reliefScaleInput = element<HTMLInputElement>('relief-scale');
 const boundaryWidthInput = element<HTMLInputElement>('boundary-width');
 const detailAmplitudeInput = element<HTMLInputElement>('detail-amplitude');
+const terrainPreparationInput = element<HTMLInputElement>('terrain-preparation-passes');
 const waterModeInput = element<HTMLSelectElement>('water-mode');
 const waterCoverageInput = element<HTMLInputElement>('water-coverage');
 const waterVolumeInput = element<HTMLInputElement>('water-volume');
@@ -175,7 +176,8 @@ function inspect(id: number, preserveBasin = false): void {
   const boundaryDetails = element('boundary-details');
   const elevationDetails = element('elevation-details'); elevationDetails.replaceChildren();
   for (const [label, value] of [['Crust baseline', world.terrain.baseline[id]], ['Convergence uplift', world.terrain.convergence[id]],
-    ['Divergence (ridge − rift)', world.terrain.divergence[id]], ['Bounded detail', world.terrain.detail[id]], ['Total elevation', world.terrain.elevation[id]]] as const) {
+    ['Divergence (ridge − rift)', world.terrain.divergence[id]], ['Bounded detail', world.terrain.detail[id]],
+    ['Dry preparation', world.terrain.preparation[id]], ['Total elevation', world.terrain.elevation[id]]] as const) {
     const row = document.createElement('li'); row.textContent = `${label}: ${value.toFixed(2)} m`; elevationDetails.append(row);
   }
   element('crust-note').textContent = `Seeded spherical potential ${world.crust.potential[id].toFixed(6)}; fitted threshold ${world.crust.threshold.toFixed(6)}; smooth transition width 0.12. Continentality blends the 7–35 km thickness and 3,000–2,800 kg/m³ density endmembers. These are initial model approximations, not elevation or water depth.`;
@@ -284,6 +286,7 @@ function setInputs(recipe: Recipe): void {
   reliefScaleInput.value = String(recipe.reliefScale);
   boundaryWidthInput.value = String(recipe.boundaryWidthKm);
   detailAmplitudeInput.value = String(recipe.detailAmplitudeMeters);
+  terrainPreparationInput.value = String(recipe.terrainPreparationPasses ?? 0);
   waterModeInput.value = recipe.water.mode;
   if (recipe.water.mode === 'coverage') waterCoverageInput.value = String(recipe.water.fraction * 100);
   else waterVolumeInput.value = String(recipe.water.volumeCubicMeters / 1e9);
@@ -360,7 +363,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     element('basin-note').textContent = 'Thresholds describe possible connections, not current water levels. Analysis includes underwater terrain.';
     element<HTMLButtonElement>('basin-parent').disabled = true; element<HTMLButtonElement>('basin-owner').disabled = true;
     element('basin-summary').textContent = `Basins: ${basinStats.leafCount} minima · ${basinStats.nodeCount} hierarchy branches · includes underwater terrain · no simulated filling or overflow`;
-    element('height-summary').textContent = `Bed elevation: ${number.format(terrainStats.minimumMeters)} to ${number.format(terrainStats.maximumMeters)} m · area-weighted mean ${number.format(terrainStats.meanMeters)} m · no erosion yet`;
+    element('height-summary').textContent = `Bed elevation: ${number.format(terrainStats.minimumMeters)} to ${number.format(terrainStats.maximumMeters)} m · area-weighted mean ${number.format(terrainStats.meanMeters)} m · dry preparation ${world.terrain.appliedPasses} / ${world.recipe.terrainPreparationPasses ?? 0} passes, ${number.format(world.terrain.transportedCubicMeters / 1e9)} km³ transported`;
     const waterRequest = world.recipe.water.mode === 'coverage' ? `${(world.recipe.water.fraction * 100).toFixed(2)}% target` : `${number.format(world.recipe.water.volumeCubicMeters / 1e9)} km³ requested`;
     element('water-summary').textContent = `Water: ${(waterStats.waterAreaFraction * 100).toFixed(2)}% actual / ${waterRequest} · main ocean ${(waterStats.mainOceanAreaFraction * 100).toFixed(2)}% · inland ${(waterStats.inlandWaterAreaFraction * 100).toFixed(2)}% · ${waterStats.bodyCount} bodies · level ${number.format(waterStats.levelMeters)} m · resolved stock ${number.format(waterStats.resolvedVolumeCubicMeters / 1e9)} km³`;
     element('water-note').textContent = 'Select a region to inspect its initial water depth and stored volume. Coverage fitting never splits equal-elevation plateaus; actual coverage can differ from the target. No runoff, evaporation, or dynamic basin exchange is modeled yet.';
@@ -373,7 +376,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     element('boundary-note').textContent = 'Select a region to inspect its plate and any inter-plate boundary segments.';
     element('diagnostic-tick').textContent = 'Step 0';
     element('water-step').textContent = 'Select a source region · manual input, no elapsed time';
-    element('model-label').textContent = 'BASINS-1 · STATIC INITIAL CONDITIONS';
+    element('model-label').textContent = `${world.recipe.modelVersion.toUpperCase()} · STATIC INITIAL CONDITIONS`;
     renderWaterBudget();
     if (restoredFrame) applyWaterFrame(restoredFrame, false);
     updateLegend(); cancel.hidden = true; save.disabled = false; saveResolved.disabled = false; exportView.disabled = false;
@@ -529,6 +532,7 @@ element('recipe-form').addEventListener('submit', (event) => {
       plateCount: Number(plateCountInput.value), maxPlateSpeedCmPerYear: Number(plateSpeedInput.value),
       continentalFraction: Number(continentalFractionInput.value) / 100, continentalScale: Number(continentalScaleInput.value),
       reliefScale: Number(reliefScaleInput.value), boundaryWidthKm: Number(boundaryWidthInput.value), detailAmplitudeMeters: Number(detailAmplitudeInput.value),
+      terrainPreparationPasses: Number(terrainPreparationInput.value),
       water: waterModeInput.value === 'coverage' ? { mode: 'coverage', fraction: Number(waterCoverageInput.value) / 100 }
         : { mode: 'volume', volumeCubicMeters: Number(waterVolumeInput.value) * 1e9 } }));
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }

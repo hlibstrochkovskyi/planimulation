@@ -125,6 +125,7 @@ fn recipe(seed: usize, subdivision: u32) -> Recipe {
         relief_scale: 1.,
         boundary_width_km: 300.,
         detail_amplitude_meters: 300.,
+        terrain_preparation_passes: None,
         water: coverage(0.71),
     }
 }

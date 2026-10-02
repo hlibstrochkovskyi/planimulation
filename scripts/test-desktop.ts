@@ -24,7 +24,9 @@ try {
   await expect(page.locator('#legend-title')).toContainText('Land and water surface');
   await expect(page.locator('#water-summary')).toContainText('71.00% target');
   await expect(page.locator('#drainage-summary')).toContainText('closed dry sinks');
-  await expect(page.locator('#basin-summary')).toContainText('226 minima · 451 hierarchy branches');
+  await expect(page.locator('#basin-summary')).toContainText('224 minima · 447 hierarchy branches');
+  await expect(page.locator('#terrain-preparation-passes')).toHaveValue('4');
+  await expect(page.locator('#height-summary')).toContainText('dry preparation 4 / 4 passes');
   await expect(page.locator('#crust-summary')).toContainText('38.00% target');
   const reference = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
   try { assert.equal((await reference.generate(DEFAULT_RECIPE)).world.checksum, fingerprint, 'Headless and desktop use the same native math.'); }
@@ -67,9 +69,13 @@ try {
   await expect(page.locator('#status')).toContainText('Calculated initial world data exported');
   const resolved = JSON.parse(await readFile(resolvedPath, 'utf8'));
   assert.equal(resolved.format, 'planimulation-resolved-initial-world');
+  assert.equal(resolved.formatVersion, 2);
   assert.equal(resolved.initialFingerprint, fingerprint);
   assert.equal(resolved.stats.regionCount, 10_242);
   assert.equal(resolved.terrain.elevation.length, 10_242);
+  assert.equal(resolved.terrain.preparation.length, 10_242);
+  assert.equal(resolved.terrain.appliedPasses, 4);
+  assert.ok(resolved.terrain.transportedCubicMeters > 0);
   assert.equal(resolved.water.depthMeters.length, 10_242);
   assert.equal(resolved.basins.regionNodes.length, 10_242);
 
@@ -346,6 +352,24 @@ try {
   await expect(page.locator('#water-coverage')).toHaveValue('71');
   await expect(page.locator('#water-volume')).toBeDisabled();
 
+  const { terrainPreparationPasses: _legacyPasses, ...legacyBase } = DEFAULT_RECIPE;
+  const legacyRecipe = parseRecipe({ ...legacyBase, modelVersion: 'basins-1' });
+  const legacyCore = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
+  let legacyHash: string;
+  try { legacyHash = (await legacyCore.generate(legacyRecipe)).world.checksum; }
+  finally { legacyCore.close(); }
+  await writeFile(recipePath, JSON.stringify(legacyRecipe));
+  await page.getByRole('button', { name: 'Open recipe' }).click();
+  await expect(page.locator('#fingerprint')).toHaveText(legacyHash, { timeout: 30_000 });
+  await expect(page.locator('#model-label')).toContainText('BASINS-1');
+  await expect(page.locator('#terrain-preparation-passes')).toHaveValue('0');
+  await page.getByRole('button', { name: 'Save recipe' }).click();
+  assert.deepEqual(parseRecipe(JSON.parse(await readFile(recipePath, 'utf8'))), legacyRecipe);
+  await writeFile(recipePath, JSON.stringify(DEFAULT_RECIPE));
+  await page.getByRole('button', { name: 'Open recipe' }).click();
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
+  await expect(page.locator('#terrain-preparation-passes')).toHaveValue('4');
+
   // Experimental small planets must limit display distortion, never physical heights.
   await page.locator('#radius').fill('100');
   await page.locator('#subdivision').selectOption('2');
@@ -362,7 +386,7 @@ try {
 
   await writeFile(recipePath, JSON.stringify({ ...DEFAULT_RECIPE, modelVersion: 'future' }));
   await page.getByRole('button', { name: 'Open recipe' }).click();
-  await expect(page.locator('#status')).toContainText('Unsupported recipe version');
+  await expect(page.locator('#status')).toContainText('Unsupported recipe or random version');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
 
   // Queue replacement jobs synchronously; obsolete native jobs cannot publish results.

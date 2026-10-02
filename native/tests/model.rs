@@ -15,6 +15,7 @@ fn recipe(level: u32, seed: &str) -> Recipe {
         relief_scale: 1.,
         boundary_width_km: 300.,
         detail_amplitude_meters: 300.,
+        terrain_preparation_passes: None,
         water: planimulation_core::water::WaterSettings::Coverage { fraction: 0.71 },
     }
 }
@@ -31,6 +32,18 @@ fn random_reference() {
 fn strict_recipes() {
     let r = recipe(2, "earth");
     r.validate().unwrap();
+    let mut prepared = r.clone();
+    prepared.model_version = "terrain-prep-1".into();
+    assert!(prepared.validate().is_err());
+    prepared.terrain_preparation_passes = Some(0);
+    prepared.validate().unwrap();
+    prepared.terrain_preparation_passes = Some(16);
+    prepared.validate().unwrap();
+    prepared.terrain_preparation_passes = Some(17);
+    assert!(prepared.validate().is_err());
+    let mut mixed = r.clone();
+    mixed.terrain_preparation_passes = Some(0);
+    assert!(mixed.validate().is_err());
     let mut json = serde_json::to_value(&r).unwrap();
     json["extra"] = serde_json::json!(1);
     assert!(serde_json::from_value::<Recipe>(json).is_err());

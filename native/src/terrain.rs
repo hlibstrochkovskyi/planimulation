@@ -114,7 +114,10 @@ pub struct Terrain {
     pub convergence: Vec<f64>,
     pub divergence: Vec<f64>,
     pub detail: Vec<f64>,
+    pub preparation: Vec<f64>,
     pub elevation: Vec<f64>,
+    pub transported_cubic_meters: f64,
+    pub applied_passes: u32,
 }
 impl Terrain {
     pub fn build(surface: &Surface, crust: &Crust, tectonics: &Tectonics, recipe: &Recipe) -> Self {
@@ -153,7 +156,10 @@ impl Terrain {
             convergence: Vec::with_capacity(n),
             divergence: Vec::with_capacity(n),
             detail: Vec::with_capacity(n),
+            preparation: vec![0.; n],
             elevation: Vec::with_capacity(n),
+            transported_cubic_meters: 0.,
+            applied_passes: 0,
         };
         for i in 0..n {
             let base = crust_baseline(

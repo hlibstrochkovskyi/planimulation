@@ -54,7 +54,8 @@ test('elevation summaries use physical area weighting', () => {
   surface.areasSquareMeters.fill(1); surface.areasSquareMeters[0] = 10;
   const elevation = new Float64Array(12); elevation[0] = 100; elevation[1] = -20;
   const zero = new Float64Array(12);
-  const summary = summarizeTerrain(surface, { baseline: elevation, convergence: zero, divergence: zero, detail: zero, elevation });
+  const summary = summarizeTerrain(surface, { baseline: elevation, convergence: zero, divergence: zero,
+    detail: zero, preparation: zero, elevation, transportedCubicMeters: 0, appliedPasses: 0 });
   assert.equal(summary.minimumMeters, -20); assert.equal(summary.maximumMeters, 100);
   assert.equal(summary.meanMeters, 980 / 21);
 });

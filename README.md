@@ -4,7 +4,7 @@ An exploratory simulation of procedural Earth-like worlds and the histories that
 
 A reproducible world connects geography, climate, water, ecology, and resources. Populations adapt to their environment; production, connections, and decisions shape settlements, states, and history. Civilizations then change the environment that supports them.
 
-The application currently includes a desktop surface laboratory, static plate kinematics, independent initial crust, explainable elevation, initial water filling, static drainage catchments, basin hierarchy inspection, and a bounded manual runoff/spill view on a flat map and relief globe. Timed hydrology, erosion, and a living natural environment with seasons and vegetation follow later. Human populations follow once that foundation has been checked.
+The application currently includes a desktop surface laboratory, static plate kinematics, independent initial crust, explainable elevation with bounded dry terrain preparation, initial water filling, static drainage catchments, basin hierarchy inspection, and a bounded manual runoff/spill view on a flat map and relief globe. Timed hydrology, climate-driven erosion, and a living natural environment with seasons and vegetation follow later. Human populations follow once that foundation has been checked.
 
 ## Documentation
 
@@ -19,6 +19,7 @@ The application currently includes a desktop surface laboratory, static plate ki
 | [Plate kinematics](docs/tectonics.md) | Connected plates, velocity conventions, boundary classification, parameters, and validation |
 | [Initial crust](docs/crust.md) | Spherical continentality, area fitting, approximate material properties, and validation |
 | [Explainable elevation](docs/terrain.md) | Elevation contributions, physical-distance propagation, globe relief, and display-only exaggeration |
+| [Dry terrain preparation](docs/terrain-preparation.md) | Versioned bounded material transfer before initial water filling, limits, and validation |
 | [Initial water](docs/water.md) | Coverage/volume fitting, connected water bodies, inventory accounting, analytical layers, and validation |
 | [Water-surface display](docs/water-surface.md) | Separate globe water mesh, shoreline approximation, joint exaggeration bounds, and picking |
 | [Drainage structure](docs/drainage.md) | Bed receivers, flat routing, terminal catchments, and contributing land-area accounting |
@@ -55,17 +56,17 @@ Milestones A, B1–B5, C1, and C2a–C2b implement an Electron desktop applicati
 - An explicitly diagnostic conservative diffusion test, with run/pause and field-only updates while navigating either view.
 - Independent continentality, approximate crust thickness/density, editable continental area target and structure scale, and shared flat/globe crust layers. Actual crust coverage and patch sizes are reported separately from the target.
 
-- Explainable static elevation: crust baseline, convergence uplift, divergence effects, and bounded detail. A displaced globe has shared-corner interpolation and display-only vertical exaggeration; the flat map remains planar.
+- Explainable static elevation: crust baseline, convergence uplift, divergence effects, bounded detail, and an optional bounded dry-preparation contribution. A displaced globe has shared-corner interpolation and display-only vertical exaggeration; the flat map remains planar.
 - Initial water filling from either a coverage target or a fixed volume. Shared depth/body layers report actual coverage, the largest connected ocean, inland basins, and the resolved inventory. The Land and water layer adds a separate water-surface mesh on the globe; analytical layers expose the bed. Visible shorelines approximate whole-region water data and do not change physical coverage.
 - Manual prescribed runoff can fill a selected basin, cross an unambiguous sill, and merge full neighbors. Exact native stocks drive derived depth/body layers and separate globe water levels. A separate water-checkpoint file can save, reopen, and continue this bounded inventory; an exact budget inspector shows the initial/input/storage ledger and a selected source's runoff destination. This has no elapsed time or climate forcing; ambiguous routes refuse atomically.
 - `Export world data` writes a [versioned resolved initial-world report](docs/resolved-world-export.md) with native-generated fields for offline analysis. It is not a dynamic checkpoint; manual water steps remain separate.
-- A [bounded dry terrain-preparation kernel](docs/terrain-preparation.md) now conserves reference-area material across tested slope-relaxation passes. It is not yet part of world generation or the desktop.
+- The [bounded dry terrain-preparation stage](docs/terrain-preparation.md) now runs before initial water fitting in `terrain-prep-1` worlds. Its 0–16 passes transport material without representing elapsed geological time or climate-driven erosion. The desktop exposes the pass count and inspector contribution.
 
-The seed field is a coherent **diagnostic signal**, separate from terrain, climate, or biomes. Mesh topology remains fixed at a given resolution. Timed planetary water dynamics, erosion, climate, and civilization are not implemented. Elevation zero is a reference datum, not sea level. Recipes reproduce the initial world; the separate prescribed-water checkpoint saves only the bounded manual water inventory, not a full simulation state or diagnostic field.
+The seed field is a coherent **diagnostic signal**, separate from terrain, climate, or biomes. Mesh topology remains fixed at a given resolution. Timed planetary water dynamics, climate-driven or ongoing erosion, climate, and civilization are not implemented. Elevation zero is a reference datum, not sea level. Recipes reproduce the initial world; the separate prescribed-water checkpoint saves only the bounded manual water inventory, not a full simulation state or diagnostic field.
 
 Static drainage assigns bed-based receivers, routes equal-height flats without altering elevation, preserves closed dry sinks, and accumulates contributing land area. Catchment and area layers are drainage potential, not flowing rivers. Basin analysis computes geometric spill thresholds and storage capacities; it does not evolve the world's water inventories.
 
-Plates are not continents, and continental crust is not emerged land. Geology and drainage remain static initial conditions; manual prescribed steps can change bounded basin stocks without changing the bed or initial drainage. Diagnostic playback does not evolve water. [Basin inspection](docs/basin-inspection.md) adds branch/threshold layers, parent navigation, contact highlights, and capacity explanations in both views. Current recipes use `basins-1`; older recipes, including `drainage-1`, are explicitly rejected without automatic reinterpretation.
+Plates are not continents, and continental crust is not emerged land. Geology and drainage remain static after generation; manual prescribed steps can change bounded basin stocks without changing the bed or initial drainage. Diagnostic playback does not evolve water. [Basin inspection](docs/basin-inspection.md) adds branch/threshold layers, parent navigation, contact highlights, and capacity explanations in both views. New recipes use `terrain-prep-1`; existing `basins-1` recipes remain supported without reinterpretation. Earlier versions, including `drainage-1`, are rejected.
 
 ## Run the desktop application
 

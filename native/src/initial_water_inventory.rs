@@ -105,6 +105,16 @@ fn bodies(surface: &Surface, depths: &[f64]) -> Result<(Vec<u32>, u32), String> 
 }
 
 impl InitialWaterInventory {
+    pub fn from_world(world: &crate::World) -> Result<Self, String> {
+        let mut result = Self::from_water(
+            &world.surface,
+            &world.terrain.elevation,
+            &world.water,
+            &world.basins,
+        )?;
+        result.source_model_version = world.recipe.model_version.clone();
+        Ok(result)
+    }
     pub fn from_water(
         surface: &Surface,
         heights: &[f64],
@@ -186,7 +196,8 @@ impl InitialWaterInventory {
         basins: &Basins,
     ) -> Result<Reconstruction, String> {
         if self.import_version != IMPORT_VERSION
-            || self.source_model_version != "basins-1"
+            || (self.source_model_version != "basins-1"
+                && self.source_model_version != "terrain-prep-1")
             || !self.source_level_meters.is_finite()
             || !self.initial_volume_cubic_meters.is_finite()
             || self.initial_volume_cubic_meters < 0.

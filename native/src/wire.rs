@@ -39,15 +39,13 @@ pub fn arrays(w: &World) -> Vec<u8> {
     f64s(&mut out, c.thickness_meters.iter().copied());
     f64s(&mut out, c.density_kg_per_cubic_meter.iter().copied());
     let t = &w.terrain;
-    for field in [
-        &t.baseline,
-        &t.convergence,
-        &t.divergence,
-        &t.detail,
-        &t.elevation,
-    ] {
+    for field in [&t.baseline, &t.convergence, &t.divergence, &t.detail] {
         f64s(&mut out, field.iter().copied());
     }
+    if w.recipe.model_version == "terrain-prep-1" {
+        f64s(&mut out, t.preparation.iter().copied());
+    }
+    f64s(&mut out, t.elevation.iter().copied());
     f64s(
         &mut out,
         [w.water.level_meters, w.water.resolved_volume_cubic_meters].into_iter(),
@@ -109,8 +107,16 @@ pub fn arrays(w: &World) -> Vec<u8> {
 }
 /// v9: adds exact prescribed-water checkpoint transfer; world arrays are unchanged.
 pub fn send(out: &mut impl Write, header: serde_json::Value, bytes: &[u8]) -> io::Result<()> {
+    send_versioned(out, header, bytes, 9)
+}
+fn send_versioned(
+    out: &mut impl Write,
+    header: serde_json::Value,
+    bytes: &[u8],
+    protocol: u32,
+) -> io::Result<()> {
     let mut header = header;
-    header["protocol"] = json!(9);
+    header["protocol"] = json!(protocol);
     header["byteLength"] = json!(bytes.len());
     let encoded = serde_json::to_vec(&header)?;
     out.write_all(&(encoded.len() as u32).to_le_bytes())?;
@@ -124,9 +130,8 @@ pub fn snapshot(out: &mut impl Write, w: &World) -> io::Result<()> {
     let mut fingerprint = serde_json::to_vec(&w.recipe)?;
     fingerprint.extend_from_slice(&bytes);
     let total: f64 = w.surface.areas.iter().sum();
-    send(
-        out,
-        json!({"kind":"world", "recipe":w.recipe,
+    let prepared = w.recipe.model_version == "terrain-prep-1";
+    let mut header = json!({"kind":"world", "recipe":w.recipe,
         "boundarySegmentCount":w.tectonics.boundary_types.len(),
         "basinNodeCount":w.basins.nodes().len(), "basinAnalysisVersion":crate::basins::ANALYSIS_VERSION,
         "checksum":format!("{:08x}",crate::hash(&fingerprint)),
@@ -135,9 +140,12 @@ pub fn snapshot(out: &mut impl Write, w: &World) -> io::Result<()> {
           "relativeAreaError":(total/(4.*std::f64::consts::PI*w.recipe.radius_meters.powi(2))-1.).abs(),
           "minimumAreaSquareMeters":w.surface.areas.iter().copied().fold(f64::INFINITY,f64::min),
           "maximumAreaSquareMeters":w.surface.areas.iter().copied().fold(0.,f64::max),
-          "arrayBytes": bytes.len()}}),
-        &bytes,
-    )
+          "arrayBytes": bytes.len()}});
+    if prepared {
+        header["terrainPreparation"] = json!({"appliedPasses":w.terrain.applied_passes,
+            "transportedCubicMeters":w.terrain.transported_cubic_meters});
+    }
+    send_versioned(out, header, &bytes, if prepared { 10 } else { 9 })
 }
 pub fn frame(out: &mut impl Write, w: &World) -> io::Result<()> {
     let mut bytes = Vec::with_capacity(w.field.len() * 8);

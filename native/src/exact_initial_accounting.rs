@@ -102,12 +102,7 @@ fn summation_bound_units(exact_sum: i128, contributions: usize) -> Result<i128, 
 impl ExactInitialAccounting {
     pub fn from_world(world: &World) -> Result<Self, String> {
         world.recipe.validate()?;
-        let inventory = InitialWaterInventory::from_water(
-            &world.surface,
-            &world.terrain.elevation,
-            &world.water,
-            &world.basins,
-        )?;
+        let inventory = InitialWaterInventory::from_world(world)?;
         let (branches, owners) = frontier(&world.basins, world.water.level_meters);
         if branches.len() != inventory.stocks.len() {
             return Err("Initial-water frontier changed during exact import.".into());

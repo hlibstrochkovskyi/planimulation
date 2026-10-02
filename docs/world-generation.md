@@ -1,6 +1,6 @@
 # World generation: technical proposal
 
-Initial proposal: September 19, 2026. The spherical surface, recipes, random streams, GPU flat/globe views, B1 static plate kinematics, B2 initial crust, B3 explainable elevation, B4 initial water filling, B5 water-surface display, C1 static drainage structure, and C2a–C2b basin analysis and inspection are implemented. Water dynamics, erosion, climate, and ecology remain proposals. See [DESIGN.md](../DESIGN.md), [development](development.md), [Plate kinematics](tectonics.md), [Initial crust](crust.md), [Explainable elevation](terrain.md), [Initial water](water.md), [Water-surface display](water-surface.md), [Drainage structure](drainage.md), and [Basin inspection](basin-inspection.md) for the concept and implemented algorithms with their limitations.
+Initial proposal: September 19, 2026. The spherical surface, recipes, random streams, GPU flat/globe views, B1 static plate kinematics, B2 initial crust, B3 explainable elevation, B4 initial water filling, B5 water-surface display, C1 static drainage structure, C2a–C2b basin analysis and inspection, and bounded dry preparation before initial water are implemented. Water dynamics, ongoing or climate-driven erosion, climate, and ecology remain proposals. See [DESIGN.md](../DESIGN.md), [development](development.md), [Plate kinematics](tectonics.md), [Initial crust](crust.md), [Explainable elevation](terrain.md), [Dry terrain preparation](terrain-preparation.md), [Initial water](water.md), [Water-surface display](water-surface.md), [Drainage structure](drainage.md), and [Basin inspection](basin-inspection.md) for the concept and implemented algorithms with their limitations.
 
 ## 1. One world, multiple views
 
@@ -83,7 +83,7 @@ Combine a crustal baseline, spatially distributed boundary effects, and bounded 
 
 Sample a three-dimensional noise field at points on the sphere. Version its algorithm and scales. This avoids having to join opposite edges of a planar noise image. High-frequency details have smaller amplitudes and must not erase the large-scale structure.
 
-Retain inspector contributions: crust baseline, boundary effects, detail, and later erosion. Their sum reconstructs the generated elevation within numerical tolerance.
+Retain inspector contributions: crust baseline, boundary effects, detail, and signed dry preparation. Their sum reconstructs the generated elevation within numerical tolerance. Later climate-driven erosion would require a separate contribution and model version.
 
 ### D. Ocean and sea level
 
@@ -97,7 +97,7 @@ Initial equilibrium filling may leave disconnected water bodies. Classify connec
 
 In the first version, the ocean-coverage target means coverage under initial global filling. The inspector separately reports the main ocean and other water areas. Make this limitation explicit in the UI. Targeting the exact area of the largest connected ocean requires another fitting procedure and is not initially promised.
 
-After erosion, preserve the chosen water volume and recompute the level. Do not restore the requested percentage by silently adding water.
+For later changes to an already wet world, preserve its chosen water volume and recompute the level. Do not restore the requested percentage by silently adding water. Current dry preparation occurs before the initial coverage or volume constraint is resolved.
 
 ### E. Catchments and depressions
 
@@ -113,7 +113,7 @@ Closed basins retain water and lose it through evaporation/infiltration. Spillin
 
 ### F. Erosion and terrain preparation
 
-An independent [bounded dry terrain-preparation kernel](terrain-preparation.md) now implements reference-area material transfer on steep graph edges with recorded removal and deposition. It is not yet connected to generation, so current bed, water, drainage, and basin layers remain unchanged.
+The [bounded dry terrain-preparation kernel](terrain-preparation.md) implements reference-area material transfer on steep graph edges with recorded removal and deposition. New `terrain-prep-1` worlds apply it before initial water fitting and rebuild drainage and basin analysis on the prepared bed. Legacy `basins-1` worlds remain unchanged. This is a mesh-scale smoothing heuristic, not a geological-time or climate erosion process.
 
 Start with bounded material transfer on excessively steep slopes. Later add simplified erosion along runoff paths, including transport and deposition. Removed material must be recorded as transported, deposited, or exported from the modeled reservoir.
 

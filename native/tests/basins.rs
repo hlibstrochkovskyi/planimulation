@@ -317,6 +317,7 @@ fn generated_terrain_retains_water_and_drainage_and_matches_threshold_budgets() 
                 relief_scale: 1.,
                 boundary_width_km: 300.,
                 detail_amplitude_meters: 300.,
+                terrain_preparation_passes: None,
                 water: WaterSettings::Coverage { fraction: 0.71 },
             })
             .unwrap();

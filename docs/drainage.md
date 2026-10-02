@@ -1,6 +1,6 @@
 # Drainage structure: milestone C1
 
-Historical C1 record. [C2b basin inspection](basin-inspection.md) introduced `basins-1`, protocol 7, appending the basin hierarchy without changing C1 routing. The current desktop uses protocol 9 for [manual prescribed-water frames and checkpoint transfer](prescribed-water-desktop.md). The recipe version and measurements below describe C1.
+Historical C1 record. [C2b basin inspection](basin-inspection.md) introduced `basins-1`, protocol 7, appending the basin hierarchy without changing C1 routing. [Manual prescribed-water frames and checkpoint transfer](prescribed-water-desktop.md) use protocol 9; new prepared worlds use protocol-10 world arrays and run the same drainage algorithm on their prepared bed. The recipe version and measurements below describe C1.
 
 Implemented model: `drainage-1`, binary protocol 6. This is static bed-based drainage analysis downstream of geology and initial water, not flowing rivers, rainfall, lake filling, erosion, or a depression hierarchy. Milestone C is not complete.
 

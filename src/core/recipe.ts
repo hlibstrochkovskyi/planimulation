@@ -1,11 +1,12 @@
-export const MODEL_VERSION = 'basins-1';
+export const MODEL_VERSION = 'terrain-prep-1';
+export const LEGACY_MODEL_VERSION = 'basins-1';
 export const RANDOM_VERSION = 'fnv1a-utf8-mulberry32-1';
 
 export type WaterSettings = { mode: 'coverage'; fraction: number } | { mode: 'volume'; volumeCubicMeters: number };
 
 export interface Recipe {
   schemaVersion: 1;
-  modelVersion: typeof MODEL_VERSION;
+  modelVersion: typeof MODEL_VERSION | typeof LEGACY_MODEL_VERSION;
   randomVersion: typeof RANDOM_VERSION;
   seed: string;
   subdivision: number;
@@ -17,6 +18,7 @@ export interface Recipe {
   reliefScale: number;
   boundaryWidthKm: number;
   detailAmplitudeMeters: number;
+  terrainPreparationPasses?: number;
   water: WaterSettings;
 }
 
@@ -34,6 +36,7 @@ export const DEFAULT_RECIPE: Readonly<Recipe> = Object.freeze({
   reliefScale: 1,
   boundaryWidthKm: 300,
   detailAmplitudeMeters: 300,
+  terrainPreparationPasses: 4,
   water: Object.freeze({ mode: 'coverage', fraction: 0.71 }),
 });
 
@@ -43,12 +46,13 @@ export function parseRecipe(value: unknown): Recipe {
     throw new Error('A recipe must be a JSON object.');
   }
   const input = value as Record<string, unknown>;
-  const keys = Object.keys(DEFAULT_RECIPE);
+  const legacy = input.modelVersion === LEGACY_MODEL_VERSION;
+  const keys = Object.keys(DEFAULT_RECIPE).filter((key) => !legacy || key !== 'terrainPreparationPasses');
   for (const key of Object.keys(input)) {
     if (!keys.includes(key)) throw new Error(`Unknown recipe field: ${key}.`);
   }
-  if (input.schemaVersion !== 1 || input.modelVersion !== MODEL_VERSION || input.randomVersion !== RANDOM_VERSION) {
-    throw new Error('Unsupported recipe version. This build supports basins-1 recipes only; legacy recipes are not silently migrated.');
+  if (input.schemaVersion !== 1 || (input.modelVersion !== MODEL_VERSION && !legacy) || input.randomVersion !== RANDOM_VERSION) {
+    throw new Error('Unsupported recipe or random version.');
   }
   for (const key of keys) {
     if (!(key in input)) throw new Error(`Missing recipe field: ${key}.`);
@@ -76,9 +80,13 @@ export function parseRecipe(value: unknown): Recipe {
     const value = input[key];
     if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max) throw new Error(`${key} must be ${min}–${max}.`);
   }
+  if (!legacy && (!Number.isInteger(input.terrainPreparationPasses)
+    || Number(input.terrainPreparationPasses) < 0 || Number(input.terrainPreparationPasses) > 16)) {
+    throw new Error('Terrain preparation passes must be an integer from 0 to 16.');
+  }
   return {
     schemaVersion: 1,
-    modelVersion: MODEL_VERSION,
+    modelVersion: legacy ? LEGACY_MODEL_VERSION : MODEL_VERSION,
     randomVersion: RANDOM_VERSION,
     seed: input.seed,
     subdivision: Number(input.subdivision),
@@ -90,6 +98,7 @@ export function parseRecipe(value: unknown): Recipe {
     reliefScale: Number(input.reliefScale),
     boundaryWidthKm: Number(input.boundaryWidthKm),
     detailAmplitudeMeters: Number(input.detailAmplitudeMeters),
+    ...(!legacy ? { terrainPreparationPasses: Number(input.terrainPreparationPasses) } : {}),
     water: parseWaterSettings(input.water, input.radiusMeters),
   };
 }

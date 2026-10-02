@@ -1,6 +1,6 @@
 # Manual prescribed-water desktop view
 
-Status: implemented as a bounded, opt-in desktop demonstration on generated worlds. Native protocol 8 added a derived water frame; protocol 9 adds exact checkpoint transfer. The `basins-1` recipe and initial world arrays are unchanged. This is not seasonal hydrology or timed simulation.
+Status: implemented as a bounded, opt-in desktop demonstration on generated worlds. Native protocol 8 added a derived water frame; protocol 9 added exact checkpoint transfer. The water-only inventory also accepts new `terrain-prep-1` worlds, whose initial bed and world arrays use protocol 10. Existing `basins-1` recipes and arrays remain unchanged. This is not seasonal hydrology or timed simulation.
 
 Select a region in either map view. **Add 1 km³ runoff** routes one exact prescribed volume along the frozen initial drainage receivers. **Fill to sill + 1 km³** computes the active terminal basin's exact remaining capacity, then submits enough water to reach its next threshold plus 1 km³. A closed global root has no sill and refuses that second action. Both actions can refuse if the bounded spill policy encounters multiple direct spill sources, multiple open receivers, or another unsupported state. Failure leaves the inventory checkpoint and visible water frame unchanged.
 

@@ -23,18 +23,21 @@ test('resolved initial-world report is complete, deterministic, and distinct fro
     const contents = await readFile(first, 'utf8');
     const report = JSON.parse(contents);
     assert.equal(report.format, RESOLVED_WORLD_FORMAT);
-    assert.equal(report.formatVersion, 1);
+    assert.equal(report.formatVersion, 2);
     assert.equal(report.purpose, 'initial-generated-fields-not-a-checkpoint');
     assert.deepEqual(report.recipe, world.recipe);
     assert.equal(report.initialFingerprint, world.checksum);
     assert.deepEqual(report.stats, world.stats);
     for (const group of ['surface', 'tectonics', 'crust', 'terrain', 'water', 'drainage', 'basins'] as const) {
-      assert.deepEqual(Object.keys(report[group]).sort(), Object.keys(world[group]).sort(), `${group} fields must be explicit in v1.`);
+      assert.deepEqual(Object.keys(report[group]).sort(), Object.keys(world[group]).sort(), `${group} fields must be explicit in v2.`);
     }
     assert.deepEqual(report.surface.centers, Array.from(world.surface.centers));
     assert.deepEqual(report.tectonics.owners, Array.from(world.tectonics.owners));
     assert.deepEqual(report.crust.continentality, Array.from(world.crust.continentality));
     assert.deepEqual(report.terrain.elevation, Array.from(world.terrain.elevation));
+    assert.deepEqual(report.terrain.preparation, Array.from(world.terrain.preparation));
+    assert.equal(report.terrain.appliedPasses, world.terrain.appliedPasses);
+    assert.equal(report.terrain.transportedCubicMeters, world.terrain.transportedCubicMeters);
     assert.deepEqual(report.water.depthMeters, Array.from(world.water.depthMeters));
     assert.deepEqual(report.drainage.receivers, Array.from(world.drainage.receivers));
     assert.deepEqual(report.basins.parents, Array.from(world.basins.parents));

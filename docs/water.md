@@ -1,6 +1,6 @@
 # Initial water: milestone B4
 
-The current model uses `basins-1` and protocol 9; [C2b basin inspection](basin-inspection.md) introduced basin arrays in protocol 7, and the [manual prescribed-water view](prescribed-water-desktop.md) adds derived frames and separate checkpoint transfer without changing initial water generation. Recipes and measurements in this B4 record are historical.
+New worlds use `terrain-prep-1` and world protocol 10; existing `basins-1`/protocol-9 worlds remain supported. [C2b basin inspection](basin-inspection.md) introduced basin arrays in protocol 7, and the [manual prescribed-water view](prescribed-water-desktop.md) adds derived frames and separate checkpoint transfer. New-world dry preparation changes the bed before the same initial water-fitting algorithm runs. Recipes and measurements in this B4 record are historical.
 
 [B5 water-surface display](water-surface.md) now adds a separate globe water mesh without changing this model or protocol. B4 validation measurements below describe the analytical-bed build.
 
@@ -59,7 +59,7 @@ Recompute the resulting stock from the depths. Accept error at most `max(1e-9 mÂ
 
 Generation is `O(N log N)` for sorting plus `O(N + E)` for connected components, with linear auxiliary storage. The algorithm has no unbounded iterative convergence loop.
 
-For a future terrain-change step, reuse the **resolved volume**, not the original coverage target. Directed tests exercise this refitting primitive, but an erosion pipeline is not implemented. Once basins evolve independently, use their own budgets and spill topology rather than this global initial-fitting procedure.
+For a future terrain change **after initial water exists**, reuse the **resolved volume**, not the original coverage target. Current dry preparation precedes initial water fitting, so it has no pre-existing stock to retain. Directed tests exercise the volume-refitting primitive, but ongoing erosion is not implemented. Once basins evolve independently, use their own budgets and spill topology rather than this global initial-fitting procedure.
 
 ## Connected water bodies
 

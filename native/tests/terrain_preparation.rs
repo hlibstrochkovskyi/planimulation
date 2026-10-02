@@ -1,6 +1,12 @@
 use planimulation_core::{
     Recipe, Surface, World,
+    basins::Basins,
+    drainage::Drainage,
+    initial_water_inventory::InitialWaterInventory,
+    prescribed_water_inventory::PrescribedWaterInventory,
     terrain_preparation::{MAX_CHANGE_PER_PASS_METERS, MAX_PASSES, prepare},
+    water::Water,
+    wire,
 };
 
 fn chain() -> Surface {
@@ -14,6 +20,98 @@ fn chain() -> Surface {
         boundary_offsets: vec![],
         boundaries: vec![],
     }
+}
+
+#[test]
+fn versioned_world_preparation_updates_all_dependent_initial_layers() {
+    let legacy: Recipe = serde_json::from_value(serde_json::json!({
+        "schemaVersion": 1, "modelVersion": "basins-1", "randomVersion": "fnv1a-utf8-mulberry32-1",
+        "seed": "preparation-c", "subdivision": 4, "radiusMeters": 6371000., "plateCount": 12,
+        "maxPlateSpeedCmPerYear": 8., "continentalFraction": 0.38, "continentalScale": 1.,
+        "reliefScale": 1., "boundaryWidthKm": 300., "detailAmplitudeMeters": 300.,
+        "water": { "mode": "coverage", "fraction": 0.71 }
+    }))
+    .unwrap();
+    let original = World::generate(legacy.clone()).unwrap();
+    assert!(
+        !serde_json::to_string(&legacy)
+            .unwrap()
+            .contains("terrainPreparationPasses")
+    );
+    assert_eq!(original.terrain.applied_passes, 0);
+    assert!(
+        original
+            .terrain
+            .preparation
+            .iter()
+            .all(|&height| height == 0.)
+    );
+
+    let mut zero_recipe = legacy.clone();
+    zero_recipe.model_version = "terrain-prep-1".into();
+    zero_recipe.terrain_preparation_passes = Some(0);
+    let zero = World::generate(zero_recipe.clone()).unwrap();
+    assert_eq!(zero.terrain.elevation, original.terrain.elevation);
+    assert_eq!(zero.water, original.water);
+    assert_eq!(zero.drainage, original.drainage);
+    assert_eq!(zero.basins, original.basins);
+    assert_ne!(wire::arrays(&zero), wire::arrays(&original));
+
+    let mut prepared_recipe = zero_recipe;
+    prepared_recipe.terrain_preparation_passes = Some(8);
+    let world = World::generate(prepared_recipe.clone()).unwrap();
+    let repeated = World::generate(prepared_recipe).unwrap();
+    assert_eq!(wire::arrays(&world), wire::arrays(&repeated));
+    assert!(world.terrain.transported_cubic_meters > 0.);
+    assert!(world.terrain.applied_passes > 0);
+    assert_ne!(world.terrain.elevation, original.terrain.elevation);
+    for region in 0..world.terrain.elevation.len() {
+        assert!(
+            (world.terrain.elevation[region]
+                - original.terrain.elevation[region]
+                - world.terrain.preparation[region])
+                .abs()
+                < 1e-8
+        );
+    }
+    let before = material(&original.surface, &original.terrain.elevation);
+    let after = material(&world.surface, &world.terrain.elevation);
+    let scale: f64 = original
+        .surface
+        .areas
+        .iter()
+        .zip(&original.terrain.elevation)
+        .map(|(area, height)| (area * height).abs())
+        .sum();
+    assert!((after - before).abs() / scale < 1e-13);
+    assert_eq!(
+        world.water,
+        Water::generate(
+            &world.surface,
+            &world.terrain.elevation,
+            &world.recipe.water
+        )
+        .unwrap()
+    );
+    assert_eq!(
+        world.drainage,
+        Drainage::build(
+            &world.surface,
+            &world.terrain.elevation,
+            &world.water.body_ids
+        )
+    );
+    assert_eq!(
+        world.basins,
+        Basins::build(&world.surface, &world.terrain.elevation).unwrap()
+    );
+    let inventory = InitialWaterInventory::from_world(&world).unwrap();
+    assert_eq!(inventory.source_model_version, "terrain-prep-1");
+    let prescribed = PrescribedWaterInventory::from_world(&world).unwrap();
+    PrescribedWaterInventory::restore_on_world(prescribed.checkpoint(), &world).unwrap();
+    assert!(
+        PrescribedWaterInventory::restore_on_world(prescribed.checkpoint(), &original).is_err()
+    );
 }
 
 fn material(surface: &Surface, heights: &[f64]) -> f64 {

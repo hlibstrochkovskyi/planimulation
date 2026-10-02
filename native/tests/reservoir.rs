@@ -296,6 +296,7 @@ fn detached_generated_leaves_preserve_world_arrays_and_analysis_capacity() {
                 relief_scale: 1.,
                 boundary_width_km: 300.,
                 detail_amplitude_meters: 300.,
+                terrain_preparation_passes: None,
                 water: WaterSettings::Coverage { fraction: 0.71 },
             })
             .unwrap();
