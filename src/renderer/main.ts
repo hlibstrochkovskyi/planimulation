@@ -2,7 +2,7 @@ import './style.css';
 import { DEFAULT_RECIPE, parseRecipe } from '../core/recipe';
 import type { Recipe } from '../core/recipe';
 import type { World } from '../core/world';
-import type { DesktopAPI, PrescribedWaterMode, WaterFrame } from '../shared/desktop-api';
+import type { DesktopAPI, PreparedWaterWorld, PrescribedWaterMode, WaterFrame } from '../shared/desktop-api';
 import { SurfaceMap } from './map';
 import type { Layer, ViewMode } from './map';
 import { BOUNDARY_NAMES, speedCmPerYear } from '../core/tectonics';
@@ -38,10 +38,13 @@ const save = element<HTMLButtonElement>('save-recipe');
 const exportView = element<HTMLButtonElement>('export-view');
 const waterAdd = element<HTMLButtonElement>('water-add');
 const waterSpill = element<HTMLButtonElement>('water-spill');
+const waterOpen = element<HTMLButtonElement>('open-water');
+const waterSave = element<HTMLButtonElement>('save-water');
 const number = new Intl.NumberFormat('en', { maximumFractionDigits: 1 });
 let world: World | null = null;
 let waterFrame: WaterFrame | null = null;
 let waterBusy = false;
+let checkpointOpening = false;
 let generationId = 0;
 let epoch = 0;
 let selected: number | null = null;
@@ -66,7 +69,7 @@ function showStatus(message: string, error = false): void {
 function inspect(id: number, preserveBasin = false): void {
   if (!world) return;
   selected = id;
-  waterAdd.disabled = waterBusy || document.body.dataset.state === 'generating'; waterSpill.disabled = waterAdd.disabled;
+  waterAdd.disabled = waterBusy || checkpointOpening || document.body.dataset.state === 'generating'; waterSpill.disabled = waterAdd.disabled;
   inspectBasin(preserveBasin && inspectedBasin !== null ? inspectedBasin : world.basins.regionNodes[id]);
   const s = world.surface, x = s.centers[id * 3], y = s.centers[id * 3 + 1], z = s.centers[id * 3 + 2];
   const lat = Math.asin(y) * 180 / Math.PI, lon = Math.atan2(z, x) * 180 / Math.PI;
@@ -232,25 +235,29 @@ function updateExaggeration(): void {
 element('exaggeration').addEventListener('change', updateExaggeration);
 resolutionInput.addEventListener('change', () => { plateCountInput.max = String(Math.min(32, 10 * 4 ** Number(resolutionInput.value) + 2)); });
 
-async function generate(recipe: Recipe): Promise<void> {
+async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): Promise<void> {
   pause(); map.cancelPreparation();
   const request = ++generationId;
   const start = performance.now();
   cancel.hidden = false; save.disabled = true; exportView.disabled = true; waterAdd.disabled = true; waterSpill.disabled = true;
-  showStatus('Building the surface in the native core…');
+  waterOpen.disabled = true; waterSave.disabled = true;
+  showStatus(prepared ? 'Preparing restored world views…' : 'Building the surface in the native core…');
   document.body.dataset.state = 'generating';
   element<HTMLButtonElement>('play').disabled = true;
   try {
-    const result = await api.generate(recipe);
+    const result = prepared ?? await api.generate(recipe as Recipe);
     if (request !== generationId) return;
     const calculationMs = performance.now() - start;
     showStatus('Preparing GPU geometry for both views…');
     await map.setWorld(result.world);
+    const restoredFrame = prepared?.waterFrame ?? null;
+    if (restoredFrame) map.setWaterFrame(restoredFrame);
     if (request !== generationId) return;
     // Queue acceptance before any subsequent UI action; no await between view
     // publication and this request. The old native world survives preparation.
     const accepted = api.acceptWorld(result.epoch);
     world = result.world; epoch = result.epoch; selected = null; waterFrame = null; waterBusy = false;
+    if (prepared) setInputs(world.recipe);
     terrainStats = summarizeTerrain(world.surface, world.terrain);
     const waterStats = summarizeWater(world.surface, world.water);
     maximumWaterDepth = waterStats.maximumDepthMeters;
@@ -297,15 +304,19 @@ async function generate(recipe: Recipe): Promise<void> {
     element('diagnostic-tick').textContent = 'Step 0';
     element('water-step').textContent = 'Select a source region · manual input, no elapsed time';
     element('model-label').textContent = 'BASINS-1 · STATIC INITIAL CONDITIONS';
+    if (restoredFrame) applyWaterFrame(restoredFrame, false);
     updateLegend(); cancel.hidden = true; save.disabled = false; exportView.disabled = false;
+    waterOpen.disabled = false; waterSave.disabled = false;
     element<HTMLButtonElement>('play').disabled = false;
     document.body.dataset.state = 'ready';
-    showStatus(`${world.recipe.plateCount} connected plates · ${world.tectonics.boundaryTypes.length} boundary segments · ${(world.stats.arrayBytes / 2 ** 20).toFixed(1)} MiB of model arrays · Static kinematics, no geological time integration`);
+    showStatus(restoredFrame ? `Water checkpoint restored at prescribed step ${restoredFrame.step}. Exact stocks are ready to continue.`
+      : `${world.recipe.plateCount} connected plates · ${world.tectonics.boundaryTypes.length} boundary segments · ${(world.stats.arrayBytes / 2 ** 20).toFixed(1)} MiB of model arrays · Static kinematics, no geological time integration`);
     await accepted;
   } catch (error) {
     if (request === generationId) {
       void api.cancelGeneration();
       cancel.hidden = true; save.disabled = world === null; exportView.disabled = world === null;
+      waterOpen.disabled = false; waterSave.disabled = world === null || waterBusy;
       element<HTMLButtonElement>('play').disabled = world === null;
       showStatus(error instanceof Error ? error.message : String(error), true);
       document.body.dataset.state = 'error';
@@ -315,33 +326,40 @@ async function generate(recipe: Recipe): Promise<void> {
   }
 }
 
+function applyWaterFrame(frame: WaterFrame, updateMap = true): void {
+  if (!world) throw new Error('No generated world for the prescribed-water display.');
+  if (updateMap) map.setWaterFrame(frame);
+  waterFrame = frame;
+  maximumWaterDepth = frame.depthMeters.reduce((maximum, depth) => Math.max(maximum, depth), 0);
+  let displayedWetArea = 0;
+  for (let region = 0; region < frame.bodyIds.length; region++) {
+    if (frame.bodyIds[region]) displayedWetArea += world.surface.areasSquareMeters[region];
+  }
+  element('water-summary').textContent = `Initial water stock ${number.format(world.water.resolvedVolumeCubicMeters / 1e9)} km³ · manual input ≈ ${number.format(Number(frame.acceptedInputUnits) / 2 ** 56 / 1e9)} km³ · displayed wet area ${(displayedWetArea / world.stats.totalAreaSquareMeters * 100).toFixed(2)}% · displayed main body ${frame.mainOceanId || 'none'}`;
+  element('water-step').textContent = `Prescribed step ${frame.step} · cumulative input ≈ ${number.format(Number(frame.acceptedInputUnits) / 2 ** 56 / 1e9)} km³`;
+  element('water-step').title = `Exact cumulative input: ${frame.acceptedInputUnits} units of 2^-56 m³`;
+  element('model-label').textContent = 'BASINS-1 · BOUNDED PRESCRIBED WATER';
+  element('basin-summary').textContent = `Basins: ${basinStats?.leafCount ?? 0} minima · ${basinStats?.nodeCount ?? 0} hierarchy branches · bounded prescribed-water spill/merge enabled; no climate or elapsed time`;
+  if (selected !== null) inspect(selected, true);
+  updateLegend();
+}
+
 async function prescribeWater(mode: PrescribedWaterMode): Promise<void> {
-  if (!world || selected === null || waterBusy || document.body.dataset.state === 'generating') return;
-  pause(); waterBusy = true; waterAdd.disabled = true; waterSpill.disabled = true;
+  if (!world || selected === null || waterBusy || checkpointOpening || document.body.dataset.state === 'generating') return;
+  pause(); waterBusy = true; waterAdd.disabled = true; waterSpill.disabled = true; waterSave.disabled = true;
   const request = generationId, activeEpoch = epoch, source = selected;
   try {
     const frame = await api.prescribeWater(activeEpoch, source, mode);
     if (request !== generationId || frame.epoch !== epoch || !world) return;
-    map.setWaterFrame(frame); waterFrame = frame;
-    maximumWaterDepth = frame.depthMeters.reduce((maximum, depth) => Math.max(maximum, depth), 0);
-    let displayedWetArea = 0;
-    for (let region = 0; region < frame.bodyIds.length; region++) {
-      if (frame.bodyIds[region]) displayedWetArea += world.surface.areasSquareMeters[region];
-    }
-    element('water-summary').textContent = `Initial water stock ${number.format(world.water.resolvedVolumeCubicMeters / 1e9)} km³ · manual input ≈ ${number.format(Number(frame.acceptedInputUnits) / 2 ** 56 / 1e9)} km³ · displayed wet area ${(displayedWetArea / world.stats.totalAreaSquareMeters * 100).toFixed(2)}% · displayed main body ${frame.mainOceanId || 'none'}`;
-    element('water-step').textContent = `Prescribed step ${frame.step} · cumulative input ≈ ${number.format(Number(frame.acceptedInputUnits) / 2 ** 56 / 1e9)} km³`;
-    element('water-step').title = `Exact cumulative input: ${frame.acceptedInputUnits} units of 2^-56 m³`;
-    element('model-label').textContent = 'BASINS-1 · BOUNDED PRESCRIBED WATER';
-    element('basin-summary').textContent = `Basins: ${basinStats?.leafCount ?? 0} minima · ${basinStats?.nodeCount ?? 0} hierarchy branches · bounded prescribed-water spill/merge enabled; no climate or elapsed time`;
-    if (selected !== null) inspect(selected, true);
-    updateLegend();
+    applyWaterFrame(frame);
     showStatus(`Prescribed runoff accepted at region ${source}. Exact basin stocks remain native; rendered water is an approximation.`);
   } catch (error) {
     if (request === generationId) showStatus(error instanceof Error ? error.message : String(error), true);
   } finally {
     if (epoch === activeEpoch) {
       waterBusy = false;
-      if (world && selected !== null && document.body.dataset.state !== 'generating') {
+      waterSave.disabled = checkpointOpening || document.body.dataset.state === 'generating';
+      if (world && selected !== null && !checkpointOpening && document.body.dataset.state !== 'generating') {
         waterAdd.disabled = false; waterSpill.disabled = false;
       }
     }
@@ -349,6 +367,33 @@ async function prescribeWater(mode: PrescribedWaterMode): Promise<void> {
 }
 waterAdd.addEventListener('click', () => void prescribeWater('oneCubicKilometer'));
 waterSpill.addEventListener('click', () => void prescribeWater('fillToSpill'));
+waterOpen.addEventListener('click', async () => {
+  if (checkpointOpening || document.body.dataset.state === 'generating') return;
+  pause(); checkpointOpening = true;
+  waterOpen.disabled = true; waterAdd.disabled = true; waterSpill.disabled = true; waterSave.disabled = true;
+  try {
+    const prepared = await api.openWaterCheckpoint();
+    if (prepared) await generate(null, prepared);
+    else showStatus('Water checkpoint opening canceled.');
+  } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
+  finally {
+    checkpointOpening = false;
+    if (document.body.dataset.state !== 'generating') {
+      waterOpen.disabled = false;
+      waterSave.disabled = world === null || waterBusy;
+      waterAdd.disabled = world === null || selected === null || waterBusy;
+      waterSpill.disabled = waterAdd.disabled;
+    }
+  }
+});
+waterSave.addEventListener('click', async () => {
+  if (!world || waterBusy || checkpointOpening || document.body.dataset.state === 'generating') return;
+  waterSave.disabled = true;
+  try {
+    if (await api.saveWaterCheckpoint(epoch)) showStatus('Exact prescribed-water checkpoint saved.');
+  } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
+  finally { waterSave.disabled = world === null || waterBusy || document.body.dataset.state === 'generating'; }
+});
 
 function pause(): void {
   playing = false; clearTimeout(playbackTimer);
@@ -399,6 +444,7 @@ element('recipe-form').addEventListener('submit', (event) => {
 });
 cancel.addEventListener('click', () => {
   generationId++; map.cancelPreparation(); void api.cancelGeneration(); cancel.hidden = true; save.disabled = world === null; exportView.disabled = world === null;
+  waterOpen.disabled = false; waterSave.disabled = world === null || waterBusy;
   element<HTMLButtonElement>('play').disabled = world === null;
   document.body.dataset.state = world ? 'ready' : 'idle';
   waterAdd.disabled = world === null || selected === null || waterBusy;

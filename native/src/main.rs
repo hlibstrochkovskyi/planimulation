@@ -1,6 +1,8 @@
 use planimulation_core::{
-    Recipe, World, exact_initial_accounting::exact_units,
-    prescribed_water_inventory::PrescribedWaterInventory, wire,
+    Recipe, World,
+    exact_initial_accounting::exact_units,
+    prescribed_water_inventory::{Checkpoint, PrescribedWaterInventory},
+    wire,
 };
 use serde::Deserialize;
 use serde_json::json;
@@ -12,7 +14,11 @@ enum Command {
     Generate { recipe: Recipe },
     Advance { steps: u32 },
     PrescribeWater { region: usize, mode: WaterMode },
+    ExportWater,
+    RestoreWater { checkpoint: Box<Checkpoint> },
 }
+
+const MAX_COMMAND_BYTES: u64 = 8 * 1024 * 1024;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -28,12 +34,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut water_state: Option<PrescribedWaterInventory> = None;
     loop {
         let mut line = Vec::new();
-        let count = input.by_ref().take(32769).read_until(b'\n', &mut line)?;
+        let count = input
+            .by_ref()
+            .take(MAX_COMMAND_BYTES + 1)
+            .read_until(b'\n', &mut line)?;
         if count == 0 {
             break;
         }
-        if count > 32768 {
-            return Err("Command exceeds 32 KiB".into());
+        if count as u64 > MAX_COMMAND_BYTES {
+            return Err("Command exceeds 8 MiB".into());
         }
         let result = (|| -> Result<(), String> {
             let command: Command = serde_json::from_slice(&line).map_err(|e| e.to_string())?;
@@ -87,6 +96,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         &checkpoint.accepted_input_units,
                     )
                     .map_err(|e| e.to_string())?;
+                }
+                Command::ExportWater => {
+                    let w = world.as_ref().ok_or("Generate a world first.")?;
+                    if water_state.is_none() {
+                        water_state = Some(PrescribedWaterInventory::from_world(w)?);
+                    }
+                    let bytes = serde_json::to_vec(&water_state.as_ref().unwrap().checkpoint())
+                        .map_err(|e| e.to_string())?;
+                    if bytes.len() > MAX_COMMAND_BYTES as usize {
+                        return Err("Prescribed-water checkpoint exceeds 8 MiB.".into());
+                    }
+                    wire::send(&mut output, json!({"kind":"checkpoint"}), &bytes)
+                        .map_err(|e| e.to_string())?;
+                }
+                Command::RestoreWater { checkpoint } => {
+                    let w = world.as_ref().ok_or("Generate a world first.")?;
+                    let restored = PrescribedWaterInventory::restore_on_world(*checkpoint, w)?;
+                    let display = restored.display(w)?;
+                    let saved = restored.checkpoint();
+                    wire::water_frame(
+                        &mut output,
+                        &display,
+                        saved.step,
+                        0,
+                        &saved.accepted_input_units,
+                    )
+                    .map_err(|e| e.to_string())?;
+                    water_state = Some(restored);
                 }
             }
             Ok(())

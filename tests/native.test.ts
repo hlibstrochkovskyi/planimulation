@@ -16,7 +16,7 @@ const executable = path.resolve('dist/native', process.platform === 'win32' ? 'p
 test('binary framing handles fragmented headers/bodies, multiple frames, and rejects oversized packets', () => {
   const received: Packet[] = [], reader = new FrameReader((packet) => received.push(packet));
   const body = Buffer.from([1, 2, 3]);
-  const header = Buffer.from(JSON.stringify({ protocol: 8, kind: 'frame', byteLength: body.length }));
+  const header = Buffer.from(JSON.stringify({ protocol: 9, kind: 'frame', byteLength: body.length }));
   const prefix = Buffer.alloc(4); prefix.writeUInt32LE(header.length);
   const packet = Buffer.concat([prefix, header, body]);
   for (const byte of packet) reader.push(Buffer.from([byte]));
@@ -116,6 +116,48 @@ test('prescribed-water frames display a generated basin spill without changing i
   } finally { core.close(); }
 });
 
+test('water checkpoint reload preserves exact continuation and rejects damaged state atomically', async () => {
+  const original = new NativeController(executable);
+  const resumed = new NativeController(executable);
+  try {
+    const recipe = { ...DEFAULT_RECIPE, subdivision: 2, water: { mode: 'coverage' as const, fraction: 0 } };
+    const { world, epoch } = await original.generate(recipe);
+    original.accept(epoch);
+    const children = basinTree(world.basins).children;
+    const source = world.drainage.receivers.findIndex((receiver, region) => {
+      if (receiver !== region) return false;
+      const branch = world.basins.regionNodes[region], parent = world.basins.parents[branch], siblings = children[parent];
+      return siblings.length === 2 && siblings.every((child) => children[child].length === 0)
+        && siblings.every((child) => world.basins.capacities[child] > 1e9);
+    });
+    assert.ok(source >= 0);
+    const initial = JSON.parse(await original.exportWaterCheckpoint(epoch));
+    assert.equal(initial.step, 0);
+    assert.equal(initial.acceptedInputUnits, '0');
+    const before = await original.prescribeWater(epoch, source, 'fillToSpill');
+    const contents = await original.exportWaterCheckpoint(epoch);
+    const checkpoint = JSON.parse(contents);
+    assert.equal(checkpoint.inventoryVersion, 'prescribed-water-inventory-2');
+    assert.equal(checkpoint.step, before.step);
+    assert.equal(checkpoint.acceptedInputUnits, before.acceptedInputUnits);
+    await assert.rejects(resumed.loadWaterCheckpoint({ ...checkpoint, acceptedInputUnits: '0' }), /balance/);
+    const loaded = await resumed.loadWaterCheckpoint(checkpoint);
+    assert.deepEqual(loaded.world, world);
+    assert.equal(loaded.waterFrame.step, before.step);
+    assert.deepEqual(loaded.waterFrame.depthMeters, before.depthMeters);
+    assert.deepEqual(loaded.waterFrame.bodyIds, before.bodyIds);
+    resumed.accept(loaded.epoch);
+    assert.equal(await resumed.exportWaterCheckpoint(loaded.epoch), contents);
+    const a = await original.prescribeWater(epoch, source, 'oneCubicKilometer');
+    const b = await resumed.prescribeWater(loaded.epoch, source, 'oneCubicKilometer');
+    assert.deepEqual({ ...b, epoch: epoch }, a);
+    assert.equal(await resumed.exportWaterCheckpoint(loaded.epoch), await original.exportWaterCheckpoint(epoch));
+    await assert.rejects(resumed.loadWaterCheckpoint({ ...checkpoint, inventoryVersion: 'old' }), /Unsupported/);
+    assert.equal((await resumed.prescribeWater(loaded.epoch, source, 'oneCubicKilometer')).step, 3,
+      'A rejected candidate must preserve the active inventory.');
+  } finally { original.close(); resumed.close(); }
+});
+
 test('native validation rejects legacy recipes and malformed output is not decoded', async () => {
   const session = new NativeSession(executable);
   try {
@@ -209,11 +251,14 @@ test('native crust fields and summaries are reproducible, bounded, and independe
 test('finest world with maximum plate count fits the native transport budget', async () => {
   const core = new NativeController(executable);
   try {
-    const { world } = await core.generate({ ...DEFAULT_RECIPE, subdivision: 6, plateCount: 32,
+    const { world, epoch } = await core.generate({ ...DEFAULT_RECIPE, subdivision: 6, plateCount: 32,
       maxPlateSpeedCmPerYear: 20, continentalScale: 0.5, radiusMeters: 100_000 });
     assert.equal(world.stats.regionCount, 40962);
     assert.equal(world.crust.continentality.length, 40962);
     assert.ok(world.stats.arrayBytes < 32 * 2 ** 20);
+    core.accept(epoch);
+    const checkpoint = await core.exportWaterCheckpoint(epoch);
+    assert.ok(Buffer.byteLength(checkpoint) < 8 * 2 ** 20, 'The largest supported world must fit the water-checkpoint limit.');
   } finally { core.close(); }
 });
 

@@ -2,7 +2,7 @@
 
 Status: implemented foundation increment, September 20, 2026. Terrain, climate, and civilization remain future work.
 
-Historical baseline: recipe `surface-rust-1` and protocol 1 below describe the foundation increment. B1 adds protocol 2, B2 protocol 3, B3 protocol 4, B4 protocol 5, C1 protocol 6, and C2b introduced `basins-1` with protocol 7. The current [manual prescribed-water view](prescribed-water-desktop.md) uses protocol 8 without changing the initial world arrays. See [Plate kinematics](tectonics.md), [Initial crust](crust.md), [Explainable elevation](terrain.md), [Initial water](water.md), [Drainage structure](drainage.md), and [Basin inspection](basin-inspection.md) for earlier appended fields and checks. Process ownership and the diagnostic update mechanism remain unchanged. The measurements below apply to the earlier surface-only workload.
+Historical baseline: recipe `surface-rust-1` and protocol 1 below describe the foundation increment. B1 adds protocol 2, B2 protocol 3, B3 protocol 4, B4 protocol 5, C1 protocol 6, and C2b introduced `basins-1` with protocol 7. The [manual prescribed-water view](prescribed-water-desktop.md) added derived water frames in protocol 8; current protocol 9 adds its separate checkpoint transfer without changing the initial world arrays. See [Plate kinematics](tectonics.md), [Initial crust](crust.md), [Explainable elevation](terrain.md), [Initial water](water.md), [Drainage structure](drainage.md), and [Basin inspection](basin-inspection.md) for earlier appended fields and checks. Process ownership and the diagnostic update mechanism remain unchanged. The measurements below apply to the earlier surface-only workload.
 
 ## Decision and scope
 
@@ -10,7 +10,7 @@ Use a Rust library/executable for authoritative model calculation, Electron/Type
 
 This retains the existing desktop controls and testing investment while putting numerical work outside the UI runtime. It also makes the same native binary usable by headless tests. It does not establish that every future simulation will be fast. Multithreading, Wasm, GPU simulation, shared memory, native graphics, and another desktop shell remain decisions to justify with workloads, not dependencies to introduce preemptively.
 
-Current limits: 12–40,962 regions, scalar diagnostic field, single-threaded numerical stepping, no physical relief, no historical replay, no dynamic-state persistence. Both view geometries are retained in GPU memory for immediate switching. Memory and performance at hundreds of thousands or millions of regions are not validated.
+Current limits: 12–40,962 regions, scalar diagnostic field, single-threaded numerical stepping, no historical replay or general dynamic-state persistence. A bounded prescribed-water-only checkpoint is available separately. Both view geometries are retained in GPU memory for immediate switching. Memory and performance at hundreds of thousands or millions of regions are not validated.
 
 ## Ownership and publication
 

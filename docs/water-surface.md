@@ -1,6 +1,6 @@
 # Water-surface display: milestone B5
 
-Historical B5 record. [C2b basin inspection](basin-inspection.md) added native basin arrays with `basins-1` and protocol 7. The current [manual prescribed-water view](prescribed-water-desktop.md) extends globe caps to distinct regional displayed levels in protocol 8; the initial-water algorithm below remains the B5 baseline.
+Historical B5 record. [C2b basin inspection](basin-inspection.md) added native basin arrays with `basins-1` and protocol 7. The [manual prescribed-water view](prescribed-water-desktop.md) extended globe caps to distinct regional displayed levels in protocol 8; current protocol 9 additionally transfers its checkpoints. The initial-water algorithm below remains the B5 baseline.
 
 This is a rendering increment on top of [B4 initial water](water.md), not a new water model. Recipes remain `water-1`, binary protocol 5, and the native fields and fingerprints are unchanged. The default layer is now **Land and water**. Depth, water-body, and geological layers remain analytical views of the bed.
 

@@ -200,7 +200,18 @@ impl PrescribedWaterInventory {
             return Err("Prescribed-water step exceeds exact JSON integer range.".into());
         }
         let world = World::generate(checkpoint.origin.origin_recipe.clone())?;
-        let mut state = Self::from_world(&world)?;
+        Self::restore_on_world(checkpoint, &world)
+    }
+
+    /// Validate against an already generated candidate before publishing it.
+    pub fn restore_on_world(checkpoint: Checkpoint, world: &World) -> Result<Self, String> {
+        if checkpoint.inventory_version != INVENTORY_VERSION {
+            return Err("Unsupported prescribed-water inventory version.".into());
+        }
+        if checkpoint.step > MAX_JSON_EXACT_STEP {
+            return Err("Prescribed-water step exceeds exact JSON integer range.".into());
+        }
+        let mut state = Self::from_world(world)?;
         if checkpoint.origin != state.origin || checkpoint.stocks.is_empty() {
             return Err("Prescribed-water checkpoint origin does not match its world.".into());
         }

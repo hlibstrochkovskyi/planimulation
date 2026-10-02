@@ -49,7 +49,7 @@ try {
   }, { ...DEFAULT_RECIPE });
   assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'openRecipe', 'prescribeWater', 'saveRecipe']);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'openRecipe', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveWaterCheckpoint']);
   assert.equal(await page.evaluate(async () => {
     try { await window.desktop.exportView({ x: -1, y: 0, width: 100, height: 100 }); return false; }
     catch { return true; }
@@ -406,6 +406,50 @@ try {
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
   await page.screenshot({ path: executablePath ? 'artifacts/spill-desktop-packaged.png' : 'artifacts/spill-desktop.png' });
   await page.getByRole('button', { name: '2D map', exact: true }).click();
+  const waterCheckpointPath = path.join(temp, 'water-checkpoint.json');
+  await app.evaluate(({ dialog }, destination) => {
+    dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
+  }, waterCheckpointPath);
+  await page.locator('#save-water').click();
+  await expect(page.locator('#status')).toContainText('checkpoint saved');
+  const savedWater = JSON.parse(await readFile(waterCheckpointPath, 'utf8'));
+  assert.equal(savedWater.step, 1);
+  assert.equal(savedWater.origin.originRecipe.water.fraction, 0);
+  await page.locator('#water-add').click();
+  await expect(page.locator('#water-step')).toContainText('Prescribed step 2');
+  const continuedStep = await page.locator('#water-step').innerText();
+  await page.locator('#seed').fill('unsaved-form-edit');
+  await page.locator('#water-coverage').fill('17');
+  await app.evaluate(({ dialog }, destination) => {
+    dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [destination] });
+  }, waterCheckpointPath);
+  await page.locator('#open-water').click();
+  await expect(page.locator('#status')).toContainText('Water checkpoint restored');
+  await expect(page.locator('#water-step')).toContainText('Prescribed step 1');
+  await expect(page.locator('#region-count')).toHaveText('162');
+  await expect(page.locator('#seed')).toHaveValue(DEFAULT_RECIPE.seed);
+  await expect(page.locator('#water-coverage')).toHaveValue('0');
+  await page.getByRole('button', { name: 'Fit map' }).click();
+  await clickAtlas(spillSample);
+  await page.locator('#water-add').click();
+  await expect(page.locator('#water-step')).toHaveText(continuedStep);
+  const damagedCheckpointPath = path.join(temp, 'damaged-water-checkpoint.json');
+  await writeFile(damagedCheckpointPath, JSON.stringify({ ...savedWater, acceptedInputUnits: '0' }));
+  await app.evaluate(({ dialog }, destination) => {
+    dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [destination] });
+  }, damagedCheckpointPath);
+  await page.locator('#open-water').click();
+  await expect(page.locator('#status')).toContainText('balance');
+  await expect(page.locator('#water-step')).toHaveText(continuedStep);
+  await expect(page.locator('#region-count')).toHaveText('162');
+  const oversizedCheckpointPath = path.join(temp, 'oversized-water-checkpoint.json');
+  await writeFile(oversizedCheckpointPath, Buffer.alloc(8 * 2 ** 20 + 1));
+  await app.evaluate(({ dialog }, destination) => {
+    dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [destination] });
+  }, oversizedCheckpointPath);
+  await page.locator('#open-water').click();
+  await expect(page.locator('#status')).toContainText('exceeds the 8 MiB limit');
+  await expect(page.locator('#water-step')).toHaveText(continuedStep);
   await page.locator('#water-coverage').fill('71');
   await page.locator('#subdivision').selectOption(String(DEFAULT_RECIPE.subdivision));
   await page.locator('#generate').click();

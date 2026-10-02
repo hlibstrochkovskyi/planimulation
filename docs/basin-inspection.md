@@ -1,6 +1,6 @@
 # Basin inspection: milestone C2b
 
-Historical C2b status: integrated native generation, binary transport, headless summary, flat/globe layers, and basin inspector. Model recipe `basins-1`, protocol 7 at that increment, analysis algorithm `basin-analysis-1`. The current [manual prescribed-water view](prescribed-water-desktop.md) uses protocol 8 and does not change this static analysis. The [C2a analysis](basins.md) is unchanged. Milestone C is not complete.
+Historical C2b status: integrated native generation, binary transport, headless summary, flat/globe layers, and basin inspector. Model recipe `basins-1`, protocol 7 at that increment, analysis algorithm `basin-analysis-1`. The current [manual prescribed-water view](prescribed-water-desktop.md) uses protocol 9 and does not change this static analysis. The [C2a analysis](basins.md) is unchanged. Milestone C is not complete.
 
 ## Ownership and reproduction
 

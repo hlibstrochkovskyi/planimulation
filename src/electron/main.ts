@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, session } from 'electron';
 import type { IpcMainInvokeEvent } from 'electron';
-import { open, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { open, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseRecipe, serializeRecipe } from '../core/recipe';
@@ -9,13 +10,14 @@ import { parseCaptureRect } from '../shared/capture';
 
 const rendererFile = path.join(__dirname, '../renderer/index.html');
 const rendererURL = pathToFileURL(rendererFile).href;
+const MAX_CHECKPOINT_BYTES = 8 * 2 ** 20;
 let mainWindow: BrowserWindow | null = null;
 const core = new NativeController(path.join(app.isPackaged ? process.resourcesPath : path.join(__dirname, '..'),
   'native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
 
 function senderWindow(event: IpcMainInvokeEvent): BrowserWindow {
   if (!mainWindow || event.sender !== mainWindow.webContents || event.senderFrame !== event.sender.mainFrame
-    || event.senderFrame.url !== rendererURL) throw new Error('Untrusted recipe request.');
+    || event.senderFrame.url !== rendererURL) throw new Error('Untrusted renderer request.');
   return mainWindow;
 }
 
@@ -49,6 +51,41 @@ void app.whenReady().then(() => {
     senderWindow(event);
     if (mode !== 'oneCubicKilometer' && mode !== 'fillToSpill') throw new Error('Invalid prescribed-water mode.');
     return core.prescribeWater(epoch, region, mode);
+  });
+  ipcMain.handle('water:openCheckpoint', async (event) => {
+    const window = senderWindow(event);
+    const result = await dialog.showOpenDialog(window, { properties: ['openFile'],
+      filters: [{ name: 'Prescribed-water checkpoint', extensions: ['json'] }] });
+    if (result.canceled) return null;
+    const file = await open(result.filePaths[0], 'r');
+    try {
+      if ((await file.stat()).size > MAX_CHECKPOINT_BYTES) throw new Error('Water checkpoint exceeds the 8 MiB limit.');
+      const buffer = Buffer.alloc(MAX_CHECKPOINT_BYTES + 1);
+      let count = 0;
+      while (count < buffer.length) {
+        const { bytesRead } = await file.read(buffer, count, buffer.length - count, count);
+        if (bytesRead === 0) break;
+        count += bytesRead;
+      }
+      if (count > MAX_CHECKPOINT_BYTES) throw new Error('Water checkpoint exceeds the 8 MiB limit.');
+      return await core.loadWaterCheckpoint(JSON.parse(buffer.subarray(0, count).toString('utf8')));
+    } finally { await file.close(); }
+  });
+  ipcMain.handle('water:saveCheckpoint', async (event, epoch: number) => {
+    const window = senderWindow(event);
+    const result = await dialog.showSaveDialog(window, { defaultPath: 'water-checkpoint.json',
+      filters: [{ name: 'Prescribed-water checkpoint', extensions: ['json'] }] });
+    if (result.canceled || !result.filePath) return false;
+    const contents = await core.exportWaterCheckpoint(epoch);
+    const temporary = `${result.filePath}.tmp-${randomUUID()}`;
+    try {
+      await writeFile(temporary, contents, { encoding: 'utf8', flag: 'wx' });
+      await rename(temporary, result.filePath);
+    } catch (error) {
+      await unlink(temporary).catch(() => {});
+      throw error;
+    }
+    return true;
   });
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),

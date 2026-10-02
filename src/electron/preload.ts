@@ -10,5 +10,7 @@ const api: DesktopAPI = {
   acceptWorld: (epoch) => ipcRenderer.invoke('world:accept', epoch),
   advance: (epoch, steps) => ipcRenderer.invoke('world:advance', epoch, steps),
   prescribeWater: (epoch, region, mode) => ipcRenderer.invoke('world:prescribeWater', epoch, region, mode),
+  openWaterCheckpoint: () => ipcRenderer.invoke('water:openCheckpoint'),
+  saveWaterCheckpoint: (epoch) => ipcRenderer.invoke('water:saveCheckpoint', epoch),
 };
 contextBridge.exposeInMainWorld('desktop', api);

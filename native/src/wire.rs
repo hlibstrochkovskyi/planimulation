@@ -107,10 +107,10 @@ pub fn arrays(w: &World) -> Vec<u8> {
     );
     out
 }
-/// v8: adds derived prescribed-water display frames; world arrays are unchanged.
+/// v9: adds exact prescribed-water checkpoint transfer; world arrays are unchanged.
 pub fn send(out: &mut impl Write, header: serde_json::Value, bytes: &[u8]) -> io::Result<()> {
     let mut header = header;
-    header["protocol"] = json!(8);
+    header["protocol"] = json!(9);
     header["byteLength"] = json!(bytes.len());
     let encoded = serde_json::to_vec(&header)?;
     out.write_all(&(encoded.len() as u32).to_le_bytes())?;
