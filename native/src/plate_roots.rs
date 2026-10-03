@@ -1,4 +1,4 @@
-//! Experimental mesh-independent plate-root directions, not a generated-world model.
+//! Mesh-independent plate-root directions for the opt-in `continuous-plates-1` model.
 use crate::{Random, Surface, V, dot};
 
 pub const PROPOSAL_VERSION: &str = "continuous-plate-roots-1";

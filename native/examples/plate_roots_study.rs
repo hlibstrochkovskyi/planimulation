@@ -146,7 +146,7 @@ fn run(seed_count: usize) -> Result<Value, String> {
     }
     Ok(json!({
         "reportVersion": 1,
-        "scope": "Standalone candidate partition and raw terrain comparison; no generated-world model change",
+        "scope": "Paired candidate partition and raw terrain comparison; no default-world model change",
         "proposalVersion": plate_roots::PROPOSAL_VERSION,
         "seedCount": seed_count, "plateCount": 12,
         "seeds": "terrain-study-00 through terrain-study-11, truncated by seedCount",

@@ -28,6 +28,20 @@ The full report uses 12 fixed `terrain-study-XX` seeds, 12 plates, radius 6,371 
 
 The candidate substantially stabilizes root placement and plate ownership in this sample. It also lowers median raw-height differences, especially at higher subdivisions, but does not eliminate them. At 2 → 3, two of 12 candidate worlds have a *larger* raw-height difference than their own legacy counterpart. Crust fitting, graph growth, root projection, boundary discretization, and terrain response can still vary with mesh. The table is a numerical comparison inside this model, not evidence that the new plate shapes resemble Earth.
 
+## Wider static-geometry survey
+
+Run `cargo run --release --locked --manifest-path native/Cargo.toml --example plate_roots_survey` for a JSON report over 100 fixed `plate-survey-000`–`plate-survey-099` seeds. `--quick` runs three seeds. It compares both root selectors at subdivisions 0, 1, 2, and 4 with representative and maximum supported plate counts. It records plate-area extrema, boundary-segment counts, angular projection errors, and how often uniqueness forces a root away from its independently nearest region. These are static geometry diagnostics, not terrain/water or runtime measurements. Full-run selected results:
+
+| Subdivision | Plates | Median smallest plate area, old → candidate | Median boundary segments, old → candidate | Candidate median / worst maximum root error | Roots displaced by uniqueness |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 0 | 12 | 8.33% → 8.33% | 60 → 60 | 97.85° / 164.14° | 328 / 1,200 |
+| 1 | 32 | 1.97% → 1.97% | 218 → 218 | 39.74° / 67.99° | 544 / 3,200 |
+| 2 | 32 | 0.66% → 0.66% | 516 → 516 | 9.50° / 15.61° | 18 / 3,200 |
+| 4 | 12 | 5.12% → 5.12% | 1,343 → 1,343 | 2.30° / 2.63° | 0 / 1,200 |
+| 4 | 32 | 1.57% → 1.57% | 2,248 → 2,246 | 2.38° / 2.65° | 0 / 3,200 |
+
+At the coarsest resolution, assigning every region to a different plate necessarily loses the intended physical root locations; the greedy uniqueness rule makes that especially visible. This is a real quality limitation of the opt-in model, not a correctness failure or something to conceal by smoothing the display. Similar plate-area and boundary counts do not establish realistic plate-size distributions. The survey also does not compare downstream terrain/water sensitivity or generation cost.
+
 ## Decision boundary
 
-Keep this candidate opt-in rather than making it the desktop default until broader ensemble and topology behavior are evaluated: low-subdivision/high-plate-count distributions, root collisions across many seeds, plate-area and boundary-length distributions, terrain/water sensitivity, and runtime. Existing recipes are never silently migrated. The current study justifies developing the separate version; it does not by itself justify replacing the default generator. The new model can be exercised headlessly with a recipe copied from `terrain-prep-1` and `modelVersion` set to `continuous-plates-1`, or viewed by opening that recipe in the desktop. Saving it preserves its version; submitting the desktop parameter form instead creates a new default-version recipe.
+Keep this candidate opt-in rather than making it the desktop default. The survey exposes unacceptable root-location distortion for dense plate sets on coarse meshes; any remedy needs an explicit versioned policy, not a silent change to `continuous-plates-1` or `terrain-prep-1`. Physical boundary lengths, downstream terrain/water sensitivity, and runtime still need evaluation. Existing recipes are never silently migrated. The studies justify developing the separate version; they do not justify replacing the default generator. The new model can be exercised headlessly with a recipe copied from `terrain-prep-1` and `modelVersion` set to `continuous-plates-1`, or viewed by opening that recipe in the desktop. Saving it preserves its version; submitting the desktop parameter form instead creates a new default-version recipe.
