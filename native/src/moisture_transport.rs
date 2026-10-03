@@ -183,6 +183,42 @@ pub struct Flow {
 }
 
 impl Flow {
+    /// Sample the existing seasonal-wind formula directly at dual boundaries.
+    pub fn seasonal_month(
+        geometry: &Geometry,
+        month: usize,
+        settings: crate::seasonal_wind::Settings,
+        axial_tilt_degrees: f64,
+    ) -> Result<Self, String> {
+        use crate::seasonal_temperature::{DAYS_PER_YEAR, MONTHS_PER_YEAR, declination_radians};
+        use crate::seasonal_wind::{tangent_vector, velocity_at};
+        settings.validate()?;
+        if month >= MONTHS_PER_YEAR
+            || !axial_tilt_degrees.is_finite()
+            || !(0. ..=45.).contains(&axial_tilt_degrees)
+        {
+            return Err("Invalid seasonal transport month or axial tilt.".into());
+        }
+        let declinations: Vec<_> = (0..DAYS_PER_YEAR)
+            .filter(|day| day * MONTHS_PER_YEAR / DAYS_PER_YEAR == month)
+            .map(|day| declination_radians(day, axial_tilt_degrees))
+            .collect();
+        Self::sample(geometry, |point| {
+            let latitude = point[1].clamp(-1., 1.).asin();
+            let mut mean = [0.; 2];
+            for &declination in &declinations {
+                let wind = velocity_at(latitude, declination, settings);
+                mean[0] += wind[0];
+                mean[1] += wind[1];
+            }
+            tangent_vector(
+                point,
+                mean[0] / declinations.len() as f64,
+                mean[1] / declinations.len() as f64,
+            )
+        })
+    }
+
     /// Sample a continuous 3D tangent velocity in m/s at each boundary segment.
     /// Oppositely directed segment fluxes retain their separate upwind donors.
     pub fn sample(

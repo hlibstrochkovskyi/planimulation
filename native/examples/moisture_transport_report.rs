@@ -2,8 +2,7 @@
 use planimulation_core::{
     Recipe, World,
     moisture_transport::{Flow, Geometry, MODEL_VERSION, Settings, total_mass},
-    seasonal_temperature::{DAYS_PER_YEAR, MONTHS_PER_YEAR, declination_radians},
-    seasonal_wind::{tangent_vector, velocity_at},
+    seasonal_temperature::{DAYS_PER_YEAR, MONTHS_PER_YEAR},
 };
 use serde_json::{Value, json};
 use std::io::Write;
@@ -64,24 +63,7 @@ fn report(recipe: Recipe, days: usize) -> Result<Value, String> {
     let wind_settings = planimulation_core::seasonal_wind::Settings::default();
     let mut flows = Vec::with_capacity(MONTHS_PER_YEAR);
     for month in 0..MONTHS_PER_YEAR {
-        let declinations: Vec<_> = (0..DAYS_PER_YEAR)
-            .filter(|day| day * MONTHS_PER_YEAR / DAYS_PER_YEAR == month)
-            .map(|day| declination_radians(day, tilt))
-            .collect();
-        flows.push(Flow::sample(&geometry, |point| {
-            let latitude = point[1].clamp(-1., 1.).asin();
-            let mut mean = [0.; 2];
-            for &declination in &declinations {
-                let velocity = velocity_at(latitude, declination, wind_settings);
-                mean[0] += velocity[0];
-                mean[1] += velocity[1];
-            }
-            tangent_vector(
-                point,
-                mean[0] / declinations.len() as f64,
-                mean[1] / declinations.len() as f64,
-            )
-        })?);
+        flows.push(Flow::seasonal_month(&geometry, month, wind_settings, tilt)?);
     }
     // Declared artificial initial condition, never deducted from generated surface water.
     let initial: Vec<_> = world

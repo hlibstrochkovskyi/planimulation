@@ -136,6 +136,8 @@ Terrain and drainage structure can precede climate, but river filling and ecolog
 
 The [native moisture-transport kernel](moisture-transport.md) implements only the transport part of step 2, with shared spherical boundary fluxes, nonnegative column stocks, bounded substeps, and a headless prescribed-wind report. Its starting moisture is an explicit artificial input; evaporation, precipitation, and the remaining water-cycle stages are not implemented by it.
 
+The separate [finite seasonal-moisture model](seasonal-moisture.md) now implements a bounded form of steps 2–3: it evaporates a finite mobile partition of initial water into an initially empty atmosphere, advects vapor, and deposits water-equivalent precipitation into local surface stocks, with regional ledgers and exact same-build checkpoint continuation. Its effective-column capacity and response times are provisional; soil/snow, runoff, basin ownership, and evolving geography remain unimplemented by this model.
+
 Compare corresponding phases of successive years when evaluating settling, not neighboring days: the seasonal cycle must remain. Disable stochastic weather initially to diagnose the seasonal model, then enable it to examine stable statistics.
 
 Record preparation time separately from observation time. If the criterion is unmet, retain a diagnostic status rather than silently labeling the world equilibrated.

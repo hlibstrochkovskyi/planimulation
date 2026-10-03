@@ -6,9 +6,9 @@ A reproducible world connects geography, climate, water, ecology, and resources.
 
 The application currently includes a desktop surface laboratory, static plate kinematics, independent initial crust, explainable elevation with bounded dry terrain preparation, initial water filling, static drainage catchments, basin hierarchy inspection, a bounded manual runoff/spill view, and derived seasonal temperature and prescribed surface-wind normals on a flat map and relief globe. Timed hydrology, climate-driven erosion, weather, and a living natural environment with vegetation follow later. Human populations follow once that foundation has been checked.
 
-## Documentation
+A native [moisture-transport kernel and headless report](docs/moisture-transport.md) advance prescribed atmospheric column stocks with the seasonal wind. A separate [finite seasonal-moisture model](docs/seasonal-moisture.md) now couples transport, evaporation, and water-equivalent precipitation, tracks both stocks and regional exchange ledgers, and supports complete bounded-model checkpoint replay. Its geography is fixed; runoff, soil/snow, and desktop moisture playback are not implemented yet.
 
-A native [moisture-transport kernel and headless report](docs/moisture-transport.md) now advance prescribed atmospheric column stocks with the seasonal wind and track their mass budget. Evaporation, precipitation, and desktop moisture playback are not implemented yet.
+## Documentation
 
 | Document | Contents |
 | --- | --- |
@@ -27,6 +27,7 @@ A native [moisture-transport kernel and headless report](docs/moisture-transport
 | [Seasonal temperature normals](docs/seasonal-temperature.md) | Derived monthly temperatures, assumptions, headless report, validation, and limits |
 | [Seasonal surface-wind normals](docs/seasonal-wind.md) | Prescribed monthly wind vectors and map layer, assumptions, headless report, and limits |
 | [Moisture transport](docs/moisture-transport.md) | Conservative native column-water transport, seasonal headless runs, numerical checks, and coupling limits |
+| [Finite seasonal moisture](docs/seasonal-moisture.md) | Finite surface/vapor exchange, temperature-dependent deposition, bounded checkpoints, and integration tests |
 | [Initial water](docs/water.md) | Coverage/volume fitting, connected water bodies, inventory accounting, analytical layers, and validation |
 | [Water-surface display](docs/water-surface.md) | Separate globe water mesh, shoreline approximation, joint exaggeration bounds, and picking |
 | [Drainage structure](docs/drainage.md) | Bed receivers, flat routing, terminal catchments, and contributing land-area accounting |
