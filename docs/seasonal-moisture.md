@@ -1,116 +1,116 @@
 # Finite seasonal water exchange
 
-`seasonal-moisture-2` couples the native [moisture-transport kernel](moisture-transport.md) to finite liquid, snow, soil, and pending-runoff stocks, temperature-dependent vapor capacity, and local precipitation. The [surface-water closure](surface-water.md) declares the melt and soil laws and their limits. This runs headlessly with a versioned same-build checkpoint on fixed initial geography, not the general basin-water solver or desktop climate playback. Milestone D remains incomplete.
+`seasonal-moisture-3` couples prescribed monthly temperature/wind, conservative vapor transport, and the [typed surface-water closure](surface-water.md) to [delayed runoff transport and evaporating terminal stores](runoff-transport.md). It runs headlessly on fixed initial geography. This is a bounded mobile-water model, not the general basin inventory, changing lakes, full planetary climate, or desktop playback. Milestone D remains incomplete.
 
-## Ownership and initial state
+The [version-2 record](seasonal-moisture-2.md) and its measured results remain historical evidence. Versions 1/2 checkpoints are rejected rather than silently reinterpreted. Original source-free moisture reports and manual basin-water accounting remain unchanged.
 
-The atmosphere initially contains zero water. Each region starts with liquid mass:
+## Initial ownership
+
+The atmosphere starts dry. Liquid starts as a finite active partition of generated reference water:
 
 ```text
 L_i = area_i × min(initial_water_depth_i, active_depth) × 1000 kg/m³
-snow_i = soil_i = pending_runoff_i = vapor_i = 0
+snow_i = soil_i = transit_i = terminal_water_i = vapor_i = 0
 ```
 
-Active depth defaults to 1 m and accepts 0–10 m. It selects a finite partition of generated water, not an unlimited ocean source. The remaining original deep water is excluded and never replenishes this layer. Active depth is not a maximum on later liquid storage. This run must not be summed with the full immutable `World.water` reference or combined with the separate manual basin inventory: those would double-count water. Basin withdrawals and delivery to that inventory are not implemented.
+Active depth defaults to 1 m, accepts 0–10 m, and does not limit later local storage. Inactive original deep water is excluded and never replenishes this layer. The initial stock remains liquid even in cold regions: it is a non-equilibrated initial condition, not a freeze-up calculation.
 
-The initial stock is liquid even in initially cold reference-water regions. This is a declared non-equilibrated starting condition, not a freeze-up calculation. The original wet/dry mask selects land-only infiltration, soil evaporation, and runoff generation throughout the run. Cold precipitation accumulates as snow until positive prescribed temperatures permit melting. Rain and melt can infiltrate a finite soil bucket; liquid runoff and excess soil drainage enter a separately owned pending-runoff stock. That stock is retained but **not routed or returned**. It cannot evaporate locally or be counted again as liquid/soil.
+Every kilogram has one owner: local liquid, snow water equivalent, soil, runoff in transit, terminal water, or vapor. Do not add this partition to the full immutable `World.water` reference or deliver its rain to the separate manual basin inventory while retaining it here. No withdrawal/conversion bridge to that inventory is implemented. Recipe-based restore requires an unmodified `World::generate(recipe)` origin; custom initial fields or forcing edits are unsupported.
 
-The recipe-based checkpoint supports an unmodified `World::generate(recipe)` origin. Custom initial fields or forcing edits are not encoded and are outside this restore contract.
+The original wet/dry mask continues to select land-only soil processes. It does not change when terminal pools form. The legacy `pendingRunoffKilograms` field now means moving transit storage when routing is enabled; with routing disabled it retains version 2's absorbing local stock. `surfaceKilograms` still means local liquid only. Terminal arrivals enter the new separate `terminalWaterKilograms` field.
 
-## Vapor capacity and atmospheric exchange
+## Atmospheric and surface exchange
 
-Equilibrium vapor pressure follows [Murphy and Koop (2005)](https://doi.org/10.1256/qj.04.94), with equations reproduced in [Baumgartner et al. (2022), Appendix A](https://acp.copernicus.org/articles/22/65/2022/acp-22-65-2022.html). Temperature T is Kelvin; pressure is Pa. Below 0°C use ice; otherwise use liquid water:
+The existing equilibrium vapor-pressure expressions follow [Murphy and Koop (2005)](https://doi.org/10.1256/qj.04.94); their equations appear in the [version-2 record](seasonal-moisture-2.md) and [Baumgartner et al. (2022), Appendix A](https://acp.copernicus.org/articles/22/65/2022/acp-22-65-2022.html). Below 0°C use ice, otherwise liquid water. The effective isothermal column remains our uncalibrated approximation:
 
 ```text
-ln(e_ice) = 9.550426 − 5723.265/T + 3.53068 ln(T) − 0.00728332 T
-ln(e_water) = 54.842763 − 6763.22/T − 4.210 ln(T) + 0.000367 T
-  + tanh(0.0415(T − 218.8))
-    × (53.878 − 1331.22/T − 9.44523 ln(T) + 0.014025 T)
-q_capacity = e_sat × H_effective / (461.5 × T)      [kg/m²]
-C_i = area_i × q_capacity                         [kg]
+q_capacity = e_sat × H_effective / (461.5 × temperature_kelvin)
+C_i = area_i × q_capacity
+E_potential = max(C − vapor, 0) × (1 − exp(−Δt/τ_evap))
+P = max(vapor − C, 0) × (1 − exp(−Δt/τ_precip))
 ```
 
-The effective isothermal column is our approximation, not a vertically resolved atmosphere or a law calibrated by these papers. H defaults to 2,000 m and accepts 100–5,000 m. Temperatures and winds are prescribed monthly `seasonal-temperature-1` and `seasonal-wind-1` fields. Monthly temperatures outside −100..50°C reject rather than clamp. No latent-heat feedback, energy-limited evaporation, pressure/air-mass field, cloud storage, or topographic lifting is implemented.
+H defaults to 2,000 m (100–5,000 m); evaporation response defaults to five days (one hour–thirty days), precipitation response to six hours (one hour–ten days). Temperatures outside −100..50°C reject. Temperature/wind are fixed monthly `seasonal-temperature-1`/`seasonal-wind-1` fields, not dynamic circulation or weather. The standalone exported `exchange` function preserves its original analytic two-stock box semantics.
 
-At fixed capacity, with vapor V and local interval Δt:
+At positive temperature, terminal water satisfies potential evaporation first, capped by that donor. Remaining demand goes to local liquid and moisture-limited soil evaporation through the surface closure. Both donor debits credit the same vapor stock; the demand is not counted twice. At or below 0°C all evaporation stops; no pool freezing or snow sublimation is modeled. Precipitation enters snow at T ≤ 0°C and liquid otherwise; degree-day melt, infiltration, finite soil retention, and generated runoff retain their existing laws. Disabling evaporation/precipitation does not reset any stock.
+
+Terminal evaporation uses the region's area as an effective receiving footprint. In a previously dry sink this is a deliberately coarse pooled-water approximation, not a computed wet fraction. Even tiny terminal pools are eligible, with actual evaporation capped by their water. No lake level/area curve, sea-ice physics, latent-heat feedback, terrain lifting, pressure/air-mass field, or groundwater is implemented.
+
+## Coupling and delays
+
+Caller advances accept 1–86,400 integer seconds, up to 3,650 days. Each coupled interval executes:
+
+1. Half a local surface/atmosphere exchange, then half an interval of runoff routing.
+2. A full conservative vapor-transport interval.
+3. Another half exchange, then half an interval of runoff routing.
+
+Arrivals after routing become available for evaporation in the next exchange, not retroactively in the preceding one. A routing interval reads old departure stocks: newly arrived water cannot depart again during that same routing pass. Transit receives generated runoff already removed from local liquid/soil. Closed sinks and existing wet self-receivers deliver to finite terminal stores at actual physical contact cells. Common water-body labels do not teleport incoming water to the minimum-ID cell.
+
+The default coupled maximum is 3,600 seconds (supported setting 60–21,600), bounded by one sixth of each enabled atmospheric/surface response time and one third of the shortest nonterminal routing response. Because routing runs for half an interval, each routing pass is at most one sixth of its shortest response time. Coupled clocks align to this bound and day boundaries; vapor transport has its own outgoing-rate substeps. Identical physical ticks can be batched into daily calls without changing state. Monthly forcing follows the 365-day calendar.
+
+Local operators are sequential approximations, not an exact or globally second-order coupled network solution. Time refinement compares all six stocks. Shorter spatial edges change delay and numerical dispersion; generated-world seed/resolution ensembles alone do not prove spatial convergence.
+
+## Complete budgets and checkpoint
+
+With transfers below cumulative per region:
 
 ```text
-E_potential = max(C − V, 0) × (1 − exp(−Δt/τ_evap))
-P = max(V − C, 0) × (1 − exp(−Δt/τ_precip))
-E_actual = liquid_evaporation + soil_evaporation
-V_new = V − P + E_actual
-```
-
-The surface closure receives potential demand and precipitation; only actual evaporation credits vapor. At or below 0°C evaporation stops and precipitation enters snow. The five-day evaporation and six-hour precipitation response times are provisional choices, with supported ranges one hour–thirty days and one hour–ten days respectively. Switches disable either atmospheric exchange without resetting stocks; surface melt/infiltration/drainage can still occur. Supersaturation relaxes rather than being forcibly clamped. The exported scalar `exchange` function retains its original two-stock semantics for analytic controls; the coupled model now uses typed surface exchange instead.
-
-## Integration, ledgers, and checkpoint
-
-Caller advances accept 1–86,400 integer seconds. A coupled interval applies half a local surface/atmosphere exchange, full conservative vapor transport, then half an exchange. The default coupled maximum is 3,600 seconds (supported 60–21,600), additionally bounded by one sixth of enabled atmospheric response times and all surface response times. Intervals end at clock-aligned coupled boundaries or day boundaries. Transport retains outgoing-rate substeps. Months follow the existing 365-day calendar. Hourly integration is not hourly weather: forcing is piecewise-constant monthly normals.
-
-The local surface operator is sequential, not an exact or globally second-order coupled solution. Refinement compares all five owned stocks. Capacity arrays and atmospheric response fractions are prepared outside regional update loops.
-
-The state stores five stock arrays, cumulative E/P, and eight surface transfer ledgers per region. Transfer totals use Kahan summation with signed roundoff saved per component; cumulative E/P are derived from those component totals. Roundoff is accounting state, not physical mass or a final balance correction. With all transfers below cumulative:
-
-```text
-Σ(liquid + snow + soil + pending_runoff + vapor) = initial_mobile_water
+Σ(liquid + snow + soil + transit + terminal_water + vapor) = initial_mobile_water
 liquid_i = initial_liquid_i + rain_i + melt_i − liquid_evaporation_i − infiltration_i − liquid_runoff_i
 snow_i = snowfall_i − melt_i
 soil_i = infiltration_i − soil_evaporation_i − soil_drainage_i
-pending_runoff_i = liquid_runoff_i + soil_drainage_i
-E_i = liquid_evaporation_i + soil_evaporation_i
+transit_i = liquid_runoff_i + soil_drainage_i + received_transit_i − sent_i
+terminal_water_i = terminal_delivery_i − terminal_evaporation_i
+E_i = liquid_evaporation_i + soil_evaporation_i + terminal_evaporation_i
 P_i = rain_i + snowfall_i
 Σ(vapor) = Σ(E − P)
 ```
 
-Global residual tolerance is 1e−12 × max(initial mobile water, 1 kg). Each regional typed-ledger residual uses 1e−12 of the largest initial/current condensed stock, cumulative local exchange, or individual surface transfer, with a 1 kg floor. The vapor ledger has its own 1e−12 tolerance based on exchanged water and vapor. A surface operation checks its stock-change residual against 32 machine epsilons of its stock/actual-transfer scale. These are floating-point tolerances, not exact accounting or retention of arbitrarily sub-ULP transfers. No final correction or redistribution repairs a failed budget.
+In addition, incoming transit and terminal delivery at each region must match the cumulative departures of its actual upstream receivers. This graph-ownership check rejects a forged checkpoint that conserves global mass and individual transit identities but invents an arrival on another region.
 
-Each full update is atomic, including overflow and transport work-limit refusal. Checkpoint schema 2 pins moisture, surface, transport, temperature, and wind versions, recipe, resolved settings, clock, five stocks, and all ledgers including summation roundoff. Restore regenerates initial geography and rejects malformed arrays, negative/nonfinite values, soil above capacity, land-only stocks/transfers on reference-water regions, incompatible versions/settings, clocks beyond 3,650 days, or inconsistent ledgers. Roundoff must be finite and bounded by four machine epsilons of its component total (1 kg floor). Initial ledgers and roundoff must be zero; unknown JSON fields reject. Schema-1/version-1 checkpoints are not migrated or silently reinterpreted. A balanced edited checkpoint is not proof of historical reachability.
+Global mass tolerance remains 1e−12 × max(initial mobile water, 1 kg). Regional identities use 1e−12 times their largest initial/current condensed stock, cumulative atmospheric exchange, surface transfer, routing transfer, or terminal stock, with a 1 kg floor. Vapor has a separate 1e−12 tolerance based on vapor and cumulative atmospheric transfers. One routing pass and one surface operation each use 32 machine epsilons of their actual stock/transfer scale; one terminal evaporation debit uses 16 machine epsilons of its donor scale. Residuals are reported. No final mass correction, tolerance widening, global remainder, or redistribution repairs a failed budget. Binary64 stock arithmetic is not exact sub-ULP accounting.
 
-Same-build JSON round-trip and exact continuation are tested across month/year boundaries and non-day-aligned calls. This is a complete checkpoint for this bounded five-store model, not a general world checkpoint or cross-platform bitwise reproducibility guarantee. The legacy `surfaceKilograms` field now means liquid only; snow, soil, and pending runoff are separate required fields.
+Long-lived surface and runoff transfer ledgers use Kahan summation; signed correction arrays are saved, validated, and never counted as physical mass. E/P totals derive from their components. Correction values must be finite and no larger than four machine epsilons times the component total (1 kg floor).
 
-## Reproduce and validate
+Schema 3 records six stocks, clock, cumulative surface/routing transfers and their roundoff, E/P, full recipe, all resolved settings, and moisture/surface/runoff/transport/temperature/wind versions. Restore regenerates fixed geometry and forcing, then checks stocks, shapes, versions, settings, clock, soil capacity, terminal ownership, graph flow identities, and numerical budgets. Unknown JSON fields reject. All new pools/flows/corrections must be zero at initialization; disabling routing requires its pools and ledgers to remain zero. Terminal transit is zero after enabled routing.
+
+The entire update is atomic, including evaporation already provisionally performed before a transport failure. Checkpoint round trips and continuation are exact within the same supported build; no general world checkpoint, migration support, historical reachability proof for edited files, or cross-platform bitwise guarantee is claimed.
+
+## Reports and validation
 
 ```sh
-cargo test --locked --manifest-path native/Cargo.toml --test surface_water --test seasonal_moisture --example seasonal_moisture_report
+cargo test --locked --manifest-path native/Cargo.toml --test runoff_transport --test surface_water --test seasonal_moisture --example seasonal_moisture_report
 cargo run --release --locked --manifest-path native/Cargo.toml --example seasonal_moisture_report -- docs/scenarios/seasonal-temperature.json
 cargo run --release --locked --manifest-path native/Cargo.toml --example seasonal_moisture_report -- docs/scenarios/seasonal-temperature.json 3650
 cargo run --release --locked --manifest-path native/Cargo.toml --example seasonal_moisture_report -- --ensemble
 ```
 
-An ensemble with rejected cases still writes its complete JSON report, then exits unsuccessfully. Report version 2 includes the complete checkpoint, five-stock budgets and cumulative surface transfers, precipitation on initially dry regions, vapor extrema, and a fifteen-minute repeat. All five stocks enter its combined L1 difference, normalized by initial mobile water. A kilogram per square meter is a millimeter of water equivalent at 1,000 kg/m³. Monthly precipitation totals aggregate all reported years, not monthly climatological normals.
+Report version 3 contains baseline daily caller advances (internally hourly or smaller), a fifteen-minute repeat, and a daily **routing-disabled control** with otherwise identical resolved settings and initial conditions. The control keeps generated runoff locally and suppresses all terminal return. It isolates the routing/return intervention in this model; it is not Earth observation or a reference hydraulic solver. All accepted baselines round-trip the complete checkpoint and continue another day except at the ten-year limit.
 
-Directed controls cover cold accumulation, finite degree-day melting, saturated/unsaturated infiltration, soil retention and drainage, moisture-limited evaporation, area scaling, and a synthetic cold-to-warm year. Generated-year controls require snow, melt, soil evaporation, infiltration, and pending runoff to occur while all stock identities hold. Tests also cover thermodynamic references, disabled exchange, smaller-step convergence, a retained refined-year soil-ledger failure witness, compensated-sum controls, malformed/phase-swapped checkpoints, replay, and atomic rollback. The ensemble retains all failures: three seeds × subdivisions 2–4 × radii 1,000/6,371 km for one year, plus one ten-year reference case, each repeated at fifteen-minute caller steps.
+The ensemble retains all cases and failures: three seeds × subdivisions 2–4 × radii 1,000/6,371 km for one year, plus one ten-year reference. Rejections still produce JSON and a failing exit status. Gross edge departures count each traversal, not water production. Total terminal delivery and subsequent evaporation are independently reported in stock budgets. Monthly rain totals aggregate all reported years, not climatological monthly normals. No-routing controls use daily steps, not an additional refined repeat.
 
-## Measured version-2 evidence
+Tests cover independent one/two-reach analytic references, decreasing time-refinement errors, branched accumulation, relabeling, first-contact water-body arrivals, finite terminal retention, physical distance/speed, work bounds, invalid adjacency/stocks/versions, checkpoint replay with signed roundoff, and rejection of balanced invented teleports. Generated-year tests require actual terminal return to vapor and compare a matched disabled control. The older soil-ledger failure witness remains routing-disabled and uses the identical 900-second physical intervals batched into daily advances.
 
-Measured October 3, 2026 on the supported Linux environment: all nineteen baselines and their fifteen-minute repeats completed without rejection. All checkpoints round-tripped exactly; eighteen cases checked an extra day of exact continuation, while the ten-year case ended at the declared bound. All cases produced snowfall, melt, infiltration, soil evaporation, liquid runoff, and soil drainage. [Retained inputs, budgets, and earlier failure witnesses](data/seasonal-moisture-2-validation.json) record every case, not just successful selected seeds.
+## Measured version-3 evidence
 
-The initial ordinary-summation candidate rejected five cases on the regional soil identity (ledger 2). The first retained witness was the 1,000 km reference world at subdivision 3, second 25,287,300, region 10. Kahan accumulation of the transfer ledgers, with saved roundoff and derived E/P totals, eliminated these sampled refusals without changing stocks, physical rates, or the 1e−12 ledger limit. The witness is a refined-year regression test. A separate 2^53-plus-unit-increments control checks the summation independently and resumes with nonzero roundoff.
+Measured October 3, 2026 on the supported Linux environment: all nineteen baselines, nineteen fifteen-minute repeats, and nineteen daily disabled controls completed without rejection. All baseline checkpoints round-tripped exactly; eighteen also checked an extra day of exact continuation. Every enabled baseline recorded positive terminal delivery and evaporation. [Complete inputs and compact budgets for all cases](data/seasonal-moisture-3-validation.json) retain the controls and results.
 
-| Version-2 baseline family | Five-stock refinement difference / initial mobile water | Precipitation total | Pending runoff / initial mobile water |
+Maximum baseline relative total-water residual was 4.1e−15. The largest final regional stock/graph-ledger residual across baselines and refined repeats was 6.5e−13, within the unchanged 1e−12 bound; this is finite numerical headroom, not exact accounting or evidence for arbitrary longer runs.
+
+| Family | Six-stock time-refinement difference / initial water | Enabled precipitation total | Difference from disabled control |
 | --- | ---: | ---: | ---: |
-| Nine one-year cases, radius 1,000 km | 0.296–0.460% | 400.9–572.6 mm | 10.6–22.4% |
-| Nine one-year cases, radius 6,371 km | 0.057–0.102% | 157.4–244.4 mm | 2.02–5.03% |
-| One ten-year reference case, radius 6,371 km | 0.170% | 1,038.9 mm over ten years | 22.6% |
+| Nine one-year cases, radius 1,000 km | 0.276–0.428% | 404.9–576.5 mm | +0.382–2.58% |
+| Nine one-year cases, radius 6,371 km | 0.051–0.091% | 157.8–245.5 mm | +0.244–1.24% |
+| One ten-year reference case, radius 6,371 km | 0.167% | 1,112.2 mm over ten years | +7.05% |
 
-Maximum baseline relative total-stock residual was 3.5e−15. The largest final regional typed-ledger residual across baselines **and repeats** was 8.7e−13, close to its declared 1e−12 bound: this is limited numerical headroom, not an exact-accounting guarantee or justification for longer runs. Stock arithmetic still uses binary64. Vapor maxima across baselines were 45.7–53.9 kg/m², outcomes of the uncalibrated effective-column law rather than reference atmospheric observations.
+These differences are matched interventions in this empirical model; they do not imply universal rainfall amplification or validate a terrestrial climate. Initial active water stays finite and unreplenished; annual totals and a cumulative ten-year total are not directly comparable normals.
 
-The growing pending-runoff fraction demonstrates the remaining missing return path. Annual precipitation and ten-year totals are not directly comparable climate normals in this finite non-replenished system. Passing these cases does not establish general planetary water ownership, calibrated rainfall, spatial convergence, or untested extreme-parameter behavior.
+In the ten-year baseline, transit held 0.074% and terminal stores 11.96% of initial mobile water at the endpoint; terminal evaporation cumulatively returned 14.15% of initial water to vapor. The latter is a flow integral, not another stock. Some water can cycle repeatedly, so cumulative returned water must not be added to the final inventory. Baseline vapor maxima across all cases were 46.0–54.0 kg/m², not reference atmospheric observations.
 
-Preparing interval response fractions outside the regional loop matched the retained 1,000 km subdivision-3 reference case's baseline summary, refined summary, and stock-difference metric exactly. Full project tests, strict TypeScript checks, Rust formatting, and all-target Clippy with warnings denied passed. No desktop playback check is claimed: this increment does not change the desktop.
+The daily disabled controls exactly matched historical version 2 across all nineteen cases for the original five stocks, initial total, cumulative evaporation/precipitation, and eight surface-transfer totals. No checkpoint migration or cross-platform reproducibility is implied by this same-environment numerical parity.
 
-## Historical version-1 evidence
+Full project tests (strict TypeScript, all native targets, and Node adapter checks), native formatting, Clippy with warnings denied, and diff checks passed. Additional targeted tests cover a spherical seam-crossing receiver and malformed physical adjacency. The unchanged desktop was not tested or presented as supporting this headless increment.
 
-The previous two-store model's daily-coupling candidate conserved mass but differed from its six-hour repeat by up to 7.4%, motivating the hourly default. Its final nineteen baseline/repeat cases passed on October 3, 2026; maximum baseline relative total residual was 1.2e−15, maximum local surface-ledger residual 4.2e−14. These values belong to version 1 and do not validate version 2.
+## Remaining integration gates
 
-| Version-1 family | Refined combined-stock difference / initial mobile water | Precipitation total |
-| --- | ---: | ---: |
-| Nine one-year cases, radius 1,000 km | 0.284–0.452% | 411.7–578.9 mm |
-| Nine one-year cases, radius 6,371 km | 0.045–0.094% | 159.9–247.6 mm |
-| One ten-year case, radius 6,371 km | 0.148% | 1,115.7 mm over ten years |
-
-## Next integration gates
-
-Coastline, bed, drainage, and temperature's initial wet/dry mask do not evolve. Local liquid is not an equilibrated lake level. Pending runoff is an accumulating endpoint, not river flow, discharge, or groundwater. Delivering gross precipitation downstream while keeping it locally remains forbidden; routing must debit its actual owner and credit an explicit receiving stock, reconcile units, and define returns to the mobile water cycle.
-
-Next connect formed runoff to drainage with explicit recipient ownership, then evaluate groundwater, terrain lifting/rain shadows, evolving shorelines, and desktop dynamic fields/budgets. Finite active-layer depletion and absent runoff return/deep-water exchange must remain visible. No climate calibration, generated-geography spatial convergence, or support for untested extremes is claimed.
+This increment closes a bounded runoff-return path; it does not select a full planetary hydrology default. Coasts, bed, drainage, initial wet/dry temperature mask, and terrain remain fixed. Terminal pools have no spill thresholds, shared-body leveling, area curves, seepage, or shoreline updates. Transit has no channel evaporation/infiltration, width/depth, slope-dependent speed, sediment, flood waves, or momentum balance. Deep water and groundwater are excluded. Geography/thermal feedback, terrain-dependent rainfall, climate calibration, coherent weather, and desktop evolving fields remain separate work.

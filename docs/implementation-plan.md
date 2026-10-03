@@ -6,7 +6,7 @@ The [manual prescribed-water desktop view](prescribed-water-desktop.md) has deri
 
 Climate status: the [temperature](seasonal-temperature.md) and [wind](seasonal-wind.md) monthly normals are implemented in native reports and both desktop projections. [Conservative moisture transport](moisture-transport.md) adds a reusable native kernel and preserves its source-free report with artificial starting column stocks. General planetary surface/atmosphere accounting and timed desktop climate remain open; milestone D is incomplete.
 
-The separate [finite seasonal-moisture run](seasonal-moisture.md) now implements atmospheric exchange and conservative transport with typed liquid, snow, soil, and pending-runoff stocks, local/global transfer ledgers, and a complete fixed-geography checkpoint. The [surface closure](surface-water.md) adds bounded melt, infiltration, retention, and runoff generation. River routing/return, groundwater, general basin-water ownership, changing shorelines, and desktop climate playback remain open; milestone D is incomplete.
+The separate [finite seasonal-moisture run](seasonal-moisture.md) implements atmospheric exchange with typed local stocks, [delayed neighboring runoff](runoff-transport.md), and separately owned evaporating terminal water, with per-region graph/stock ledgers and a complete fixed-geography checkpoint. The [surface closure](surface-water.md) supplies melt, infiltration, retention, and generated runoff. This closes a bounded runoff-return chain; lake spill levels, groundwater, general basin-water ownership, changing shorelines, climate calibration, and desktop playback remain open. Milestone D is incomplete.
 
 ## 1. Selected foundation stack
 
@@ -107,7 +107,7 @@ The subsequent [moisture-transport increment](moisture-transport.md) advances an
 
 Deliverable: run, pause, and observe several years; rivers receive computed water inputs.
 
-The finite seasonal-moisture increment closes bounded source/recipient exchange and typed local surface ownership. Its initial mobile layer is an independent partition of generated reference water, not a withdrawal from the manual basin inventory. It uses hourly-or-smaller coupled substeps, exposes step sensitivity across all five stocks, and retains rejected headless cases. Next route formed runoff with explicit recipient ownership and returns before presenting river discharge or changing lake levels. General groundwater and thermodynamic freezing remain deferred.
+The finite seasonal-moisture increment closes bounded source/recipient exchange and a delayed runoff-return path. Its initial mobile layer is an independent partition of generated reference water, not a withdrawal from the manual basin inventory. It uses hourly-or-smaller coupled substeps, exposes sensitivity across all six stocks, and retains all headless cases plus matched routing-disabled controls. Next expose evolving fields, elapsed time, flow records, and budgets in the desktop on this explicitly fixed geography; do not infer lake levels from local pooled mass. Groundwater, terrain-dependent rainfall, general basin spill/merge ownership, thermodynamic freezing, and calibration remain separate gates.
 
 Work includes seasonal heating, thermal memory, a tangent wind field, evaporation, moisture transport, precipitation, snow, soil and simplified groundwater stores, runoff, and lakes. Initial state preparation has a criterion and an iteration limit. Introduce coherent weather disturbances after establishing the baseline seasonal behavior.
 

@@ -1,6 +1,6 @@
 # Typed local surface-water closure
 
-`surface-water-1` is a pure native transfer operator used by `seasonal-moisture-2`. It separates liquid, snow water equivalent, soil water, and pending runoff. It does not generate additional water, route rivers, solve groundwater, or change geometry. All mass is kilograms; area is m², temperature is °C, and time is seconds. The atmosphere remains the caller's responsibility.
+`surface-water-1` is the unchanged pure native transfer operator used by seasonal moisture versions 2/3. It separates liquid, snow water equivalent, soil water, and pending runoff. It does not generate additional water, route rivers, solve groundwater, or change geometry. Version 3's caller separately [routes pending runoff and evaporates terminal stores](runoff-transport.md). All mass is kilograms; area is m², temperature is °C, and time is seconds. Atmosphere and downstream ownership remain the caller's responsibility.
 
 ## Scientific basis versus implementation choices
 
@@ -39,7 +39,7 @@ Soil capacity and retained fraction are uniform placeholders, not geology-derive
 
 ## Ownership and verification
 
-Pending runoff is a real separately owned mass stock, removed from its donors. It is unavailable to local evaporation and grows until a future routing operation takes ownership. It must not be represented as another copy of rain, soil drainage, or liquid. Reference-water regions do not acquire soil or pending runoff; their liquid is retained for atmospheric exchange. The immutable generated wet/dry mask determines this distinction in the current coupled run.
+Pending runoff is a real separately owned mass stock, removed from its donors and unavailable to local evaporation. Version 2 retains it locally; version 3's caller debits/credits it through receiver-edge routing and separately owns terminal arrivals. It must not be another copy of rain, soil drainage, or liquid. Reference-water regions do not acquire soil or transit runoff; they are terminal receiving locations in version 3. The immutable initial wet/dry mask still determines local surface processes.
 
 The operator returns all eight transfers (rain, snowfall, melt, liquid/soil evaporation, infiltration, liquid runoff, soil drainage) and checks:
 

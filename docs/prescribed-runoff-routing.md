@@ -18,6 +18,8 @@ Negative inputs, mismatched arrays, cycles, invalid terminal labels, and integer
 
 ## Boundary of this increment
 
+The separate [seasonal delayed-runoff model](runoff-transport.md) now supplies climate-derived kilograms, transit delays, and evaporating terminal stores on the same frozen receivers. It does not reinterpret this integer operation's units or connect its finite partition to the full manual inventory. These remain distinct ownership contracts.
+
 The routing operation alone does **not** change a lake or ocean. An opt-in [bounded prescribed-water inventory](prescribed-water-inventory.md) accepts its terminal amounts into active basin stocks and can transfer one unambiguous spill source across existing sill contacts, then merge full sibling stocks. Neither operation has elapsed time, discharge, precipitation conversion, soil loss, evaporation, flood waves, or a water-surface-gradient law. Static bed receivers remain a potential route, not proof of a dynamic flow rate. This is not the complete [Fill–Spill–Merge method](https://esurf.copernicus.org/articles/9/105/2021/) or a [finite-volume hydrodynamic solver](https://www.hec.usace.army.mil/confluence/rasdocs/ras1dtechref/6.2/theoretical-basis-for-one-dimensional-and-two-dimensional-hydrodynamic-calculations/2d-unsteady-flow-hydrodynamics). In particular, the published Fill–Spill–Merge ocean-as-sink convention cannot be copied into a closed planetary water budget.
 
 The [manual desktop view](prescribed-water-desktop.md) now derives map/globe fields from the changed frontier. The next physical integration must update routing when wet topology changes. Simultaneous allocation and longer-run limits in [water accounting](water-accounting-contract.md) remain gates.

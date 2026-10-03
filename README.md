@@ -4,9 +4,9 @@ An exploratory simulation of procedural Earth-like worlds and the histories that
 
 A reproducible world connects geography, climate, water, ecology, and resources. Populations adapt to their environment; production, connections, and decisions shape settlements, states, and history. Civilizations then change the environment that supports them.
 
-The application currently includes a desktop surface laboratory, static plate kinematics, independent initial crust, explainable elevation with bounded dry terrain preparation, initial water filling, static drainage catchments, basin hierarchy inspection, a bounded manual runoff/spill view, and derived seasonal temperature and prescribed surface-wind normals on a flat map and relief globe. Timed hydrology, climate-driven erosion, weather, and a living natural environment with vegetation follow later. Human populations follow once that foundation has been checked.
+The application currently includes a desktop surface laboratory, static plate kinematics, independent initial crust, explainable elevation with bounded dry terrain preparation, initial water filling, static drainage catchments, basin hierarchy inspection, a bounded manual runoff/spill view, and derived seasonal temperature and prescribed surface-wind normals on a flat map and relief globe. Desktop moisture playback, general planetary hydrology, climate-driven erosion, weather, and a living natural environment with vegetation follow later. Human populations follow once that foundation has been checked.
 
-A native [moisture-transport kernel and headless report](docs/moisture-transport.md) advance prescribed atmospheric column stocks with the seasonal wind. A separate [finite seasonal-moisture model](docs/seasonal-moisture.md) couples transport and atmospheric exchange to [snow accumulation/melt, liquid, soil retention, and separately owned pending runoff](docs/surface-water.md), with regional transfer ledgers and complete bounded-model checkpoint replay. Its geography is fixed; river routing/return, groundwater, and desktop moisture playback remain unimplemented.
+A native [moisture-transport kernel and headless report](docs/moisture-transport.md) advance prescribed atmospheric column stocks with the seasonal wind. A separate [finite seasonal-moisture model](docs/seasonal-moisture.md) couples transport and atmospheric exchange to [snow, liquid, and soil](docs/surface-water.md), plus [delayed neighboring runoff and evaporating terminal stores](docs/runoff-transport.md), with regional transfer ledgers and complete bounded-model checkpoint replay. Its geography is fixed; lake spill levels, groundwater, and desktop moisture playback remain unimplemented.
 
 ## Documentation
 
@@ -27,8 +27,9 @@ A native [moisture-transport kernel and headless report](docs/moisture-transport
 | [Seasonal temperature normals](docs/seasonal-temperature.md) | Derived monthly temperatures, assumptions, headless report, validation, and limits |
 | [Seasonal surface-wind normals](docs/seasonal-wind.md) | Prescribed monthly wind vectors and map layer, assumptions, headless report, and limits |
 | [Moisture transport](docs/moisture-transport.md) | Conservative native column-water transport, seasonal headless runs, numerical checks, and coupling limits |
-| [Finite seasonal moisture](docs/seasonal-moisture.md) | Five owned water stocks, temperature-dependent exchange, bounded checkpoints, and integration tests |
+| [Finite seasonal moisture](docs/seasonal-moisture.md) | Six owned water stocks, runoff return, bounded checkpoints, matched controls, and integration tests |
 | [Typed surface water](docs/surface-water.md) | Empirical snowmelt, soil bucket, pending-runoff ownership, defaults, and limitations |
+| [Delayed runoff](docs/runoff-transport.md) | Neighbor transfers, physical response times, terminal retention/evaporation, and analytic controls |
 | [Initial water](docs/water.md) | Coverage/volume fitting, connected water bodies, inventory accounting, analytical layers, and validation |
 | [Water-surface display](docs/water-surface.md) | Separate globe water mesh, shoreline approximation, joint exaggeration bounds, and picking |
 | [Drainage structure](docs/drainage.md) | Bed receivers, flat routing, terminal catchments, and contributing land-area accounting |

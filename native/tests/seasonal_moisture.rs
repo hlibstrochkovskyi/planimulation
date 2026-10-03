@@ -204,6 +204,9 @@ fn a_generated_year_conserves_both_stocks_and_local_exchange_ledgers() {
     assert!(budget.cumulative_surface_transfers.soil_evaporation > 0.);
     assert!(budget.pending_runoff_kilograms > 0.);
     assert!(budget.soil_kilograms > 0.);
+    assert!(budget.terminal_water_kilograms > 0.);
+    assert!(budget.cumulative_runoff_transfers.terminal_delivery > 0.);
+    assert!(budget.cumulative_runoff_transfers.terminal_evaporation > 0.);
     assert_eq!(state.elapsed_seconds(), 365 * 86400);
 }
 
@@ -468,7 +471,11 @@ fn refined_generated_year_keeps_the_measured_long_lived_soil_ledger_consistent()
     let world = World::generate(recipe).unwrap();
     let model = Model::from_world(
         &world,
-        Settings::default(),
+        Settings {
+            routing_enabled: false,
+            max_coupled_step_seconds: 900,
+            ..Default::default()
+        },
         seasonal_temperature::Settings::default(),
         seasonal_wind::Settings::default(),
     )
@@ -476,8 +483,10 @@ fn refined_generated_year_keeps_the_measured_long_lived_soil_ledger_consistent()
     let mut state = model.initial_state();
     // Ordinary accumulation previously crossed 1e-12 in region 10's soil
     // identity at second 25,287,300. Retain the whole forcing history.
-    for _ in 0..365 * 96 {
-        model.advance(&mut state, 900).unwrap();
+    // Batch the same clock-aligned 900-second physical intervals into daily
+    // calls; do not repeat checkpoint-wide validation after every interval.
+    for _ in 0..365 {
+        model.advance(&mut state, 86400).unwrap();
     }
     assert!(
         model
@@ -490,4 +499,135 @@ fn refined_generated_year_keeps_the_measured_long_lived_soil_ledger_consistent()
     model.advance(&mut state, 86400).unwrap();
     restored_model.advance(&mut restored, 86400).unwrap();
     assert_eq!(state, restored);
+}
+
+#[test]
+fn routing_returns_finite_water_and_its_disabled_control_preserves_absorbing_ownership() {
+    let world = world();
+    let enabled = Model::from_world(
+        &world,
+        Settings::default(),
+        seasonal_temperature::Settings::default(),
+        seasonal_wind::Settings::default(),
+    )
+    .unwrap();
+    let disabled = Model::from_world(
+        &world,
+        Settings {
+            routing_enabled: false,
+            ..Default::default()
+        },
+        seasonal_temperature::Settings::default(),
+        seasonal_wind::Settings::default(),
+    )
+    .unwrap();
+    let mut on = enabled.initial_state();
+    let mut off = disabled.initial_state();
+    assert_eq!(
+        on.owned_stocks().collect::<Vec<_>>(),
+        off.owned_stocks().collect::<Vec<_>>()
+    );
+    for _ in 0..180 {
+        enabled.advance(&mut on, 86400).unwrap();
+        disabled.advance(&mut off, 86400).unwrap();
+    }
+    let live = enabled.budget(&on).unwrap();
+    let reference = disabled.budget(&off).unwrap();
+    assert!(live.cumulative_runoff_transfers.terminal_delivery > 0.);
+    assert!(live.cumulative_runoff_transfers.terminal_evaporation > 0.);
+    assert!(
+        live.cumulative_runoff_transfers.sent > live.cumulative_runoff_transfers.terminal_delivery
+    );
+    assert_eq!(reference.terminal_water_kilograms, 0.);
+    assert_eq!(reference.cumulative_runoff_transfers, Default::default());
+    assert!(reference.pending_runoff_kilograms > live.pending_runoff_kilograms);
+    let difference: f64 = on
+        .owned_stocks()
+        .zip(off.owned_stocks())
+        .map(|(a, b)| (a - b).abs())
+        .sum();
+    assert!(difference / live.initial_mobile_water_kilograms > 1e-4);
+    for (i, &receiver) in world.drainage.receivers.iter().enumerate() {
+        if receiver as usize != i {
+            assert_eq!(on.terminal_water_kilograms()[i], 0.);
+        } else {
+            assert_eq!(on.pending_runoff_kilograms()[i], 0.);
+        }
+    }
+    let cp = on.checkpoint();
+    let encoded = serde_json::to_vec(&cp).unwrap();
+    let (restored_model, mut restored) =
+        Model::restore(serde_json::from_slice(&encoded).unwrap()).unwrap();
+    enabled.advance(&mut on, 86400).unwrap();
+    restored_model.advance(&mut restored, 86400).unwrap();
+    assert_eq!(on, restored);
+}
+
+#[test]
+fn routing_checkpoint_rejects_balanced_teleports_wrong_terminals_and_bad_roundoff() {
+    let world = world();
+    let model = model(Settings::default());
+    let mut state = model.initial_state();
+    for _ in 0..180 {
+        model.advance(&mut state, 86400).unwrap();
+    }
+    let original = state.checkpoint();
+    let mut cases = Vec::new();
+    let mut cp = original.clone();
+    cp.schema_version = 2;
+    cp.model_version = "seasonal-moisture-2".into();
+    cases.push(cp);
+    let mut cp = original.clone();
+    cp.runoff_model_version = "future".into();
+    cases.push(cp);
+    let mut cp = original.clone();
+    cp.terminal_water_kilograms.pop();
+    cases.push(cp);
+    let mut cp = original.clone();
+    cp.cumulative_runoff_transfer_roundoff.pop();
+    cases.push(cp);
+    let mut cp = original.clone();
+    cp.cumulative_runoff_transfer_roundoff[0][0] = f64::NAN;
+    cases.push(cp);
+    let mut cp = original.clone();
+    cp.cumulative_runoff_transfer_roundoff[0][0] = 1e30;
+    cases.push(cp);
+    let mut cp = original.clone();
+    cp.cumulative_runoff_transfers[0].terminal_delivery = -1.;
+    cases.push(cp);
+    let nonterminal = world
+        .drainage
+        .receivers
+        .iter()
+        .enumerate()
+        .position(|(i, &r)| r as usize != i)
+        .unwrap();
+    let mut cp = original.clone();
+    cp.terminal_water_kilograms[nonterminal] = 1.;
+    cases.push(cp);
+    for cp in cases {
+        assert!(Model::restore(cp).is_err());
+    }
+    let i = (0..world.surface.areas.len())
+        .find(|&i| {
+            original.pending_runoff_kilograms[i] > 1e10
+                && original.cumulative_runoff_transfers[i].received_transit > 1e10
+        })
+        .unwrap();
+    let j = (0..world.surface.areas.len())
+        .find(|&j| j != i && world.drainage.receivers[j] as usize != j)
+        .unwrap();
+    let mut cp = original.clone();
+    // Preserve both the global stock and each modified transit identity, but
+    // invent an arrival on a node that the immutable graph did not receive.
+    cp.pending_runoff_kilograms[i] -= 1e10;
+    cp.pending_runoff_kilograms[j] += 1e10;
+    cp.cumulative_runoff_transfers[i].received_transit -= 1e10;
+    cp.cumulative_runoff_transfers[j].received_transit += 1e10;
+    let error = Model::restore(cp).err().unwrap();
+    assert!(error.contains("ledger 7"), "{error}");
+    let mut value = serde_json::to_value(&original).unwrap();
+    value["cumulativeRunoffTransfers"][0]["unexpected"] = true.into();
+    assert!(serde_json::from_value::<Checkpoint>(value).is_err());
+    assert_eq!(state.checkpoint(), original);
 }
