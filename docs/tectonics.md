@@ -1,6 +1,6 @@
 # Static plate kinematics: milestone B1
 
-Status: implemented. This document records B1 with model recipe `tectonics-1`, binary protocol 2. [B2 initial crust](crust.md), [B3 elevation](terrain.md), [B4 initial water](water.md), and [C1 drainage](drainage.md) extend it; new worlds use `terrain-prep-1` and world protocol 10, while `basins-1`/protocol 9 remains supported. Plate generation is unchanged. A separate [continuous-root candidate](plate-root-candidate.md) measures improved cross-resolution stability but is not used in generated worlds. B1's measurements and recipe below are historical, not a description of geological time integration.
+Status: implemented. This document records B1 with model recipe `tectonics-1`, binary protocol 2. [B2 initial crust](crust.md), [B3 elevation](terrain.md), [B4 initial water](water.md), and [C1 drainage](drainage.md) extend it; default new worlds use `terrain-prep-1` and world protocol 10, while `basins-1`/protocol 9 remains supported. Their plate generation is unchanged. A separate [continuous-root candidate](plate-root-candidate.md) measures improved cross-resolution stability and is available through the opt-in `continuous-plates-1` recipe. B1's measurements and recipe below are historical, not a description of geological time integration.
 
 ## What is implemented
 

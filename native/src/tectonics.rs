@@ -111,7 +111,7 @@ impl Tectonics {
         Self::build_from_seeds(surface, seed, count, max_speed_cm_year, radius, seeds)
     }
 
-    /// Experimental alternative. Generated-world recipes still use `build`.
+    /// Versioned alternative used by the opt-in `continuous-plates-1` recipe.
     pub fn build_with_continuous_roots(
         surface: &Surface,
         seed: &str,

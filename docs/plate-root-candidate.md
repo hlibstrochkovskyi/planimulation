@@ -1,6 +1,6 @@
 # Continuous plate-root candidate
 
-Status: standalone native candidate and reproducible comparison. **No generated-world recipe uses it.** `basins-1` and `terrain-prep-1` retain their original mesh-indexed roots and fingerprints. This work does not establish realistic plate tectonics or resolution convergence.
+Status: native candidate, reproducible comparison, and opt-in generated-world recipe `continuous-plates-1`. The desktop still creates `terrain-prep-1` by default. `basins-1` and `terrain-prep-1` retain their original mesh-indexed roots and fingerprints. This work does not establish realistic plate tectonics or resolution convergence.
 
 ## Why test another root selector?
 
@@ -8,7 +8,7 @@ The current `Tectonics::build` samples its first root as an index proportional t
 
 The candidate in `native/src/plate_roots.rs` samples directions on the continuous unit sphere using the separate `tectonics.continuous-roots-1` random stream. For each later root it draws 16 continuous candidates and selects one with weight proportional to the square of its minimum `1 − dot` separation from existing roots. The candidate count and weighting are experimental constants, not an accepted plate-size model. Each direction is then snapped to the nearest still-unused mesh region, breaking equal-score ties by region ID. This greedy projection keeps distinct roots but is not a globally optimal assignment. Root directions and their plate-order prefix are independent of subdivision; the snapped cell and resulting boundaries remain resolution-dependent.
 
-A standalone `Tectonics::build_with_continuous_roots` reuses the existing resistance field, multi-source connected partition, velocity stream, and boundary-motion calculation. It does **not** alter the production `build` path. Tests check reproducibility, unit directions, prefix stability, unique projections, declining nearest projection error for fixed roots, connected nonempty candidate plates, supported coarse/dense plate-count bounds, identical motion vectors to the legacy path, and a pinned legacy-world fingerprint `2e66ac09`.
+`Tectonics::build_with_continuous_roots` reuses the existing resistance field, multi-source connected partition, velocity stream, and boundary-motion calculation. The opt-in `continuous-plates-1` recipe selects this path, then applies the same bounded dry preparation, initial water fitting, drainage, and basin analysis as `terrain-prep-1`. It uses the same protocol-10 array layout but a distinct model version and fingerprint. The default and existing recipe paths do **not** change. Tests check reproducibility, unit directions, prefix stability, unique projections, declining nearest projection error for fixed roots, connected nonempty candidate plates, supported coarse/dense plate-count bounds, identical motion vectors to the legacy path, and pinned legacy-world fingerprints.
 
 ## Reproduce the comparison
 
@@ -30,4 +30,4 @@ The candidate substantially stabilizes root placement and plate ownership in thi
 
 ## Decision boundary
 
-Keep this candidate opt-in and outside accepted recipes until broader ensemble and topology behavior are evaluated: low-subdivision/high-plate-count distributions, root collisions across many seeds, plate-area and boundary-length distributions, terrain/water sensitivity, and runtime. A future switch requires a new world model version and explicit migration policy, not a silent change to `terrain-prep-1`. The current study justifies developing that version; it does not by itself justify replacing the published generator.
+Keep this candidate opt-in rather than making it the desktop default until broader ensemble and topology behavior are evaluated: low-subdivision/high-plate-count distributions, root collisions across many seeds, plate-area and boundary-length distributions, terrain/water sensitivity, and runtime. Existing recipes are never silently migrated. The current study justifies developing the separate version; it does not by itself justify replacing the default generator. The new model can be exercised headlessly with a recipe copied from `terrain-prep-1` and `modelVersion` set to `continuous-plates-1`, or viewed by opening that recipe in the desktop. Saving it preserves its version; submitting the desktop parameter form instead creates a new default-version recipe.

@@ -30,7 +30,8 @@ impl Recipe {
         }
         match (self.model_version.as_str(), self.terrain_preparation_passes) {
             ("basins-1", None) => {}
-            ("terrain-prep-1", Some(passes)) if passes <= terrain_preparation::MAX_PASSES => {}
+            ("terrain-prep-1" | "continuous-plates-1", Some(passes))
+                if passes <= terrain_preparation::MAX_PASSES => {}
             _ => return Err("Unsupported terrain model or preparation pass count.".into()),
         }
         if self.seed.trim().is_empty() || self.seed.encode_utf16().count() > 128 {
@@ -263,13 +264,23 @@ impl World {
             recipe.continental_fraction,
             recipe.continental_scale,
         );
-        let tectonics = tectonics::Tectonics::build(
-            &surface,
-            &recipe.seed,
-            recipe.plate_count,
-            recipe.max_plate_speed_cm_per_year,
-            recipe.radius_meters,
-        );
+        let tectonics = if recipe.model_version == "continuous-plates-1" {
+            tectonics::Tectonics::build_with_continuous_roots(
+                &surface,
+                &recipe.seed,
+                recipe.plate_count,
+                recipe.max_plate_speed_cm_per_year,
+                recipe.radius_meters,
+            )?
+        } else {
+            tectonics::Tectonics::build(
+                &surface,
+                &recipe.seed,
+                recipe.plate_count,
+                recipe.max_plate_speed_cm_per_year,
+                recipe.radius_meters,
+            )
+        };
         let mut terrain = terrain::Terrain::build(&surface, &crust, &tectonics, &recipe);
         if let Some(passes) = recipe.terrain_preparation_passes {
             let prepared = terrain_preparation::prepare(&surface, &terrain.elevation, passes)?;

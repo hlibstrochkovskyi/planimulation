@@ -144,3 +144,54 @@ fn legacy_plate_seeds_remain_pinned() {
     fingerprint.extend(wire::arrays(&world));
     assert_eq!(format!("{:08x}", hash(&fingerprint)), "2e66ac09");
 }
+
+#[test]
+fn opt_in_world_uses_projected_roots_and_preserves_prepared_legacy_world() {
+    let base: Recipe = serde_json::from_value(serde_json::json!({
+        "schemaVersion": 1, "modelVersion": "terrain-prep-1", "randomVersion": "fnv1a-utf8-mulberry32-1",
+        "seed": "first-light", "subdivision": 4, "radiusMeters": 6371000., "plateCount": 12,
+        "maxPlateSpeedCmPerYear": 8., "continentalFraction": 0.38, "continentalScale": 1.,
+        "reliefScale": 1., "boundaryWidthKm": 300., "detailAmplitudeMeters": 300.,
+        "terrainPreparationPasses": 4, "water": { "mode": "coverage", "fraction": 0.71 }
+    }))
+    .unwrap();
+    let legacy = World::generate(base.clone()).unwrap();
+    let mut candidate_recipe = base.clone();
+    candidate_recipe.model_version = "continuous-plates-1".into();
+    let candidate = World::generate(candidate_recipe.clone()).unwrap();
+    let repeated = World::generate(candidate_recipe).unwrap();
+    let expected_roots = plate_roots::project(
+        &candidate.surface,
+        &plate_roots::directions("first-light", 12).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(candidate.tectonics.seeds, expected_roots);
+    assert_eq!(
+        candidate.tectonics.angular_velocities,
+        legacy.tectonics.angular_velocities
+    );
+    assert_ne!(candidate.tectonics.seeds, legacy.tectonics.seeds);
+    assert_eq!(wire::arrays(&candidate), wire::arrays(&repeated));
+    assert_eq!(candidate.terrain.applied_passes, 4);
+    assert_eq!(
+        candidate.terrain.elevation.len(),
+        candidate.surface.centers.len()
+    );
+    let imported =
+        planimulation_core::initial_water_inventory::InitialWaterInventory::from_world(&candidate)
+            .unwrap();
+    imported
+        .reconstruct(
+            &candidate.surface,
+            &candidate.terrain.elevation,
+            &candidate.basins,
+        )
+        .unwrap();
+    assert_eq!(
+        wire::arrays(&legacy),
+        wire::arrays(&World::generate(base).unwrap())
+    );
+    let mut old_fingerprint = serde_json::to_vec(&legacy.recipe).unwrap();
+    old_fingerprint.extend(wire::arrays(&legacy));
+    assert_eq!(format!("{:08x}", hash(&old_fingerprint)), "f9245507");
+}

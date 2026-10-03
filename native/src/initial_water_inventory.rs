@@ -197,7 +197,8 @@ impl InitialWaterInventory {
     ) -> Result<Reconstruction, String> {
         if self.import_version != IMPORT_VERSION
             || (self.source_model_version != "basins-1"
-                && self.source_model_version != "terrain-prep-1")
+                && self.source_model_version != "terrain-prep-1"
+                && self.source_model_version != "continuous-plates-1")
             || !self.source_level_meters.is_finite()
             || !self.initial_volume_cubic_meters.is_finite()
             || self.initial_volume_cubic_meters < 0.

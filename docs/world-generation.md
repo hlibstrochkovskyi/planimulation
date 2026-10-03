@@ -65,7 +65,7 @@ Geometry depends on its version and resolution. Continental structure and detail
 
 ### B. Approximate plates and crust
 
-The implemented B1 subset uses a positive-cost multi-source graph partition to guarantee connected plates, rigid angular velocities, and local shared-edge relative motion. B2 adds an independent spherical continentality field with area fitting and approximate thickness/density. B3 consumes these for approximate elevation; neither plate identity nor crust dominance implies land or ocean.
+The implemented B1 subset uses a positive-cost multi-source graph partition to guarantee connected plates, rigid angular velocities, and local shared-edge relative motion. An [opt-in continuous-root recipe](plate-root-candidate.md) changes the initial plate-root selector without changing the partition or later pipeline; the default mesh-indexed selector remains supported. B2 adds an independent spherical continentality field with area fitting and approximate thickness/density. B3 consumes these for approximate elevation; neither plate identity nor crust dominance implies land or ocean.
 
 Choose distributed plate centers on the sphere. Partition by spherical distance, optionally applying bounded boundary deformation while preserving plate connectivity. Generate a coherent large-scale continentality field: one plate may include different crustal regions.
 

@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { _electron as electron, expect } from '@playwright/test';
-import { DEFAULT_RECIPE, parseRecipe } from '../src/core/recipe';
+import { CONTINUOUS_PLATES_MODEL_VERSION, DEFAULT_RECIPE, parseRecipe } from '../src/core/recipe';
 import { NativeController } from '../src/native/client';
 import { basinTree } from '../src/core/basins';
 
@@ -353,6 +353,21 @@ try {
   await expect(page.locator('#water-mode')).toHaveValue('coverage');
   await expect(page.locator('#water-coverage')).toHaveValue('71');
   await expect(page.locator('#water-volume')).toBeDisabled();
+
+  const continuousRecipe = parseRecipe({ ...DEFAULT_RECIPE, modelVersion: CONTINUOUS_PLATES_MODEL_VERSION });
+  const continuousCore = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
+  let continuousHash: string;
+  try { continuousHash = (await continuousCore.generate(continuousRecipe)).world.checksum; }
+  finally { continuousCore.close(); }
+  await writeFile(recipePath, JSON.stringify(continuousRecipe));
+  await page.getByRole('button', { name: 'Open recipe' }).click();
+  await expect(page.locator('#fingerprint')).toHaveText(continuousHash, { timeout: 30_000 });
+  await expect(page.locator('#model-label')).toContainText('CONTINUOUS-PLATES-1');
+  await page.getByRole('button', { name: 'Save recipe' }).click();
+  assert.deepEqual(parseRecipe(JSON.parse(await readFile(recipePath, 'utf8'))), continuousRecipe);
+  await page.getByRole('button', { name: 'Globe', exact: true }).click();
+  await expect(page.locator('#fingerprint')).toHaveText(continuousHash);
+  await page.getByRole('button', { name: '2D map', exact: true }).click();
 
   const { terrainPreparationPasses: _legacyPasses, ...legacyBase } = DEFAULT_RECIPE;
   const legacyRecipe = parseRecipe({ ...legacyBase, modelVersion: 'basins-1' });

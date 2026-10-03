@@ -42,7 +42,7 @@ pub fn arrays(w: &World) -> Vec<u8> {
     for field in [&t.baseline, &t.convergence, &t.divergence, &t.detail] {
         f64s(&mut out, field.iter().copied());
     }
-    if w.recipe.model_version == "terrain-prep-1" {
+    if w.recipe.terrain_preparation_passes.is_some() {
         f64s(&mut out, t.preparation.iter().copied());
     }
     f64s(&mut out, t.elevation.iter().copied());
@@ -130,7 +130,7 @@ pub fn snapshot(out: &mut impl Write, w: &World) -> io::Result<()> {
     let mut fingerprint = serde_json::to_vec(&w.recipe)?;
     fingerprint.extend_from_slice(&bytes);
     let total: f64 = w.surface.areas.iter().sum();
-    let prepared = w.recipe.model_version == "terrain-prep-1";
+    let prepared = w.recipe.terrain_preparation_passes.is_some();
     let mut header = json!({"kind":"world", "recipe":w.recipe,
         "boundarySegmentCount":w.tectonics.boundary_types.len(),
         "basinNodeCount":w.basins.nodes().len(), "basinAnalysisVersion":crate::basins::ANALYSIS_VERSION,

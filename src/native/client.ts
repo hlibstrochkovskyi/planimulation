@@ -71,7 +71,7 @@ export function decodeWorld(packet: Packet): World {
   const { header: h, bytes } = packet;
   if (h.kind !== 'world') throw new Error('Expected native world.');
   const recipe = parseRecipe(h.recipe), n = 10 * 4 ** recipe.subdivision + 2;
-  const prepared = recipe.modelVersion === 'terrain-prep-1';
+  const prepared = recipe.modelVersion !== 'basins-1';
   if (h.protocol !== (prepared ? 10 : 9)) throw new Error('Native protocol does not match the terrain model.');
   const neighbors = 6 * n - 12, faces = 60 * 4 ** recipe.subdivision;
   const b = h.boundarySegmentCount;

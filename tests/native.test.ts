@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 import path from 'node:path';
-import { DEFAULT_RECIPE } from '../src/core/recipe';
+import { CONTINUOUS_PLATES_MODEL_VERSION, DEFAULT_RECIPE } from '../src/core/recipe';
 import { generateWorld } from '../src/core/world';
 import { FrameReader, NativeController, NativeSession, decodeWorld } from '../src/native/client';
 import type { Packet } from '../src/native/client';
@@ -211,6 +211,29 @@ test('prepared world transport pins protocol, provenance, and preparation metada
     const preparationOffset = corrupted.length - waterAndDrainageBytes - world.stats.regionCount * 16;
     corrupted.writeDoubleLE(world.terrain.preparation[0] + 1, preparationOffset);
     assert.throws(() => decodeWorld({ ...packet, bytes: corrupted }), /elevation contributions/);
+  } finally { session.close(); }
+});
+
+test('opt-in continuous plates cross the native bridge without migrating existing worlds', async () => {
+  const session = new NativeSession(executable);
+  try {
+    const base = { ...DEFAULT_RECIPE, subdivision: 3 };
+    const oldPacket = await session.request({ command: 'generate', recipe: base });
+    const candidate = { ...base, modelVersion: CONTINUOUS_PLATES_MODEL_VERSION };
+    const firstPacket = await session.request({ command: 'generate', recipe: candidate });
+    const secondPacket = await session.request({ command: 'generate', recipe: candidate });
+    const oldWorld = decodeWorld(oldPacket), first = decodeWorld(firstPacket), second = decodeWorld(secondPacket);
+    assert.equal(oldPacket.header.protocol, 10);
+    assert.equal(firstPacket.header.protocol, 10);
+    assert.equal(first.recipe.modelVersion, CONTINUOUS_PLATES_MODEL_VERSION);
+    assert.equal(first.terrain.appliedPasses, candidate.terrainPreparationPasses);
+    assert.equal(first.terrain.preparation.length, first.stats.regionCount);
+    assert.deepEqual(first, second);
+    assert.notDeepEqual(first.tectonics.seeds, oldWorld.tectonics.seeds);
+    assert.deepEqual(first.tectonics.angularVelocities, oldWorld.tectonics.angularVelocities);
+    assert.notEqual(first.checksum, oldWorld.checksum);
+    assert.deepEqual(decodeWorld(await session.request({ command: 'generate', recipe: base })), oldWorld);
+    assert.throws(() => decodeWorld({ ...firstPacket, header: { ...firstPacket.header, protocol: 9 } }), /terrain model/);
   } finally { session.close(); }
 });
 

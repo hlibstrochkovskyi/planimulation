@@ -17,7 +17,7 @@ The application currently includes a desktop surface laboratory, static plate ki
 | [Native/GPU foundation](docs/native-foundation.md) | Rust process ownership, binary protocol, shared GPU views, and diagnostic transport |
 | [Foundation validation](docs/validation-native-foundation.md) | Native and desktop measurements, checks, memory costs, and limitations |
 | [Plate kinematics](docs/tectonics.md) | Connected plates, velocity conventions, boundary classification, parameters, and validation |
-| [Continuous plate-root candidate](docs/plate-root-candidate.md) | Standalone resolution-stability proposal and paired seeded measurements; not yet used by generated worlds |
+| [Continuous plate-root candidate](docs/plate-root-candidate.md) | Opt-in versioned generator path and paired seeded resolution-stability measurements |
 | [Initial crust](docs/crust.md) | Spherical continentality, area fitting, approximate material properties, and validation |
 | [Explainable elevation](docs/terrain.md) | Elevation contributions, physical-distance propagation, globe relief, and display-only exaggeration |
 | [Dry terrain preparation](docs/terrain-preparation.md) | Versioned bounded material transfer before initial water filling, limits, and validation |
@@ -68,7 +68,7 @@ The seed field is a coherent **diagnostic signal**, separate from terrain, clima
 
 Static drainage assigns bed-based receivers, routes equal-height flats without altering elevation, preserves closed dry sinks, and accumulates contributing land area. Catchment and area layers are drainage potential, not flowing rivers. Basin analysis computes geometric spill thresholds and storage capacities; it does not evolve the world's water inventories.
 
-Plates are not continents, and continental crust is not emerged land. Geology and drainage remain static after generation; manual prescribed steps can change bounded basin stocks without changing the bed or initial drainage. Diagnostic playback does not evolve water. [Basin inspection](docs/basin-inspection.md) adds branch/threshold layers, parent navigation, contact highlights, and capacity explanations in both views. New recipes use `terrain-prep-1`; existing `basins-1` recipes remain supported without reinterpretation. Earlier versions, including `drainage-1`, are rejected.
+Plates are not continents, and continental crust is not emerged land. Geology and drainage remain static after generation; manual prescribed steps can change bounded basin stocks without changing the bed or initial drainage. Diagnostic playback does not evolve water. [Basin inspection](docs/basin-inspection.md) adds branch/threshold layers, parent navigation, contact highlights, and capacity explanations in both views. New desktop recipes use `terrain-prep-1`; `continuous-plates-1` is an opt-in recipe for a different plate-root selector, not a validated replacement. Existing `basins-1` recipes remain supported without reinterpretation. Earlier versions, including `drainage-1`, are rejected.
 
 ## Run the desktop application
 

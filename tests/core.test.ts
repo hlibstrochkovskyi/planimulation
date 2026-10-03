@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { DEFAULT_RECIPE, parseRecipe, serializeRecipe } from '../src/core/recipe';
+import { CONTINUOUS_PLATES_MODEL_VERSION, DEFAULT_RECIPE, parseRecipe, serializeRecipe } from '../src/core/recipe';
 import { hashString, Random, stream } from '../src/core/random';
 import { buildSurface, locateRegion } from '../src/core/surface';
 import { cross, dot, normalize, readVector, triangleArea } from '../src/core/vector';
@@ -47,6 +47,16 @@ test('terrain preparation is versioned, bounded, and never silently added to leg
   assert.deepEqual(JSON.parse(serializeRecipe(parseRecipe(legacyRecipe))), legacyRecipe);
   assert.throws(() => parseRecipe({ ...legacyRecipe, terrainPreparationPasses: 0 }), /Unknown recipe field/);
   assert.throws(() => parseRecipe({ ...DEFAULT_RECIPE, modelVersion: 'basins-1' }), /Unknown recipe field/);
+});
+
+test('continuous plate recipes are opt-in and retain the prepared-world schema', () => {
+  const recipe = { ...DEFAULT_RECIPE, modelVersion: CONTINUOUS_PLATES_MODEL_VERSION };
+  assert.deepEqual(parseRecipe(recipe), recipe);
+  assert.deepEqual(JSON.parse(serializeRecipe(parseRecipe(recipe))), recipe);
+  assert.equal(DEFAULT_RECIPE.modelVersion, 'terrain-prep-1');
+  assert.throws(() => parseRecipe({ ...recipe, terrainPreparationPasses: undefined }), /preparation passes/);
+  assert.throws(() => parseRecipe({ ...recipe, terrainPreparationPasses: 17 }), /preparation passes/);
+  assert.throws(() => parseRecipe({ ...recipe, extra: true }), /Unknown recipe field/);
 });
 
 test('FNV-1a known vectors and Mulberry32 reference sequence stay fixed', () => {
