@@ -1,6 +1,6 @@
 # World generation: technical proposal
 
-Initial proposal: September 19, 2026. The spherical surface, recipes, random streams, GPU flat/globe views, B1 static plate kinematics, B2 initial crust, B3 explainable elevation, B4 initial water filling, B5 water-surface display, C1 static drainage structure, C2a–C2b basin analysis and inspection, bounded dry preparation before initial water, and read-only seasonal temperature normals are implemented. Water dynamics, ongoing or climate-driven erosion, coupled climate, and ecology remain proposals. See [DESIGN.md](../DESIGN.md), [development](development.md), [Plate kinematics](tectonics.md), [Initial crust](crust.md), [Explainable elevation](terrain.md), [Dry terrain preparation](terrain-preparation.md), [Initial water](water.md), [Water-surface display](water-surface.md), [Drainage structure](drainage.md), [Basin inspection](basin-inspection.md), and [Seasonal temperature normals](seasonal-temperature.md) for the concept and implemented algorithms with their limitations.
+Initial proposal: September 19, 2026. The spherical surface, recipes, random streams, GPU flat/globe views, B1 static plate kinematics, B2 initial crust, B3 explainable elevation, B4 initial water filling, B5 water-surface display, C1 static drainage structure, C2a–C2b basin analysis and inspection, bounded dry preparation before initial water, and read-only seasonal temperature and prescribed surface-wind normals are implemented. Water dynamics, ongoing or climate-driven erosion, coupled climate, and ecology remain proposals. See [DESIGN.md](../DESIGN.md), [development](development.md), [Plate kinematics](tectonics.md), [Initial crust](crust.md), [Explainable elevation](terrain.md), [Dry terrain preparation](terrain-preparation.md), [Initial water](water.md), [Water-surface display](water-surface.md), [Drainage structure](drainage.md), [Basin inspection](basin-inspection.md), [Seasonal temperature normals](seasonal-temperature.md), and [Seasonal surface-wind normals](seasonal-wind.md) for the concept and implemented algorithms with their limitations.
 
 ## 1. One world, multiple views
 
@@ -125,7 +125,7 @@ Do not mix thousands of abstract geological iterations with the observed calenda
 
 Terrain and drainage structure can precede climate, but river filling and ecology require coupled calculations. Proposed order:
 
-1. Establish seasonal heating, thermal inertia, and simplified wind belts. The [first static seasonal-temperature model](seasonal-temperature.md) implements only heating and a local response delay on fixed initial geography; wind belts remain proposed.
+1. Establish seasonal heating, thermal inertia, and simplified wind belts. The [static seasonal-temperature model](seasonal-temperature.md) implements heating and a local response delay on fixed initial geography; the separate [prescribed wind model](seasonal-wind.md) supplies seasonal tangent vectors without dynamic atmospheric circulation.
 2. Evaporate water from available stocks and transport atmospheric moisture across mesh edges.
 3. Compute precipitation from transported moisture, including a terrain-lifting dependency; subtract precipitation from the atmospheric store.
 4. Allocate water to snow, soil, surface storage, and groundwater.

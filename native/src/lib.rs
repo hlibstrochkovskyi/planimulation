@@ -388,6 +388,7 @@ pub mod prescribed_water_inventory;
 pub mod reservoir;
 pub mod reservoir_pair;
 pub mod seasonal_temperature;
+pub mod seasonal_wind;
 pub mod spill_connections;
 pub mod spill_junction;
 pub mod spill_network;

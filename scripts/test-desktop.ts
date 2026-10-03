@@ -51,7 +51,7 @@ try {
   }, { ...DEFAULT_RECIPE });
   assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'inspectWaterBudget', 'openRecipe', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveWaterCheckpoint', 'seasonalTemperature']);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'inspectWaterBudget', 'openRecipe', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveWaterCheckpoint', 'seasonalTemperature', 'seasonalWind']);
   await expect(page.locator('[data-layer="temperature"]')).toBeEnabled();
   await expect(page.locator('#temperature-month')).toBeEnabled();
   await page.locator('[data-layer="temperature"]').click();
@@ -61,6 +61,15 @@ try {
   await page.locator('#temperature-month').selectOption('9');
   await expect(page.locator('#map')).toHaveAttribute('data-temperature-month', '9');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
+  await page.locator('[data-layer="surface"]').click();
+  await expect(page.locator('[data-layer="windSpeed"]')).toBeEnabled();
+  await page.locator('[data-layer="windSpeed"]').click();
+  await expect(page.locator('#legend-title')).toContainText('surface-wind speed');
+  await expect(page.locator('#legend-high')).toContainText('m/s');
+  await mkdir('artifacts', { recursive: true });
+  await page.locator('#map').screenshot({ path: executablePath ? 'artifacts/wind-map-packaged.png' : 'artifacts/wind-map.png' });
+  await page.locator('#temperature-month').selectOption('9');
+  await expect(page.locator('#map')).toHaveAttribute('data-climate-month', '9');
   await page.locator('[data-layer="surface"]').click();
   await page.locator('#temperature-month').selectOption('3');
   await page.locator('#water-budget-refresh').click();
@@ -116,6 +125,8 @@ try {
   await canvas.click();
   await expect(page.locator('#selection-title')).toContainText('Region');
   await expect(page.locator('#selection-details')).toContainText('temperature normal');
+  await expect(page.locator('#selection-details')).toContainText('wind speed normal');
+  await expect(page.locator('#wind-note')).toContainText('prescribed east/north');
   await expect(page.locator('#temperature-note')).toContainText('Initial');
   const selectedRegion = await page.locator('#selection-title').innerText();
   const selectedDetails = await page.locator('#selection-details').innerText();
@@ -135,6 +146,8 @@ try {
   await expect(canvas).toHaveAttribute('data-view', 'globe');
   await page.locator('[data-layer="temperature"]').click();
   await expect(canvas).toHaveAttribute('data-active-layer', 'temperature');
+  await page.locator('[data-layer="windSpeed"]').click();
+  await expect(canvas).toHaveAttribute('data-active-layer', 'windSpeed');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await page.locator('[data-layer="surface"]').click();
   const globeExportPath = path.join(temp, 'globe-export.png');

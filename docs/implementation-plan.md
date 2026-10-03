@@ -97,7 +97,7 @@ Prescribed rain at this stage is an experimental input. Climate-derived river di
 
 ## 6. Milestone D: seasonal climate and water cycle
 
-The first [seasonal-temperature increment](seasonal-temperature.md) derives twelve static monthly normals from latitude, final initial elevation, and initial water coverage. It has a headless report and shared desktop map/globe display, but no evolving climate state, wind, moisture, river forcing, or water-budget coupling. It is only the first part of D and does not satisfy D's deliverable or acceptance criteria below.
+The first [seasonal-temperature increment](seasonal-temperature.md) derives twelve static monthly normals from latitude, final initial elevation, and initial water coverage. A separate [surface-wind increment](seasonal-wind.md) adds prescribed seasonal tangent vectors. Both have headless reports and shared desktop map/globe display, but no evolving climate state, moisture, river forcing, or water-budget coupling. They are only early parts of D and do not satisfy D's deliverable or acceptance criteria below.
 
 Deliverable: run, pause, and observe several years; rivers receive computed water inputs.
 

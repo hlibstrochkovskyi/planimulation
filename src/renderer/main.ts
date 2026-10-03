@@ -13,6 +13,7 @@ import { summarizeDrainage } from '../core/drainage';
 import { basinTree, summarizeBasins } from '../core/basins';
 import { approximateCubicKilometers, runoffDestination } from './water-budget';
 import type { TemperatureNormals } from '../core/seasonal-temperature';
+import type { WindNormals } from '../core/seasonal-wind';
 
 function element<T extends HTMLElement>(id: string): T {
   const result = document.getElementById(id);
@@ -47,13 +48,16 @@ const waterSave = element<HTMLButtonElement>('save-water');
 const waterBudgetButton = element<HTMLButtonElement>('water-budget-refresh');
 const temperatureMonthInput = element<HTMLSelectElement>('temperature-month');
 const temperatureLayerButton = document.querySelector<HTMLButtonElement>('[data-layer="temperature"]')!;
+const windLayerButton = document.querySelector<HTMLButtonElement>('[data-layer="windSpeed"]')!;
 const number = new Intl.NumberFormat('en', { maximumFractionDigits: 1 });
 const budgetNumber = new Intl.NumberFormat('en', { maximumSignificantDigits: 6 });
 let world: World | null = null;
 let waterFrame: WaterFrame | null = null;
 let waterBudget: WaterBudget | null = null;
 let temperatureNormals: TemperatureNormals | null = null;
+let windNormals: WindNormals | null = null;
 let temperatureRange = { minimum: 0, maximum: 0 };
+let windMaximum = 0;
 let waterBusy = false;
 let checkpointOpening = false;
 let budgetBusyEpoch: number | null = null;
@@ -169,6 +173,11 @@ function inspect(id: number, preserveBasin = false): void {
       ['Annual mean temperature normal', `${temperatureNormals.annualMeanCelsius[id].toFixed(1)} °C`],
       ['Daily normal range', `${temperatureNormals.annualMinimumCelsius[id].toFixed(1)} to ${temperatureNormals.annualMaximumCelsius[id].toFixed(1)} °C`],
     ] : []),
+    ...(windNormals ? [
+      [`Month ${Number(temperatureMonthInput.value) + 1} wind speed normal`, `${Math.hypot(windNormals.monthlyEastMetersPerSecond[Number(temperatureMonthInput.value)][id], windNormals.monthlyNorthMetersPerSecond[Number(temperatureMonthInput.value)][id]).toFixed(2)} m/s`],
+      ['Eastward wind component', `${windNormals.monthlyEastMetersPerSecond[Number(temperatureMonthInput.value)][id].toFixed(2)} m/s`],
+      ['Northward wind component', `${windNormals.monthlyNorthMetersPerSecond[Number(temperatureMonthInput.value)][id].toFixed(2)} m/s`],
+    ] : []),
     ...(waterFrame ? [
       ['Displayed prescribed-water depth', `${number.format(waterFrame.depthMeters[id])} m · approximate view`],
       ['Displayed water body', waterFrame.bodyIds[id] ? `Body ${waterFrame.bodyIds[id]}` : 'Dry land'],
@@ -201,8 +210,11 @@ function inspect(id: number, preserveBasin = false): void {
     : steps ? `Equal-height routing: ${steps} graph hops to a downhill exit or closed-flat sink. The receiver has one fewer hop. This deterministic tie-break is not a measured hydraulic gradient and changes no bed heights.`
       : `Steepest bed descent to region ${receiver}: ${(world.terrain.elevation[id] - world.terrain.elevation[receiver]).toFixed(2)} m drop over ${number.format(s.neighborDistancesMeters[s.neighborOffsets[id] + neighbors.indexOf(receiver)] / 1000)} km. Gradient ties prefer the smaller region ID. Area accumulation assumes connectivity only, not rain, travel time, or discharge.`;
   element('temperature-note').textContent = temperatureNormals
-    ? `Latitude ${lat.toFixed(2)}° sets daily solar geometry for a 23.44° tilt and 365-day circular orbit. Initial ${world.water.depthMeters[id] > 0 ? 'water' : 'dry land'} uses a ${world.water.depthMeters[id] > 0 ? temperatureNormals.settings.waterResponseDays : temperatureNormals.settings.landResponseDays}-day response time. ${world.water.depthMeters[id] > 0 ? 'Wet regions receive no bed-height lapse correction.' : `Positive bed elevation contributes a −${(temperatureNormals.settings.lapseRateCelsiusPerMeter * Math.max(0, world.terrain.elevation[id])).toFixed(1)} °C correction.`} The solar-to-temperature sensitivity is prescribed; no atmospheric heat transport, weather, ice feedback, or complete energy budget is modeled.`
+    ? `Latitude ${lat.toFixed(2)}° sets daily solar geometry for a ${temperatureNormals.settings.axialTiltDegrees}° tilt and 365-day circular orbit. Initial ${world.water.depthMeters[id] > 0 ? 'water' : 'dry land'} uses a ${world.water.depthMeters[id] > 0 ? temperatureNormals.settings.waterResponseDays : temperatureNormals.settings.landResponseDays}-day response time. ${world.water.depthMeters[id] > 0 ? 'Wet regions receive no bed-height lapse correction.' : `Positive bed elevation contributes a −${(temperatureNormals.settings.lapseRateCelsiusPerMeter * Math.max(0, world.terrain.elevation[id])).toFixed(1)} °C correction.`} The solar-to-temperature sensitivity is prescribed; no atmospheric heat transport, weather, ice feedback, or complete energy budget is modeled.`
     : 'Seasonal temperature normals are being calculated from initial geography.';
+  element('wind-note').textContent = windNormals
+    ? `Latitude ${lat.toFixed(2)}° and the selected month determine a prescribed east/north tangent vector. Trades are easterly, midlatitude winds westerly, and polar winds easterly; the convergence belt follows half the subsolar declination. These are smooth, zonally symmetric model choices, not simulated atmospheric circulation. Terrain and water do not redirect wind, and no moisture is transported yet.`
+    : 'Seasonal surface-wind normals are being calculated.';
   boundaryDetails.replaceChildren();
   const segments = boundarySegments.get(id) ?? [];
   element('boundary-note').textContent = segments.length
@@ -278,6 +290,8 @@ function updateLegend(): void {
       basinStats?.maximumSpillMeters === null ? '' : `${number.format(basinStats?.maximumSpillMeters ?? 0)} m`],
     temperature: [`Month ${Number(temperatureMonthInput.value) + 1} temperature normal · fixed initial geography, not weather`,
       `${number.format(temperatureRange.minimum)} °C`, `${number.format(temperatureRange.maximum)} °C`],
+    windSpeed: [`Month ${Number(temperatureMonthInput.value) + 1} prescribed surface-wind speed · no atmospheric dynamics`,
+      '0 m/s', `${number.format(windMaximum)} m/s`],
   };
   const [title, low, high] = legends[currentLayer];
   element('legend-title').textContent = title;
@@ -288,6 +302,7 @@ function updateLegend(): void {
   element('boundary-legend').hidden = !plateLayer;
   element('legend-gradient').classList.toggle('water-gradient', currentLayer === 'depth');
   element('legend-gradient').classList.toggle('temperature-gradient', currentLayer === 'temperature');
+  element('legend-gradient').classList.toggle('wind-gradient', currentLayer === 'windSpeed');
 }
 
 function setInputs(recipe: Recipe): void {
@@ -327,7 +342,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
   const request = ++generationId;
   const start = performance.now();
   cancel.hidden = false; save.disabled = true; saveResolved.disabled = true;
-  temperatureLayerButton.disabled = true; temperatureMonthInput.disabled = true;
+  temperatureLayerButton.disabled = true; windLayerButton.disabled = true; temperatureMonthInput.disabled = true;
   exportView.disabled = true; waterAdd.disabled = true; waterSpill.disabled = true;
   waterOpen.disabled = true; waterSave.disabled = true; waterBudgetButton.disabled = true;
   showStatus(prepared ? 'Preparing restored world views…' : 'Building the surface in the native core…');
@@ -347,8 +362,8 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     // publication and this request. The old native world survives preparation.
     const accepted = api.acceptWorld(result.epoch);
     world = result.world; epoch = result.epoch; selected = null; waterFrame = null; waterBudget = null;
-    temperatureNormals = null;
-    map.setTemperatureNormals(null);
+    temperatureNormals = null; windNormals = null;
+    map.setTemperatureNormals(null); map.setWindNormals(null);
     waterBusy = false; budgetBusyEpoch = null;
     if (prepared) setInputs(world.recipe);
     terrainStats = summarizeTerrain(world.surface, world.terrain);
@@ -390,6 +405,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     element('drainage-summary').textContent = `Drainage: ${drainageStats.catchmentCount} terminal catchments · ${drainageStats.closedSinkCount} closed dry sinks · ${(drainageStats.closedDrainageLandFraction * 100).toFixed(2)}% of dry land ends in closed sinks · topology only, no flowing water`;
     element('drainage-note').textContent = 'Select a region to inspect its receiver, flat-routing rule, and contributing land area. Existing water bodies stop routing; closed sinks are preserved. Basin analysis is separate; lake dynamics are not implemented.';
     element('temperature-note').textContent = 'Calculating repeatable seasonal temperature normals from initial geography…';
+    element('wind-note').textContent = 'Calculating repeatable surface-wind belts…';
     updateExaggeration();
     element('crust-note').textContent = 'Select a region to inspect its crust potential, fitted threshold, and material approximations.';
     const crustSummary = summarizeCrust(world.surface, world.crust);
@@ -405,6 +421,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     if (request !== generationId) return;
     showStatus('Calculating seasonal temperature normals in the native core…');
     let temperatureError: string | null = null;
+    let windError: string | null = null;
     try {
       const normals = await api.seasonalTemperature(epoch);
       if (request !== generationId || normals.epoch !== epoch) return;
@@ -421,11 +438,32 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
       temperatureError = error instanceof Error ? error.message : String(error);
       element('temperature-note').textContent = `Seasonal temperature normals unavailable: ${temperatureError}`;
     }
+    showStatus('Calculating prescribed seasonal surface winds in the native core…');
+    try {
+      const normals = await api.seasonalWind(epoch);
+      if (request !== generationId || normals.epoch !== epoch) return;
+      windNormals = normals; map.setWindNormals(normals);
+      windMaximum = 0;
+      for (let month = 0; month < 12; month++) {
+        const east = normals.monthlyEastMetersPerSecond[month], north = normals.monthlyNorthMetersPerSecond[month];
+        for (let id = 0; id < east.length; id++) windMaximum = Math.max(windMaximum, Math.hypot(east[id], north[id]));
+      }
+      windLayerButton.disabled = false; temperatureMonthInput.disabled = false;
+      element('wind-note').textContent = 'Select a region to inspect its eastward and northward wind components.';
+      updateLegend();
+    } catch (error) {
+      if (request !== generationId) return;
+      windError = error instanceof Error ? error.message : String(error);
+      element('wind-note').textContent = `Seasonal surface-wind normals unavailable: ${windError}`;
+    }
+    if ((currentLayer === 'temperature' && !temperatureNormals) || (currentLayer === 'windSpeed' && !windNormals)) {
+      document.querySelector<HTMLButtonElement>('[data-layer="surface"]')?.click();
+    }
     cancel.hidden = true; save.disabled = false; saveResolved.disabled = false; exportView.disabled = false;
     waterOpen.disabled = false; waterSave.disabled = false; waterBudgetButton.disabled = false;
     element<HTMLButtonElement>('play').disabled = false;
     document.body.dataset.state = 'ready';
-    showStatus(temperatureError ? `World ready; seasonal temperature unavailable: ${temperatureError}`
+    showStatus(temperatureError || windError ? `World ready; climate layer unavailable: ${temperatureError ?? windError}`
       : restoredFrame ? `Water checkpoint restored at prescribed step ${restoredFrame.step}. Exact stocks are ready to continue.`
       : `${world.recipe.plateCount} connected plates · ${world.tectonics.boundaryTypes.length} boundary segments · ${(world.stats.arrayBytes / 2 ** 20).toFixed(1)} MiB of model arrays · Static kinematics, no geological time integration`);
   } catch (error) {
@@ -435,7 +473,8 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
       exportView.disabled = world === null;
       waterOpen.disabled = false; waterSave.disabled = world === null || waterBusy;
       temperatureLayerButton.disabled = temperatureNormals === null;
-      temperatureMonthInput.disabled = temperatureNormals === null;
+      windLayerButton.disabled = windNormals === null;
+      temperatureMonthInput.disabled = temperatureNormals === null && windNormals === null;
       waterBudgetButton.disabled = world === null || budgetBusyEpoch === epoch;
       element<HTMLButtonElement>('play').disabled = world === null;
       showStatus(error instanceof Error ? error.message : String(error), true);
@@ -592,7 +631,8 @@ cancel.addEventListener('click', () => {
   save.disabled = world === null; saveResolved.disabled = world === null; exportView.disabled = world === null;
   waterOpen.disabled = false; waterSave.disabled = world === null || waterBusy;
   temperatureLayerButton.disabled = temperatureNormals === null;
-  temperatureMonthInput.disabled = temperatureNormals === null;
+  windLayerButton.disabled = windNormals === null;
+  temperatureMonthInput.disabled = temperatureNormals === null && windNormals === null;
   waterBudgetButton.disabled = world === null || budgetBusyEpoch === epoch;
   element<HTMLButtonElement>('play').disabled = world === null;
   document.body.dataset.state = world ? 'ready' : 'idle';

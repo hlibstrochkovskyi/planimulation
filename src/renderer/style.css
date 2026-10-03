@@ -118,6 +118,7 @@ canvas[data-gpu="lost"] ~ #gpu-status { display: grid; }
 #legend-gradient { display: inline-block; width: 135px; height: 7px; border: 1px solid #536069; border-radius: 3px; background: linear-gradient(90deg, #294855, #648985, #b9cba0); }
 #legend-gradient.water-gradient { background: linear-gradient(90deg, #2e9ebf, #061a42); }
 #legend-gradient.temperature-gradient { background: linear-gradient(90deg, #1a337a, #4aaed1, #e3e0a3, #d43d21); }
+#legend-gradient.wind-gradient { background: linear-gradient(90deg, #1a2e3b, #4cc4d4 60%, #ebe68a); }
 #boundary-legend { display: flex; flex-wrap: wrap; gap: 9px 18px; margin: 0 0 12px; font-size: 10px; }
 [data-kind="0"] { color: #a3adb2; } [data-kind="1"] { color: #ee9e92; } [data-kind="2"] { color: #8ac9e2; } [data-kind="3"] { color: #dfcb8c; }
 .water-actions { margin: 5px 0 10px; padding: 15px; border: 1px solid #37434a; border-radius: 9px; background: #1c2429; }

@@ -4,7 +4,7 @@ An exploratory simulation of procedural Earth-like worlds and the histories that
 
 A reproducible world connects geography, climate, water, ecology, and resources. Populations adapt to their environment; production, connections, and decisions shape settlements, states, and history. Civilizations then change the environment that supports them.
 
-The application currently includes a desktop surface laboratory, static plate kinematics, independent initial crust, explainable elevation with bounded dry terrain preparation, initial water filling, static drainage catchments, basin hierarchy inspection, a bounded manual runoff/spill view, and derived seasonal temperature normals on a flat map and relief globe. Timed hydrology, climate-driven erosion, weather, and a living natural environment with vegetation follow later. Human populations follow once that foundation has been checked.
+The application currently includes a desktop surface laboratory, static plate kinematics, independent initial crust, explainable elevation with bounded dry terrain preparation, initial water filling, static drainage catchments, basin hierarchy inspection, a bounded manual runoff/spill view, and derived seasonal temperature and prescribed surface-wind normals on a flat map and relief globe. Timed hydrology, climate-driven erosion, weather, and a living natural environment with vegetation follow later. Human populations follow once that foundation has been checked.
 
 ## Documentation
 
@@ -23,6 +23,7 @@ The application currently includes a desktop surface laboratory, static plate ki
 | [Dry terrain preparation](docs/terrain-preparation.md) | Versioned bounded material transfer before initial water filling, limits, and validation |
 | [Terrain-preparation study](docs/terrain-preparation-study.md) | Reproducible 12-seed, five-resolution sensitivity measurements and model limits |
 | [Seasonal temperature normals](docs/seasonal-temperature.md) | Derived monthly temperatures, assumptions, headless report, validation, and limits |
+| [Seasonal surface-wind normals](docs/seasonal-wind.md) | Prescribed monthly wind vectors and map layer, assumptions, headless report, and limits |
 | [Initial water](docs/water.md) | Coverage/volume fitting, connected water bodies, inventory accounting, analytical layers, and validation |
 | [Water-surface display](docs/water-surface.md) | Separate globe water mesh, shoreline approximation, joint exaggeration bounds, and picking |
 | [Drainage structure](docs/drainage.md) | Bed receivers, flat routing, terminal catchments, and contributing land-area accounting |
@@ -65,8 +66,9 @@ Milestones A, B1–B5, C1, and C2a–C2b implement an Electron desktop applicati
 - `Export world data` writes a [versioned resolved initial-world report](docs/resolved-world-export.md) with native-generated fields for offline analysis. It is not a dynamic checkpoint; manual water steps remain separate.
 - The [bounded dry terrain-preparation stage](docs/terrain-preparation.md) now runs before initial water fitting in `terrain-prep-1` worlds. Its 0–16 passes transport material without representing elapsed geological time or climate-driven erosion. The desktop exposes the pass count and inspector contribution.
 - The [first seasonal temperature model](docs/seasonal-temperature.md) derives twelve monthly normals from latitude, initial water coverage, and elevation. It has a shared 2D/globe layer and inspector, but no weather, moisture, energy conservation, or coupling to manual water steps.
+- The [first surface-wind model](docs/seasonal-wind.md) adds twelve monthly east/north velocity normals and a shared speed layer. Its smooth latitude belts shift seasonally but do not yet transport moisture or respond to terrain.
 
-The seed field is a coherent **diagnostic signal**, separate from terrain, temperature, or biomes. Mesh topology remains fixed at a given resolution. Timed planetary water dynamics, climate-driven or ongoing erosion, coupled climate, and civilization are not implemented. Elevation zero is a reference datum, not sea level. Recipes reproduce the initial world and versioned temperature derivation; the separate prescribed-water checkpoint saves only the bounded manual water inventory, not a full simulation state or diagnostic field.
+The seed field is a coherent **diagnostic signal**, separate from terrain, temperature, wind, or biomes. Mesh topology remains fixed at a given resolution. Timed planetary water dynamics, climate-driven or ongoing erosion, coupled climate, and civilization are not implemented. Elevation zero is a reference datum, not sea level. Recipes reproduce the initial world; read-only temperature and wind derivations additionally depend on their separately reported model versions and fixed settings. Cross-version climate replay is not yet supported. The separate prescribed-water checkpoint saves only the bounded manual water inventory, not a full simulation state or diagnostic field.
 
 Static drainage assigns bed-based receivers, routes equal-height flats without altering elevation, preserves closed dry sinks, and accumulates contributing land area. Catchment and area layers are drainage potential, not flowing rivers. Basin analysis computes geometric spill thresholds and storage capacities; it does not evolve the world's water inventories.
 

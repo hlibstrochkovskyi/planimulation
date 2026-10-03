@@ -9,6 +9,8 @@ import { BASIN_ANALYSIS_VERSION, validateBasins } from '../core/basins';
 import type { DiagnosticFrame, PreparedWaterWorld, PrescribedWaterMode, WaterBudget, WaterFrame } from '../shared/desktop-api';
 import { DEFAULT_TEMPERATURE_SETTINGS, TEMPERATURE_DAYS_PER_YEAR, TEMPERATURE_MODEL_VERSION, TEMPERATURE_MONTHS_PER_YEAR } from '../core/seasonal-temperature';
 import type { TemperatureNormals } from '../core/seasonal-temperature';
+import { DEFAULT_WIND_SETTINGS, WIND_MODEL_VERSION } from '../core/seasonal-wind';
+import type { WindNormals } from '../core/seasonal-wind';
 
 const MAX_BYTES = 32 * 2 ** 20;
 const MAX_COMMAND_BYTES = 8 * 2 ** 20;
@@ -48,7 +50,7 @@ export class FrameReader {
         if (this.length < this.headerLength) return;
         const h = JSON.parse(this.take(this.headerLength).toString('utf8')) as Header;
         if (!h || (h.protocol !== 9 && h.protocol !== 10) || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
-          || !['world', 'frame', 'water', 'temperature', 'checkpoint', 'error'].includes(h.kind)) throw new Error('Invalid native protocol header.');
+          || !['world', 'frame', 'water', 'temperature', 'wind', 'checkpoint', 'error'].includes(h.kind)) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
       if (this.length < this.header.byteLength) return;
@@ -276,6 +278,43 @@ export function decodeSeasonalTemperature(packet: Packet, count: number, epoch: 
     annualMinimumCelsius, annualMaximumCelsius };
 }
 
+export function decodeSeasonalWind(packet: Packet, count: number, epoch: number): WindNormals {
+  const { header, bytes } = packet;
+  const settings = header.settings;
+  const dayCounts = header.monthlyDayCounts;
+  const expectedDays = Array.from({ length: TEMPERATURE_MONTHS_PER_YEAR }, (_, month) => {
+    let days = 0;
+    for (let day = 0; day < TEMPERATURE_DAYS_PER_YEAR; day++) {
+      if (Math.floor(day * TEMPERATURE_MONTHS_PER_YEAR / TEMPERATURE_DAYS_PER_YEAR) === month) days++;
+    }
+    return days;
+  });
+  if (header.kind !== 'wind' || header.protocol !== 9 || header.windModelVersion !== WIND_MODEL_VERSION
+    || header.temperatureModelVersion !== TEMPERATURE_MODEL_VERSION
+    || header.axialTiltDegrees !== DEFAULT_TEMPERATURE_SETTINGS.axialTiltDegrees
+    || header.daysPerYear !== TEMPERATURE_DAYS_PER_YEAR || header.regionCount !== count
+    || !Number.isSafeInteger(count) || count < 1 || bytes.length !== count * TEMPERATURE_MONTHS_PER_YEAR * 2 * 8
+    || !settings || typeof settings !== 'object' || Array.isArray(settings)
+    || Object.keys(settings).length !== Object.keys(DEFAULT_WIND_SETTINGS).length
+    || Object.entries(DEFAULT_WIND_SETTINGS).some(([key, value]) => (settings as Record<string, unknown>)[key] !== value)
+    || !Array.isArray(dayCounts) || dayCounts.length !== TEMPERATURE_MONTHS_PER_YEAR
+    || dayCounts.some((days, month) => days !== expectedDays[month])) {
+    throw new Error('Invalid native seasonal-wind metadata.');
+  }
+  let offset = 0;
+  const next = (): Float64Array => {
+    const field = floats(bytes.subarray(offset, offset + count * 8)); offset += count * 8; return field;
+  };
+  const monthlyEastMetersPerSecond = Array.from({ length: TEMPERATURE_MONTHS_PER_YEAR }, next);
+  const monthlyNorthMetersPerSecond = Array.from({ length: TEMPERATURE_MONTHS_PER_YEAR }, next);
+  for (const field of [...monthlyEastMetersPerSecond, ...monthlyNorthMetersPerSecond]) {
+    if (field.some((speed) => Math.abs(speed) > 40)) throw new Error('Invalid native seasonal-wind speed.');
+  }
+  return { epoch, modelVersion: WIND_MODEL_VERSION, settings: settings as WindNormals['settings'],
+    axialTiltDegrees: header.axialTiltDegrees as number, monthlyDayCounts: dayCounts as number[],
+    monthlyEastMetersPerSecond, monthlyNorthMetersPerSecond };
+}
+
 /** Pending generation never mutates the last successfully published world. */
 export class NativeController {
   private active: NativeSession | null = null;
@@ -359,6 +398,14 @@ export class NativeController {
     const packet = await session.request({ command: 'seasonalTemperature' });
     if (this.active !== session || this.epoch !== epoch) throw new Error('Stale seasonal-temperature response.');
     try { return decodeSeasonalTemperature(packet, this.count, epoch); }
+    catch (error) { session.close(); throw error; }
+  }
+  async seasonalWind(epoch: number): Promise<WindNormals> {
+    if (!this.active || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    const session = this.active;
+    const packet = await session.request({ command: 'seasonalWind' });
+    if (this.active !== session || this.epoch !== epoch) throw new Error('Stale seasonal-wind response.');
+    try { return decodeSeasonalWind(packet, this.count, epoch); }
     catch (error) { session.close(); throw error; }
   }
   async prescribeWater(epoch: number, region: number, mode: PrescribedWaterMode): Promise<WaterFrame> {

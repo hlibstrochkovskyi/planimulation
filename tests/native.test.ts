@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import path from 'node:path';
 import { CONTINUOUS_PLATES_MODEL_VERSION, DEFAULT_RECIPE } from '../src/core/recipe';
 import { generateWorld } from '../src/core/world';
-import { FrameReader, NativeController, NativeSession, decodeSeasonalTemperature, decodeWorld } from '../src/native/client';
+import { FrameReader, NativeController, NativeSession, decodeSeasonalTemperature, decodeSeasonalWind, decodeWorld } from '../src/native/client';
 import type { Packet } from '../src/native/client';
 import { buildViewGeometry } from '../src/renderer/view-geometry';
 import { buildSurface } from '../src/core/surface';
@@ -258,6 +258,26 @@ test('seasonal normals are read-only, versioned, repeatable, and reject malforme
   } finally { session.close(); }
 });
 
+test('seasonal wind normals preserve the world and validate bounded vector transport', async () => {
+  const session = new NativeSession(executable);
+  try {
+    const recipe = { ...DEFAULT_RECIPE, subdivision: 2 };
+    const world = decodeWorld(await session.request({ command: 'generate', recipe }));
+    const firstPacket = await session.request({ command: 'seasonalWind' });
+    const first = decodeSeasonalWind(firstPacket, world.stats.regionCount, 1);
+    const second = decodeSeasonalWind(await session.request({ command: 'seasonalWind' }), world.stats.regionCount, 1);
+    assert.deepEqual(first, second);
+    assert.equal(first.monthlyEastMetersPerSecond.length, 12);
+    assert.equal(first.monthlyNorthMetersPerSecond[0].length, world.stats.regionCount);
+    assert.equal(first.settings.itczShiftFraction, 0.5);
+    assert.deepEqual(decodeWorld(await session.request({ command: 'generate', recipe })), world);
+    assert.throws(() => decodeSeasonalWind({ ...firstPacket, header: { ...firstPacket.header, windModelVersion: 'future' } }, world.stats.regionCount, 1), /metadata/);
+    assert.throws(() => decodeSeasonalWind({ ...firstPacket, bytes: firstPacket.bytes.subarray(8) }, world.stats.regionCount, 1), /metadata/);
+    const corrupted = Buffer.from(firstPacket.bytes); corrupted.writeDoubleLE(NaN);
+    assert.throws(() => decodeSeasonalWind({ ...firstPacket, bytes: corrupted }, world.stats.regionCount, 1), /Non-finite/);
+  } finally { session.close(); }
+});
+
 test('native plate fields survive transport and produce both boundary overlays without changing the model', async () => {
   const core = new NativeController(executable);
   try {
@@ -331,6 +351,9 @@ test('finest world with maximum plate count fits the native transport budget', a
     assert.equal(world.crust.continentality.length, 40962);
     assert.ok(world.stats.arrayBytes < 32 * 2 ** 20);
     core.accept(epoch);
+    const wind = await core.seasonalWind(epoch);
+    assert.equal(wind.monthlyEastMetersPerSecond[0].length, 40962);
+    assert.equal(wind.monthlyNorthMetersPerSecond.length, 12);
     const checkpoint = await core.exportWaterCheckpoint(epoch);
     assert.ok(Buffer.byteLength(checkpoint) < 8 * 2 ** 20, 'The largest supported world must fit the water-checkpoint limit.');
   } finally { core.close(); }

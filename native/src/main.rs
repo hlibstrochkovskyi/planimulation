@@ -3,6 +3,7 @@ use planimulation_core::{
     exact_initial_accounting::exact_units,
     prescribed_water_inventory::{Checkpoint, PrescribedWaterInventory},
     seasonal_temperature::{Normals, Settings},
+    seasonal_wind::{Normals as WindNormals, Settings as WindSettings},
     wire,
 };
 use serde::Deserialize;
@@ -18,6 +19,7 @@ enum Command {
     ExportWater,
     RestoreWater { checkpoint: Box<Checkpoint> },
     SeasonalTemperature,
+    SeasonalWind,
 }
 
 const MAX_COMMAND_BYTES: u64 = 8 * 1024 * 1024;
@@ -64,6 +66,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let w = world.as_ref().ok_or("Generate a world first.")?;
                     let normals = Normals::from_world(w, Settings::default())?;
                     wire::seasonal_temperature(&mut output, &normals).map_err(|e| e.to_string())?;
+                }
+                Command::SeasonalWind => {
+                    let w = world.as_ref().ok_or("Generate a world first.")?;
+                    let normals = WindNormals::from_world(
+                        w,
+                        WindSettings::default(),
+                        Settings::default().axial_tilt_degrees,
+                    )?;
+                    wire::seasonal_wind(&mut output, &normals).map_err(|e| e.to_string())?;
                 }
                 Command::PrescribeWater { region, mode } => {
                     let w = world.as_ref().ok_or("Generate a world first.")?;
