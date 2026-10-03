@@ -51,6 +51,9 @@ void app.whenReady().then(() => {
   ipcMain.handle('world:advance', (event, epoch: number, steps: number) => { senderWindow(event); return core.advance(epoch, steps); });
   ipcMain.handle('world:seasonalTemperature', (event, epoch: number) => { senderWindow(event); return core.seasonalTemperature(epoch); });
   ipcMain.handle('world:seasonalWind', (event, epoch: number) => { senderWindow(event); return core.seasonalWind(epoch); });
+  ipcMain.handle('world:seasonalMoisture', (event, epoch: number, seconds: number) => {
+    senderWindow(event); return core.seasonalMoisture(epoch, seconds);
+  });
   ipcMain.handle('world:prescribeWater', (event, epoch: number, region: number, mode: unknown) => {
     senderWindow(event);
     if (mode !== 'oneCubicKilometer' && mode !== 'fillToSpill') throw new Error('Invalid prescribed-water mode.');

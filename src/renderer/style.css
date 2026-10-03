@@ -10,6 +10,10 @@ button:active:not(:disabled) { transform: scale(.98); box-shadow: none; }
 button:disabled { opacity: .4; cursor: default; }
 button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 [hidden] { display: none !important; }
+.seasonal-actions .water-action-row { flex-wrap: wrap; }
+.seasonal-actions label { margin: 0; }
+.seasonal-actions select { width: 115px; }
+.seasonal-actions .muted { margin-top: 8px; }
 
 .app-header { height: 72px; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--border); background: #181a1d; }
 .brand { display: flex; align-items: center; gap: 13px; min-width: 0; }

@@ -14,6 +14,9 @@ import { basinTree, summarizeBasins } from '../core/basins';
 import { approximateCubicKilometers, runoffDestination } from './water-budget';
 import type { TemperatureNormals } from '../core/seasonal-temperature';
 import type { WindNormals } from '../core/seasonal-wind';
+import { MOISTURE_MAX_SECONDS, MOISTURE_STOCK_FIELDS, SURFACE_TRANSFER_FIELDS, RUNOFF_TRANSFER_FIELDS } from '../shared/seasonal-moisture';
+import type { MoistureFrame } from '../shared/seasonal-moisture';
+import { MOISTURE_LAYERS, isMoistureLayer, moistureCalendar } from './seasonal-moisture';
 
 function element<T extends HTMLElement>(id: string): T {
   const result = document.getElementById(id);
@@ -49,6 +52,10 @@ const waterBudgetButton = element<HTMLButtonElement>('water-budget-refresh');
 const temperatureMonthInput = element<HTMLSelectElement>('temperature-month');
 const temperatureLayerButton = document.querySelector<HTMLButtonElement>('[data-layer="temperature"]')!;
 const windLayerButton = document.querySelector<HTMLButtonElement>('[data-layer="windSpeed"]')!;
+const moistureStart = element<HTMLButtonElement>('moisture-start');
+const moistureStep = element<HTMLButtonElement>('moisture-step');
+const moisturePlay = element<HTMLButtonElement>('moisture-play');
+const moistureInterval = element<HTMLSelectElement>('moisture-interval');
 const number = new Intl.NumberFormat('en', { maximumFractionDigits: 1 });
 const budgetNumber = new Intl.NumberFormat('en', { maximumSignificantDigits: 6 });
 let world: World | null = null;
@@ -56,6 +63,10 @@ let waterFrame: WaterFrame | null = null;
 let waterBudget: WaterBudget | null = null;
 let temperatureNormals: TemperatureNormals | null = null;
 let windNormals: WindNormals | null = null;
+let moistureFrame: MoistureFrame | null = null;
+let moistureBusyEpoch: number | null = null;
+let moisturePlaying = false;
+let moistureTimer = 0;
 let temperatureRange = { minimum: 0, maximum: 0 };
 let windMaximum = 0;
 let waterBusy = false;
@@ -81,6 +92,136 @@ function showStatus(message: string, error = false): void {
   status.textContent = message;
   status.classList.toggle('error', error);
 }
+
+function updateExperimentControls(): void {
+  const generating = document.body.dataset.state === 'generating';
+  const busy = generating || checkpointOpening || waterBusy || budgetBusyEpoch === epoch
+    || advancing || moistureBusyEpoch === epoch;
+  const hasSeasonal = moistureFrame !== null;
+  const finished = (moistureFrame?.elapsedSeconds ?? 0) >= MOISTURE_MAX_SECONDS;
+  moistureStart.disabled = !world || busy || playing || hasSeasonal || (waterFrame?.step ?? 0) > 0;
+  moistureStep.disabled = !hasSeasonal || busy || moisturePlaying || finished;
+  // Pause must remain available while the current native step is in flight.
+  moisturePlay.disabled = !hasSeasonal || finished || (!moisturePlaying && busy);
+  moisturePlay.textContent = moisturePlaying ? 'Pause seasonal water' : 'Run seasonal water';
+  moistureInterval.disabled = busy || moisturePlaying;
+  for (const button of document.querySelectorAll<HTMLButtonElement>('[data-layer]')) {
+    if (isMoistureLayer(button.dataset.layer ?? '')) button.disabled = !hasSeasonal || generating;
+  }
+  const manualBlocked = !world || busy || playing || moisturePlaying || hasSeasonal;
+  waterAdd.disabled = manualBlocked || selected === null; waterSpill.disabled = waterAdd.disabled;
+  waterSave.disabled = manualBlocked; waterBudgetButton.disabled = manualBlocked;
+  waterOpen.disabled = busy || moisturePlaying || playing;
+  element<HTMLButtonElement>('play').disabled = !world || hasSeasonal || (!playing && busy);
+  document.body.dataset.seasonalWater = moisturePlaying ? 'running' : moistureBusyEpoch === epoch ? 'working' : hasSeasonal ? 'paused' : 'idle';
+}
+
+function appendDetails(target: HTMLElement, rows: Array<[string, string]>): void {
+  target.replaceChildren();
+  for (const [label, value] of rows) {
+    const dt = document.createElement('dt'), dd = document.createElement('dd');
+    dt.textContent = label; dd.textContent = value; target.append(dt, dd);
+  }
+}
+const stockNames = ['Local liquid', 'Snow water equivalent', 'Soil water', 'Runoff in transit', 'Terminal water', 'Atmospheric vapor'];
+const surfaceTransferNames = ['Rain', 'Snowfall', 'Melt', 'Liquid evaporation', 'Soil evaporation', 'Infiltration', 'Generated liquid runoff', 'Soil drainage'];
+const runoffTransferNames = ['Drainage departure', 'Received transit', 'Terminal delivery', 'Terminal evaporation'];
+
+function renderMoisture(): void {
+  const frame = moistureFrame;
+  if (!frame || !world) {
+    delete element('moisture-time').dataset.requestMilliseconds;
+    delete element('moisture-budget-details').dataset.relativeMassResidual;
+    delete element('moisture-budget-details').dataset.relativeLedgerResidual;
+    element('moisture-time').textContent = 'Not initialized · regeneration discards the seasonal run';
+    element('moisture-step-note').textContent = 'No interval recorded. Playback waits for each native response; frame rate does not set model time.';
+    element('moisture-budget-note').textContent = 'Initialize seasonal water to inspect its approximate binary64 accounting. Do not add it to the full initial water inventory.';
+    element('moisture-budget-details').replaceChildren(); element('moisture-selection-details').replaceChildren();
+    element('moisture-selection-title').textContent = 'Select a region';
+    element('moisture-selection-note').textContent = 'Stocks and recorded transfers use the same received frame as the map.';
+    updateExperimentControls(); return;
+  }
+  element('moisture-time').textContent = moistureCalendar(frame.elapsedSeconds);
+  const month = Math.floor((Math.floor(frame.elapsedSeconds / 86400) % 365) * 12 / 365) + 1;
+  element('moisture-step-note').textContent = `Last interval ${frame.intervalSeconds / 3600} h · ${frame.coupledSubsteps} coupled / ${frame.transportSubsteps} transport substeps · next forcing month ${month}. The normals selector is independent. Pause may finish one requested interval.`;
+  const budget = frame.budget;
+  element('moisture-budget-details').dataset.relativeMassResidual = String(budget.residualKilograms / Math.max(budget.initialMobileWaterKilograms, 1));
+  element('moisture-budget-details').dataset.relativeLedgerResidual = String(budget.maximumRelativeLocalSurfaceLedgerResidual);
+  const volume = (kilograms: number): string => `${budgetNumber.format(kilograms / 1e12)} km³ WE`;
+  const total = MOISTURE_STOCK_FIELDS.reduce((sum, key) => sum + budget[key], 0);
+  appendDetails(element('moisture-budget-details'), [
+    ['Initial mobile partition', volume(budget.initialMobileWaterKilograms)],
+    ...MOISTURE_STOCK_FIELDS.map((key, i): [string, string] => [stockNames[i], volume(budget[key])]),
+    ['Total current owned water', volume(total)],
+    ['Mass residual / initial', (budget.residualKilograms / Math.max(budget.initialMobileWaterKilograms, 1)).toExponential(3)],
+    ['Maximum regional ledger residual', budget.maximumRelativeLocalSurfaceLedgerResidual.toExponential(3)],
+    ['Cumulative evaporation · flow integral', volume(budget.cumulativeEvaporationKilograms)],
+    ['Cumulative precipitation · flow integral', volume(budget.cumulativePrecipitationKilograms)],
+    ['Cumulative terminal delivery · flow integral', volume(budget.cumulativeRunoffTransfers.terminalDelivery)],
+    ['Cumulative terminal evaporation · flow integral', volume(budget.cumulativeRunoffTransfers.terminalEvaporation)],
+  ]);
+  element('moisture-budget-note').textContent = `${frame.modelVersion} · six exclusive stocks. Flow integrals can count recirculated water and must not be added to the inventory. Fixed geography; no lake levels or deep-water replenishment. Seasonal desktop saving is not implemented.`;
+  if (selected === null) {
+    element('moisture-selection-title').textContent = 'Select a region';
+    element('moisture-selection-details').replaceChildren();
+  } else {
+    const id = selected, area = world.surface.areasSquareMeters[id];
+    const column = (kg: number): string => `${budgetNumber.format(kg / area)} mm WE`;
+    element('moisture-selection-title').textContent = `Region ${id} · seasonal water`;
+    element('moisture-selection-note').textContent = `At ${frame.elapsedSeconds} elapsed seconds. Transfer amounts cover only the last ${frame.intervalSeconds / 3600} h, not an annual normal. Terminal columns use fixed reference area, not a lake depth. Receiver: ${world.drainage.receivers[id] === id ? 'self · terminal' : `region ${world.drainage.receivers[id]}`}.`;
+    appendDetails(element('moisture-selection-details'), [
+      ...MOISTURE_STOCK_FIELDS.map((key, i): [string, string] => [stockNames[i], column(frame.stocks[key][id])]),
+      ...SURFACE_TRANSFER_FIELDS.map((key, i): [string, string] => [`Last interval · ${surfaceTransferNames[i]}`, column(frame.surfaceTransfers[key][id])]),
+      ...RUNOFF_TRANSFER_FIELDS.map((key, i): [string, string] => [`Last interval · ${runoffTransferNames[i]}`, column(frame.runoffTransfers[key][id])]),
+      ['Mean drainage departure', frame.intervalSeconds ? `${budgetNumber.format(frame.runoffTransfers.sent[id] / 1000 / frame.intervalSeconds)} m³/s · not hydraulic discharge` : 'No interval'],
+    ]);
+  }
+  updateExperimentControls();
+}
+
+async function requestMoisture(seconds: number): Promise<void> {
+  if (!world || moistureBusyEpoch === epoch || waterBusy || checkpointOpening || advancing
+    || budgetBusyEpoch === epoch || document.body.dataset.state === 'generating') return;
+  const activeEpoch = epoch, origin = world, request = generationId;
+  moistureBusyEpoch = activeEpoch; updateExperimentControls();
+  const started = performance.now();
+  try {
+    const frame = await api.seasonalMoisture(activeEpoch, seconds);
+    const requestMilliseconds = performance.now() - started;
+    // An accepted old-world step may finish while a replacement is preparing.
+    // Retain it until that world is actually replaced, including cancellation.
+    if (frame.epoch !== epoch || world !== origin) return;
+    moistureFrame = frame; map.setMoistureFrame(frame);
+    waterBudget = null; renderWaterBudget(); renderMoisture(); updateLegend();
+    element('moisture-time').dataset.requestMilliseconds = String(requestMilliseconds);
+    element('model-label').textContent = `${world.recipe.modelVersion.toUpperCase()} · SEASONAL-MOISTURE-3 · FIXED GEOGRAPHY`;
+    if (request === generationId) showStatus(`Seasonal water ${frame.elapsedSeconds / 86400} days · native request + IPC ${number.format(requestMilliseconds)} ms · relative total-water residual ${(frame.budget.residualKilograms / Math.max(frame.budget.initialMobileWaterKilograms, 1)).toExponential(2)}.`);
+    if (frame.elapsedSeconds >= MOISTURE_MAX_SECONDS) pauseMoisture();
+  } catch (error) {
+    if (epoch === activeEpoch) {
+      pauseMoisture();
+      if (request === generationId) showStatus(error instanceof Error ? error.message : String(error), true);
+    }
+  } finally {
+    if (moistureBusyEpoch === activeEpoch) moistureBusyEpoch = null;
+    updateExperimentControls();
+    if (moisturePlaying && request === generationId && epoch === activeEpoch) {
+      moistureTimer = window.setTimeout(() => void requestMoisture(Number(moistureInterval.value)), 33);
+    }
+  }
+}
+function pauseMoisture(): void {
+  moisturePlaying = false; clearTimeout(moistureTimer); updateExperimentControls();
+}
+moistureStart.addEventListener('click', () => { pause(); void requestMoisture(0); });
+moistureStep.addEventListener('click', () => { pause(); void requestMoisture(Number(moistureInterval.value)); });
+moisturePlay.addEventListener('click', () => {
+  if (moisturePlaying) pauseMoisture();
+  else if (moistureFrame && moistureBusyEpoch !== epoch) {
+    pause(); moisturePlaying = true; updateExperimentControls();
+    void requestMoisture(Number(moistureInterval.value));
+  }
+});
 
 function renderWaterBudget(): void {
   const details = element('water-budget-details');
@@ -126,9 +267,10 @@ function renderWaterBudget(): void {
 }
 
 async function refreshWaterBudget(): Promise<void> {
-  if (!world || budgetBusyEpoch === epoch) return;
+  if (!world || moistureFrame || moistureBusyEpoch === epoch || budgetBusyEpoch === epoch) return;
   const request = generationId, activeEpoch = epoch;
   budgetBusyEpoch = activeEpoch; waterBudgetButton.disabled = true;
+  updateExperimentControls();
   try {
     const budget = await api.inspectWaterBudget(activeEpoch);
     if (request !== generationId || budget.epoch !== epoch) return;
@@ -139,6 +281,7 @@ async function refreshWaterBudget(): Promise<void> {
     if (budgetBusyEpoch === activeEpoch) {
       budgetBusyEpoch = null;
       waterBudgetButton.disabled = document.body.dataset.state === 'generating' || checkpointOpening || waterBusy;
+      updateExperimentControls();
     }
   }
 }
@@ -146,8 +289,9 @@ async function refreshWaterBudget(): Promise<void> {
 function inspect(id: number, preserveBasin = false): void {
   if (!world) return;
   selected = id;
+  renderMoisture();
   if (waterBudget) renderWaterBudget();
-  waterAdd.disabled = waterBusy || checkpointOpening || document.body.dataset.state === 'generating'; waterSpill.disabled = waterAdd.disabled;
+  updateExperimentControls();
   inspectBasin(preserveBasin && inspectedBasin !== null ? inspectedBasin : world.basins.regionNodes[id]);
   const s = world.surface, x = s.centers[id * 3], y = s.centers[id * 3 + 1], z = s.centers[id * 3 + 2];
   const lat = Math.asin(y) * 180 / Math.PI, lon = Math.atan2(z, x) * 180 / Math.PI;
@@ -213,7 +357,7 @@ function inspect(id: number, preserveBasin = false): void {
     ? `Latitude ${lat.toFixed(2)}° sets daily solar geometry for a ${temperatureNormals.settings.axialTiltDegrees}° tilt and 365-day circular orbit. Initial ${world.water.depthMeters[id] > 0 ? 'water' : 'dry land'} uses a ${world.water.depthMeters[id] > 0 ? temperatureNormals.settings.waterResponseDays : temperatureNormals.settings.landResponseDays}-day response time. ${world.water.depthMeters[id] > 0 ? 'Wet regions receive no bed-height lapse correction.' : `Positive bed elevation contributes a −${(temperatureNormals.settings.lapseRateCelsiusPerMeter * Math.max(0, world.terrain.elevation[id])).toFixed(1)} °C correction.`} The solar-to-temperature sensitivity is prescribed; no atmospheric heat transport, weather, ice feedback, or complete energy budget is modeled.`
     : 'Seasonal temperature normals are being calculated from initial geography.';
   element('wind-note').textContent = windNormals
-    ? `Latitude ${lat.toFixed(2)}° and the selected month determine a prescribed east/north tangent vector. Trades are easterly, midlatitude winds westerly, and polar winds easterly; the convergence belt follows half the subsolar declination. These are smooth, zonally symmetric model choices, not simulated atmospheric circulation. Terrain and water do not redirect wind, and no moisture is transported yet.`
+    ? `Latitude ${lat.toFixed(2)}° and the selected month determine a prescribed east/north tangent vector. Trades are easterly, midlatitude winds westerly, and polar winds easterly; the convergence belt follows half the subsolar declination. These are smooth, zonally symmetric model choices, not simulated atmospheric circulation. Terrain and water do not redirect wind. Seasonal water uses these normals on its own elapsed-time clock.`
     : 'Seasonal surface-wind normals are being calculated.';
   boundaryDetails.replaceChildren();
   const segments = boundarySegments.get(id) ?? [];
@@ -268,7 +412,7 @@ function createMap(): SurfaceMap {
 const map = createMap();
 
 function updateLegend(): void {
-  const legends: Record<Layer, [string, string, string]> = {
+  const legends: Record<Exclude<Layer, keyof typeof MOISTURE_LAYERS>, [string, string, string]> = {
     surface: [`Land and water surface${waterFrame ? ' · prescribed-water display' : ''} · globe shoreline is a display approximation · colors are not biomes`, '', ''],
     signal: ['Seed field · dimensionless diagnostic', '−1', '+1'],
     area: ['Region area · true spherical area', world ? `${number.format(world.stats.minimumAreaSquareMeters / 1e6)} km²` : 'min', world ? `${number.format(world.stats.maximumAreaSquareMeters / 1e6)} km²` : 'max'],
@@ -293,7 +437,10 @@ function updateLegend(): void {
     windSpeed: [`Month ${Number(temperatureMonthInput.value) + 1} prescribed surface-wind speed · no atmospheric dynamics`,
       '0 m/s', `${number.format(windMaximum)} m/s`],
   };
-  const [title, low, high] = legends[currentLayer];
+  const [title, low, high] = isMoistureLayer(currentLayer)
+    ? [`${MOISTURE_LAYERS[currentLayer].title} · fixed logarithmic scale · seasonal water at ${moistureFrame?.elapsedSeconds ?? 0} s`,
+      `0 ${MOISTURE_LAYERS[currentLayer].unit}`, `≥ ${number.format(MOISTURE_LAYERS[currentLayer].maximum)} ${MOISTURE_LAYERS[currentLayer].unit}`]
+    : legends[currentLayer];
   element('legend-title').textContent = title;
   element('legend-low').textContent = low;
   element('legend-high').textContent = high;
@@ -348,6 +495,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
   showStatus(prepared ? 'Preparing restored world views…' : 'Building the surface in the native core…');
   document.body.dataset.state = 'generating';
   element<HTMLButtonElement>('play').disabled = true;
+  updateExperimentControls();
   try {
     const result = prepared ?? await api.generate(recipe as Recipe);
     if (request !== generationId) return;
@@ -362,6 +510,8 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     // publication and this request. The old native world survives preparation.
     const accepted = api.acceptWorld(result.epoch);
     world = result.world; epoch = result.epoch; selected = null; waterFrame = null; waterBudget = null;
+    moistureFrame = null;
+    map.setMoistureFrame(null); renderMoisture();
     temperatureNormals = null; windNormals = null;
     map.setTemperatureNormals(null); map.setWindNormals(null);
     waterBusy = false; budgetBusyEpoch = null;
@@ -401,7 +551,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     element('height-summary').textContent = `Bed elevation: ${number.format(terrainStats.minimumMeters)} to ${number.format(terrainStats.maximumMeters)} m · area-weighted mean ${number.format(terrainStats.meanMeters)} m · dry preparation ${world.terrain.appliedPasses} / ${world.recipe.terrainPreparationPasses ?? 0} passes, ${number.format(world.terrain.transportedCubicMeters / 1e9)} km³ transported`;
     const waterRequest = world.recipe.water.mode === 'coverage' ? `${(world.recipe.water.fraction * 100).toFixed(2)}% target` : `${number.format(world.recipe.water.volumeCubicMeters / 1e9)} km³ requested`;
     element('water-summary').textContent = `Water: ${(waterStats.waterAreaFraction * 100).toFixed(2)}% actual / ${waterRequest} · main ocean ${(waterStats.mainOceanAreaFraction * 100).toFixed(2)}% · inland ${(waterStats.inlandWaterAreaFraction * 100).toFixed(2)}% · ${waterStats.bodyCount} bodies · level ${number.format(waterStats.levelMeters)} m · resolved stock ${number.format(waterStats.resolvedVolumeCubicMeters / 1e9)} km³`;
-    element('water-note').textContent = 'Select a region to inspect its initial water depth and stored volume. Coverage fitting never splits equal-elevation plateaus; actual coverage can differ from the target. No runoff, evaporation, or dynamic basin exchange is modeled yet.';
+    element('water-note').textContent = 'Select a region to inspect its initial water depth and stored volume. Coverage fitting never splits equal-elevation plateaus; actual coverage can differ from the target. Seasonal exchange does not alter this full reference inventory.';
     element('drainage-summary').textContent = `Drainage: ${drainageStats.catchmentCount} terminal catchments · ${drainageStats.closedSinkCount} closed dry sinks · ${(drainageStats.closedDrainageLandFraction * 100).toFixed(2)}% of dry land ends in closed sinks · topology only, no flowing water`;
     element('drainage-note').textContent = 'Select a region to inspect its receiver, flat-routing rule, and contributing land area. Existing water bodies stop routing; closed sinks are preserved. Basin analysis is separate; lake dynamics are not implemented.';
     element('temperature-note').textContent = 'Calculating repeatable seasonal temperature normals from initial geography…';
@@ -456,13 +606,15 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
       windError = error instanceof Error ? error.message : String(error);
       element('wind-note').textContent = `Seasonal surface-wind normals unavailable: ${windError}`;
     }
-    if ((currentLayer === 'temperature' && !temperatureNormals) || (currentLayer === 'windSpeed' && !windNormals)) {
+    if ((currentLayer === 'temperature' && !temperatureNormals) || (currentLayer === 'windSpeed' && !windNormals)
+      || isMoistureLayer(currentLayer)) {
       document.querySelector<HTMLButtonElement>('[data-layer="surface"]')?.click();
     }
     cancel.hidden = true; save.disabled = false; saveResolved.disabled = false; exportView.disabled = false;
     waterOpen.disabled = false; waterSave.disabled = false; waterBudgetButton.disabled = false;
     element<HTMLButtonElement>('play').disabled = false;
     document.body.dataset.state = 'ready';
+    updateExperimentControls();
     showStatus(temperatureError || windError ? `World ready; climate layer unavailable: ${temperatureError ?? windError}`
       : restoredFrame ? `Water checkpoint restored at prescribed step ${restoredFrame.step}. Exact stocks are ready to continue.`
       : `${world.recipe.plateCount} connected plates · ${world.tectonics.boundaryTypes.length} boundary segments · ${(world.stats.arrayBytes / 2 ** 20).toFixed(1)} MiB of model arrays · Static kinematics, no geological time integration`);
@@ -481,6 +633,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
       document.body.dataset.state = 'error';
       waterAdd.disabled = world === null || selected === null || waterBusy;
       waterSpill.disabled = waterAdd.disabled;
+      updateExperimentControls();
     }
   }
 }
@@ -504,9 +657,10 @@ function applyWaterFrame(frame: WaterFrame, updateMap = true): void {
 }
 
 async function prescribeWater(mode: PrescribedWaterMode): Promise<void> {
-  if (!world || selected === null || waterBusy || checkpointOpening || document.body.dataset.state === 'generating') return;
+  if (!world || selected === null || moistureFrame || moistureBusyEpoch === epoch || waterBusy || checkpointOpening || document.body.dataset.state === 'generating') return;
   pause(); waterBusy = true; waterAdd.disabled = true; waterSpill.disabled = true;
   waterSave.disabled = true; waterBudgetButton.disabled = true;
+  updateExperimentControls();
   const request = generationId, activeEpoch = epoch, source = selected;
   try {
     const frame = await api.prescribeWater(activeEpoch, source, mode);
@@ -527,6 +681,7 @@ async function prescribeWater(mode: PrescribedWaterMode): Promise<void> {
       if (world && selected !== null && !checkpointOpening && document.body.dataset.state !== 'generating') {
         waterAdd.disabled = false; waterSpill.disabled = false;
       }
+      updateExperimentControls();
     }
   }
 }
@@ -537,6 +692,7 @@ waterOpen.addEventListener('click', async () => {
   pause(); checkpointOpening = true;
   waterOpen.disabled = true; waterAdd.disabled = true; waterSpill.disabled = true;
   waterSave.disabled = true; waterBudgetButton.disabled = true;
+  updateExperimentControls();
   try {
     const prepared = await api.openWaterCheckpoint();
     if (prepared) {
@@ -553,6 +709,7 @@ waterOpen.addEventListener('click', async () => {
       waterBudgetButton.disabled = world === null || budgetBusyEpoch === epoch;
       waterAdd.disabled = world === null || selected === null || waterBusy;
       waterSpill.disabled = waterAdd.disabled;
+      updateExperimentControls();
     }
   }
 });
@@ -563,22 +720,26 @@ waterBudgetButton.addEventListener('click', () => {
   }
 });
 waterSave.addEventListener('click', async () => {
-  if (!world || waterBusy || checkpointOpening || document.body.dataset.state === 'generating') return;
+  if (!world || moistureFrame || moistureBusyEpoch === epoch || waterBusy || checkpointOpening || document.body.dataset.state === 'generating') return;
   pause();
+  const activeEpoch = epoch;
+  waterBusy = true; updateExperimentControls();
   waterSave.disabled = true;
   try {
     if (await api.saveWaterCheckpoint(epoch)) showStatus('Exact prescribed-water checkpoint saved.');
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
-  finally { waterSave.disabled = world === null || waterBusy || document.body.dataset.state === 'generating'; }
+  finally { if (epoch === activeEpoch) waterBusy = false; updateExperimentControls(); }
 });
 
 function pause(): void {
   playing = false; clearTimeout(playbackTimer);
   element('play').textContent = 'Run diagnostic';
+  pauseMoisture();
 }
 async function advance(): Promise<void> {
   if (!playing || advancing || !world) return;
   advancing = true;
+  updateExperimentControls();
   const request = generationId, activeEpoch = epoch;
   try {
     const frame = await api.advance(activeEpoch, 4);
@@ -590,12 +751,13 @@ async function advance(): Promise<void> {
   } catch (e) { if (request === generationId) { pause(); showStatus(String(e), true); } }
   finally {
     advancing = false;
+    updateExperimentControls();
     if (playing) playbackTimer = window.setTimeout(() => void advance(), 33);
   }
 }
 element('play').addEventListener('click', () => {
   if (playing) pause();
-  else { playing = true; element('play').textContent = 'Pause diagnostic'; void advance(); }
+  else if (!moistureFrame && moistureBusyEpoch !== epoch) { playing = true; element('play').textContent = 'Pause diagnostic'; updateExperimentControls(); void advance(); }
 });
 for (const button of document.querySelectorAll<HTMLButtonElement>('button[data-view]')) {
   button.addEventListener('click', () => {
@@ -639,6 +801,7 @@ cancel.addEventListener('click', () => {
   waterAdd.disabled = world === null || selected === null || waterBusy;
   waterSpill.disabled = waterAdd.disabled;
   showStatus(world ? 'Generation canceled. The previous surface is still displayed.' : 'Generation canceled.');
+  updateExperimentControls();
 });
 element('new-seed').addEventListener('click', () => { seedInput.value = crypto.randomUUID().slice(0, 8); });
 element('open-recipe').addEventListener('click', async () => {

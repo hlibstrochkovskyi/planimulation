@@ -223,3 +223,68 @@ pub fn water_frame(
         &bytes,
     )
 }
+
+/// Protocol 11 is a display snapshot of finite seasonal water, not lake geometry
+/// or a complete checkpoint. Initial world and existing frame layouts stay unchanged.
+pub fn seasonal_moisture(
+    out: &mut impl Write,
+    model: &crate::seasonal_moisture::Model,
+    state: &crate::seasonal_moisture::State,
+    step: Option<&crate::seasonal_moisture::Step>,
+    interval_seconds: u32,
+) -> Result<(), String> {
+    if interval_seconds > 86400
+        || u64::from(interval_seconds) > state.elapsed_seconds()
+        || step.is_some() != (interval_seconds > 0)
+        || step.is_some_and(|s| {
+            s.surface_transfers.len() != state.surface_kilograms().len()
+                || s.runoff_transfers.len() != state.surface_kilograms().len()
+        })
+    {
+        return Err("Invalid seasonal-water display interval or transfer shape.".into());
+    }
+    let budget = model.budget(state)?;
+    let count = state.surface_kilograms().len();
+    let mut bytes = Vec::with_capacity(count * 18 * 8);
+    for field in [
+        state.surface_kilograms(),
+        state.snow_kilograms(),
+        state.soil_kilograms(),
+        state.pending_runoff_kilograms(),
+        state.terminal_water_kilograms(),
+        state.vapor_kilograms(),
+    ] {
+        f64s(&mut bytes, field.iter().copied());
+    }
+    // Eight surface and four runoff transfers, field-major in their canonical
+    // values() order. A zero-second observation has no interval flow records.
+    for component in 0..8 {
+        f64s(
+            &mut bytes,
+            (0..count).map(|i| step.map_or(0., |s| s.surface_transfers[i].values()[component])),
+        );
+    }
+    for component in 0..4 {
+        f64s(
+            &mut bytes,
+            (0..count).map(|i| step.map_or(0., |s| s.runoff_transfers[i].values()[component])),
+        );
+    }
+    send_versioned(out, json!({
+        "kind":"moisture", "regionCount":count,
+        "modelVersion":crate::seasonal_moisture::MODEL_VERSION,
+        "surfaceModelVersion":crate::surface_water::MODEL_VERSION,
+        "runoffModelVersion":crate::runoff_transport::MODEL_VERSION,
+        "transportModelVersion":crate::moisture_transport::MODEL_VERSION,
+        "temperatureModelVersion":crate::seasonal_temperature::MODEL_VERSION,
+        "windModelVersion":crate::seasonal_wind::MODEL_VERSION,
+        "settings":model.settings(), "temperatureSettings":model.temperature_settings(),
+        "windSettings":model.wind_settings(),
+        "elapsedSeconds":state.elapsed_seconds(), "intervalSeconds":interval_seconds,
+        "coupledSubsteps":step.map_or(0, |s| s.coupled_substeps),
+        "transportSubsteps":step.map_or(0, |s| s.transport_substeps),
+        "maximumAbsoluteLocalExchangeResidualKilograms":step.map_or(0., |s| s.maximum_absolute_local_exchange_residual_kilograms),
+        "maximumAbsoluteRoutingResidualKilograms":step.map_or(0., |s| s.maximum_absolute_routing_residual_kilograms),
+        "budget":budget,
+    }), &bytes, 11).map_err(|e| e.to_string())
+}

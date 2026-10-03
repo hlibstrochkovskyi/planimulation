@@ -1,0 +1,163 @@
+{
+  "reportVersion": 1,
+  "date": "2026-10-03T16:42:56.685Z",
+  "modelVersion": "terrain-prep-1",
+  "moistureModelVersion": "seasonal-moisture-3",
+  "protocol": 11,
+  "recipeByLevel": [
+    {
+      "schemaVersion": 1,
+      "modelVersion": "terrain-prep-1",
+      "randomVersion": "fnv1a-utf8-mulberry32-1",
+      "seed": "first-light",
+      "subdivision": 5,
+      "radiusMeters": 6371000,
+      "plateCount": 12,
+      "maxPlateSpeedCmPerYear": 8,
+      "continentalFraction": 0.38,
+      "continentalScale": 1,
+      "reliefScale": 1,
+      "boundaryWidthKm": 300,
+      "detailAmplitudeMeters": 300,
+      "terrainPreparationPasses": 4,
+      "water": {
+        "mode": "coverage",
+        "fraction": 0.71
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "modelVersion": "terrain-prep-1",
+      "randomVersion": "fnv1a-utf8-mulberry32-1",
+      "seed": "first-light",
+      "subdivision": 6,
+      "radiusMeters": 6371000,
+      "plateCount": 12,
+      "maxPlateSpeedCmPerYear": 8,
+      "continentalFraction": 0.38,
+      "continentalScale": 1,
+      "reliefScale": 1,
+      "boundaryWidthKm": 300,
+      "detailAmplitudeMeters": 300,
+      "terrainPreparationPasses": 4,
+      "water": {
+        "mode": "coverage",
+        "fraction": 0.71
+      }
+    }
+  ],
+  "moistureSettings": {
+    "initialActiveSurfaceDepthMeters": 1,
+    "effectiveVaporDepthMeters": 2000,
+    "evaporationResponseSeconds": 432000,
+    "precipitationResponseSeconds": 21600,
+    "evaporationEnabled": true,
+    "precipitationEnabled": true,
+    "maxCoupledStepSeconds": 3600,
+    "transport": {
+      "maxOutgoingFraction": 0.8,
+      "maxSubsteps": 4096
+    },
+    "surface": {
+      "meltKilogramsPerSquareMeterDegreeDay": 3,
+      "soilCapacityKilogramsPerSquareMeter": 150,
+      "soilRetainedFraction": 0.6,
+      "infiltrationResponseSeconds": 21600,
+      "liquidRunoffResponseSeconds": 86400,
+      "soilDrainageResponseSeconds": 2592000
+    },
+    "routingEnabled": true,
+    "runoff": {
+      "effectiveSpeedMetersPerSecond": 1,
+      "minimumResponseSeconds": 3600
+    }
+  },
+  "callerIntervalSeconds": 86400,
+  "warmupDays": 30,
+  "requestedAnimationFrameIntervals": 180,
+  "layer": "vaporWater",
+  "appliedExaggeration": "10",
+  "cpu": "AMD Ryzen 5 PRO 4650U with Radeon Graphics",
+  "totalMemoryBytes": 15938240512,
+  "webglFeatureStatus": "enabled",
+  "gpuCompositingFeatureStatus": "enabled",
+  "results": [
+    {
+      "level": 5,
+      "mode": "flat",
+      "regionCount": 10242,
+      "seasonalInitializationMs": 1487.0597479999997,
+      "frameBodyBytes": 1474848,
+      "generationAndViewsMs": 1490.6792200000004,
+      "rafMedianMs": 16.69999999999709,
+      "rafP95Ms": 16.799999999999272,
+      "rafMaxMs": 33.29999999999927,
+      "initialStep": "2592000",
+      "finalStep": "3974400",
+      "observedRequests": 16,
+      "requestMedianMs": 155.20000000298023,
+      "requestP95Ms": 158.20000000298023,
+      "requestMaxMs": 158.20000000298023,
+      "relativeMassResidual": 0,
+      "relativeLedgerResidual": 2.1922504501607468e-14
+    },
+    {
+      "level": 5,
+      "mode": "globe",
+      "regionCount": 10242,
+      "seasonalInitializationMs": 1487.0597479999997,
+      "frameBodyBytes": 1474848,
+      "generationAndViewsMs": 1490.6792200000004,
+      "rafMedianMs": 16.69999999999709,
+      "rafP95Ms": 16.700000000000728,
+      "rafMaxMs": 16.80000000000291,
+      "initialStep": "4060800",
+      "finalStep": "5443200",
+      "observedRequests": 16,
+      "requestMedianMs": 142.1000000089407,
+      "requestP95Ms": 148.29999999701977,
+      "requestMaxMs": 148.29999999701977,
+      "relativeMassResidual": -1.7676907811376268e-16,
+      "relativeLedgerResidual": 3.6179272819876166e-14
+    },
+    {
+      "level": 6,
+      "mode": "flat",
+      "regionCount": 40962,
+      "seasonalInitializationMs": 2947.914353999997,
+      "frameBodyBytes": 5898528,
+      "generationAndViewsMs": 5865.020210999999,
+      "rafMedianMs": 18.200000000004366,
+      "rafP95Ms": 23.799999999995634,
+      "rafMaxMs": 69.80000000000291,
+      "initialStep": "2592000",
+      "finalStep": "2937600",
+      "observedRequests": 4,
+      "requestMedianMs": 739.7999999970198,
+      "requestP95Ms": 752.2999999970198,
+      "requestMaxMs": 752.2999999970198,
+      "relativeMassResidual": 0,
+      "relativeLedgerResidual": 4.198632058751587e-14
+    },
+    {
+      "level": 6,
+      "mode": "globe",
+      "regionCount": 40962,
+      "seasonalInitializationMs": 2947.914353999997,
+      "frameBodyBytes": 5898528,
+      "generationAndViewsMs": 5865.020210999999,
+      "rafMedianMs": 16.69999999999709,
+      "rafP95Ms": 19,
+      "rafMaxMs": 50,
+      "initialStep": "3024000",
+      "finalStep": "3456000",
+      "observedRequests": 5,
+      "requestMedianMs": 522.2999999970198,
+      "requestP95Ms": 584.2999999970198,
+      "requestMaxMs": 584.2999999970198,
+      "relativeMassResidual": 0,
+      "relativeLedgerResidual": 4.115500138594946e-14
+    }
+  ],
+  "note": "180 requested-animation-frame intervals per sample under alternating zoom, vapor texture updates, a selected-region inspector, and daily native seasonal-water steps after 30 days of warmup. Request timings include IPC/decoding, not rendering; RAF observations are not GPU timers. Observed requests may omit frames between RAF callbacks. Electron process metrics exclude the native process. Not climate calibration, long-run fine-grid validation, or a future throughput guarantee."
+}

@@ -11,6 +11,9 @@ import { DEFAULT_TEMPERATURE_SETTINGS, TEMPERATURE_DAYS_PER_YEAR, TEMPERATURE_MO
 import type { TemperatureNormals } from '../core/seasonal-temperature';
 import { DEFAULT_WIND_SETTINGS, WIND_MODEL_VERSION } from '../core/seasonal-wind';
 import type { WindNormals } from '../core/seasonal-wind';
+import { decodeSeasonalMoisture } from './seasonal-moisture';
+import type { MoistureBudget, MoistureFrame } from '../shared/seasonal-moisture';
+import { MOISTURE_MAX_SECONDS } from '../shared/seasonal-moisture';
 
 const MAX_BYTES = 32 * 2 ** 20;
 const MAX_COMMAND_BYTES = 8 * 2 ** 20;
@@ -49,8 +52,9 @@ export class FrameReader {
       if (this.header === null) {
         if (this.length < this.headerLength) return;
         const h = JSON.parse(this.take(this.headerLength).toString('utf8')) as Header;
-        if (!h || (h.protocol !== 9 && h.protocol !== 10) || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
-          || !['world', 'frame', 'water', 'temperature', 'wind', 'checkpoint', 'error'].includes(h.kind)) throw new Error('Invalid native protocol header.');
+        if (!h || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
+          || (h.kind === 'moisture' ? h.protocol !== 11 : (h.protocol !== 9 && h.protocol !== 10)
+            || !['world', 'frame', 'water', 'temperature', 'wind', 'checkpoint', 'error'].includes(h.kind))) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
       if (this.length < this.header.byteLength) return;
@@ -323,6 +327,9 @@ export class NativeController {
   private count = 0;
   private tick = 0;
   private waterStep = 0;
+  private moistureSeconds = 0;
+  private moistureInitialized = false;
+  private moistureBudget: MoistureBudget | undefined;
   private sequence = 0;
   private prepared: { epoch: number; count: number; waterStep: number } | null = null;
   private preparedWorld: World | null = null;
@@ -371,6 +378,8 @@ export class NativeController {
     this.activeWorld = this.preparedWorld; this.preparedWorld = null;
     this.epoch = epoch; this.count = this.prepared.count; this.tick = 0;
     this.waterStep = this.prepared.waterStep; this.prepared = null;
+    this.moistureSeconds = 0; this.moistureInitialized = false;
+    this.moistureBudget = undefined;
   }
   cancel(): void { this.candidate?.close(); this.candidate = null; this.prepared = null; this.preparedWorld = null; }
   resolvedInitialWorld(epoch: number): World {
@@ -408,8 +417,25 @@ export class NativeController {
     try { return decodeSeasonalWind(packet, this.count, epoch); }
     catch (error) { session.close(); throw error; }
   }
+  async seasonalMoisture(epoch: number, seconds: number): Promise<MoistureFrame> {
+    if (!this.active || !this.activeWorld || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    if (!Number.isSafeInteger(seconds) || seconds < 0 || seconds > 86400
+      || this.moistureSeconds + seconds > MOISTURE_MAX_SECONDS) throw new Error('Invalid seasonal-water interval or ten-year clock limit.');
+    if (!this.moistureInitialized && seconds !== 0) throw new Error('Initialize seasonal water before advancing its clock.');
+    if (this.waterStep > 0) throw new Error('Regenerate before starting seasonal water after manual water input.');
+    const session = this.active, origin = this.activeWorld;
+    const packet = await session.request({ command: 'seasonalMoisture', seconds });
+    if (this.active !== session || this.epoch !== epoch) throw new Error('Stale seasonal-water response.');
+    try {
+      const frame = decodeSeasonalMoisture(packet, origin, epoch, this.moistureSeconds + seconds, seconds, this.moistureBudget);
+      this.moistureSeconds = frame.elapsedSeconds; this.moistureInitialized = true;
+      this.moistureBudget = frame.budget;
+      return frame;
+    } catch (error) { session.close(); throw error; }
+  }
   async prescribeWater(epoch: number, region: number, mode: PrescribedWaterMode): Promise<WaterFrame> {
     if (!this.active || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    if (this.moistureInitialized) throw new Error('Regenerate before switching seasonal water to the separate manual inventory.');
     if (!Number.isSafeInteger(region) || region < 0 || region >= this.count
       || (mode !== 'oneCubicKilometer' && mode !== 'fillToSpill')) throw new Error('Invalid prescribed-water request.');
     const session = this.active;

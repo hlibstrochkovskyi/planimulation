@@ -12,8 +12,11 @@ import { buildWaterSurface, pickSurface } from './water-surface';
 import { summarizeBasins } from '../core/basins';
 import type { TemperatureNormals } from '../core/seasonal-temperature';
 import type { WindNormals } from '../core/seasonal-wind';
+import type { MoistureFrame } from '../shared/seasonal-moisture';
+import { isMoistureLayer, moistureLayerColor, moistureLayerValue } from './seasonal-moisture';
+import type { MoistureLayer } from './seasonal-moisture';
 
-export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill' | 'temperature' | 'windSpeed';
+export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill' | 'temperature' | 'windSpeed' | MoistureLayer;
 export type ViewMode = 'flat' | 'globe';
 
 export class SurfaceMap {
@@ -79,6 +82,7 @@ export class SurfaceMap {
   private waterFrame: WaterFrame | null = null;
   private temperatureNormals: TemperatureNormals | null = null;
   private windNormals: WindNormals | null = null;
+  private moistureFrame: MoistureFrame | null = null;
   private temperatureMonth = 3;
   private temperatureRange = { minimum: -40, maximum: 40 };
   private windMaximum = 10;
@@ -182,6 +186,8 @@ export class SurfaceMap {
     const next = { flat: this.makeView(pair.flat), globe: this.makeView(pair.globe) };
     this.releaseViews(); this.views = next;
     this.scene.add(next.flat, next.globe); this.world = world; this.waterFrame = null; this.temperatureNormals = null; this.windNormals = null;
+    this.moistureFrame = null;
+    delete this.canvas.dataset.moistureSeconds;
     this.appliedExaggeration = NaN;
     this.terrainRange = summarizeTerrain(world.surface, world.terrain);
     this.maximumDepth = world.water.depthMeters.reduce((max, d) => Math.max(max, d), 0);
@@ -257,6 +263,16 @@ export class SurfaceMap {
     }
     this.refreshField();
   }
+  setMoistureFrame(frame: MoistureFrame | null): void {
+    if (frame && (!this.world || Object.values(frame.stocks).some((field) => field.length !== this.world!.stats.regionCount))) {
+      throw new Error('Seasonal-water display does not match this world.');
+    }
+    this.moistureFrame = frame;
+    if (frame) this.canvas.dataset.moistureSeconds = String(frame.elapsedSeconds);
+    else delete this.canvas.dataset.moistureSeconds;
+    // Only update the scalar texture. Bed, coasts, and water geometry stay fixed.
+    if (isMoistureLayer(this.layer)) this.refreshField();
+  }
   setTemperatureMonth(month: number): void {
     if (!Number.isInteger(month) || month < 0 || month >= 12) throw new Error('Invalid seasonal month.');
     this.temperatureMonth = month; this.canvas.dataset.temperatureMonth = String(month); this.canvas.dataset.climateMonth = String(month);
@@ -295,7 +311,9 @@ export class SurfaceMap {
     const depth = this.waterFrame?.depthMeters ?? w.water.depthMeters;
     const bodyIds = this.waterFrame?.bodyIds ?? w.water.bodyIds;
     for (let id = 0; id < w.stats.regionCount; id++) {
-      this.values[id] = this.layer === 'plates' || this.layer === 'boundaries' ? w.tectonics.owners[id]
+      this.values[id] = isMoistureLayer(this.layer) ? (this.moistureFrame
+        ? moistureLayerColor(moistureLayerValue(this.moistureFrame, this.layer, id, w.surface.areasSquareMeters[id]), this.layer) : 0)
+        : this.layer === 'plates' || this.layer === 'boundaries' ? w.tectonics.owners[id]
         : this.layer === 'temperature' ? (this.temperatureNormals
           ? (this.temperatureNormals.monthlyTemperatureCelsius[this.temperatureMonth][id] - this.temperatureRange.minimum)
             / Math.max(1, this.temperatureRange.maximum - this.temperatureRange.minimum) : 0.5)

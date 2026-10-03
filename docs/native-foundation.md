@@ -12,6 +12,8 @@ This retains the existing desktop controls and testing investment while putting 
 
 Current limits: 12–40,962 regions, scalar diagnostic field, single-threaded numerical stepping, no historical replay or general dynamic-state persistence. A bounded prescribed-water-only checkpoint is available separately. Both view geometries are retained in GPU memory for immediate switching. Memory and performance at hundreds of thousands or millions of regions are not validated.
 
+October 3 extension: [seasonal-water desktop playback](seasonal-water-desktop.md) adds lazy initialization and six-stock field/transfer snapshots in protocol 11, plus bounded run/pause and budget inspection. Initial world layouts and earlier frame schemas remain unchanged. The kernel has complete headless checkpoint replay, but desktop seasonal save/load is not yet available. New timing evidence is recorded in that extension; it does not replace the historical surface-only measurements below.
+
 ## Ownership and publication
 
 ```text

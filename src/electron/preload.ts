@@ -11,6 +11,7 @@ const api: DesktopAPI = {
   advance: (epoch, steps) => ipcRenderer.invoke('world:advance', epoch, steps),
   seasonalTemperature: (epoch) => ipcRenderer.invoke('world:seasonalTemperature', epoch),
   seasonalWind: (epoch) => ipcRenderer.invoke('world:seasonalWind', epoch),
+  seasonalMoisture: (epoch, seconds) => ipcRenderer.invoke('world:seasonalMoisture', epoch, seconds),
   prescribeWater: (epoch, region, mode) => ipcRenderer.invoke('world:prescribeWater', epoch, region, mode),
   openWaterCheckpoint: () => ipcRenderer.invoke('water:openCheckpoint'),
   saveWaterCheckpoint: (epoch) => ipcRenderer.invoke('water:saveCheckpoint', epoch),

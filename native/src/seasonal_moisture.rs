@@ -309,6 +309,16 @@ pub struct Step {
 }
 
 impl Model {
+    /// Read-only resolved configuration for adapters; display frames are not checkpoints.
+    pub fn settings(&self) -> Settings {
+        self.origin.settings
+    }
+    pub fn temperature_settings(&self) -> seasonal_temperature::Settings {
+        self.origin.temperature_settings
+    }
+    pub fn wind_settings(&self) -> seasonal_wind::Settings {
+        self.origin.wind_settings
+    }
     /// Requires an unmodified generated world. Custom forcing/initial fields
     /// are not encoded by the recipe-based checkpoint and are unsupported.
     pub fn from_world(

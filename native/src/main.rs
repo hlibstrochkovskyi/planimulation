@@ -2,6 +2,7 @@ use planimulation_core::{
     Recipe, World,
     exact_initial_accounting::exact_units,
     prescribed_water_inventory::{Checkpoint, PrescribedWaterInventory},
+    seasonal_moisture::{Model as MoistureModel, State as MoistureState},
     seasonal_temperature::{Normals, Settings},
     seasonal_wind::{Normals as WindNormals, Settings as WindSettings},
     wire,
@@ -20,6 +21,7 @@ enum Command {
     RestoreWater { checkpoint: Box<Checkpoint> },
     SeasonalTemperature,
     SeasonalWind,
+    SeasonalMoisture { seconds: u32 },
 }
 
 const MAX_COMMAND_BYTES: u64 = 8 * 1024 * 1024;
@@ -36,6 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut output = io::stdout().lock();
     let mut world: Option<World> = None;
     let mut water_state: Option<PrescribedWaterInventory> = None;
+    let mut moisture_state: Option<(MoistureModel, MoistureState)> = None;
     loop {
         let mut line = Vec::new();
         let count = input
@@ -56,6 +59,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     wire::snapshot(&mut output, &next).map_err(|e| e.to_string())?;
                     world = Some(next);
                     water_state = None;
+                    moisture_state = None;
                 }
                 Command::Advance { steps } => {
                     let w = world.as_mut().ok_or("Generate a world first.")?;
@@ -76,7 +80,47 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     )?;
                     wire::seasonal_wind(&mut output, &normals).map_err(|e| e.to_string())?;
                 }
+                Command::SeasonalMoisture { seconds } => {
+                    let w = world.as_ref().ok_or("Generate a world first.")?;
+                    if seconds > 86400 {
+                        return Err("Seasonal water accepts 0–86400 seconds per request.".into());
+                    }
+                    if let Some((model, state)) = &mut moisture_state {
+                        let step = if seconds == 0 {
+                            None
+                        } else {
+                            Some(model.advance(state, seconds)?)
+                        };
+                        wire::seasonal_moisture(&mut output, model, state, step.as_ref(), seconds)?;
+                    } else {
+                        if water_state
+                            .as_ref()
+                            .is_some_and(|state| state.checkpoint().step > 0)
+                        {
+                            return Err("Regenerate before starting seasonal water after manual water input.".into());
+                        }
+                        if seconds != 0 {
+                            return Err(
+                                "Initialize seasonal water before advancing its clock.".into()
+                            );
+                        }
+                        let model = MoistureModel::from_world(
+                            w,
+                            Default::default(),
+                            Default::default(),
+                            Default::default(),
+                        )?;
+                        let state = model.initial_state();
+                        wire::seasonal_moisture(&mut output, &model, &state, None, 0)
+                            .map_err(|e| e.to_string())?;
+                        water_state = None;
+                        moisture_state = Some((model, state));
+                    }
+                }
                 Command::PrescribeWater { region, mode } => {
+                    if moisture_state.is_some() {
+                        return Err("Regenerate before switching seasonal water to the separate manual inventory.".into());
+                    }
                     let w = world.as_ref().ok_or("Generate a world first.")?;
                     if region >= w.surface.areas.len() {
                         return Err("Runoff source is outside the generated world.".into());
@@ -116,6 +160,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .map_err(|e| e.to_string())?;
                 }
                 Command::ExportWater => {
+                    if moisture_state.is_some() {
+                        return Err("A manual water checkpoint does not contain seasonal water; regenerate to use that inventory.".into());
+                    }
                     let w = world.as_ref().ok_or("Generate a world first.")?;
                     if water_state.is_none() {
                         water_state = Some(PrescribedWaterInventory::from_world(w)?);
@@ -129,6 +176,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .map_err(|e| e.to_string())?;
                 }
                 Command::RestoreWater { checkpoint } => {
+                    if moisture_state.is_some() {
+                        return Err("Restore manual water in a separate generated session.".into());
+                    }
                     let w = world.as_ref().ok_or("Generate a world first.")?;
                     let restored = PrescribedWaterInventory::restore_on_world(*checkpoint, w)?;
                     let display = restored.display(w)?;

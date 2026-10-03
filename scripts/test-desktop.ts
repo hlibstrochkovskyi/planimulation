@@ -51,7 +51,7 @@ try {
   }, { ...DEFAULT_RECIPE });
   assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'inspectWaterBudget', 'openRecipe', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveWaterCheckpoint', 'seasonalTemperature', 'seasonalWind']);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'inspectWaterBudget', 'openRecipe', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalTemperature', 'seasonalWind']);
   await expect(page.locator('[data-layer="temperature"]')).toBeEnabled();
   await expect(page.locator('#temperature-month')).toBeEnabled();
   await page.locator('[data-layer="temperature"]').click();
@@ -494,6 +494,7 @@ try {
   await expect(page.locator('#water-budget-details')).toContainText('0 units');
   await expect(page.locator('#water-summary')).toContainText('manual input');
   await expect(page.locator('#selection-details')).toContainText('Displayed prescribed-water depth');
+  await expect(page.locator('#moisture-start')).toBeDisabled();
   await page.locator('[data-layer="surface"]').click();
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
   await page.screenshot({ path: executablePath ? 'artifacts/spill-desktop-packaged.png' : 'artifacts/spill-desktop.png' });
@@ -550,6 +551,93 @@ try {
   await page.locator('#generate').click();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
   await canvas.click();
+  // Use the real native calculation, bridge, GPU fields, and inspector. Seasonal
+  // playback must not mutate the original geography or manual inventory.
+  await expect(page.locator('#moisture-start')).toBeEnabled();
+  await expect(page.locator('[data-layer="vaporWater"]')).toBeDisabled();
+  await page.locator('#moisture-start').click();
+  await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', '0');
+  await expect(page.locator('#moisture-budget-details')).toContainText('Initial mobile partition');
+  await expect(page.locator('#moisture-selection-details')).toContainText('Soil water');
+  await expect(page.locator('#water-add')).toBeDisabled();
+  await expect(page.locator('#save-water')).toBeDisabled();
+  await expect(page.locator('#water-budget-refresh')).toBeDisabled();
+  await expect(page.locator('#play')).toBeDisabled();
+  await page.locator('[data-layer="vaporWater"]').click();
+  await expect(page.locator('#legend-title')).toContainText('fixed logarithmic scale');
+  await expect(page.locator('#legend-high')).toHaveText('≥ 60 mm WE');
+  const initialVaporImage = await canvas.screenshot();
+  await page.locator('#moisture-interval').selectOption('3600');
+  await page.locator('#moisture-step').click();
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', '3600');
+  await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
+  await expect(page.locator('#moisture-step-note')).toContainText('Last interval 1 h');
+  await page.locator('#moisture-interval').selectOption('86400');
+  await page.locator('#moisture-step').click();
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', '90000');
+  await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
+  const seasonalDetails = await page.locator('#moisture-selection-details').innerText();
+  const seasonalBudget = await page.locator('#moisture-budget-details').innerText();
+  assert.notDeepEqual(await canvas.screenshot(), initialVaporImage, 'Vapor texture updates must change the rendered map, not just inspector values.');
+  await page.getByRole('button', { name: 'Globe', exact: true }).click();
+  await page.locator('[data-layer="terminalWater"]').click();
+  await expect(page.locator('#legend-title')).toContainText('not lake depth');
+  await expect(page.locator('#moisture-selection-details')).toHaveText(seasonalDetails, { useInnerText: true });
+  await expect(page.locator('#moisture-budget-details')).toHaveText(seasonalBudget, { useInnerText: true });
+  await page.locator('#temperature-month').selectOption('9');
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', '90000');
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
+  await canvas.screenshot({ path: executablePath ? 'artifacts/seasonal-water-globe-packaged.png' : 'artifacts/seasonal-water-globe.png' });
+  await page.getByRole('button', { name: '2D map', exact: true }).click();
+  await page.locator('[data-layer="precipitation"]').click();
+  await expect(page.locator('#legend-high')).toHaveText('≥ 20 mm/day');
+  const beforePlay = Number(await canvas.getAttribute('data-moisture-seconds'));
+  await page.locator('#moisture-play').click();
+  await expect(canvas).not.toHaveAttribute('data-moisture-seconds', String(beforePlay));
+  await page.getByRole('button', { name: 'Pause seasonal water', exact: true }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
+  const pausedTime = await canvas.getAttribute('data-moisture-seconds');
+  await page.waitForTimeout(150);
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', pausedTime!);
+  // A pending old-world step is kept when replacement generation is canceled.
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>('#moisture-play')!.click();
+    document.querySelector<HTMLInputElement>('#seed')!.value = 'canceled-seasonal-replacement';
+    document.querySelector<HTMLFormElement>('#recipe-form')!.requestSubmit();
+    document.querySelector<HTMLButtonElement>('#cancel')!.click();
+  });
+  await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
+  const seasonalSeconds = Number(await canvas.getAttribute('data-moisture-seconds'));
+  assert.equal(seasonalSeconds, Number(pausedTime) + 86400);
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
+  const seasonalReference = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
+  try {
+    const initial = await seasonalReference.generate(DEFAULT_RECIPE); seasonalReference.accept(initial.epoch);
+    await seasonalReference.seasonalMoisture(initial.epoch, 0);
+    let expected = await seasonalReference.seasonalMoisture(initial.epoch, 3600);
+    while (expected.elapsedSeconds < seasonalSeconds) expected = await seasonalReference.seasonalMoisture(initial.epoch, 86400);
+    const id = Number((await page.locator('#moisture-selection-title').innerText()).match(/Region (\d+)/)![1]);
+    const actual = await page.locator('#moisture-selection-details').evaluate((dl) => {
+      const terms = Array.from(dl.querySelectorAll('dt')), descriptions = Array.from(dl.querySelectorAll('dd'));
+      return Object.fromEntries(terms.map((term, i) => [term.textContent, descriptions[i].textContent]));
+    });
+    const format = new Intl.NumberFormat('en', { maximumSignificantDigits: 6 });
+    for (const [name, key] of [['Local liquid', 'surfaceKilograms'], ['Snow water equivalent', 'snowKilograms'],
+      ['Soil water', 'soilKilograms'], ['Runoff in transit', 'pendingRunoffKilograms'],
+      ['Terminal water', 'terminalWaterKilograms'], ['Atmospheric vapor', 'vaporKilograms']] as const) {
+      assert.equal(actual[name], `${format.format(expected.stocks[key][id] / initial.world.surface.areasSquareMeters[id])} mm WE`);
+    }
+  } finally { seasonalReference.close(); }
+  await page.locator('[data-layer="vaporWater"]').click();
+  await canvas.screenshot({ path: executablePath ? 'artifacts/seasonal-water-map-packaged.png' : 'artifacts/seasonal-water-map.png' });
+  await page.locator('#seed').fill(DEFAULT_RECIPE.seed);
+  await page.locator('#generate').click();
+  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
+  await expect(page.locator('[data-layer="vaporWater"]')).toBeDisabled();
+  await expect(page.locator('#moisture-time')).toContainText('Not initialized');
+  await expect(page.locator('#moisture-budget-details')).toBeEmpty();
   await page.locator('[data-layer="surface"]').click();
   await mkdir('artifacts', { recursive: true });
   const screenshot = executablePath ? 'artifacts/surface-desktop-packaged.png' : 'artifacts/surface-desktop.png';
