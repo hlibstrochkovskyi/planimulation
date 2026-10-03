@@ -8,6 +8,8 @@ The application currently includes a desktop surface laboratory, static plate ki
 
 ## Documentation
 
+A native [moisture-transport kernel and headless report](docs/moisture-transport.md) now advance prescribed atmospheric column stocks with the seasonal wind and track their mass budget. Evaporation, precipitation, and desktop moisture playback are not implemented yet.
+
 | Document | Contents |
 | --- | --- |
 | [DESIGN.md](DESIGN.md) | Vision, world laws, future civilization mechanics, and scope |
@@ -24,6 +26,7 @@ The application currently includes a desktop surface laboratory, static plate ki
 | [Terrain-preparation study](docs/terrain-preparation-study.md) | Reproducible 12-seed, five-resolution sensitivity measurements and model limits |
 | [Seasonal temperature normals](docs/seasonal-temperature.md) | Derived monthly temperatures, assumptions, headless report, validation, and limits |
 | [Seasonal surface-wind normals](docs/seasonal-wind.md) | Prescribed monthly wind vectors and map layer, assumptions, headless report, and limits |
+| [Moisture transport](docs/moisture-transport.md) | Conservative native column-water transport, seasonal headless runs, numerical checks, and coupling limits |
 | [Initial water](docs/water.md) | Coverage/volume fitting, connected water bodies, inventory accounting, analytical layers, and validation |
 | [Water-surface display](docs/water-surface.md) | Separate globe water mesh, shoreline approximation, joint exaggeration bounds, and picking |
 | [Drainage structure](docs/drainage.md) | Bed receivers, flat routing, terminal catchments, and contributing land-area accounting |

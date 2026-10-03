@@ -4,6 +4,8 @@ Status reviewed October 3, 2026: desktop milestones A, native/GPU foundation, B1
 
 The [manual prescribed-water desktop view](prescribed-water-desktop.md) has derived regional depth/body fields, flat/globe display, exact water-only checkpoint export/import, budget inspection, and explicit refusal for unsupported topology. Run/pause needs an explicit input sequence, not an invented climate clock. General [versioned water accounting](water-accounting-contract.md) remains a gate for arbitrary simultaneous forcing. [C3i](multi-entry-network.md) supplies a bounded explicit multiple-entry policy, [C3j](initial-water-inventory.md) maps initial water, [C3k](seeded-network.md) advances one small world with a separate initial ledger, [C3l](expanded-seeded-network.md) conditionally advances 10,242-region worlds, [C3m](exact-limit-commit.md) corrects one exact-threshold rounding failure, and [C3n](shared-storage-index.md) removes duplicated curves for bounded generated runs. [C3o](repeated-forcing-probe.md) finds eight atomic event-budget rejections in one 20-seed repeated-forcing sweep and seven level-representation rejections in a smaller-input sweep. [C3p](resolution-aware-levels.md) resolves all seven smaller-input rejections in that fixed sample with an opt-in version, while leaving the eight large-input event-budget rejections unchanged. [C3q](event-budget-roundoff.md) shows why an adjacent-float stock nudge cannot resolve a retained event witness. Laboratory test counts do not substitute for the accounting gate. See [C3h's findings and ordering](spill-readiness.md).
 
+Climate status: the [temperature](seasonal-temperature.md) and [wind](seasonal-wind.md) monthly normals are implemented in native reports and both desktop projections. [Conservative moisture transport](moisture-transport.md) adds a reusable native kernel and bounded seasonal headless runs with artificial starting column stocks. Evaporation, precipitation, coupled surface/atmosphere accounting, and timed desktop climate remain open; milestone D is incomplete.
+
 ## 1. Selected foundation stack
 
 The application uses Electron with a TypeScript interface and Three.js/WebGL 2 for both the flat atlas and globe. An independent Rust executable owns geometry, generation, and the diagnostic transport state. A Node.js headless adapter uses the same executable. Dependencies are recorded in npm and Cargo lockfiles.
@@ -99,6 +101,8 @@ Prescribed rain at this stage is an experimental input. Climate-derived river di
 
 The first [seasonal-temperature increment](seasonal-temperature.md) derives twelve static monthly normals from latitude, final initial elevation, and initial water coverage. A separate [surface-wind increment](seasonal-wind.md) adds prescribed seasonal tangent vectors. Both have headless reports and shared desktop map/globe display, but no evolving climate state, moisture, river forcing, or water-budget coupling. They are only early parts of D and do not satisfy D's deliverable or acceptance criteria below.
 
+The subsequent [moisture-transport increment](moisture-transport.md) advances an explicit column-water stock using shared barycentric-dual boundary fluxes and outgoing-rate substeps. Its generated-world seasonal report includes cumulative conservation checks, smaller-step comparisons, and an eighteen-case seed/resolution/radius ensemble. Analytic rigid-rotation controls cover seam continuity, uniform-state preservation, and refinement behavior. There is no evaporation, precipitation, surface-water exchange, dynamic climate checkpoint, or desktop moisture playback. Next implement explicit source/recipient ownership and bounded phase exchange before interpreting the column field as a moisture climatology or supplying rivers.
+
 Deliverable: run, pause, and observe several years; rivers receive computed water inputs.
 
 Work includes seasonal heating, thermal memory, a tangent wind field, evaporation, moisture transport, precipitation, snow, soil and simplified groundwater stores, runoff, and lakes. Initial state preparation has a criterion and an iteration limit. Introduce coherent weather disturbances after establishing the baseline seasonal behavior.
@@ -136,6 +140,8 @@ Do not silently resume incompatible versions. Provide an explicit migration or a
 History snapshots and full rewind follow reliable checkpoints. An exported image is not a state save.
 
 ## 10. Quality, performance, and the next layer
+
+The current native climate scope also includes seasonal temperature/wind normals and the bounded source-free moisture-transport kernel described in milestone D. These increments do not resolve the earlier reservoir experiments' outstanding gates or complete the natural water cycle.
 
 Numerical tolerances and performance budgets remain open until implementation exists. During milestone A, benchmark the target device, choose a baseline resolution, and record acceptable generation time, UI responsiveness, and memory. Do not promise millions of regions or millennia per second without measurements.
 

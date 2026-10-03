@@ -1,6 +1,6 @@
 # Prescribed seasonal surface-wind normals
 
-`seasonal-wind-1` is a read-only monthly surface-wind field on the generated sphere. It supplies an eastward and a northward component in m/s for every region and month. The desktop shows resultant speed on both projections and the components in the inspector. A native headless report uses the same calculation. No air or moisture is moved by this model yet.
+`seasonal-wind-1` is a read-only monthly surface-wind field on the generated sphere. It supplies an eastward and a northward component in m/s for every region and month. The desktop shows resultant speed on both projections and the components in the inspector. A native headless report uses the same calculation. This wind derivation itself moves no air or moisture. A separate [conservative moisture-transport kernel](moisture-transport.md) now uses its prescribed monthly field in bounded headless column-water runs, without surface exchange or precipitation.
 
 ## Rationale and definition
 
@@ -15,7 +15,7 @@ Day zero, 365-day circular orbit, axial tilt, and twelve month bins match [`seas
 
 The meridional knot values are multiplied by the sign of `φ − 0.5 δ`; both components are multiplied by `max(cos φ, 0)` so wind vanishes smoothly at a geographic pole. Daily vectors are averaged component-wise into each month; the displayed speed is the norm of that monthly mean vector, not the mean of daily speeds. A local east/north vector can be converted to a 3D tangent vector without using map longitude, avoiding a seam discontinuity. The field consumes no RNG stream and does not modify the generated world or its fingerprint.
 
-The displacement of all three belts with the ITCZ is a simplification. There is no rotation-period parameter, Coriolis calculation, pressure field, vertical motion, atmospheric mass or momentum conservation, topographic deflection, land/sea breeze, monsoon, or weather. A belt may cross a coast or a mountain unchanged. The field must not be interpreted as an observed or dynamically predicted wind map. Later moisture transport must define **shared-edge mass fluxes and a complete water ledger**; this velocity field alone creates no rain shadow.
+The displacement of all three belts with the ITCZ is a simplification. There is no rotation-period parameter, Coriolis calculation, pressure field, vertical motion, atmospheric mass or momentum conservation, topographic deflection, land/sea breeze, monsoon, or weather. A belt may cross a coast or a mountain unchanged. The field must not be interpreted as an observed or dynamically predicted wind map. The separate transport kernel defines shared-edge column-water fluxes and a source-free mass ledger, but coupled evaporation/precipitation accounting remains open. This velocity field alone creates no rain shadow.
 
 ## Reproduce and validate
 

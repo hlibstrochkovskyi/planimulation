@@ -4,6 +4,8 @@ Initial proposal: September 19, 2026. The spherical surface, recipes, random str
 
 ## 1. One world, multiple views
 
+A separate [conservative moisture-transport increment](moisture-transport.md) now advances prescribed atmospheric column stocks in the native core and bounded headless seasonal runs. It does not yet couple generated surface water, precipitation, or the desktop climate display.
+
 Model a closed spherical surface from the outset. A flat map projects its data; a globe displays another view. A detailed local environment is outside the current scope.
 
 ```text
@@ -131,6 +133,8 @@ Terrain and drainage structure can precede climate, but river filling and ecolog
 4. Allocate water to snow, soil, surface storage, and groundwater.
 5. Route runoff and update lakes, evaporation, and slow vegetation state.
 6. Repeat seasonal cycles until a bounded settling criterion or preparation limit is reached.
+
+The [native moisture-transport kernel](moisture-transport.md) implements only the transport part of step 2, with shared spherical boundary fluxes, nonnegative column stocks, bounded substeps, and a headless prescribed-wind report. Its starting moisture is an explicit artificial input; evaporation, precipitation, and the remaining water-cycle stages are not implemented by it.
 
 Compare corresponding phases of successive years when evaluating settling, not neighboring days: the seasonal cycle must remain. Disable stochastic weather initially to diagnose the seasonal model, then enable it to examine stable statistics.
 
