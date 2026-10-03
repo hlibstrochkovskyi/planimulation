@@ -1,13 +1,13 @@
-//! Bounded exchange between finite surface columns and advected vapor columns.
-//! Fixed initial geography; no basin withdrawal, runoff, snow, or energy feedback.
+//! Bounded vapor exchange with typed liquid, snow, soil, and pending-runoff stocks.
+//! Fixed initial geography; no basin withdrawal, river routing, or energy feedback.
 use crate::{
     Recipe, World,
     moisture_transport::{Flow, Geometry, total_mass},
-    seasonal_temperature, seasonal_wind,
+    seasonal_temperature, seasonal_wind, surface_water,
 };
 use serde::{Deserialize, Serialize};
 
-pub const MODEL_VERSION: &str = "seasonal-moisture-1";
+pub const MODEL_VERSION: &str = "seasonal-moisture-2";
 pub const SECONDS_PER_DAY: u64 = 86400;
 pub const MAX_ELAPSED_SECONDS: u64 = 3650 * SECONDS_PER_DAY;
 pub const WATER_DENSITY_KILOGRAMS_PER_CUBIC_METER: f64 = 1000.;
@@ -24,6 +24,7 @@ pub struct Settings {
     pub precipitation_enabled: bool,
     pub max_coupled_step_seconds: u32,
     pub transport: crate::moisture_transport::Settings,
+    pub surface: surface_water::Settings,
 }
 
 impl Default for Settings {
@@ -37,6 +38,7 @@ impl Default for Settings {
             precipitation_enabled: true,
             max_coupled_step_seconds: 3600,
             transport: crate::moisture_transport::Settings::default(),
+            surface: surface_water::Settings::default(),
         }
     }
 }
@@ -44,6 +46,7 @@ impl Default for Settings {
 impl Settings {
     pub fn validate(self) -> Result<(), String> {
         self.transport.validate()?;
+        self.surface.validate()?;
         if !(60..=21600).contains(&self.max_coupled_step_seconds) {
             return Err("Coupled moisture step limit must be 60–21600 seconds.".into());
         }
@@ -194,12 +197,18 @@ pub struct Checkpoint {
     pub transport_model_version: String,
     pub temperature_model_version: String,
     pub wind_model_version: String,
+    pub surface_model_version: String,
     pub recipe: Recipe,
     pub settings: Settings,
     pub temperature_settings: seasonal_temperature::Settings,
     pub wind_settings: seasonal_wind::Settings,
     pub elapsed_seconds: u64,
     pub surface_kilograms: Vec<f64>,
+    pub snow_kilograms: Vec<f64>,
+    pub soil_kilograms: Vec<f64>,
+    pub pending_runoff_kilograms: Vec<f64>,
+    pub cumulative_surface_transfers: Vec<surface_water::Transfers>,
+    pub cumulative_surface_transfer_roundoff: Vec<[f64; 8]>,
     pub vapor_kilograms: Vec<f64>,
     pub cumulative_evaporation_kilograms: Vec<f64>,
     pub cumulative_precipitation_kilograms: Vec<f64>,
@@ -221,11 +230,30 @@ impl State {
     pub fn vapor_kilograms(&self) -> &[f64] {
         &self.0.vapor_kilograms
     }
+    pub fn snow_kilograms(&self) -> &[f64] {
+        &self.0.snow_kilograms
+    }
+    pub fn soil_kilograms(&self) -> &[f64] {
+        &self.0.soil_kilograms
+    }
+    pub fn pending_runoff_kilograms(&self) -> &[f64] {
+        &self.0.pending_runoff_kilograms
+    }
+    /// Each owned stock exactly once, for complete-state refinement comparisons.
+    pub fn owned_stocks(&self) -> impl Iterator<Item = &f64> {
+        self.surface_kilograms()
+            .iter()
+            .chain(self.snow_kilograms())
+            .chain(self.soil_kilograms())
+            .chain(self.pending_runoff_kilograms())
+            .chain(self.vapor_kilograms())
+    }
 }
 
 pub struct Model {
     origin: Checkpoint,
     areas: Vec<f64>,
+    is_land: Vec<bool>,
     initial_surface: Vec<f64>,
     initial_total: f64,
     temperatures: Vec<Vec<f64>>,
@@ -238,6 +266,10 @@ pub struct Model {
 pub struct Budget {
     pub initial_mobile_water_kilograms: f64,
     pub surface_kilograms: f64,
+    pub snow_kilograms: f64,
+    pub soil_kilograms: f64,
+    pub pending_runoff_kilograms: f64,
+    pub cumulative_surface_transfers: surface_water::Transfers,
     pub vapor_kilograms: f64,
     pub residual_kilograms: f64,
     pub cumulative_evaporation_kilograms: f64,
@@ -250,6 +282,7 @@ pub struct Budget {
 pub struct Step {
     pub evaporation_kilograms: Vec<f64>,
     pub precipitation_kilograms: Vec<f64>,
+    pub surface_transfers: Vec<surface_water::Transfers>,
     pub transport_substeps: usize,
     pub coupled_substeps: usize,
     pub maximum_observed_vapor_column_kilograms_per_square_meter: f64,
@@ -258,6 +291,8 @@ pub struct Step {
 }
 
 impl Model {
+    /// Requires an unmodified generated world. Custom forcing/initial fields
+    /// are not encoded by the recipe-based checkpoint and are unsupported.
     pub fn from_world(
         world: &World,
         settings: Settings,
@@ -319,17 +354,23 @@ impl Model {
             return Err("Initial mobile-water overflow.".into());
         }
         let origin = Checkpoint {
-            schema_version: 1,
+            schema_version: 2,
             model_version: MODEL_VERSION.into(),
             transport_model_version: crate::moisture_transport::MODEL_VERSION.into(),
             temperature_model_version: seasonal_temperature::MODEL_VERSION.into(),
             wind_model_version: seasonal_wind::MODEL_VERSION.into(),
+            surface_model_version: surface_water::MODEL_VERSION.into(),
             recipe: world.recipe.clone(),
             settings,
             temperature_settings,
             wind_settings,
             elapsed_seconds: 0,
             surface_kilograms: initial_surface.clone(),
+            snow_kilograms: vec![0.; n],
+            soil_kilograms: vec![0.; n],
+            pending_runoff_kilograms: vec![0.; n],
+            cumulative_surface_transfers: vec![surface_water::Transfers::default(); n],
+            cumulative_surface_transfer_roundoff: vec![[0.; 8]; n],
             vapor_kilograms: vec![0.; n],
             cumulative_evaporation_kilograms: vec![0.; n],
             cumulative_precipitation_kilograms: vec![0.; n],
@@ -337,6 +378,7 @@ impl Model {
         Ok(Self {
             origin,
             areas: world.surface.areas.clone(),
+            is_land: world.water.depth_meters.iter().map(|d| *d == 0.).collect(),
             initial_surface,
             initial_total,
             temperatures: normals.monthly_temperature_celsius,
@@ -350,11 +392,12 @@ impl Model {
     }
 
     pub fn restore(checkpoint: Checkpoint) -> Result<(Self, State), String> {
-        if checkpoint.schema_version != 1
+        if checkpoint.schema_version != 2
             || checkpoint.model_version != MODEL_VERSION
             || checkpoint.transport_model_version != crate::moisture_transport::MODEL_VERSION
             || checkpoint.temperature_model_version != seasonal_temperature::MODEL_VERSION
             || checkpoint.wind_model_version != seasonal_wind::MODEL_VERSION
+            || checkpoint.surface_model_version != surface_water::MODEL_VERSION
         {
             return Err("Unsupported seasonal-moisture checkpoint version.".into());
         }
@@ -376,6 +419,7 @@ impl Model {
             || cp.transport_model_version != origin.transport_model_version
             || cp.temperature_model_version != origin.temperature_model_version
             || cp.wind_model_version != origin.wind_model_version
+            || cp.surface_model_version != origin.surface_model_version
             || cp.recipe != origin.recipe
             || cp.settings != origin.settings
             || cp.temperature_settings != origin.temperature_settings
@@ -386,6 +430,9 @@ impl Model {
         }
         for values in [
             &cp.surface_kilograms,
+            &cp.snow_kilograms,
+            &cp.soil_kilograms,
+            &cp.pending_runoff_kilograms,
             &cp.vapor_kilograms,
             &cp.cumulative_evaporation_kilograms,
             &cp.cumulative_precipitation_kilograms,
@@ -395,6 +442,29 @@ impl Model {
                 return Err("Invalid seasonal-moisture checkpoint stock or ledger.".into());
             }
         }
+        if cp.cumulative_surface_transfers.len() != self.areas.len()
+            || cp.cumulative_surface_transfer_roundoff.len() != self.areas.len()
+            || cp
+                .cumulative_surface_transfers
+                .iter()
+                .any(|f| f.values().iter().any(|v| !v.is_finite() || *v < 0.))
+        {
+            return Err("Invalid surface-transfer ledger.".into());
+        }
+        for (totals, corrections) in cp
+            .cumulative_surface_transfers
+            .iter()
+            .zip(&cp.cumulative_surface_transfer_roundoff)
+        {
+            if totals
+                .values()
+                .into_iter()
+                .zip(corrections)
+                .any(|(total, c)| !c.is_finite() || c.abs() > 4. * f64::EPSILON * total.max(1.))
+            {
+                return Err("Invalid surface-transfer summation roundoff.".into());
+            }
+        }
         if cp.elapsed_seconds == 0
             && (cp.surface_kilograms != self.initial_surface
                 || cp
@@ -402,30 +472,89 @@ impl Model {
                     .iter()
                     .chain(&cp.cumulative_evaporation_kilograms)
                     .chain(&cp.cumulative_precipitation_kilograms)
-                    .any(|v| *v != 0.))
+                    .chain(&cp.snow_kilograms)
+                    .chain(&cp.soil_kilograms)
+                    .chain(&cp.pending_runoff_kilograms)
+                    .any(|v| *v != 0.)
+                || cp
+                    .cumulative_surface_transfers
+                    .iter()
+                    .any(|f| f.values().iter().any(|v| *v != 0.)))
         {
             return Err("Noninitial moisture stock at day zero.".into());
         }
+        if cp.elapsed_seconds == 0
+            && cp
+                .cumulative_surface_transfer_roundoff
+                .iter()
+                .flatten()
+                .any(|v| *v != 0.)
+        {
+            return Err("Noninitial surface-transfer roundoff at day zero.".into());
+        }
         let mut local_residual: f64 = 0.;
+        let mut local_witness = (0, 0);
         for i in 0..self.areas.len() {
-            let residual = (cp.surface_kilograms[i] - self.initial_surface[i])
-                + (cp.cumulative_evaporation_kilograms[i]
-                    - cp.cumulative_precipitation_kilograms[i]);
+            let stocks = surface_water::Stocks {
+                liquid: cp.surface_kilograms[i],
+                snow: cp.snow_kilograms[i],
+                soil: cp.soil_kilograms[i],
+                pending_runoff: cp.pending_runoff_kilograms[i],
+            };
+            stocks.validate(self.areas[i], self.is_land[i], cp.settings.surface)?;
+            let f = cp.cumulative_surface_transfers[i];
+            if !self.is_land[i]
+                && (f.infiltration != 0.
+                    || f.soil_evaporation != 0.
+                    || f.soil_drainage != 0.
+                    || f.liquid_runoff != 0.)
+            {
+                return Err("Land transfers recorded on a reference-water region.".into());
+            }
             let scale = self.initial_surface[i]
-                .max(cp.surface_kilograms[i])
+                .max(stocks.total())
                 .max(cp.cumulative_evaporation_kilograms[i])
                 .max(cp.cumulative_precipitation_kilograms[i])
+                .max(f.values().into_iter().fold(0., f64::max))
                 .max(1.);
-            local_residual = local_residual.max(residual.abs() / scale);
+            for (ledger, residual) in [
+                (stocks.liquid - self.initial_surface[i]) - f.rain - f.melt
+                    + f.liquid_evaporation
+                    + f.infiltration
+                    + f.liquid_runoff,
+                stocks.snow - (f.snowfall - f.melt),
+                stocks.soil - f.infiltration + f.soil_evaporation + f.soil_drainage,
+                stocks.pending_runoff - (f.liquid_runoff + f.soil_drainage),
+                cp.cumulative_evaporation_kilograms[i]
+                    - (f.liquid_evaporation + f.soil_evaporation),
+                cp.cumulative_precipitation_kilograms[i] - (f.rain + f.snowfall),
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                if !residual.is_finite() {
+                    return Err("Nonfinite typed water ledger.".into());
+                }
+                if residual.abs() / scale > local_residual {
+                    local_residual = residual.abs() / scale;
+                    local_witness = (i, ledger);
+                }
+            }
         }
         let surface = total_mass(&cp.surface_kilograms);
+        let snow = total_mass(&cp.snow_kilograms);
+        let soil = total_mass(&cp.soil_kilograms);
+        let runoff = total_mass(&cp.pending_runoff_kilograms);
         let vapor = total_mass(&cp.vapor_kilograms);
         let evaporation = total_mass(&cp.cumulative_evaporation_kilograms);
         let precipitation = total_mass(&cp.cumulative_precipitation_kilograms);
-        let residual = (surface - self.initial_total) + vapor;
+        let residual = total_mass(&[surface, snow, soil, runoff, vapor]) - self.initial_total;
         let vapor_residual = vapor - (evaporation - precipitation);
         if [
             surface,
+            snow,
+            soil,
+            runoff,
             vapor,
             evaporation,
             precipitation,
@@ -439,11 +568,23 @@ impl Model {
             || vapor_residual.abs() > 1e-12 * evaporation.max(precipitation).max(vapor).max(1.)
             || local_residual > 1e-12
         {
-            return Err("Seasonal-moisture stock or exchange ledger is inconsistent.".into());
+            return Err(format!(
+                "Seasonal-moisture stock or exchange ledger is inconsistent at second {}: global relative {}, local relative {} (region {}, ledger {}), vapor relative {}.",
+                cp.elapsed_seconds,
+                residual.abs() / self.initial_total.max(1.),
+                local_residual,
+                local_witness.0,
+                local_witness.1,
+                vapor_residual.abs() / evaporation.max(precipitation).max(vapor).max(1.)
+            ));
         }
         Ok(Budget {
             initial_mobile_water_kilograms: self.initial_total,
             surface_kilograms: surface,
+            snow_kilograms: snow,
+            soil_kilograms: soil,
+            pending_runoff_kilograms: runoff,
+            cumulative_surface_transfers: total_transfers(&cp.cumulative_surface_transfers),
             vapor_kilograms: vapor,
             residual_kilograms: residual,
             cumulative_evaporation_kilograms: evaporation,
@@ -470,6 +611,7 @@ impl Model {
         let n = self.areas.len();
         let mut evaporation = vec![0.; n];
         let mut precipitation = vec![0.; n];
+        let mut surface_transfers = vec![surface_water::Transfers::default(); n];
         let mut max_local_residual: f64 = 0.;
         let mut transport_substeps = 0;
         let mut coupled_substeps = 0;
@@ -485,6 +627,9 @@ impl Model {
                 settings.precipitation_enabled,
                 settings.precipitation_response_seconds,
             ),
+            (true, settings.surface.infiltration_response_seconds),
+            (true, settings.surface.liquid_runoff_response_seconds),
+            (true, settings.surface.soil_drainage_response_seconds),
         ] {
             if enabled {
                 coupled_limit = coupled_limit.min((tau / 6.).floor() as u64);
@@ -507,6 +652,8 @@ impl Model {
             } else {
                 0.
             };
+            let surface_response =
+                surface_water::Response::new(interval as f64 * 0.5, settings.surface)?;
             for phase in 0..2 {
                 if phase == 1 {
                     let transported = self.flows[month].advance(
@@ -518,27 +665,46 @@ impl Model {
                     transport_substeps += transported.budget.substeps;
                 }
                 for i in 0..n {
-                    let result = exchange_at_capacity(
-                        next.surface_kilograms[i],
-                        next.vapor_kilograms[i],
-                        self.capacities[month][i],
-                        if self.temperatures[month][i] > 0. {
-                            evaporation_fraction
-                        } else {
-                            0.
+                    let vapor = next.vapor_kilograms[i];
+                    let capacity = self.capacities[month][i];
+                    let potential_evaporation = (capacity - vapor).max(0.) * evaporation_fraction;
+                    let deposited = (vapor - capacity).max(0.) * precipitation_fraction;
+                    let result = surface_water::advance_prepared(
+                        surface_water::Stocks {
+                            liquid: next.surface_kilograms[i],
+                            snow: next.snow_kilograms[i],
+                            soil: next.soil_kilograms[i],
+                            pending_runoff: next.pending_runoff_kilograms[i],
                         },
-                        precipitation_fraction,
+                        self.areas[i],
+                        self.is_land[i],
+                        self.temperatures[month][i],
+                        deposited,
+                        potential_evaporation,
+                        &surface_response,
                     )?;
-                    next.surface_kilograms[i] = result.surface_kilograms;
-                    next.vapor_kilograms[i] = result.vapor_kilograms;
-                    next.cumulative_evaporation_kilograms[i] += result.evaporated_kilograms;
-                    next.cumulative_precipitation_kilograms[i] += result.precipitated_kilograms;
-                    evaporation[i] += result.evaporated_kilograms;
-                    precipitation[i] += result.precipitated_kilograms;
+                    let evaporated =
+                        result.transfers.liquid_evaporation + result.transfers.soil_evaporation;
+                    next.surface_kilograms[i] = result.stocks.liquid;
+                    next.snow_kilograms[i] = result.stocks.snow;
+                    next.soil_kilograms[i] = result.stocks.soil;
+                    next.pending_runoff_kilograms[i] = result.stocks.pending_runoff;
+                    next.vapor_kilograms[i] = (vapor - deposited) + evaporated;
+                    next.cumulative_surface_transfers[i].accumulate_compensated(
+                        result.transfers,
+                        &mut next.cumulative_surface_transfer_roundoff[i],
+                    );
+                    surface_transfers[i].accumulate(result.transfers);
+                    let totals = next.cumulative_surface_transfers[i];
+                    next.cumulative_evaporation_kilograms[i] =
+                        totals.liquid_evaporation + totals.soil_evaporation;
+                    next.cumulative_precipitation_kilograms[i] = totals.rain + totals.snowfall;
+                    evaporation[i] += evaporated;
+                    precipitation[i] += deposited;
                     max_local_residual = max_local_residual.max(result.residual_kilograms.abs());
                     if phase == 1 {
                         maximum_vapor_column =
-                            maximum_vapor_column.max(result.vapor_kilograms / self.areas[i]);
+                            maximum_vapor_column.max(next.vapor_kilograms[i] / self.areas[i]);
                     }
                 }
             }
@@ -550,6 +716,7 @@ impl Model {
         Ok(Step {
             evaporation_kilograms: evaporation,
             precipitation_kilograms: precipitation,
+            surface_transfers,
             transport_substeps,
             coupled_substeps,
             maximum_observed_vapor_column_kilograms_per_square_meter: maximum_vapor_column,
@@ -557,4 +724,12 @@ impl Model {
             budget,
         })
     }
+}
+
+fn total_transfers(transfers: &[surface_water::Transfers]) -> surface_water::Transfers {
+    let mut sums = [0.; 8];
+    for (i, sum) in sums.iter_mut().enumerate() {
+        *sum = total_mass(&transfers.iter().map(|f| f.values()[i]).collect::<Vec<_>>());
+    }
+    surface_water::Transfers::from_values(sums)
 }

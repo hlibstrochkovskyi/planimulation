@@ -1,4 +1,4 @@
-//! Reproducible finite surface/vapor exchange with checkpointed seasonal forcing.
+//! Reproducible typed water exchange with checkpointed seasonal forcing.
 use planimulation_core::{
     Recipe, World,
     moisture_transport::total_mass,
@@ -84,15 +84,8 @@ fn report(recipe: Recipe, days: usize) -> Result<Value, String> {
     let (refined, refinement) = run(&model, &world, days, 900)?;
     let scale = model.budget(&state)?.initial_mobile_water_kilograms.max(1.);
     let difference = state
-        .surface_kilograms()
-        .iter()
-        .chain(state.vapor_kilograms())
-        .zip(
-            refined
-                .surface_kilograms()
-                .iter()
-                .chain(refined.vapor_kilograms()),
-        )
+        .owned_stocks()
+        .zip(refined.owned_stocks())
         .map(|(a, b)| (a - b).abs())
         .sum::<f64>()
         / scale;
@@ -113,7 +106,7 @@ fn report(recipe: Recipe, days: usize) -> Result<Value, String> {
         }
     }
     Ok(json!({
-        "reportVersion": 1,
+        "reportVersion": 2,
         "days": days,
         "regionCount": world.surface.areas.len(),
         "baseline": baseline,
@@ -122,7 +115,7 @@ fn report(recipe: Recipe, days: usize) -> Result<Value, String> {
         "checkpointRoundTripExact": true,
         "checkpointContinuationChecked": days < 3650,
         "finalCheckpoint": checkpoint,
-        "scope": "Closed finite mobile-water partition on fixed initial geography, prescribed monthly temperature and wind, empirical exchange times and effective vapor depth. Precipitation is water-equivalent local deposition; no runoff, soil, snow, shoreline update, energy feedback, or desktop climate playback. Inactive deep water is excluded and never replenishes the mobile layer."
+        "scope": "Closed finite liquid/snow/soil/pending-runoff/vapor partition on fixed initial geography. Prescribed monthly temperature and wind, empirical temperature-index melt and soil bucket. Pending runoff is removed from local liquid/soil, retained in this checkpoint, and not routed or returned. No groundwater, energy feedback, changing shoreline, or desktop climate playback. Inactive deep water is excluded."
     }))
 }
 
@@ -159,11 +152,12 @@ fn ensemble() -> Result<Value, String> {
         }
     }
     Ok(json!({
-        "reportVersion": 1,
+        "reportVersion": 2,
         "modelVersion": planimulation_core::seasonal_moisture::MODEL_VERSION,
         "transportModelVersion": planimulation_core::moisture_transport::MODEL_VERSION,
         "temperatureModelVersion": seasonal_temperature::MODEL_VERSION,
         "windModelVersion": seasonal_wind::MODEL_VERSION,
+        "surfaceModelVersion": planimulation_core::surface_water::MODEL_VERSION,
         "settings": Settings::default(), "temperatureSettings": seasonal_temperature::Settings::default(), "windSettings": seasonal_wind::Settings::default(),
         "failureCount": failures, "samples": samples,
         "scope": "18 generated one-year cases plus one ten-year case, each with a 15-minute repeat; default internal coupled steps are at most one hour. All failures retained. Numerical checks, not climate calibration or generated-geography spatial convergence."
@@ -194,6 +188,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut out = std::io::stdout().lock();
     serde_json::to_writer_pretty(&mut out, &output)?;
     writeln!(out)?;
+    if output["failureCount"]
+        .as_u64()
+        .is_some_and(|count| count > 0)
+    {
+        return Err("Seasonal ensemble retained rejected cases; inspect its JSON report.".into());
+    }
     Ok(())
 }
 
@@ -219,7 +219,7 @@ mod tests {
         );
         assert_eq!(
             value["finalCheckpoint"]["modelVersion"],
-            "seasonal-moisture-1"
+            "seasonal-moisture-2"
         );
     }
 }

@@ -187,13 +187,7 @@ fn a_generated_year_conserves_both_stocks_and_local_exchange_ledgers() {
                 dry_precipitation += rain;
             }
         }
-        assert!(
-            state
-                .surface_kilograms()
-                .iter()
-                .chain(state.vapor_kilograms())
-                .all(|v| v.is_finite() && *v >= 0.)
-        );
+        assert!(state.owned_stocks().all(|v| v.is_finite() && *v >= 0.));
         assert!(
             step.budget.residual_kilograms.abs() / step.budget.initial_mobile_water_kilograms
                 < 1e-12
@@ -204,6 +198,12 @@ fn a_generated_year_conserves_both_stocks_and_local_exchange_ledgers() {
     let budget = model.budget(&state).unwrap();
     assert!(budget.cumulative_evaporation_kilograms > 0.);
     assert!(budget.cumulative_precipitation_kilograms > 0.);
+    assert!(budget.cumulative_surface_transfers.snowfall > 0.);
+    assert!(budget.cumulative_surface_transfers.melt > 0.);
+    assert!(budget.cumulative_surface_transfers.infiltration > 0.);
+    assert!(budget.cumulative_surface_transfers.soil_evaporation > 0.);
+    assert!(budget.pending_runoff_kilograms > 0.);
+    assert!(budget.soil_kilograms > 0.);
     assert_eq!(state.elapsed_seconds(), 365 * 86400);
 }
 
@@ -215,6 +215,14 @@ fn complete_checkpoint_replays_across_month_and_year_boundaries() {
         model.advance(&mut uninterrupted, 86400).unwrap();
     }
     let bytes = serde_json::to_vec(&uninterrupted.checkpoint()).unwrap();
+    assert!(
+        uninterrupted
+            .checkpoint()
+            .cumulative_surface_transfer_roundoff
+            .iter()
+            .flatten()
+            .any(|v| *v != 0.)
+    );
     let cp: Checkpoint = serde_json::from_slice(&bytes).unwrap();
     let (restored_model, mut restored) = Model::restore(cp).unwrap();
     for _ in 0..15 {
@@ -321,15 +329,8 @@ fn smaller_coupled_steps_converge_without_hiding_a_mobile_water_deficit() {
         let state = run(seconds);
         errors.push(
             state
-                .surface_kilograms()
-                .iter()
-                .chain(state.vapor_kilograms())
-                .zip(
-                    reference
-                        .surface_kilograms()
-                        .iter()
-                        .chain(reference.vapor_kilograms()),
-                )
+                .owned_stocks()
+                .zip(reference.owned_stocks())
                 .map(|(a, b)| (a - b).abs())
                 .sum::<f64>(),
         );
@@ -383,4 +384,110 @@ fn batching_fixed_coupled_ticks_does_not_change_the_physical_state() {
         }
     }
     assert_eq!(daily, hourly);
+}
+
+#[test]
+fn typed_checkpoint_rejects_wrong_phase_ownership_and_inconsistent_transfer_records() {
+    let world = world();
+    let model = model(Settings::default());
+    let mut state = model.initial_state();
+    for _ in 0..365 {
+        model.advance(&mut state, 86400).unwrap();
+    }
+    let original = state.checkpoint();
+    let mut cases = Vec::new();
+    let mut cp = original.clone();
+    cp.schema_version = 1;
+    cp.model_version = "seasonal-moisture-1".into();
+    cases.push(cp);
+    let mut cp = original.clone();
+    cp.surface_model_version = "future".into();
+    cases.push(cp);
+    let mut cp = original.clone();
+    cp.snow_kilograms.pop();
+    cases.push(cp);
+    let mut cp = original.clone();
+    cp.cumulative_surface_transfers.pop();
+    cases.push(cp);
+    let mut cp = original.clone();
+    cp.cumulative_surface_transfer_roundoff.pop();
+    cases.push(cp);
+    let mut cp = original.clone();
+    cp.cumulative_surface_transfer_roundoff[0][0] = f64::NAN;
+    cases.push(cp);
+    let mut cp = original.clone();
+    cp.cumulative_surface_transfer_roundoff[0][0] = 1e20;
+    cases.push(cp);
+    let mut cp = original.clone();
+    cp.cumulative_surface_transfers[0].melt = -1.;
+    cases.push(cp);
+    let mut cp = original.clone();
+    let i = cp
+        .pending_runoff_kilograms
+        .iter()
+        .position(|v| *v > 1e10)
+        .unwrap();
+    // Total surface water is unchanged, but already-produced runoff is not soil.
+    cp.pending_runoff_kilograms[i] -= 1e10;
+    cp.soil_kilograms[i] += 1e10;
+    cases.push(cp);
+    let mut cp = original.clone();
+    let i = world
+        .water
+        .depth_meters
+        .iter()
+        .position(|v| *v > 0.)
+        .unwrap();
+    cp.soil_kilograms[i] = 1.;
+    cases.push(cp);
+    let mut cp = model.initial_state().checkpoint();
+    // Balanced fictitious transfer cycles are not allowed at initialization.
+    cp.cumulative_surface_transfers[0].snowfall = 1.;
+    cp.cumulative_surface_transfers[0].melt = 1.;
+    cases.push(cp);
+    let mut cp = model.initial_state().checkpoint();
+    cp.cumulative_surface_transfer_roundoff[0][0] = 1e-20;
+    cases.push(cp);
+    for cp in cases {
+        assert!(Model::restore(cp).is_err());
+    }
+    let mut json = serde_json::to_value(&original).unwrap();
+    json["unexpected"] = true.into();
+    assert!(serde_json::from_value::<Checkpoint>(json).is_err());
+    let mut json = serde_json::to_value(&original).unwrap();
+    json["cumulativeSurfaceTransfers"][0]["unexpected"] = true.into();
+    assert!(serde_json::from_value::<Checkpoint>(json).is_err());
+    assert_eq!(state.checkpoint(), original);
+}
+
+#[test]
+fn refined_generated_year_keeps_the_measured_long_lived_soil_ledger_consistent() {
+    let mut recipe = world().recipe;
+    recipe.subdivision = 3;
+    recipe.radius_meters = 1_000_000.;
+    let world = World::generate(recipe).unwrap();
+    let model = Model::from_world(
+        &world,
+        Settings::default(),
+        seasonal_temperature::Settings::default(),
+        seasonal_wind::Settings::default(),
+    )
+    .unwrap();
+    let mut state = model.initial_state();
+    // Ordinary accumulation previously crossed 1e-12 in region 10's soil
+    // identity at second 25,287,300. Retain the whole forcing history.
+    for _ in 0..365 * 96 {
+        model.advance(&mut state, 900).unwrap();
+    }
+    assert!(
+        model
+            .budget(&state)
+            .unwrap()
+            .maximum_relative_local_surface_ledger_residual
+            < 1e-12
+    );
+    let (restored_model, mut restored) = Model::restore(state.checkpoint()).unwrap();
+    model.advance(&mut state, 86400).unwrap();
+    restored_model.advance(&mut restored, 86400).unwrap();
+    assert_eq!(state, restored);
 }
