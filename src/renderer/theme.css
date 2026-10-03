@@ -1,1 +1,15 @@
-:root { color-scheme: dark; --background: #10191c; --text: #e3ebe6; --muted: #8a9f9f; --border: #29383b; --accent: #a7d9bd; }
+:root {
+  color-scheme: dark;
+  --background: #111315;
+  --sidebar: #151719;
+  --surface: #1b1e21;
+  --surface-raised: #23262a;
+  --surface-hover: #2d3237;
+  --text: #f1f2f1;
+  --muted: #a2aab0;
+  --border: #30353a;
+  --border-strong: #434a51;
+  --accent: #a8cce2;
+  --accent-soft: #283741;
+  --danger: #ee9e92;
+}

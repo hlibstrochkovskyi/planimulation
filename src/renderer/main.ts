@@ -12,6 +12,7 @@ import { summarizeWater } from '../core/water';
 import { summarizeDrainage } from '../core/drainage';
 import { basinTree, summarizeBasins } from '../core/basins';
 import { approximateCubicKilometers, runoffDestination } from './water-budget';
+import type { TemperatureNormals } from '../core/seasonal-temperature';
 
 function element<T extends HTMLElement>(id: string): T {
   const result = document.getElementById(id);
@@ -44,11 +45,15 @@ const waterSpill = element<HTMLButtonElement>('water-spill');
 const waterOpen = element<HTMLButtonElement>('open-water');
 const waterSave = element<HTMLButtonElement>('save-water');
 const waterBudgetButton = element<HTMLButtonElement>('water-budget-refresh');
+const temperatureMonthInput = element<HTMLSelectElement>('temperature-month');
+const temperatureLayerButton = document.querySelector<HTMLButtonElement>('[data-layer="temperature"]')!;
 const number = new Intl.NumberFormat('en', { maximumFractionDigits: 1 });
 const budgetNumber = new Intl.NumberFormat('en', { maximumSignificantDigits: 6 });
 let world: World | null = null;
 let waterFrame: WaterFrame | null = null;
 let waterBudget: WaterBudget | null = null;
+let temperatureNormals: TemperatureNormals | null = null;
+let temperatureRange = { minimum: 0, maximum: 0 };
 let waterBusy = false;
 let checkpointOpening = false;
 let budgetBusyEpoch: number | null = null;
@@ -159,6 +164,11 @@ function inspect(id: number, preserveBasin = false): void {
     ['Elevation (reference datum)', `${number.format(world.terrain.elevation[id])} m`],
     ['Initial water depth', `${number.format(world.water.depthMeters[id])} m`],
     ['Initial water body', world.water.bodyIds[id] === 0 ? 'Dry land' : `Body ${world.water.bodyIds[id]} · ${world.water.bodyIds[id] === world.water.mainOceanId ? 'main ocean' : 'inland basin'}`],
+    ...(temperatureNormals ? [
+      [`Month ${Number(temperatureMonthInput.value) + 1} temperature normal`, `${temperatureNormals.monthlyTemperatureCelsius[Number(temperatureMonthInput.value)][id].toFixed(1)} °C`],
+      ['Annual mean temperature normal', `${temperatureNormals.annualMeanCelsius[id].toFixed(1)} °C`],
+      ['Daily normal range', `${temperatureNormals.annualMinimumCelsius[id].toFixed(1)} to ${temperatureNormals.annualMaximumCelsius[id].toFixed(1)} °C`],
+    ] : []),
     ...(waterFrame ? [
       ['Displayed prescribed-water depth', `${number.format(waterFrame.depthMeters[id])} m · approximate view`],
       ['Displayed water body', waterFrame.bodyIds[id] ? `Body ${waterFrame.bodyIds[id]}` : 'Dry land'],
@@ -190,6 +200,9 @@ function inspect(id: number, preserveBasin = false): void {
       : 'Initial closed dry sink: no lower exit from this equal-height component. A closed flat uses its smallest region ID as the analysis outlet. Manual water can fill this basin, but the bed and initial receiver graph stay unchanged.'
     : steps ? `Equal-height routing: ${steps} graph hops to a downhill exit or closed-flat sink. The receiver has one fewer hop. This deterministic tie-break is not a measured hydraulic gradient and changes no bed heights.`
       : `Steepest bed descent to region ${receiver}: ${(world.terrain.elevation[id] - world.terrain.elevation[receiver]).toFixed(2)} m drop over ${number.format(s.neighborDistancesMeters[s.neighborOffsets[id] + neighbors.indexOf(receiver)] / 1000)} km. Gradient ties prefer the smaller region ID. Area accumulation assumes connectivity only, not rain, travel time, or discharge.`;
+  element('temperature-note').textContent = temperatureNormals
+    ? `Latitude ${lat.toFixed(2)}° sets daily solar geometry for a 23.44° tilt and 365-day circular orbit. Initial ${world.water.depthMeters[id] > 0 ? 'water' : 'dry land'} uses a ${world.water.depthMeters[id] > 0 ? temperatureNormals.settings.waterResponseDays : temperatureNormals.settings.landResponseDays}-day response time. ${world.water.depthMeters[id] > 0 ? 'Wet regions receive no bed-height lapse correction.' : `Positive bed elevation contributes a −${(temperatureNormals.settings.lapseRateCelsiusPerMeter * Math.max(0, world.terrain.elevation[id])).toFixed(1)} °C correction.`} The solar-to-temperature sensitivity is prescribed; no atmospheric heat transport, weather, ice feedback, or complete energy budget is modeled.`
+    : 'Seasonal temperature normals are being calculated from initial geography.';
   boundaryDetails.replaceChildren();
   const segments = boundarySegments.get(id) ?? [];
   element('boundary-note').textContent = segments.length
@@ -263,6 +276,8 @@ function updateLegend(): void {
     spill: ['Next basin connection threshold · not current water level · gray = root without external drain',
       basinStats?.minimumSpillMeters === null ? 'No finite thresholds' : `${number.format(basinStats?.minimumSpillMeters ?? 0)} m`,
       basinStats?.maximumSpillMeters === null ? '' : `${number.format(basinStats?.maximumSpillMeters ?? 0)} m`],
+    temperature: [`Month ${Number(temperatureMonthInput.value) + 1} temperature normal · fixed initial geography, not weather`,
+      `${number.format(temperatureRange.minimum)} °C`, `${number.format(temperatureRange.maximum)} °C`],
   };
   const [title, low, high] = legends[currentLayer];
   element('legend-title').textContent = title;
@@ -272,6 +287,7 @@ function updateLegend(): void {
   element('legend-scale').hidden = plateLayer || currentLayer === 'waterBodies' || currentLayer === 'surface' || currentLayer === 'catchments' || currentLayer === 'basins';
   element('boundary-legend').hidden = !plateLayer;
   element('legend-gradient').classList.toggle('water-gradient', currentLayer === 'depth');
+  element('legend-gradient').classList.toggle('temperature-gradient', currentLayer === 'temperature');
 }
 
 function setInputs(recipe: Recipe): void {
@@ -311,6 +327,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
   const request = ++generationId;
   const start = performance.now();
   cancel.hidden = false; save.disabled = true; saveResolved.disabled = true;
+  temperatureLayerButton.disabled = true; temperatureMonthInput.disabled = true;
   exportView.disabled = true; waterAdd.disabled = true; waterSpill.disabled = true;
   waterOpen.disabled = true; waterSave.disabled = true; waterBudgetButton.disabled = true;
   showStatus(prepared ? 'Preparing restored world views…' : 'Building the surface in the native core…');
@@ -322,6 +339,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     const calculationMs = performance.now() - start;
     showStatus('Preparing GPU geometry for both views…');
     await map.setWorld(result.world);
+    map.setTemperatureMonth(Number(temperatureMonthInput.value));
     const restoredFrame = prepared?.waterFrame ?? null;
     if (restoredFrame) map.setWaterFrame(restoredFrame);
     if (request !== generationId) return;
@@ -329,6 +347,8 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     // publication and this request. The old native world survives preparation.
     const accepted = api.acceptWorld(result.epoch);
     world = result.world; epoch = result.epoch; selected = null; waterFrame = null; waterBudget = null;
+    temperatureNormals = null;
+    map.setTemperatureNormals(null);
     waterBusy = false; budgetBusyEpoch = null;
     if (prepared) setInputs(world.recipe);
     terrainStats = summarizeTerrain(world.surface, world.terrain);
@@ -369,6 +389,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     element('water-note').textContent = 'Select a region to inspect its initial water depth and stored volume. Coverage fitting never splits equal-elevation plateaus; actual coverage can differ from the target. No runoff, evaporation, or dynamic basin exchange is modeled yet.';
     element('drainage-summary').textContent = `Drainage: ${drainageStats.catchmentCount} terminal catchments · ${drainageStats.closedSinkCount} closed dry sinks · ${(drainageStats.closedDrainageLandFraction * 100).toFixed(2)}% of dry land ends in closed sinks · topology only, no flowing water`;
     element('drainage-note').textContent = 'Select a region to inspect its receiver, flat-routing rule, and contributing land area. Existing water bodies stop routing; closed sinks are preserved. Basin analysis is separate; lake dynamics are not implemented.';
+    element('temperature-note').textContent = 'Calculating repeatable seasonal temperature normals from initial geography…';
     updateExaggeration();
     element('crust-note').textContent = 'Select a region to inspect its crust potential, fitted threshold, and material approximations.';
     const crustSummary = summarizeCrust(world.surface, world.crust);
@@ -379,19 +400,42 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     element('model-label').textContent = `${world.recipe.modelVersion.toUpperCase()} · STATIC INITIAL CONDITIONS`;
     renderWaterBudget();
     if (restoredFrame) applyWaterFrame(restoredFrame, false);
-    updateLegend(); cancel.hidden = true; save.disabled = false; saveResolved.disabled = false; exportView.disabled = false;
+    updateLegend();
+    await accepted;
+    if (request !== generationId) return;
+    showStatus('Calculating seasonal temperature normals in the native core…');
+    let temperatureError: string | null = null;
+    try {
+      const normals = await api.seasonalTemperature(epoch);
+      if (request !== generationId || normals.epoch !== epoch) return;
+      temperatureNormals = normals; map.setTemperatureNormals(normals);
+      temperatureRange = {
+        minimum: normals.annualMinimumCelsius.reduce((low, value) => Math.min(low, value), Infinity),
+        maximum: normals.annualMaximumCelsius.reduce((high, value) => Math.max(high, value), -Infinity),
+      };
+      temperatureLayerButton.disabled = false; temperatureMonthInput.disabled = false;
+      element('temperature-note').textContent = 'Select a region to inspect solar geometry, initial wetness, elevation, and thermal response time.';
+      updateLegend();
+    } catch (error) {
+      if (request !== generationId) return;
+      temperatureError = error instanceof Error ? error.message : String(error);
+      element('temperature-note').textContent = `Seasonal temperature normals unavailable: ${temperatureError}`;
+    }
+    cancel.hidden = true; save.disabled = false; saveResolved.disabled = false; exportView.disabled = false;
     waterOpen.disabled = false; waterSave.disabled = false; waterBudgetButton.disabled = false;
     element<HTMLButtonElement>('play').disabled = false;
     document.body.dataset.state = 'ready';
-    showStatus(restoredFrame ? `Water checkpoint restored at prescribed step ${restoredFrame.step}. Exact stocks are ready to continue.`
+    showStatus(temperatureError ? `World ready; seasonal temperature unavailable: ${temperatureError}`
+      : restoredFrame ? `Water checkpoint restored at prescribed step ${restoredFrame.step}. Exact stocks are ready to continue.`
       : `${world.recipe.plateCount} connected plates · ${world.tectonics.boundaryTypes.length} boundary segments · ${(world.stats.arrayBytes / 2 ** 20).toFixed(1)} MiB of model arrays · Static kinematics, no geological time integration`);
-    await accepted;
   } catch (error) {
     if (request === generationId) {
       void api.cancelGeneration();
       cancel.hidden = true; save.disabled = world === null; saveResolved.disabled = world === null;
       exportView.disabled = world === null;
       waterOpen.disabled = false; waterSave.disabled = world === null || waterBusy;
+      temperatureLayerButton.disabled = temperatureNormals === null;
+      temperatureMonthInput.disabled = temperatureNormals === null;
       waterBudgetButton.disabled = world === null || budgetBusyEpoch === epoch;
       element<HTMLButtonElement>('play').disabled = world === null;
       showStatus(error instanceof Error ? error.message : String(error), true);
@@ -537,10 +581,18 @@ element('recipe-form').addEventListener('submit', (event) => {
         : { mode: 'volume', volumeCubicMeters: Number(waterVolumeInput.value) * 1e9 } }));
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
 });
+element('recipe-form').addEventListener('invalid', (event) => {
+  if (event.target instanceof HTMLElement) {
+    const settings = event.target.closest<HTMLDetailsElement>('.advanced-settings');
+    if (settings) settings.open = true;
+  }
+}, true);
 cancel.addEventListener('click', () => {
   generationId++; map.cancelPreparation(); void api.cancelGeneration(); cancel.hidden = true;
   save.disabled = world === null; saveResolved.disabled = world === null; exportView.disabled = world === null;
   waterOpen.disabled = false; waterSave.disabled = world === null || waterBusy;
+  temperatureLayerButton.disabled = temperatureNormals === null;
+  temperatureMonthInput.disabled = temperatureNormals === null;
   waterBudgetButton.disabled = world === null || budgetBusyEpoch === epoch;
   element<HTMLButtonElement>('play').disabled = world === null;
   document.body.dataset.state = world ? 'ready' : 'idle';
@@ -596,6 +648,12 @@ for (const button of document.querySelectorAll<HTMLButtonElement>('[data-layer]'
     map.setLayer(currentLayer); updateLegend();
   });
 }
+temperatureMonthInput.addEventListener('change', () => {
+  const month = Number(temperatureMonthInput.value);
+  map.setTemperatureMonth(month);
+  if (selected !== null) inspect(selected, true);
+  updateLegend();
+});
 element<HTMLInputElement>('boundaries').addEventListener('change', (event) => map.setBoundaries((event.target as HTMLInputElement).checked));
 element('reset-view').addEventListener('click', () => map.reset());
 element('zoom-in').addEventListener('click', () => map.zoomBy(1.5));

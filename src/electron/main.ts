@@ -25,12 +25,13 @@ function senderWindow(event: IpcMainInvokeEvent): BrowserWindow {
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     title: 'Planimulation', width: 1440, height: 940, minWidth: 1000, minHeight: 700,
-    backgroundColor: '#101719', show: false,
+    backgroundColor: '#111315', show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true,
     },
   });
+  if (process.platform !== 'darwin') mainWindow.setMenuBarVisibility(false);
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   mainWindow.webContents.on('will-navigate', (event) => event.preventDefault());
   mainWindow.webContents.on('did-start-loading', () => core.close());
@@ -48,6 +49,7 @@ void app.whenReady().then(() => {
   ipcMain.handle('world:cancel', (event) => { senderWindow(event); core.cancel(); });
   ipcMain.handle('world:accept', (event, epoch: number) => { senderWindow(event); core.accept(epoch); });
   ipcMain.handle('world:advance', (event, epoch: number, steps: number) => { senderWindow(event); return core.advance(epoch, steps); });
+  ipcMain.handle('world:seasonalTemperature', (event, epoch: number) => { senderWindow(event); return core.seasonalTemperature(epoch); });
   ipcMain.handle('world:prescribeWater', (event, epoch: number, region: number, mode: unknown) => {
     senderWindow(event);
     if (mode !== 'oneCubicKilometer' && mode !== 'fillToSpill') throw new Error('Invalid prescribed-water mode.');

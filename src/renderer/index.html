@@ -8,14 +8,14 @@
   </head>
   <body>
     <header class="app-header">
-      <div class="brand"><span class="brand-mark" aria-hidden="true">◉</span><div><h1>Planimulation</h1><p>A world worth understanding</p></div></div>
-      <div class="header-right"><span class="stage-badge">09 / WATER INVENTORY</span><button id="open-recipe">Open recipe</button><button id="save-recipe" disabled>Save recipe</button><button id="save-resolved" disabled title="Export calculated initial fields; not a simulation checkpoint">Export world data</button></div>
+      <div class="brand"><span class="brand-mark" aria-hidden="true">P</span><div><h1>Planimulation</h1><p>Planetary systems laboratory</p></div></div>
+      <div class="header-right"><span class="stage-badge">MODEL 09 <i></i> WATER INVENTORY</span><button id="open-recipe">Open recipe</button><button id="save-recipe" disabled>Save recipe</button><button id="save-resolved" disabled title="Export calculated initial fields; not a simulation checkpoint">Export world data</button></div>
     </header>
     <main>
       <aside class="sidebar">
         <section>
-          <p class="eyebrow">WORLD SETUP</p><h2>A geological foundation.</h2>
-          <p class="muted">Geology shapes the bed. A water budget fills the low regions.</p>
+          <p class="eyebrow">WORLD CONFIGURATION</p><h2>Build a planet</h2>
+          <p class="muted">Set its scale, geology, and initial water inventory.</p>
           <form id="recipe-form">
             <label for="seed">World seed</label>
             <div class="seed-row"><input id="seed" name="seed" value="first-light" maxlength="128" required autocomplete="off" spellcheck="false" /><button id="new-seed" type="button" title="Choose a new seed" aria-label="Choose a new seed">↻</button></div>
@@ -23,6 +23,9 @@
             <select id="subdivision"><option value="0">12 regions · base</option><option value="1">42 regions · coarse</option><option value="2">162 regions · coarse</option><option value="3">642 regions · preview</option><option value="4">2,562 regions · standard</option><option value="5" selected>10,242 regions · detailed</option><option value="6">40,962 regions · fine</option></select>
             <label for="radius">Planet radius <span>km</span></label>
             <input id="radius" type="number" min="100" max="20000" step="1" value="6371" required />
+            <details class="advanced-settings">
+              <summary>Geology parameters <span>plates, crust, relief</span></summary>
+              <div class="advanced-fields">
             <label for="plate-count">Tectonic plates <span>2–32, up to region count</span></label>
             <input id="plate-count" type="number" min="2" max="32" step="1" value="12" required />
             <label for="plate-speed">Maximum plate speed <span>cm/year</span></label>
@@ -39,17 +42,22 @@
             <input id="detail-amplitude" type="number" min="0" max="1000" step="any" value="300" required />
             <label for="terrain-preparation-passes">Dry terrain preparation <span>0–16 passes · not years</span></label>
             <input id="terrain-preparation-passes" type="number" min="0" max="16" step="1" value="4" required />
+              </div>
+            </details>
+            <div class="water-config">
             <label for="water-mode">Initial water constraint</label>
             <select id="water-mode"><option value="coverage">Target total water coverage</option><option value="volume">Fixed water volume</option></select>
             <div id="water-coverage-control"><label for="water-coverage">Water coverage <span>% · all water bodies</span></label><input id="water-coverage" type="number" min="0" max="100" step="any" value="71" required /></div>
             <div id="water-volume-control" hidden><label for="water-volume">Water volume <span>km³</span></label><input id="water-volume" type="number" min="0" step="any" value="1000000000" required disabled /></div>
+            </div>
             <button class="primary" id="generate" type="submit">Generate surface <span>↗</span></button>
             <button id="cancel" type="button" hidden>Cancel generation</button>
           </form>
         </section>
         <section class="layer-section">
           <p class="eyebrow">MAP LAYERS</p>
-          <div class="layer-list" role="group" aria-label="Map layer">
+          <div class="layer-groups" role="group" aria-label="Map layer">
+            <p class="layer-group-title">Water &amp; drainage</p><div class="layer-list">
             <button class="layer active" data-layer="surface" aria-pressed="true"><span>◉</span>Land and water<small>Surface</small></button>
             <button class="layer" data-layer="depth" aria-pressed="false"><span>≈</span>Water depth<small>m</small></button>
             <button class="layer" data-layer="waterBodies" aria-pressed="false"><span>◒</span>Water bodies<small>Identity</small></button>
@@ -57,42 +65,53 @@
             <button class="layer" data-layer="contributingArea" aria-pressed="false"><span>↘</span>Contributing area<small>km²</small></button>
             <button class="layer" data-layer="basins" aria-pressed="false"><span>◇</span>Basin branches<small>Hierarchy</small></button>
             <button class="layer" data-layer="spill" aria-pressed="false"><span>↥</span>Spill thresholds<small>m</small></button>
+            </div><p class="layer-group-title">Seasonal climate</p><div class="layer-list">
+            <button class="layer" data-layer="temperature" aria-pressed="false" disabled><span>◒</span>Temperature normal<small>°C</small></button>
+            </div><p class="layer-group-title">Terrain &amp; crust</p><div class="layer-list">
             <button class="layer" data-layer="elevation" aria-pressed="false"><span>△</span>Bed elevation<small>m</small></button>
             <button class="layer" data-layer="uplift" aria-pressed="false"><span>↗</span>Convergence uplift<small>m</small></button>
             <button class="layer" data-layer="crust" aria-pressed="false"><span>◒</span>Continentality<small>Crust</small></button>
             <button class="layer" data-layer="thickness" aria-pressed="false"><span>≋</span>Crust thickness<small>km</small></button>
+            </div><p class="layer-group-title">Plate dynamics &amp; diagnostics</p><div class="layer-list">
             <button class="layer" data-layer="plates" aria-pressed="false"><span>◈</span>Tectonic plates<small>Identity</small></button>
             <button class="layer" data-layer="boundaries" aria-pressed="false"><span>⋈</span>Boundary motion<small>Kinematics</small></button>
             <button class="layer" data-layer="speed" aria-pressed="false"><span>↗</span>Plate speed<small>cm/year</small></button>
             <button class="layer" data-layer="signal" aria-pressed="false"><span>◈</span>Seed field<small>Diagnostic</small></button>
             <button class="layer" data-layer="area" aria-pressed="false"><span>▦</span>Region area<small>km²</small></button>
             <button class="layer" data-layer="latitude" aria-pressed="false"><span>≋</span>Latitude<small>Degrees</small></button>
+            </div>
           </div>
           <label class="checkbox"><input id="boundaries" type="checkbox" /> Region boundaries</label>
         </section>
-        <section class="stage-note"><p class="eyebrow">WHAT THIS MODEL MEANS</p><p>Bounded dry slope preparation can move bed material before initial water filling. Its passes are not years or climate-driven erosion. Water, drainage, and basins then use the prepared bed.</p><p>Manual runoff can fill and spill between unambiguous basins. It has no elapsed time, climate forcing, or changing drainage; unsupported routes are rejected. Save recipe returns to initial water; a water checkpoint saves this manual inventory separately.</p><p>Land and water shows a separate water surface on the globe, limited to displayed wet regions and occluded by the interpolated bed. Its shoreline and levels are visual approximations; exact basin stocks remain in the native core. Depth and geology layers show the bed. Land colors are elevation-based, not biomes.</p><p>Rivers, seasonal climate, and ongoing erosion are not implemented. Diagnostic playback does not change terrain or water.</p></section>
+        <details class="stage-note"><summary>Model scope &amp; interpretation</summary><p>Bounded dry slope preparation can move bed material before initial water filling. Its passes are not years or climate-driven erosion. Water, drainage, and basins then use the prepared bed.</p><p>Manual runoff can fill and spill between unambiguous basins. It has no elapsed time, climate forcing, or changing drainage; unsupported routes are rejected. Save recipe returns to initial water; a water checkpoint saves this manual inventory separately.</p><p>Temperature maps show repeatable monthly normals from a prescribed solar-response model on initial geography. They are not weather, energy-balanced climate, or a changing water cycle.</p><p>Land and water shows a separate water surface on the globe, limited to displayed wet regions and occluded by the interpolated bed. Its shoreline and levels are visual approximations; exact basin stocks remain in the native core. Depth and geology layers show the bed. Land colors are elevation-based, not biomes.</p><p>Rivers, precipitation, and ongoing erosion are not implemented. Diagnostic playback does not change terrain, temperature, or water.</p></details>
         <div class="sidebar-bottom"><span class="status-dot"></span> LOCAL · OFFLINE · REPRODUCIBLE</div>
       </aside>
       <div class="workspace">
-        <div class="map-heading"><div><p class="eyebrow">PLANETARY ATLAS</p><h2 id="world-name">Preparing your world</h2></div><div class="map-tools"><button data-view="flat" class="active" aria-pressed="true">2D map</button><button data-view="globe" aria-pressed="false">Globe</button><button id="zoom-out" aria-label="Zoom out">−</button><button id="reset-view">Fit map</button><button id="zoom-in" aria-label="Zoom in">+</button><button id="export-view" disabled title="Save the current visible map or globe view as a PNG image">Export PNG</button></div></div>
+        <div class="map-heading"><div><p class="eyebrow">PLANETARY ATLAS</p><h2 id="world-name">Preparing your world</h2></div><div class="map-tools"><div class="segmented" role="group" aria-label="Map projection"><button data-view="flat" class="active" aria-pressed="true">2D map</button><button data-view="globe" aria-pressed="false">Globe</button></div><div class="zoom-tools" role="group" aria-label="Map zoom"><button id="zoom-out" aria-label="Zoom out">−</button><button id="reset-view">Fit map</button><button id="zoom-in" aria-label="Zoom in">+</button></div><button id="export-view" disabled title="Save the current visible map or globe view as a PNG image">Export PNG</button></div></div>
         <div id="map-container"><canvas id="map" aria-label="Interactive spherical surface map"></canvas><div id="gpu-status" role="alert">Graphics context lost. Waiting for recovery; the native model is unchanged.</div><div id="map-empty">Building a foundation for your world…</div><div class="map-caption"><b id="projection-label">EQUIRECTANGULAR PROJECTION</b><span>DRAG TO MOVE · SCROLL TO ZOOM · CLICK TO INSPECT</span></div></div>
         <div class="legend"><span id="legend-title">Tectonic plates</span><div id="legend-scale"><span id="legend-low">−1</span><span id="legend-gradient"></span><span id="legend-high">+1</span></div></div>
         <div id="boundary-legend"><span data-kind="1">Convergent</span><span data-kind="2">Divergent</span><span data-kind="3">Transform-dominant</span><span data-kind="0">Quiet</span></div>
+        <div class="temperature-controls"><label for="temperature-month">Seasonal temperature month</label><select id="temperature-month" disabled><option value="0">Month 1 · north spring equinox</option><option value="1">Month 2</option><option value="2">Month 3</option><option value="3" selected>Month 4 · northern summer</option><option value="4">Month 5</option><option value="5">Month 6</option><option value="6">Month 7 · north autumn equinox</option><option value="7">Month 8</option><option value="8">Month 9</option><option value="9">Month 10 · northern winter</option><option value="10">Month 11</option><option value="11">Month 12</option></select><span id="temperature-scope">365-day circular orbit · repeatable monthly normal, not weather</span></div>
+        <section class="water-actions"><div class="action-heading"><p class="eyebrow">PRESCRIBED WATER</p><span>Manual inventory · no elapsed time</span></div>
+          <div class="water-action-row"><button id="water-add" disabled>Add 1 km³ runoff</button><button id="water-spill" disabled>Fill to sill + 1 km³</button><span id="water-step">Select a source region · manual input, no elapsed time</span></div>
+          <div class="water-action-row"><button id="open-water">Open water checkpoint</button><button id="save-water" disabled>Save water checkpoint</button><button id="water-budget-refresh" disabled>Inspect exact budget</button></div>
+        </section>
+        <details class="world-summary"><summary>World statistics &amp; model summary</summary><div>
         <p id="crust-summary" class="muted"></p>
         <p id="height-summary" class="muted"></p>
         <p id="water-summary" class="muted"></p>
         <p id="drainage-summary" class="muted"></p>
         <p id="basin-summary" class="muted"></p>
+        </div></details>
         <div class="relief-controls"><label for="exaggeration">Globe vertical exaggeration</label><select id="exaggeration"><option value="0">0× · reference sphere</option><option value="1">1× · true scale</option><option value="5">5×</option><option value="10" selected>10×</option><option value="25">25×</option><option value="50">50×</option></select><span id="exaggeration-note" class="muted"></span></div>
         <div class="diagnostic-controls"><button id="play" disabled>Run diagnostic</button><span id="diagnostic-tick">Step 0</span><span>Conservative graph diffusion · not climate or geological time</span></div>
-        <div class="diagnostic-controls"><button id="water-add" disabled>Add 1 km³ runoff</button><button id="water-spill" disabled>Fill to sill + 1 km³</button><span id="water-step">Select a source region · manual input, no elapsed time</span></div>
-        <div class="diagnostic-controls"><button id="open-water">Open water checkpoint</button><button id="save-water" disabled>Save water checkpoint</button><button id="water-budget-refresh" disabled>Inspect exact budget</button><span>Native manual inventory · not a full simulation save</span></div>
         <div class="metrics"><div><span>REGIONS</span><strong id="region-count">—</strong></div><div><span>SURFACE AREA</span><strong id="surface-area">—</strong></div><div><span>GENERATION + VIEWS</span><strong id="generation-time">—</strong></div><div><span>INITIAL FINGERPRINT</span><strong id="fingerprint">—</strong></div></div>
         <section class="inspector water-budget-panel"><div><p class="eyebrow">EXACT WATER BUDGET</p><h3>Where is the water?</h3><p id="water-budget-note" class="muted">Inspect the native inventory. Displayed depths are not used for accounting.</p></div><dl id="water-budget-details"></dl></section>
         <section class="inspector"><div><p class="eyebrow">REGION INSPECTOR</p><h3 id="selection-title">Explore the surface</h3><p id="selection-note" class="muted">Select a region to see its geometry and connections.</p></div><dl id="selection-details"></dl></section>
         <section class="boundary-inspector"><p class="eyebrow">CRUST EXPLANATION</p><p id="crust-note" class="muted">Select a region to inspect its crust potential, fitted threshold, and material approximations.</p></section>
         <section class="boundary-inspector"><p class="eyebrow">WHY WATER HERE?</p><p id="water-note" class="muted">Select a region to inspect initial filling.</p></section>
         <section class="boundary-inspector"><p class="eyebrow">WHERE WOULD RUNOFF GO?</p><p id="drainage-note" class="muted">Select a region to inspect drainage potential, not actual flow.</p></section>
+        <section class="boundary-inspector"><p class="eyebrow">WHY THIS TEMPERATURE?</p><p id="temperature-note" class="muted">Select a region after seasonal normals load. This is a prescribed response, not a full energy budget.</p></section>
         <section class="inspector"><div><p class="eyebrow">BASIN ANALYSIS · NOT LIVE WATER</p><h3 id="basin-title">Select a region</h3><p id="basin-note" class="muted">Thresholds describe possible connections, not current water levels.</p><button id="basin-parent" disabled>Inspect parent</button><button id="basin-owner" disabled>Region branch</button></div><dl id="basin-details"></dl></section>
         <section class="boundary-inspector"><p class="eyebrow">WHY THIS ELEVATION?</p><p class="muted">Crust, plate response, detail, and dry preparation sum to the native elevation. Display exaggeration changes none of them. No geological age or climate erosion is modeled.</p><ul id="elevation-details"></ul></section>
         <section class="boundary-inspector"><p class="eyebrow">BOUNDARY EXPLANATION</p><p id="boundary-note" class="muted">Select a region to inspect its plate and any inter-plate boundary segments.</p><ul id="boundary-details"></ul></section>

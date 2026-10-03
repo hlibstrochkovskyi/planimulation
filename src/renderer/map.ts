@@ -10,8 +10,9 @@ import { displaceDirections, effectiveExaggeration } from './relief';
 import { summarizeTerrain } from '../core/terrain';
 import { buildWaterSurface, pickSurface } from './water-surface';
 import { summarizeBasins } from '../core/basins';
+import type { TemperatureNormals } from '../core/seasonal-temperature';
 
-export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill';
+export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill' | 'temperature';
 export type ViewMode = 'flat' | 'globe';
 
 export class SurfaceMap {
@@ -27,14 +28,14 @@ export class SurfaceMap {
     uniforms: { field: { value: null }, textureWidth: { value: 1 }, textureHeight: { value: 1 },
       selected: { value: -1 }, globe: { value: 0 }, categorical: { value: 0 }, muted: { value: 0 }, waterMode: { value: 0 },
       surfaceMode: { value: 0 }, waterSurface: { value: 0 }, missingMode: { value: 0 },
-      basinMode: { value: 0 }, spillFrom: { value: -1 }, spillTo: { value: -1 } },
+      basinMode: { value: 0 }, spillFrom: { value: -1 }, spillTo: { value: -1 }, temperatureMode: { value: 0 } },
     vertexShader: `attribute float region; varying float cell; varying vec3 direction;
       void main() { cell=region; direction=normalMatrix*normal;
         gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
     fragmentShader: `uniform sampler2D field; uniform float textureWidth; uniform float textureHeight;
       uniform float selected; uniform float globe; uniform float categorical; uniform float muted; uniform float waterMode;
       uniform float surfaceMode; uniform float waterSurface; uniform float missingMode;
-      uniform float basinMode; uniform float spillFrom; uniform float spillTo;
+      uniform float basinMode; uniform float spillFrom; uniform float spillTo; uniform float temperatureMode;
       varying float cell; varying vec3 direction;
       void main() {
         float id=floor(cell+0.5);
@@ -48,6 +49,13 @@ export class SurfaceMap {
         if(surfaceMode>0.5) {
           color=mix(vec3(0.34,0.40,0.28),vec3(0.72,0.69,0.61),clamp(v,0.0,1.0));
           if(waterSurface>0.5 || (globe<0.5 && v<0.0)) color=mix(vec3(0.18,0.62,0.75),vec3(0.025,0.10,0.26),clamp(-v,0.0,1.0));
+        }
+        if(temperatureMode>0.5) {
+          vec3 cold=vec3(0.10,0.20,0.48), cool=vec3(0.29,0.68,0.82);
+          vec3 mild=vec3(0.89,0.88,0.64), hot=vec3(0.83,0.24,0.13);
+          color=v<0.33 ? mix(cold,cool,clamp(v/0.33,0.0,1.0))
+            : v<0.66 ? mix(cool,mild,clamp((v-0.33)/0.33,0.0,1.0))
+            : mix(mild,hot,clamp((v-0.66)/0.34,0.0,1.0));
         }
         color*=1.0-muted*0.65;
         if(basinMode>0.5 && (abs(cell-spillFrom)<0.25 || abs(cell-spillTo)<0.25)) color=vec3(0.15,0.95,0.94);
@@ -64,6 +72,9 @@ export class SurfaceMap {
   private values = new Float32Array(0);
   private world: World | null = null;
   private waterFrame: WaterFrame | null = null;
+  private temperatureNormals: TemperatureNormals | null = null;
+  private temperatureMonth = 3;
+  private temperatureRange = { minimum: -40, maximum: 40 };
   private mode: ViewMode = 'flat';
   private layer: Layer = 'surface';
   private exaggeration = 10;
@@ -86,7 +97,7 @@ export class SurfaceMap {
     this.waterMaterial.polygonOffsetFactor = -1; this.waterMaterial.polygonOffsetUnits = -1;
     this.renderer = new WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    this.renderer.setClearColor('#0c1417');
+    this.renderer.setClearColor('#0c1721');
     this.flatCamera.position.set(0, 0, 3);
     this.globeCamera.position.set(3, 0, 0);
     this.controls = new OrbitControls(this.flatCamera, canvas);
@@ -163,7 +174,7 @@ export class SurfaceMap {
     }).finally(() => { worker.terminate(); if (this.worker === worker) { this.worker = null; this.abortPreparation = null; } });
     const next = { flat: this.makeView(pair.flat), globe: this.makeView(pair.globe) };
     this.releaseViews(); this.views = next;
-    this.scene.add(next.flat, next.globe); this.world = world; this.waterFrame = null;
+    this.scene.add(next.flat, next.globe); this.world = world; this.waterFrame = null; this.temperatureNormals = null;
     this.appliedExaggeration = NaN;
     this.terrainRange = summarizeTerrain(world.surface, world.terrain);
     this.maximumDepth = world.water.depthMeters.reduce((max, d) => Math.max(max, d), 0);
@@ -210,6 +221,24 @@ export class SurfaceMap {
     this.setExaggeration(this.exaggeration);
     this.refreshField();
   }
+  setTemperatureNormals(normals: TemperatureNormals | null): void {
+    if (normals && (!this.world || normals.annualMeanCelsius.length !== this.world.stats.regionCount)) {
+      throw new Error('Seasonal-temperature normals do not match this world.');
+    }
+    this.temperatureNormals = normals;
+    if (normals) {
+      this.temperatureRange = {
+        minimum: normals.annualMinimumCelsius.reduce((low, value) => Math.min(low, value), Infinity),
+        maximum: normals.annualMaximumCelsius.reduce((high, value) => Math.max(high, value), -Infinity),
+      };
+    }
+    this.refreshField();
+  }
+  setTemperatureMonth(month: number): void {
+    if (!Number.isInteger(month) || month < 0 || month >= 12) throw new Error('Invalid seasonal month.');
+    this.temperatureMonth = month; this.canvas.dataset.temperatureMonth = String(month);
+    this.refreshField();
+  }
   setMode(mode: ViewMode): void {
     this.mode = mode; this.canvas.dataset.view = mode;
     this.material.uniforms.globe.value = mode === 'globe' ? 1 : 0;
@@ -223,6 +252,7 @@ export class SurfaceMap {
     this.layer = layer;
     this.canvas.dataset.activeLayer = layer;
     this.material.uniforms.surfaceMode.value = layer === 'surface' ? 1 : 0;
+    this.material.uniforms.temperatureMode.value = layer === 'temperature' ? 1 : 0;
     this.material.uniforms.categorical.value = layer === 'plates' || layer === 'boundaries' || layer === 'waterBodies' || layer === 'catchments' || layer === 'basins' ? 1 : 0;
     this.material.uniforms.missingMode.value = layer === 'spill' ? 1 : 0;
     this.material.uniforms.basinMode.value = layer === 'basins' || layer === 'spill' ? 1 : 0;
@@ -242,6 +272,9 @@ export class SurfaceMap {
     const bodyIds = this.waterFrame?.bodyIds ?? w.water.bodyIds;
     for (let id = 0; id < w.stats.regionCount; id++) {
       this.values[id] = this.layer === 'plates' || this.layer === 'boundaries' ? w.tectonics.owners[id]
+        : this.layer === 'temperature' ? (this.temperatureNormals
+          ? (this.temperatureNormals.monthlyTemperatureCelsius[this.temperatureMonth][id] - this.temperatureRange.minimum)
+            / Math.max(1, this.temperatureRange.maximum - this.temperatureRange.minimum) : 0.5)
         : this.layer === 'basins' ? w.basins.regionNodes[id]
         : this.layer === 'spill' ? (w.basins.parents[w.basins.regionNodes[id]] === w.basins.regionNodes[id] ? -1
           : (w.basins.spillLevels[w.basins.regionNodes[id]] - this.spillRange.minimum) / Math.max(1, this.spillRange.maximum - this.spillRange.minimum))
