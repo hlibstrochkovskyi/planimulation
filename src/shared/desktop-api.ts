@@ -1,6 +1,7 @@
 import type { Recipe } from '../core/recipe';
 import type { World } from '../core/world';
 import type { CaptureRect } from './capture';
+import type { TemperatureNormals } from '../core/seasonal-temperature';
 
 export interface DiagnosticFrame { epoch: number; tick: number; relativeMassError: number; field: Float64Array }
 export type PrescribedWaterMode = 'oneCubicKilometer' | 'fillToSpill';
@@ -18,6 +19,7 @@ export interface DesktopAPI {
   cancelGeneration(): Promise<void>;
   acceptWorld(epoch: number): Promise<void>;
   advance(epoch: number, steps: number): Promise<DiagnosticFrame>;
+  seasonalTemperature(epoch: number): Promise<TemperatureNormals>;
   prescribeWater(epoch: number, region: number, mode: PrescribedWaterMode): Promise<WaterFrame>;
   openWaterCheckpoint(): Promise<PreparedWaterWorld | null>;
   saveWaterCheckpoint(epoch: number): Promise<boolean>;

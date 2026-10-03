@@ -1,4 +1,4 @@
-use crate::{World, prescribed_water_inventory::WaterDisplay};
+use crate::{World, prescribed_water_inventory::WaterDisplay, seasonal_temperature::Normals};
 use serde_json::json;
 use std::io::{self, Write};
 
@@ -154,6 +154,29 @@ pub fn frame(out: &mut impl Write, w: &World) -> io::Result<()> {
         out,
         json!({"kind":"frame","tick":w.tick,
         "relativeMassError":(w.mass()/w.initial_mass-1.).abs()}),
+        &bytes,
+    )
+}
+
+/// Seasonal normals are a separate read-only product, never part of the initial-world fingerprint.
+pub fn seasonal_temperature(out: &mut impl Write, normals: &Normals) -> io::Result<()> {
+    let count = normals.annual_mean_celsius.len();
+    let mut bytes = Vec::with_capacity(count * 15 * 8);
+    for month in &normals.monthly_temperature_celsius {
+        f64s(&mut bytes, month.iter().copied());
+    }
+    for field in [
+        &normals.annual_mean_celsius,
+        &normals.annual_minimum_celsius,
+        &normals.annual_maximum_celsius,
+    ] {
+        f64s(&mut bytes, field.iter().copied());
+    }
+    send(
+        out,
+        json!({"kind":"temperature", "temperatureModelVersion": normals.model_version,
+        "settings":normals.settings, "daysPerYear":crate::seasonal_temperature::DAYS_PER_YEAR,
+        "monthlyDayCounts":normals.monthly_day_counts, "regionCount":count}),
         &bytes,
     )
 }

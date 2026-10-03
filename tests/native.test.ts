@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import path from 'node:path';
 import { CONTINUOUS_PLATES_MODEL_VERSION, DEFAULT_RECIPE } from '../src/core/recipe';
 import { generateWorld } from '../src/core/world';
-import { FrameReader, NativeController, NativeSession, decodeWorld } from '../src/native/client';
+import { FrameReader, NativeController, NativeSession, decodeSeasonalTemperature, decodeWorld } from '../src/native/client';
 import type { Packet } from '../src/native/client';
 import { buildViewGeometry } from '../src/renderer/view-geometry';
 import { buildSurface } from '../src/core/surface';
@@ -234,6 +234,27 @@ test('opt-in continuous plates cross the native bridge without migrating existin
     assert.notEqual(first.checksum, oldWorld.checksum);
     assert.deepEqual(decodeWorld(await session.request({ command: 'generate', recipe: base })), oldWorld);
     assert.throws(() => decodeWorld({ ...firstPacket, header: { ...firstPacket.header, protocol: 9 } }), /terrain model/);
+  } finally { session.close(); }
+});
+
+test('seasonal normals are read-only, versioned, repeatable, and reject malformed transport', async () => {
+  const session = new NativeSession(executable);
+  try {
+    const recipe = { ...DEFAULT_RECIPE, subdivision: 2 };
+    const initial = await session.request({ command: 'generate', recipe });
+    const world = decodeWorld(initial);
+    const firstPacket = await session.request({ command: 'seasonalTemperature' });
+    const first = decodeSeasonalTemperature(firstPacket, world.stats.regionCount, 1);
+    const second = decodeSeasonalTemperature(await session.request({ command: 'seasonalTemperature' }), world.stats.regionCount, 1);
+    assert.deepEqual(first, second);
+    assert.equal(first.monthlyTemperatureCelsius.length, 12);
+    assert.equal(first.monthlyDayCounts.reduce((sum, days) => sum + days, 0), 365);
+    assert.equal(first.settings.axialTiltDegrees, 23.44);
+    assert.deepEqual(decodeWorld(await session.request({ command: 'generate', recipe })), world);
+    assert.throws(() => decodeSeasonalTemperature({ ...firstPacket, header: { ...firstPacket.header, temperatureModelVersion: 'future' } }, world.stats.regionCount, 1), /metadata/);
+    assert.throws(() => decodeSeasonalTemperature({ ...firstPacket, bytes: firstPacket.bytes.subarray(8) }, world.stats.regionCount, 1), /metadata/);
+    const corrupted = Buffer.from(firstPacket.bytes); corrupted.writeDoubleLE(NaN);
+    assert.throws(() => decodeSeasonalTemperature({ ...firstPacket, bytes: corrupted }, world.stats.regionCount, 1), /Non-finite/);
   } finally { session.close(); }
 });
 

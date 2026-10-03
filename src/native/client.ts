@@ -7,6 +7,8 @@ import { validateWater } from '../core/water';
 import { validateDrainage } from '../core/drainage';
 import { BASIN_ANALYSIS_VERSION, validateBasins } from '../core/basins';
 import type { DiagnosticFrame, PreparedWaterWorld, PrescribedWaterMode, WaterBudget, WaterFrame } from '../shared/desktop-api';
+import { DEFAULT_TEMPERATURE_SETTINGS, TEMPERATURE_DAYS_PER_YEAR, TEMPERATURE_MODEL_VERSION, TEMPERATURE_MONTHS_PER_YEAR } from '../core/seasonal-temperature';
+import type { TemperatureNormals } from '../core/seasonal-temperature';
 
 const MAX_BYTES = 32 * 2 ** 20;
 const MAX_COMMAND_BYTES = 8 * 2 ** 20;
@@ -46,7 +48,7 @@ export class FrameReader {
         if (this.length < this.headerLength) return;
         const h = JSON.parse(this.take(this.headerLength).toString('utf8')) as Header;
         if (!h || (h.protocol !== 9 && h.protocol !== 10) || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
-          || !['world', 'frame', 'water', 'checkpoint', 'error'].includes(h.kind)) throw new Error('Invalid native protocol header.');
+          || !['world', 'frame', 'water', 'temperature', 'checkpoint', 'error'].includes(h.kind)) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
       if (this.length < this.header.byteLength) return;
@@ -234,6 +236,46 @@ function decodeWaterFrame(packet: Packet, count: number, epoch: number, expected
     mainOceanId: header.mainOceanId as number };
 }
 
+export function decodeSeasonalTemperature(packet: Packet, count: number, epoch: number): TemperatureNormals {
+  const { header, bytes } = packet;
+  const settings = header.settings;
+  const dayCounts = header.monthlyDayCounts;
+  if (header.kind !== 'temperature' || header.protocol !== 9
+    || header.temperatureModelVersion !== TEMPERATURE_MODEL_VERSION
+    || header.daysPerYear !== TEMPERATURE_DAYS_PER_YEAR || header.regionCount !== count
+    || !Number.isSafeInteger(count) || count < 1 || bytes.length !== count * (TEMPERATURE_MONTHS_PER_YEAR + 3) * 8
+    || !settings || typeof settings !== 'object' || Array.isArray(settings)
+    || Object.keys(settings).length !== Object.keys(DEFAULT_TEMPERATURE_SETTINGS).length
+    || Object.entries(DEFAULT_TEMPERATURE_SETTINGS).some(([key, value]) => (settings as Record<string, unknown>)[key] !== value)
+    || !Array.isArray(dayCounts) || dayCounts.length !== TEMPERATURE_MONTHS_PER_YEAR
+    || dayCounts.some((days) => !Number.isSafeInteger(days) || days < 28 || days > 31)
+    || dayCounts.reduce((sum: number, days: number) => sum + days, 0) !== TEMPERATURE_DAYS_PER_YEAR) {
+    throw new Error('Invalid native seasonal-temperature metadata.');
+  }
+  let offset = 0;
+  const next = (): Float64Array => {
+    const field = floats(bytes.subarray(offset, offset + count * 8)); offset += count * 8; return field;
+  };
+  const monthlyTemperatureCelsius = Array.from({ length: TEMPERATURE_MONTHS_PER_YEAR }, next);
+  const annualMeanCelsius = next(), annualMinimumCelsius = next(), annualMaximumCelsius = next();
+  for (let region = 0; region < count; region++) {
+    const mean = annualMeanCelsius[region], low = annualMinimumCelsius[region], high = annualMaximumCelsius[region];
+    if (low < -200 || high > 200 || low > mean || mean > high) throw new Error('Invalid native seasonal-temperature range.');
+    let reconstructed = 0;
+    for (let month = 0; month < TEMPERATURE_MONTHS_PER_YEAR; month++) {
+      const value = monthlyTemperatureCelsius[month][region];
+      if (value < low - 1e-8 || value > high + 1e-8) throw new Error('Invalid native seasonal-temperature month.');
+      reconstructed += value * (dayCounts as number[])[month];
+    }
+    if (Math.abs(reconstructed / TEMPERATURE_DAYS_PER_YEAR - mean) > 1e-8) {
+      throw new Error('Invalid native seasonal-temperature annual mean.');
+    }
+  }
+  return { epoch, modelVersion: TEMPERATURE_MODEL_VERSION, settings: settings as TemperatureNormals['settings'],
+    monthlyDayCounts: dayCounts as number[], monthlyTemperatureCelsius, annualMeanCelsius,
+    annualMinimumCelsius, annualMaximumCelsius };
+}
+
 /** Pending generation never mutates the last successfully published world. */
 export class NativeController {
   private active: NativeSession | null = null;
@@ -310,6 +352,14 @@ export class NativeController {
     }
     this.tick += steps;
     return { epoch, tick: this.tick, relativeMassError: header.relativeMassError, field: floats(bytes) };
+  }
+  async seasonalTemperature(epoch: number): Promise<TemperatureNormals> {
+    if (!this.active || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    const session = this.active;
+    const packet = await session.request({ command: 'seasonalTemperature' });
+    if (this.active !== session || this.epoch !== epoch) throw new Error('Stale seasonal-temperature response.');
+    try { return decodeSeasonalTemperature(packet, this.count, epoch); }
+    catch (error) { session.close(); throw error; }
   }
   async prescribeWater(epoch: number, region: number, mode: PrescribedWaterMode): Promise<WaterFrame> {
     if (!this.active || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');

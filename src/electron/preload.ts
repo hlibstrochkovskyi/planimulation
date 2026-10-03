@@ -9,6 +9,7 @@ const api: DesktopAPI = {
   cancelGeneration: () => ipcRenderer.invoke('world:cancel'),
   acceptWorld: (epoch) => ipcRenderer.invoke('world:accept', epoch),
   advance: (epoch, steps) => ipcRenderer.invoke('world:advance', epoch, steps),
+  seasonalTemperature: (epoch) => ipcRenderer.invoke('world:seasonalTemperature', epoch),
   prescribeWater: (epoch, region, mode) => ipcRenderer.invoke('world:prescribeWater', epoch, region, mode),
   openWaterCheckpoint: () => ipcRenderer.invoke('water:openCheckpoint'),
   saveWaterCheckpoint: (epoch) => ipcRenderer.invoke('water:saveCheckpoint', epoch),
