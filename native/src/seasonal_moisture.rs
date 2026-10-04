@@ -1,6 +1,7 @@
 //! Finite seasonal exchange with delayed runoff and evaporating terminal stores.
 //! Version 8 optionally shares finite liquid inside fixed reference water bodies.
-//! Fixed initial geography; no basin spill levels or energy feedback.
+//! Version 9 couples minimum-leaf lake exposure below the first connection.
+//! Fixed bed/thermal forcing; no spill/merge or energy feedback.
 use crate::{
     Recipe, World,
     moisture_transport::{Flow, Geometry, total_mass},
@@ -10,6 +11,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod body_preparation;
 pub mod closed_lake;
+mod lake_exchange;
 pub mod preparation;
 mod reference_pool;
 pub mod water_return;
@@ -20,6 +22,7 @@ pub const SOIL_PRECISION_MODEL_VERSION: &str = "seasonal-moisture-5";
 pub const SURFACE_PRECISION_MODEL_VERSION: &str = "seasonal-moisture-6";
 pub const TERMINAL_PRECISION_MODEL_VERSION: &str = "seasonal-moisture-7";
 pub const REFERENCE_POOL_MODEL_VERSION: &str = "seasonal-moisture-8";
+pub const CLOSED_LAKE_MODEL_VERSION: &str = "seasonal-moisture-9";
 pub const TERMINAL_STOCK_MODEL_VERSION: &str = "terminal-stock-compensated-1";
 pub const SECONDS_PER_DAY: u64 = 86400;
 pub const MAX_ELAPSED_SECONDS: u64 = 3650 * SECONDS_PER_DAY;
@@ -48,6 +51,12 @@ pub enum TerminalNumerics {
 #[serde(rename_all = "camelCase")]
 pub enum ReferenceWaterPool {
     FastConnectedBody,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ClosedLakeExchange {
+    FrozenLeafExposure,
 }
 
 // Missing means legacy; a present null is not an unrecorded/default algorithm.
@@ -101,6 +110,12 @@ pub struct Settings {
         deserialize_with = "present_option"
     )]
     pub reference_water_pool: Option<ReferenceWaterPool>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "present_option"
+    )]
+    pub closed_lake_exchange: Option<ClosedLakeExchange>,
 }
 
 impl Default for Settings {
@@ -122,6 +137,7 @@ impl Default for Settings {
             surface_numerics: None,
             terminal_numerics: None,
             reference_water_pool: None,
+            closed_lake_exchange: None,
         }
     }
 }
@@ -149,6 +165,11 @@ impl Settings {
         }
         if self.reference_water_pool.is_some() && self.terminal_numerics.is_none() {
             return Err("The reference-water pool requires compensated terminal stocks.".into());
+        }
+        if self.closed_lake_exchange.is_some() && self.reference_water_pool.is_none() {
+            return Err(
+                "Closed-leaf lake exchange requires the finite reference-water pool.".into(),
+            );
         }
         if !(60..=21600).contains(&self.max_coupled_step_seconds) {
             return Err("Coupled moisture step limit must be 60–21600 seconds.".into());
@@ -365,6 +386,25 @@ pub struct Checkpoint {
         deserialize_with = "present_option"
     )]
     pub reference_body_low_kilograms: Option<Vec<f64>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "present_option"
+    )]
+    pub closed_lake_model_version: Option<String>,
+    /// Gross local liquid captured by the lake, not another owned water stock.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "present_option"
+    )]
+    pub cumulative_lake_capture_kilograms: Option<Vec<f64>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "present_option"
+    )]
+    pub cumulative_lake_capture_low_kilograms: Option<Vec<f64>>,
     pub pending_runoff_kilograms: Vec<f64>,
     pub terminal_water_kilograms: Vec<f64>,
     pub cumulative_runoff_transfers: Vec<runoff_transport::Transfers>,
@@ -417,6 +457,12 @@ impl State {
     pub fn reference_body_low_kilograms(&self) -> Option<&[f64]> {
         self.0.reference_body_low_kilograms.as_deref()
     }
+    pub fn cumulative_lake_capture_kilograms(&self) -> Option<&[f64]> {
+        self.0.cumulative_lake_capture_kilograms.as_deref()
+    }
+    pub fn cumulative_lake_capture_low_kilograms(&self) -> Option<&[f64]> {
+        self.0.cumulative_lake_capture_low_kilograms.as_deref()
+    }
     pub fn pending_runoff_kilograms(&self) -> &[f64] {
         &self.0.pending_runoff_kilograms
     }
@@ -453,6 +499,7 @@ pub struct Model {
     // Immutable connectivity; versions 3–7 use this only for diagnostics.
     reference_body_ids: Vec<u32>,
     reference_pool: Option<reference_pool::Layout>,
+    lake_exchange: Option<lake_exchange::Layout>,
     routing: runoff_transport::Network,
     initial_surface: Vec<f64>,
     initial_total: f64,
@@ -479,13 +526,16 @@ pub struct Budget {
     pub terminal_water_kilograms: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reference_body_water_kilograms: Option<f64>,
+    /// Gross transfer only; excluded from the inventory total.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cumulative_lake_capture_kilograms: Option<f64>,
     pub cumulative_runoff_transfers: runoff_transport::Transfers,
     pub cumulative_surface_transfers: surface_water::Transfers,
     pub vapor_kilograms: f64,
     pub residual_kilograms: f64,
     pub cumulative_evaporation_kilograms: f64,
     pub cumulative_precipitation_kilograms: f64,
-    /// Includes each connected-body ledger in version 8; old regional ledgers otherwise.
+    /// Includes body identities in versions 8/9 and leaf identities in version 9.
     pub maximum_relative_local_surface_ledger_residual: f64,
     pub vapor_ledger_residual_kilograms: f64,
 }
@@ -683,6 +733,10 @@ impl Model {
         let reference_pool = settings
             .reference_water_pool
             .map(|_| reference_pool::Layout::new(&world.water.body_ids));
+        let lake_exchange = settings
+            .closed_lake_exchange
+            .map(|_| lake_exchange::Layout::from_world(world))
+            .transpose()?;
         let mut body_high = Vec::new();
         let mut body_low = Vec::new();
         if let Some(layout) = &reference_pool {
@@ -709,7 +763,9 @@ impl Model {
             }
         }
         let origin = Checkpoint {
-            schema_version: if reference_pool.is_some() {
+            schema_version: if lake_exchange.is_some() {
+                9
+            } else if reference_pool.is_some() {
                 8
             } else if settings.terminal_numerics.is_some() {
                 7
@@ -722,7 +778,9 @@ impl Model {
             } else {
                 3
             },
-            model_version: if reference_pool.is_some() {
+            model_version: if lake_exchange.is_some() {
+                CLOSED_LAKE_MODEL_VERSION
+            } else if reference_pool.is_some() {
                 REFERENCE_POOL_MODEL_VERSION
             } else if settings.terminal_numerics.is_some() {
                 TERMINAL_PRECISION_MODEL_VERSION
@@ -771,6 +829,11 @@ impl Model {
                 .map(|_| reference_pool::MODEL_VERSION.into()),
             reference_body_high_kilograms: reference_pool.as_ref().map(|_| body_high),
             reference_body_low_kilograms: reference_pool.as_ref().map(|_| body_low),
+            closed_lake_model_version: lake_exchange
+                .as_ref()
+                .map(|_| lake_exchange::MODEL_VERSION.into()),
+            cumulative_lake_capture_kilograms: lake_exchange.as_ref().map(|_| vec![0.; n]),
+            cumulative_lake_capture_low_kilograms: lake_exchange.as_ref().map(|_| vec![0.; n]),
             pending_runoff_kilograms: vec![0.; n],
             terminal_water_kilograms: vec![0.; n],
             cumulative_runoff_transfers: vec![runoff_transport::Transfers::default(); n],
@@ -787,6 +850,7 @@ impl Model {
             is_land: world.water.depth_meters.iter().map(|d| *d == 0.).collect(),
             reference_body_ids: world.water.body_ids.clone(),
             reference_pool,
+            lake_exchange,
             routing,
             initial_surface,
             initial_total,
@@ -843,8 +907,22 @@ impl Model {
             && checkpoint.settings.surface_numerics.is_none()
             && checkpoint.snow_low_kilograms.is_none()
             && checkpoint.surface_low_kilograms.is_none();
-        let pooled = checkpoint.schema_version == 8
+        let legacy_lake = checkpoint.settings.closed_lake_exchange.is_none()
+            && checkpoint.closed_lake_model_version.is_none()
+            && checkpoint.cumulative_lake_capture_kilograms.is_none()
+            && checkpoint.cumulative_lake_capture_low_kilograms.is_none();
+        let coupled_lake = checkpoint.schema_version == 9
+            && checkpoint.model_version == CLOSED_LAKE_MODEL_VERSION
+            && checkpoint.settings.closed_lake_exchange
+                == Some(ClosedLakeExchange::FrozenLeafExposure)
+            && checkpoint.closed_lake_model_version.as_deref()
+                == Some(lake_exchange::MODEL_VERSION)
+            && checkpoint.cumulative_lake_capture_kilograms.is_some()
+            && checkpoint.cumulative_lake_capture_low_kilograms.is_some();
+        let pooled = ((checkpoint.schema_version == 8
             && checkpoint.model_version == REFERENCE_POOL_MODEL_VERSION
+            && legacy_lake)
+            || coupled_lake)
             && checkpoint.settings.reference_water_pool
                 == Some(ReferenceWaterPool::FastConnectedBody)
             && checkpoint.reference_body_model_version.as_deref()
@@ -883,6 +961,7 @@ impl Model {
         };
         if !(((legacy || compensated || precise_surface) && legacy_terminal) || precise_terminal)
             || (!pooled && !legacy_pool)
+            || (!coupled_lake && !legacy_lake)
             || checkpoint.transport_model_version != crate::moisture_transport::MODEL_VERSION
             || checkpoint.temperature_model_version != seasonal_temperature::MODEL_VERSION
             || checkpoint.wind_model_version != seasonal_wind::MODEL_VERSION
@@ -912,6 +991,7 @@ impl Model {
             || cp.surface_model_version != origin.surface_model_version
             || cp.terminal_stock_model_version != origin.terminal_stock_model_version
             || cp.reference_body_model_version != origin.reference_body_model_version
+            || cp.closed_lake_model_version != origin.closed_lake_model_version
             || cp.runoff_model_version != origin.runoff_model_version
             || cp.orographic_model_version != origin.orographic_model_version
             || cp.recipe != origin.recipe
@@ -1023,6 +1103,15 @@ impl Model {
             }
             _ => return Err("Invalid reference-body checkpoint shape or mode.".into()),
         }
+        let lake_ledger = match &self.lake_exchange {
+            Some(layout) => Some(layout.validate(cp)?),
+            None if cp.cumulative_lake_capture_kilograms.is_none()
+                && cp.cumulative_lake_capture_low_kilograms.is_none() =>
+            {
+                None
+            }
+            None => return Err("Lake capture ledger outside the coupled lake model.".into()),
+        };
         if cp.cumulative_surface_transfers.len() != self.areas.len()
             || cp.cumulative_surface_transfer_roundoff.len() != self.areas.len()
             || cp
@@ -1134,6 +1223,10 @@ impl Model {
             let route = cp.cumulative_runoff_transfers[i];
             let terminal = cp.terminal_water_kilograms[i];
             let pooled_region = self.reference_pool.is_some() && !self.is_land[i];
+            let lake_region = self
+                .lake_exchange
+                .as_ref()
+                .is_some_and(|layout| layout.by_region[i].is_some());
             if pooled_region && route.terminal_evaporation != 0. {
                 return Err(
                     "Body-owned evaporation recorded as regional terminal evaporation.".into(),
@@ -1142,7 +1235,7 @@ impl Model {
             if (!self.routing.is_terminal(i)
                 && (terminal != 0.
                     || route.terminal_delivery != 0.
-                    || route.terminal_evaporation != 0.))
+                    || (!lake_region && route.terminal_evaporation != 0.)))
                 || (self.routing.is_terminal(i) && route.received_transit != 0.)
             {
                 return Err("Runoff terminal stock or transfer has the wrong recipient.".into());
@@ -1170,6 +1263,11 @@ impl Model {
                 .max(f.values().into_iter().fold(0., f64::max))
                 .max(terminal)
                 .max(route.values().into_iter().fold(0., f64::max))
+                .max(
+                    cp.cumulative_lake_capture_kilograms
+                        .as_ref()
+                        .map_or(0., |v| v[i]),
+                )
                 .max(1.);
             for (ledger, residual) in [
                 cp.surface_low_kilograms.as_ref().map_or(
@@ -1178,7 +1276,7 @@ impl Model {
                         + f.infiltration
                         + f.liquid_runoff,
                     |low| {
-                        total_mass(&[
+                        let terms = [
                             stocks.liquid,
                             low[i],
                             -self.initial_surface[i],
@@ -1187,7 +1285,17 @@ impl Model {
                             f.liquid_evaporation,
                             f.infiltration,
                             f.liquid_runoff,
-                        ])
+                        ];
+                        if let Some(capture) = &cp.cumulative_lake_capture_kilograms {
+                            let mut captured = terms.to_vec();
+                            captured.extend([
+                                capture[i],
+                                cp.cumulative_lake_capture_low_kilograms.as_ref().unwrap()[i],
+                            ]);
+                            total_mass(&captured)
+                        } else {
+                            total_mass(&terms)
+                        }
                     },
                 ),
                 cp.snow_low_kilograms
@@ -1229,7 +1337,7 @@ impl Model {
             .into_iter()
             .enumerate()
             {
-                if pooled_region && (ledger == 0 || ledger == 6) {
+                if (pooled_region && (ledger == 0 || ledger == 6)) || (lake_region && ledger == 6) {
                     // Body identity replaces only the two displaced local owners.
                     continue;
                 }
@@ -1241,6 +1349,12 @@ impl Model {
                     local_witness = (i, ledger);
                 }
             }
+        }
+        if let Some((residual, region)) = lake_ledger
+            && residual > local_residual
+        {
+            local_residual = residual;
+            local_witness = (region, 10);
         }
         let body_water = if let Some(layout) = &self.reference_pool {
             let high = cp.reference_body_high_kilograms.as_ref().unwrap();
@@ -1363,6 +1477,17 @@ impl Model {
             pending_runoff_kilograms: runoff,
             terminal_water_kilograms: terminal,
             reference_body_water_kilograms: body_water,
+            cumulative_lake_capture_kilograms: cp.cumulative_lake_capture_kilograms.as_ref().map(
+                |high| {
+                    total_mass(
+                        &high
+                            .iter()
+                            .chain(cp.cumulative_lake_capture_low_kilograms.as_ref().unwrap())
+                            .copied()
+                            .collect::<Vec<_>>(),
+                    )
+                },
+            ),
             cumulative_runoff_transfers: total_runoff_transfers(&cp.cumulative_runoff_transfers),
             cumulative_surface_transfers: total_transfers(&cp.cumulative_surface_transfers),
             vapor_kilograms: vapor,
@@ -1427,7 +1552,7 @@ impl Model {
     }
 
     /// Versions 3–7 use the same transactional path as `advance`; the observer
-    /// receives copied provisional diagnostics. Body-owned version 8 rejects.
+    /// receives copied provisional diagnostics. Body-owned versions 8/9 reject.
     pub fn advance_observed(
         &self,
         state: &mut State,
@@ -1502,6 +1627,7 @@ impl Model {
         } else {
             Vec::new()
         };
+        let mut lake_demand = self.lake_exchange.as_ref().map(|_| vec![0.; n]);
         let settings = self.origin.settings;
         let coupled_limit = self.maximum_coupled_step_seconds()?;
         if settings.orography.is_some()
@@ -1540,6 +1666,14 @@ impl Model {
             }
             for phase in 0..2 {
                 pool_demand.fill(0.);
+                if let Some(demand) = &mut lake_demand {
+                    demand.fill(0.);
+                }
+                let lake_wet = self
+                    .lake_exchange
+                    .as_ref()
+                    .map(|layout| layout.exposure(&next))
+                    .transpose()?;
                 if phase == 1 {
                     let transported = self.flows[month].advance(
                         &next.vapor_kilograms,
@@ -1551,11 +1685,19 @@ impl Model {
                 }
                 for i in 0..n {
                     let pooled_region = self.reference_pool.is_some() && !self.is_land[i];
+                    let lake_region = self
+                        .lake_exchange
+                        .as_ref()
+                        .is_some_and(|layout| layout.by_region[i].is_some());
+                    let lake_exposed = lake_wet.as_ref().is_some_and(|wet| wet[i]);
                     let vapor = next.vapor_kilograms[i];
                     let capacity = self.capacities[month][i];
                     let potential_evaporation = (capacity - vapor).max(0.) * evaporation_fraction;
                     if pooled_region && self.temperatures[month][i] > 0. {
                         pool_demand[i] = potential_evaporation;
+                    }
+                    if lake_exposed && self.temperatures[month][i] > 0. {
+                        lake_demand.as_mut().unwrap()[i] = potential_evaporation;
                     }
                     let extra_rate = self
                         .orographic_forcing
@@ -1572,11 +1714,12 @@ impl Model {
                     } else {
                         (vapor - capacity).max(0.) * precipitation_fraction
                     };
-                    let mut terminal_evaporation = if self.temperatures[month][i] > 0. {
-                        potential_evaporation.min(next.terminal_water_kilograms[i])
-                    } else {
-                        0.
-                    };
+                    let mut terminal_evaporation =
+                        if !lake_region && self.temperatures[month][i] > 0. {
+                            potential_evaporation.min(next.terminal_water_kilograms[i])
+                        } else {
+                            0.
+                        };
                     let old_terminal = next.terminal_water_kilograms[i];
                     let old_terminal_low = next
                         .terminal_low_kilograms
@@ -1636,18 +1779,29 @@ impl Model {
                     let before_snow_low = next.snow_low_kilograms.as_ref().map_or(0., |low| low[i]);
                     let before_liquid_low =
                         next.surface_low_kilograms.as_ref().map_or(0., |low| low[i]);
-                    let (result, after_low, after_snow_low, after_liquid_low) =
+                    let (mut result, mut after_low, after_snow_low, after_liquid_low) =
                         if next.snow_low_kilograms.is_some() {
+                            // Submerged soil remains owned/inactive; in-flight runoff
+                            // remains in the original delayed receiver network.
+                            let exchange_before = if lake_exposed {
+                                surface_water::Stocks {
+                                    soil: 0.,
+                                    pending_runoff: 0.,
+                                    ..before
+                                }
+                            } else {
+                                before
+                            };
                             let precise = surface_water::advance_precise_surface_prepared(
-                                before,
-                                before_low,
+                                exchange_before,
+                                if lake_exposed { 0. } else { before_low },
                                 before_snow_low,
                                 before_liquid_low,
                                 self.areas[i],
-                                self.is_land[i],
+                                self.is_land[i] && !lake_exposed,
                                 self.temperatures[month][i],
                                 deposited,
-                                if pooled_region {
+                                if pooled_region || lake_exposed {
                                     0.
                                 } else {
                                     potential_evaporation - terminal_evaporation
@@ -1688,6 +1842,11 @@ impl Model {
                                 0.,
                             )
                         };
+                    if lake_exposed {
+                        result.stocks.soil = before.soil;
+                        result.stocks.pending_runoff = before.pending_runoff;
+                        after_low = before_low;
+                    }
                     observe(SurfaceObservation {
                         coupled_start_seconds: next.elapsed_seconds,
                         phase,
@@ -1715,6 +1874,15 @@ impl Model {
                         )?;
                         next.surface_kilograms[i] = 0.;
                     }
+                    if lake_exposed {
+                        self.lake_exchange.as_ref().unwrap().capture(
+                            &mut next,
+                            i,
+                            result.stocks.liquid,
+                            after_liquid_low,
+                        )?;
+                        next.surface_kilograms[i] = 0.;
+                    }
                     next.snow_kilograms[i] = result.stocks.snow;
                     next.soil_kilograms[i] = result.stocks.soil;
                     if let Some(low) = &mut next.soil_low_kilograms {
@@ -1724,7 +1892,11 @@ impl Model {
                         low[i] = after_snow_low;
                     }
                     if let Some(low) = &mut next.surface_low_kilograms {
-                        low[i] = if pooled_region { 0. } else { after_liquid_low };
+                        low[i] = if pooled_region || lake_exposed {
+                            0.
+                        } else {
+                            after_liquid_low
+                        };
                     }
                     next.pending_runoff_kilograms[i] = result.stocks.pending_runoff;
                     next.vapor_kilograms[i] = (vapor - deposited) + evaporated;
@@ -1744,6 +1916,33 @@ impl Model {
                     if phase == 1 {
                         maximum_vapor_column =
                             maximum_vapor_column.max(next.vapor_kilograms[i] / self.areas[i]);
+                    }
+                }
+                if let Some(layout) = &self.lake_exchange {
+                    let (grants, residual) =
+                        layout.evaporate(&mut next, lake_demand.as_ref().unwrap())?;
+                    max_local_residual = max_local_residual.max(residual);
+                    for (i, grant) in grants.into_iter().enumerate() {
+                        if grant == 0. {
+                            continue;
+                        }
+                        next.vapor_kilograms[i] += grant;
+                        let transfer = runoff_transport::Transfers {
+                            terminal_evaporation: grant,
+                            ..Default::default()
+                        };
+                        next.cumulative_runoff_transfers[i]
+                            .accumulate(transfer, &mut next.cumulative_runoff_transfer_roundoff[i]);
+                        runoff_transfers[i].accumulate(transfer, &mut runoff_step_roundoff[i]);
+                        let f = next.cumulative_surface_transfers[i];
+                        next.cumulative_evaporation_kilograms[i] = f.liquid_evaporation
+                            + f.soil_evaporation
+                            + next.cumulative_runoff_transfers[i].terminal_evaporation;
+                        evaporation[i] += grant;
+                        if phase == 1 {
+                            maximum_vapor_column =
+                                maximum_vapor_column.max(next.vapor_kilograms[i] / self.areas[i]);
+                        }
                     }
                 }
                 if let Some(layout) = &self.reference_pool {
@@ -1836,6 +2035,9 @@ impl Model {
                         );
                         runoff_transfers[i].accumulate(transfers, &mut runoff_step_roundoff[i]);
                     }
+                }
+                if let Some(layout) = &self.lake_exchange {
+                    layout.exposure(&next)?;
                 }
             }
             next.elapsed_seconds += interval;

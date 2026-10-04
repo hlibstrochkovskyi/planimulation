@@ -1,0 +1,3799 @@
+{
+  "recordVersion": 1,
+  "recordedDate": "2026-10-04",
+  "physicalModelVersion": "seasonal-moisture-9",
+  "lakeExchangeModelVersion": "closed-leaf-exchange-1",
+  "surfaceComponentVersion": "closed-leaf-lake-1",
+  "scope": "One subdivision-2 Earth-radius reference at 1 m initial active depth, ten years at each of 900/450-second coupling. Applied exclusive lake exchange with a frozen pre-half-stage footprint and finite donors. All first-connection crossings remain unsupported atomic refusals; no spill/merge, calibration, stationarity or desktop promotion. No endpoint probes are applied or evaluated in these reports.",
+  "verification": {
+    "newIntegrationTestsPassed": 8,
+    "fullNpmTestPassed": true,
+    "nodeTestsPassed": 72,
+    "preExistingIgnoredLongReleaseQualification": 1,
+    "newIgnoredTests": 0,
+    "finalTargetedTestsAndAllTargetCompilationPassed": true,
+    "clippyWarningsDeniedPassed": true,
+    "formatAndDiffChecksPassed": true,
+    "legacy900SecondCompleteDecadeReportExactlyMatchesPriorRetainedRecord": true,
+    "bothCompleteDecadeReportsUnchangedAfterAdditionalGeometryAndLocalCaptureGuards": true,
+    "annualLakeIdentityAudit": {
+      "method": "Independent report-level difference of consecutive liquid high/low components versus actual annual capture/delivery/evaporation; ordinary binary64 summation, not an exact arithmetic oracle.",
+      "suites": [
+        {
+          "couplingSeconds": 900,
+          "maximumRelativeAnnualLakeIdentityResidual": 6.841142036990287e-16
+        },
+        {
+          "couplingSeconds": 450,
+          "maximumRelativeAnnualLakeIdentityResidual": 4.274364999641841e-16
+        }
+      ]
+    }
+  },
+  "comparisons": {
+    "yearTenGlobalRainfallMillimeters": [
+      170.86093778359674,
+      170.8160113512074
+    ],
+    "yearTenGlobalEvaporationMillimeters": [
+      170.86093778367731,
+      170.81601135129122
+    ],
+    "lakes": [
+      {
+        "terminalRegion": 73,
+        "depthMeters": [
+          8.26160904461996,
+          8.261459761992304
+        ],
+        "depthDifferenceMillimeters": 0.14928262765501188,
+        "firstCapacityFractions": [
+          0.23855070139018283,
+          0.23854639091321156
+        ],
+        "yearTenCaptureMillimeters": [
+          256.5650466593333,
+          256.56563850275023
+        ],
+        "yearTenDeliveryMillimeters": [
+          647.3444515636652,
+          647.2733054134081
+        ],
+        "yearTenEvaporationMillimeters": [
+          45.63664514453823,
+          45.58862265271266
+        ]
+      },
+      {
+        "terminalRegion": 91,
+        "depthMeters": [
+          0.0280821525985953,
+          0.028125414996757643
+        ],
+        "depthDifferenceMillimeters": 0.04326239816234215,
+        "firstCapacityFractions": [
+          0.0002722251910955276,
+          0.00027264457185936493
+        ],
+        "yearTenCaptureMillimeters": [
+          14.763490004869913,
+          14.767170782657374
+        ],
+        "yearTenDeliveryMillimeters": [
+          202.76149776259373,
+          202.82645722454157
+        ],
+        "yearTenEvaporationMillimeters": [
+          217.52498773392495,
+          217.59362797211801
+        ]
+      }
+    ]
+  },
+  "suites": [
+    {
+      "actualMaximumCoupledStepSeconds": 900,
+      "annual": [
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 92620678346640450,
+            "cumulativeLakeCaptureKilograms": 603939642329443.1,
+            "cumulativePrecipitationKilograms": 80365493952266380,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 226913868136540.03,
+              "sent": 6562186896573412,
+              "terminalDelivery": 6335273028436873,
+              "terminalEvaporation": 365983536817313.7
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 11400084657476724,
+              "liquidEvaporation": 89700578153467000,
+              "liquidRunoff": 3482877023732552,
+              "melt": 3103237995565082.5,
+              "rain": 75943316840189260,
+              "snowfall": 4422177112077135,
+              "soilDrainage": 3765720427970460,
+              "soilEvaporation": 2554116656356129
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 1.7081750525086664e-15,
+            "pendingRunoffKilograms": 913324423266141.9,
+            "referenceBodyWaterKilograms": 341876258118753700,
+            "residualKilograms": -64,
+            "snowKilograms": 1318939116512052.8,
+            "soilKilograms": 5080247573150134,
+            "surfaceKilograms": 8323866731133.219,
+            "terminalWaterKilograms": 1640590151174196,
+            "vaporKilograms": 12255184394374034,
+            "vaporLedgerResidualKilograms": -30
+          },
+          "evaporationMillimeters": 181.58621791447112,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 563141654087770.4,
+              "annualActualLakeEvaporationKilograms": 178211898784923.62,
+              "annualActualTerminalDeliveryKilograms": 1255654773211446.2,
+              "annualActualTerminalDeliveryMillimeters": 412.8098538876825,
+              "annualActualTerminalEvaporationKilograms": 178211898784923.62,
+              "annualActualTerminalEvaporationMillimeters": 58.58905605901149,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 1640584528514293,
+                  "lowKilograms": -0.08384501078376161
+                },
+                "surface": {
+                  "absoluteLevelMeters": 95.12258552267924,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 0.5393596026193198,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 1640584528514.293
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 40797988241672.766,
+              "annualActualLakeEvaporationKilograms": 187771638032390.06,
+              "annualActualTerminalDeliveryKilograms": 146979272450620.25,
+              "annualActualTerminalDeliveryMillimeters": 43.74453949697146,
+              "annualActualTerminalEvaporationKilograms": 187771638032390.06,
+              "annualActualTerminalEvaporationMillimeters": 55.88532110252838,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 5622659902.970288,
+                  "lowKilograms": -2.1740809330594857e-7
+                },
+                "surface": {
+                  "absoluteLevelMeters": null,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.0000016734377854956073,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 5622659.902970288
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 157.55948194423564,
+          "year": 1
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 179572401181615070,
+            "cumulativeLakeCaptureKilograms": 1433024159625000.8,
+            "cumulativePrecipitationKilograms": 167284189118893700,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 521130777598647.06,
+              "sent": 17456520192487870,
+              "terminalDelivery": 16935389414889222,
+              "terminalEvaporation": 1119788687251942.6
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 24537880202160490,
+              "liquidEvaporation": 170049005277992320,
+              "liquidRunoff": 7532350987735815,
+              "melt": 7770586098292940,
+              "rain": 158194645436400640,
+              "snowfall": 9089543682493048,
+              "soilDrainage": 10390884413251024,
+              "soilEvaporation": 8403607216370821
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 1.8959606928291625e-15,
+            "pendingRunoffKilograms": 987845986097617.5,
+            "referenceBodyWaterKilograms": 338408071264746940,
+            "residualKilograms": -64,
+            "snowKilograms": 1318957584200108,
+            "soilKilograms": 5743388572538641,
+            "surfaceKilograms": 8708609668776.241,
+            "terminalWaterKilograms": 4337683563987944.5,
+            "vaporKilograms": 12288212062721390,
+            "vaporLedgerResidualKilograms": 14
+          },
+          "evaporationMillimeters": 170.4720238784896,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 779899439036335.9,
+              "annualActualLakeEvaporationKilograms": 139009269910885.94,
+              "annualActualTerminalDeliveryKilograms": 1963136938932731.8,
+              "annualActualTerminalDeliveryMillimeters": 645.4021361696886,
+              "annualActualTerminalEvaporationKilograms": 139009269910885.94,
+              "annualActualTerminalEvaporationMillimeters": 45.70077510570892,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 4244611636572474.5,
+                  "lowKilograms": 0.06565067515498413
+                },
+                "surface": {
+                  "absoluteLevelMeters": 95.9786871143992,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 1.395461194339262,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 4244611636572.4746
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49185078259221.734,
+              "annualActualLakeEvaporationKilograms": 614795880523743,
+              "annualActualTerminalDeliveryKilograms": 658677107020088.4,
+              "annualActualTerminalDeliveryMillimeters": 196.03802797072262,
+              "annualActualTerminalEvaporationKilograms": 614795880523743,
+              "annualActualTerminalEvaporationMillimeters": 182.97792763385482,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 93071927415470.02,
+                  "lowKilograms": 0.0016472861728047405
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.983230839118754,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.02770042698539775,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 93071927415.47002
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.4072719301258,
+          "year": 2
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 266692788697833150,
+            "cumulativeLakeCaptureKilograms": 2262996590275479.5,
+            "cumulativePrecipitationKilograms": 254404421330394800,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 836421987135218.4,
+              "sent": 28991819725066060,
+              "terminalDelivery": 28155397737930840,
+              "terminalEvaporation": 1987926585551128.2
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 37768382240854180,
+              "liquidEvaporation": 250349412239560260,
+              "liquidRunoff": 11604910906033410,
+              "melt": 12441844150509936,
+              "rain": 240643618949378340,
+              "snowfall": 13760802381016466,
+              "soilDrainage": 17541088690056532,
+              "soilEvaporation": 14355449872721754
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 1.6545739706722048e-15,
+            "pendingRunoffKilograms": 990601858159098.5,
+            "referenceBodyWaterKilograms": 335664957865101400,
+            "residualKilograms": -64,
+            "snowKilograms": 1318958230506529.8,
+            "soilKilograms": 5871843678075893,
+            "surfaceKilograms": 8709859120253.884,
+            "terminalWaterKilograms": 6949428785559921,
+            "vaporKilograms": 12288367367438360,
+            "vaporLedgerResidualKilograms": 24
+          },
+          "evaporationMillimeters": 170.8026971375228,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 780392575108949.4,
+              "annualActualLakeEvaporationKilograms": 138817505995556.06,
+              "annualActualTerminalDeliveryKilograms": 1968954181814685,
+              "annualActualTerminalDeliveryMillimeters": 647.3146166024961,
+              "annualActualTerminalEvaporationKilograms": 138817505995556.06,
+              "annualActualTerminalEvaporationMillimeters": 45.63773068015731,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 6855140887500552,
+                  "lowKilograms": 0.46326464432081593
+                },
+                "surface": {
+                  "absoluteLevelMeters": 96.83692635470324,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 2.2537004346433083,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 6855140887500.552
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49579855541529.26,
+              "annualActualLakeEvaporationKilograms": 729320392303629.6,
+              "annualActualTerminalDeliveryKilograms": 680956507405998.6,
+              "annualActualTerminalDeliveryMillimeters": 202.6689092773213,
+              "annualActualTerminalEvaporationKilograms": 729320392303629.6,
+              "annualActualTerminalEvaporationMillimeters": 217.0631557438915,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 94287898059368.1,
+                  "lowKilograms": 0.0006533144599174534
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.98359274100446,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.0280623288711009,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 94287898059.36809
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.80239265696102,
+          "year": 3
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 353827518184592450,
+            "cumulativeLakeCaptureKilograms": 3093000063557852,
+            "cumulativePrecipitationKilograms": 341539142700835100,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 1152908419031891.8,
+              "sent": 40616493313589230,
+              "terminalDelivery": 39463584894557340,
+              "terminalEvaporation": 2857531422656477.5
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 51004668670079096,
+              "liquidEvaporation": 330646815652120450,
+              "liquidRunoff": 15678909894310836,
+              "melt": 17113703188234972,
+              "rain": 323106481250449100,
+              "snowfall": 18432661450385964,
+              "soilDrainage": 24775369054443764,
+              "soilEvaporation": 20323171109815550
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 1.5963975673390855e-15,
+            "pendingRunoffKilograms": 990694054197244.9,
+            "referenceBodyWaterKilograms": 333019882292241600,
+            "residualKilograms": -64,
+            "snowKilograms": 1318958262150992.5,
+            "soilKilograms": 5906128505819783,
+            "surfaceKilograms": 8709921106994.213,
+            "terminalWaterKilograms": 9560119124687408,
+            "vaporKilograms": 12288375483757388,
+            "vaporLedgerResidualKilograms": 12
+          },
+          "evaporationMillimeters": 170.83081509384215,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 780400419433013.5,
+              "annualActualLakeEvaporationKilograms": 138814342623892.25,
+              "annualActualTerminalDeliveryKilograms": 1969041509307671,
+              "annualActualTerminalDeliveryMillimeters": 647.3433264440777,
+              "annualActualTerminalEvaporationKilograms": 138814342623892.25,
+              "annualActualTerminalEvaporationMillimeters": 45.63669068809724,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 9465768473617346,
+                  "lowKilograms": -0.40632286277809726
+                },
+                "surface": {
+                  "absoluteLevelMeters": 97.69519792374585,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 3.1119720036859153,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 9465768473617.346
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49603053849359.125,
+              "annualActualLakeEvaporationKilograms": 730790494481456.8,
+              "annualActualTerminalDeliveryKilograms": 681250193642791.8,
+              "annualActualTerminalDeliveryMillimeters": 202.75631731092298,
+              "annualActualTerminalEvaporationKilograms": 730790494481456.8,
+              "annualActualTerminalEvaporationMillimeters": 217.50069323955537,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 94350651070062.62,
+                  "lowKilograms": -0.0016512377794484223
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.983611417798194,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.028081005664835904,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 94350651070.06262
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.83079918150267,
+          "year": 4
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 440968095628521540,
+            "cumulativeLakeCaptureKilograms": 3923005242045008,
+            "cumulativePrecipitationKilograms": 428679719698731300,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 1469428811486291.8,
+              "sent": 52246014104693350,
+              "terminalDelivery": 50776585293207064,
+              "terminalEvaporation": 3727213046440597.5
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 64243296592691690,
+              "liquidEvaporation": 410943078554419400,
+              "liquidRunoff": 19753490586577940,
+              "melt": 21785893323155576,
+              "rain": 405574868111615000,
+              "snowfall": 23104851587116412,
+              "soilDrainage": 32013794062967064,
+              "soilEvaporation": 26297804027661496
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 1.0550095876696872e-15,
+            "pendingRunoffKilograms": 990699356337930.8,
+            "referenceBodyWaterKilograms": 330383671643204100,
+            "residualKilograms": 0,
+            "snowKilograms": 1318958263960836.2,
+            "soilKilograms": 5931698502063124,
+            "surfaceKilograms": 8709924435308.237,
+            "terminalWaterKilograms": 12170754024169992,
+            "vaporKilograms": 12288375929790150,
+            "vaporLedgerResidualKilograms": -58
+          },
+          "evaporationMillimeters": 170.84228022715735,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 780400744576075.9,
+              "annualActualLakeEvaporationKilograms": 138814212017936.38,
+              "annualActualTerminalDeliveryKilograms": 1969044742250056,
+              "annualActualTerminalDeliveryMillimeters": 647.3443893082518,
+              "annualActualTerminalEvaporationKilograms": 138814212017936.38,
+              "annualActualTerminalEvaporationMillimeters": 45.63664775000095,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 12076399748425540,
+                  "lowKilograms": -0.11739503155672537
+                },
+                "surface": {
+                  "absoluteLevelMeters": 98.55347070548495,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 3.9702447854250296,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 12076399748425.54
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49604433911080.336,
+              "annualActualLakeEvaporationKilograms": 730867411766184,
+              "annualActualTerminalDeliveryKilograms": 681266602529494.5,
+              "annualActualTerminalDeliveryMillimeters": 202.76120098724346,
+              "annualActualTerminalEvaporationKilograms": 730867411766184,
+              "annualActualTerminalEvaporationMillimeters": 217.52358565930717,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 94354275744453.03,
+                  "lowKilograms": 0.006239409148541597
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.9836124965878,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.028082084454446106,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 94354275744.45303
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.84227935269374,
+          "year": 5
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 528112433771028350,
+            "cumulativeLakeCaptureKilograms": 4753010522215722,
+            "cumulativePrecipitationKilograms": 515824057815503900,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 1785950672270109.5,
+              "sent": 63876637098240550,
+              "terminalDelivery": 62090686425970440,
+              "terminalEvaporation": 4596899094293182
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 77483367829464260,
+              "liquidEvaporation": 491238583799562500,
+              "liquidRunoff": 23828430007916510,
+              "melt": 26458315553530456,
+              "rain": 488046783997754700,
+              "snowfall": 27777273817749240,
+              "soilDrainage": 39252956874783040,
+              "soilEvaporation": 32276950877172676
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 8.995983031566882e-16,
+            "pendingRunoffKilograms": 990700456729092.9,
+            "referenceBodyWaterKilograms": 327751277250682240,
+            "residualKilograms": -64,
+            "snowKilograms": 1318958264218783.8,
+            "soilKilograms": 5953460077508537,
+            "surfaceKilograms": 8709924623964.73,
+            "terminalWaterKilograms": 14781385714674336,
+            "vaporKilograms": 12288375955524458,
+            "vaporLedgerResidualKilograms": -22
+          },
+          "evaporationMillimeters": 170.84965321387733,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 780400762597042,
+              "annualActualLakeEvaporationKilograms": 138814204719689.5,
+              "annualActualTerminalDeliveryKilograms": 1969044918571150,
+              "annualActualTerminalDeliveryMillimeters": 647.3444472756856,
+              "annualActualTerminalEvaporationKilograms": 138814204719689.5,
+              "annualActualTerminalEvaporationMillimeters": 45.636645350624704,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 14687031224874042,
+                  "lowKilograms": 0.37582309515005363
+                },
+                "surface": {
+                  "absoluteLevelMeters": 99.41174355351546,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 4.828517633455539,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 14687031224874.043
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49604517573671.79,
+              "annualActualLakeEvaporationKilograms": 730871843132895,
+              "annualActualTerminalDeliveryKilograms": 681267539615063,
+              "annualActualTerminalDeliveryMillimeters": 202.76147988627446,
+              "annualActualTerminalEvaporationKilograms": 730871843132895,
+              "annualActualTerminalEvaporationMillimeters": 217.52490453980565,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 94354489800292.97,
+                  "lowKilograms": -0.00345441472266117
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.98361256029593,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.028082148162573033,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 94354489800.29297
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.84965316342436,
+          "year": 6
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 615259453612417900,
+            "cumulativeLakeCaptureKilograms": 5583015808819043,
+            "cumulativePrecipitationKilograms": 602971077655147500,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 2102472612624578.8,
+              "sent": 75507959372764900,
+              "terminalDelivery": 73405486760140320,
+              "terminalEvaporation": 5466585402745410
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 90724423660388540,
+              "liquidEvaporation": 571533524869554000,
+              "liquidRunoff": 27903614300385944,
+              "melt": 31130912853495548,
+              "rain": 570521206537295700,
+              "snowfall": 32449871117851900,
+              "soilDrainage": 46492573587871550,
+              "soilEvaporation": 38259343340118504
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 5.049451542882102e-16,
+            "pendingRunoffKilograms": 990701128117169.1,
+            "referenceBodyWaterKilograms": 325121598419799360,
+            "residualKilograms": 0,
+            "snowKilograms": 1318958264356351,
+            "soilKilograms": 5972506732398479,
+            "surfaceKilograms": 8709924636620.629,
+            "terminalWaterKilograms": 17392017217383104,
+            "vaporKilograms": 12288375957270380,
+            "vaporLedgerResidualKilograms": -20
+          },
+          "evaporationMillimeters": 170.85491078234259,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 780400763876115.1,
+              "annualActualLakeEvaporationKilograms": 138814204221275.25,
+              "annualActualTerminalDeliveryKilograms": 1969044929737006,
+              "annualActualTerminalDeliveryMillimeters": 647.3444509465795,
+              "annualActualTerminalEvaporationKilograms": 138814204221275.25,
+              "annualActualTerminalEvaporationMillimeters": 45.636645186765726,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 17297662714265890,
+                  "lowKilograms": -0.5547068997400402
+                },
+                "surface": {
+                  "absoluteLevelMeters": 100.27001640580124,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 5.6867904857413105,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 17297662714265.89
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49604522727205.56,
+              "annualActualLakeEvaporationKilograms": 730872104230952.5,
+              "annualActualTerminalDeliveryKilograms": 681267594820669,
+              "annualActualTerminalDeliveryMillimeters": 202.76149631678044,
+              "annualActualTerminalEvaporationKilograms": 730872104230952.5,
+              "annualActualTerminalEvaporationMillimeters": 217.5249822488193,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 94354503117215,
+                  "lowKilograms": -0.004524801918456944
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.98361256425936,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.028082152126006867,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 94354503117.215
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.85491077891965,
+          "year": 7
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 702408317993182300,
+            "cumulativeLakeCaptureKilograms": 6413021095999300,
+            "cumulativePrecipitationKilograms": 690119942035634700,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 2418994558287919.5,
+              "sent": 87141508142622940,
+              "terminalDelivery": 84722513584335020,
+              "terminalEvaporation": 6336271727521057
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 103966128408737710,
+              "liquidEvaporation": 651828061973259500,
+              "liquidRunoff": 31978960082313144,
+              "melt": 35803638216649910,
+              "rain": 652997345554533200,
+              "snowfall": 37122596481101400,
+              "soilDrainage": 53734255100490420,
+              "soilEvaporation": 44243984292401670
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 5.686546591874208e-16,
+            "pendingRunoffKilograms": 990701598468534.4,
+            "referenceBodyWaterKilograms": 322495584173473100,
+            "residualKilograms": 0,
+            "snowKilograms": 1318958264451486.8,
+            "soilKilograms": 5987889015845615,
+            "surfaceKilograms": 8709924638674.393,
+            "terminalWaterKilograms": 20002648709536410,
+            "vaporKilograms": 12288375957547656,
+            "vaporLedgerResidualKilograms": 8
+          },
+          "evaporationMillimeters": 170.8585270690601,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 780400764120069.5,
+              "annualActualLakeEvaporationKilograms": 138814204140897.75,
+              "annualActualTerminalDeliveryKilograms": 1969044930991810,
+              "annualActualTerminalDeliveryMillimeters": 647.3444513591097,
+              "annualActualTerminalEvaporationKilograms": 138814204140897.75,
+              "annualActualTerminalEvaporationMillimeters": 45.63664516034077,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 19908294205236870,
+                  "lowKilograms": -0.8165883438775836
+                },
+                "surface": {
+                  "absoluteLevelMeters": 101.12828925860617,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 6.545063338546239,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 19908294205236.87
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49604523060188.195,
+              "annualActualLakeEvaporationKilograms": 730872120634749,
+              "annualActualTerminalDeliveryKilograms": 681267598756882.5,
+              "annualActualTerminalDeliveryMillimeters": 202.76149748829152,
+              "annualActualTerminalEvaporationKilograms": 730872120634749,
+              "annualActualTerminalEvaporationMillimeters": 217.52498713098063,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 94354504299536.11,
+                  "lowKilograms": 0.00568161922026178
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.98361256461125,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.02808215247789385,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 94354504299.5361
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.85852706851657,
+          "year": 8
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 789558096053163100,
+            "cumulativeLakeCaptureKilograms": 7243026383321509,
+            "cumulativePrecipitationKilograms": 777269720095506800,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 2735516504698578.5,
+              "sent": 98781470858852320,
+              "terminalDelivery": 96045954354153740,
+              "terminalEvaporation": 7205958053850179
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 117208135985091630,
+              "liquidEvaporation": 732122391103491700,
+              "liquidRunoff": 36054381271164860,
+              "melt": 40476446939304824,
+              "rain": 735474314891702800,
+              "snowfall": 41795405203804090,
+              "soilDrainage": 60982274917463670,
+              "soilEvaporation": 50229746895821180
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 6.173130049135597e-16,
+            "pendingRunoffKilograms": 990701834474800.5,
+            "referenceBodyWaterKilograms": 319876727289505600,
+            "residualKilograms": 64,
+            "snowKilograms": 1318958264499266.5,
+            "soilKilograms": 5996114171806774,
+            "surfaceKilograms": 8709924639542.778,
+            "terminalWaterKilograms": 22613280201379184,
+            "vaporKilograms": 12288375957656386,
+            "vaporLedgerResidualKilograms": 66
+          },
+          "evaporationMillimeters": 170.86031837048708,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 780400764232923.5,
+              "annualActualLakeEvaporationKilograms": 138814204106972.75,
+              "annualActualTerminalDeliveryKilograms": 1969044931423964,
+              "annualActualTerminalDeliveryMillimeters": 647.344451501185,
+              "annualActualTerminalEvaporationKilograms": 138814204106972.75,
+              "annualActualTerminalEvaporationMillimeters": 45.636645149187565,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 22518925696786784,
+                  "lowKilograms": 0.5641867869419457
+                },
+                "surface": {
+                  "absoluteLevelMeters": 101.98656211160143,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 7.403336191541498,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 22518925696786.785
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49604523089285.57,
+              "annualActualLakeEvaporationKilograms": 730872122222149,
+              "annualActualTerminalDeliveryKilograms": 681267599425725,
+              "annualActualTerminalDeliveryMillimeters": 202.76149768735502,
+              "annualActualTerminalEvaporationKilograms": 730872122222149,
+              "annualActualTerminalEvaporationMillimeters": 217.52498760342877,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 94354504592398.75,
+                  "lowKilograms": 0.00452193658318123
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.98361256469841,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.02808215256505676,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 94354504592.39874
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.86031837027403,
+          "year": 9
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 876708190053805700,
+            "cumulativeLakeCaptureKilograms": 8073031670698092,
+            "cumulativePrecipitationKilograms": 864419814096108300,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 3052038451344084.5,
+              "sent": 110426587541637060,
+              "terminalDelivery": 107374549090292980,
+              "terminalEvaporation": 8075644380603618
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 130450240629764940,
+              "liquidEvaporation": 812416646062060700,
+              "liquidRunoff": 40129826643176060,
+              "melt": 45149297208523656,
+              "rain": 817951558623068900,
+              "snowfall": 46468255473039340,
+              "soilDrainage": 68235424362445576,
+              "soilEvaporation": 56215899611141410
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 6.33820381991593e-16,
+            "pendingRunoffKilograms": 990701915328671.5,
+            "referenceBodyWaterKilograms": 317263293232306940,
+            "residualKilograms": 64,
+            "snowKilograms": 1318958264515688.2,
+            "soilKilograms": 5998916656177962,
+            "surfaceKilograms": 8709924639902.126,
+            "terminalWaterKilograms": 25223911693294860,
+            "vaporKilograms": 12288375957697502,
+            "vaporLedgerResidualKilograms": 94
+          },
+          "evaporationMillimeters": 170.86093778367731,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 780400764281808.9,
+              "annualActualLakeEvaporationKilograms": 138814204092830.75,
+              "annualActualTerminalDeliveryKilograms": 1969044931614012,
+              "annualActualTerminalDeliveryMillimeters": 647.3444515636652,
+              "annualActualTerminalEvaporationKilograms": 138814204092830.75,
+              "annualActualTerminalEvaporationMillimeters": 45.63664514453823,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 25129557188589776,
+                  "lowKilograms": -0.9676320043506621
+                },
+                "surface": {
+                  "absoluteLevelMeters": 102.84483496467989,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 8.26160904461996,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 25129557188589.777
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49604523094774.22,
+              "annualActualLakeEvaporationKilograms": 730872122660609,
+              "annualActualTerminalDeliveryKilograms": 681267599678523,
+              "annualActualTerminalDeliveryMillimeters": 202.76149776259373,
+              "annualActualTerminalEvaporationKilograms": 730872122660609,
+              "annualActualTerminalEvaporationMillimeters": 217.52498773392495,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 94354504705086.4,
+                  "lowKilograms": 0.004935614005511013
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.98361256473195,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.0280821525985953,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 94354504705.08641
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.86093778359674,
+          "year": 10
+        }
+      ],
+      "callerIntervalSeconds": 86400,
+      "checkpointContinuationExact": null,
+      "checkpointRoundTripExact": true,
+      "componentVersion": "closed-leaf-lake-1",
+      "continuationNotAttemptedAfterRefusal": false,
+      "elapsedSeconds": 315360000,
+      "failedIntervalAtomic": null,
+      "failure": null,
+      "finalLakeCaptureKilograms": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        7586238651350104,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        486793019347988.56,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "finalLakeCaptureLowKilograms": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -0.10415562335401773,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -0.010531188920140266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "lakeExchangeModelVersion": "closed-leaf-exchange-1",
+      "maximumRelativeLocalLedgerResidual": 3.1971067954538875e-15,
+      "maximumRelativeMassResidual": 3.5252689162022637e-16,
+      "modelVersion": "seasonal-moisture-9",
+      "physicalRunPassed": true,
+      "recipe": {
+        "boundaryWidthKm": 300,
+        "continentalFraction": 0.38,
+        "continentalScale": 1,
+        "detailAmplitudeMeters": 300,
+        "maxPlateSpeedCmPerYear": 8,
+        "modelVersion": "terrain-prep-1",
+        "plateCount": 12,
+        "radiusMeters": 6371000,
+        "randomVersion": "fnv1a-utf8-mulberry32-1",
+        "reliefScale": 1,
+        "schemaVersion": 1,
+        "seed": "seasonal-reference",
+        "subdivision": 2,
+        "terrainPreparationPasses": 4,
+        "water": {
+          "fraction": 0.71,
+          "mode": "coverage"
+        }
+      },
+      "reportVersion": 2,
+      "requestedYears": 10,
+      "scope": "Bounded coupled model-9 leaf lakes: pre-half-stage exposure, intercepted liquid/rain/melt, inactive separately owned submerged soil, delayed runoff, and finite regional lake evaporation. Fixed bed/thermal normals. First-connection crossings reject atomically; no spill/merge/backpressure, calibration, preparedness or desktop promotion. No endpoint probes are evaluated in this coupled report.",
+      "settings": {
+        "closedLakeExchange": "frozenLeafExposure",
+        "effectiveVaporDepthMeters": 2000,
+        "evaporationEnabled": true,
+        "evaporationResponseSeconds": 432000,
+        "initialActiveSurfaceDepthMeters": 1,
+        "maxCoupledStepSeconds": 900,
+        "orography": {
+          "strength": 1,
+          "upliftResponseHeightMeters": 1000
+        },
+        "precipitationEnabled": true,
+        "precipitationResponseSeconds": 21600,
+        "referenceWaterPool": "fastConnectedBody",
+        "routingEnabled": true,
+        "runoff": {
+          "effectiveSpeedMetersPerSecond": 1,
+          "minimumResponseSeconds": 3600
+        },
+        "soilNumerics": "compensated",
+        "surface": {
+          "infiltrationResponseSeconds": 21600,
+          "liquidRunoffResponseSeconds": 86400,
+          "meltKilogramsPerSquareMeterDegreeDay": 3,
+          "soilCapacityKilogramsPerSquareMeter": 150,
+          "soilDrainageResponseSeconds": 2592000,
+          "soilRetainedFraction": 0.6
+        },
+        "surfaceNumerics": "compensated",
+        "terminalNumerics": "compensated",
+        "transport": {
+          "maxOutgoingFraction": 0.8,
+          "maxSubsteps": 4096
+        }
+      },
+      "temperatureSettings": {
+        "axialTiltDegrees": 23.44,
+        "landResponseDays": 20,
+        "lapseRateCelsiusPerMeter": 0.0065,
+        "referenceTemperatureCelsius": 15,
+        "sensitivityCelsiusPerWattPerSquareMeter": 0.09,
+        "solarIrradianceWattsPerSquareMeter": 1360,
+        "waterResponseDays": 60
+      },
+      "windSettings": {
+        "itczShiftFraction": 0.5,
+        "midlatitudePolewardMetersPerSecond": 1,
+        "midlatitudeWesterlyMetersPerSecond": 10,
+        "polarEasterlyMetersPerSecond": 5,
+        "polarEquatorwardMetersPerSecond": 0.5,
+        "tradeEasterlyMetersPerSecond": 7,
+        "tropicalConvergenceMetersPerSecond": 2
+      }
+    },
+    {
+      "actualMaximumCoupledStepSeconds": 450,
+      "annual": [
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 92599133461099310,
+            "cumulativeLakeCaptureKilograms": 603947046546973,
+            "cumulativePrecipitationKilograms": 80343638669506830,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 227822932556863.53,
+              "sent": 6565645531610248,
+              "terminalDelivery": 6337822599053384,
+              "terminalEvaporation": 366319700227566.44
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 11385647843654116,
+              "liquidEvaporation": 89680655052290050,
+              "liquidRunoff": 3494054081644238.5,
+              "melt": 3102853339661697.5,
+              "rain": 75921811979043570,
+              "snowfall": 4421826690463255,
+              "soilDrainage": 3756380526952192.5,
+              "soilEvaporation": 2552158708581701
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 3.927388175534081e-15,
+            "pendingRunoffKilograms": 912612009543045.5,
+            "referenceBodyWaterKilograms": 341879563003742140,
+            "residualKilograms": 64,
+            "snowKilograms": 1318973350801557.5,
+            "soilKilograms": 5077108608120222,
+            "surfaceKilograms": 8356556820411.362,
+            "terminalWaterKilograms": 1640759323341583,
+            "vaporKilograms": 12255494791592548,
+            "vaporLedgerResidualKilograms": 68
+          },
+          "evaporationMillimeters": 181.54397838059322,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 563143790422761.2,
+              "annualActualLakeEvaporationKilograms": 178056189943383.5,
+              "annualActualTerminalDeliveryKilograms": 1255668915724343.2,
+              "annualActualTerminalDeliveryMillimeters": 412.8145033891276,
+              "annualActualTerminalEvaporationKilograms": 178056189943383.5,
+              "annualActualTerminalEvaporationMillimeters": 58.53786512222175,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 1640756516203721,
+                  "lowKilograms": -0.00835046354658786
+                },
+                "surface": {
+                  "absoluteLevelMeters": 95.12264206546033,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 0.5394161454003914,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 1640756516203.721
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 40803256124211.76,
+              "annualActualLakeEvaporationKilograms": 188263510284182.94,
+              "annualActualTerminalDeliveryKilograms": 147463061297833.28,
+              "annualActualTerminalDeliveryMillimeters": 43.88852660469248,
+              "annualActualTerminalEvaporationKilograms": 188263510284182.94,
+              "annualActualTerminalEvaporationMillimeters": 56.03171402438235,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 2807137862.088081,
+                  "lowKilograms": 5.934362556914152e-8
+                },
+                "surface": {
+                  "absoluteLevelMeters": null,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 8.354712268888897e-7,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 2807137.862088081
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 157.5166338652904,
+          "year": 1
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 179527372970623230,
+            "cumulativeLakeCaptureKilograms": 1433042522640634.8,
+            "cumulativePrecipitationKilograms": 167238894733412220,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 522796411136273.4,
+              "sent": 17459897422703214,
+              "terminalDelivery": 16937101011566940,
+              "terminalEvaporation": 1119851371972190.6
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 24507138577950236,
+              "liquidEvaporation": 170008905011284000,
+              "liquidRunoff": 7556016700128884,
+              "melt": 7769812287031661,
+              "rain": 158150090594839940,
+              "snowfall": 9088804138572288,
+              "soilDrainage": 10368280297237914,
+              "soilEvaporation": 8398616587367049
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 2.2328507621374792e-15,
+            "pendingRunoffKilograms": 987195985799863.6,
+            "referenceBodyWaterKilograms": 338411301127659140,
+            "residualKilograms": 64,
+            "snowKilograms": 1318991851540627.5,
+            "soilKilograms": 5740241693345272,
+            "surfaceKilograms": 8743029340269.956,
+            "terminalWaterKilograms": 4337915719065288,
+            "vaporKilograms": 12288478237211096,
+            "vaporLedgerResidualKilograms": 88
+          },
+          "evaporationMillimeters": 170.42598396247118,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 779900664823406.2,
+              "annualActualLakeEvaporationKilograms": 138863599820353.56,
+              "annualActualTerminalDeliveryKilograms": 1962912848594610.8,
+              "annualActualTerminalDeliveryMillimeters": 645.3284640890253,
+              "annualActualTerminalEvaporationKilograms": 138863599820353.56,
+              "annualActualTerminalEvaporationMillimeters": 45.65288451502158,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 4244706429801384.5,
+                  "lowKilograms": 0.09950853611481492
+                },
+                "surface": {
+                  "absoluteLevelMeters": 95.97871827868082,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 1.395492358620887,
+                  "reconstructionResidualCubicMeters": 0.00048828125,
+                  "volumeCubicMeters": 4244706429801.3843
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49194811270255.59,
+              "annualActualLakeEvaporationKilograms": 614668071924270.8,
+              "annualActualTerminalDeliveryKilograms": 658679742780056.5,
+              "annualActualTerminalDeliveryMillimeters": 196.03881243579792,
+              "annualActualTerminalEvaporationKilograms": 614668071924270.8,
+              "annualActualTerminalEvaporationMillimeters": 182.93988874419065,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 93209289263903.45,
+                  "lowKilograms": -0.006275563063348866
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.98327172128332,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.027741309149964134,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 93209289263.90346
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.36131871438005,
+          "year": 2
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 266624756672004030,
+            "cumulativeLakeCaptureKilograms": 2263028806747761,
+            "cumulativePrecipitationKilograms": 254336122452169180,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 838824088519939.5,
+              "sent": 28994564395429044,
+              "terminalDelivery": 28155740306909108,
+              "terminalEvaporation": 1988064359853760.8
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 37721381763443784,
+              "liquidEvaporation": 250289001019702400,
+              "liquidRunoff": 11641226012196826,
+              "melt": 12440689324876588,
+              "rain": 240576440625510000,
+              "snowfall": 13759681826659146,
+              "soilDrainage": 17504477103584848,
+              "soilEvaporation": 14347691292447862
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 1.0659478307651733e-15,
+            "pendingRunoffKilograms": 989962808872564.6,
+            "referenceBodyWaterKilograms": 335667721281024260,
+            "residualKilograms": 128,
+            "snowKilograms": 1318992501782558,
+            "soilKilograms": 5869213367411072,
+            "surfaceKilograms": 8744291495548.387,
+            "terminalWaterKilograms": 6949599173540599,
+            "vaporKilograms": 12288634219834972,
+            "vaporLedgerResidualKilograms": 124
+          },
+          "evaporationMillimeters": 170.75759731955048,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 780394333149221.4,
+              "annualActualLakeEvaporationKilograms": 138671453320293.38,
+              "annualActualTerminalDeliveryKilograms": 1968737295440658,
+              "annualActualTerminalDeliveryMillimeters": 647.2433129016044,
+              "annualActualTerminalEvaporationKilograms": 138671453320293.38,
+              "annualActualTerminalEvaporationMillimeters": 45.58971431067313,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 6855166605070970,
+                  "lowKilograms": 0.015510676262426415
+                },
+                "surface": {
+                  "absoluteLevelMeters": 96.83693480962788,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 2.2537088895679522,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 6855166605070.97
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49591950957904.71,
+              "annualActualLakeEvaporationKilograms": 729541534561276.6,
+              "annualActualTerminalDeliveryKilograms": 681172862809097.2,
+              "annualActualTerminalDeliveryMillimeters": 202.7333018091282,
+              "annualActualTerminalEvaporationKilograms": 729541534561276.6,
+              "annualActualTerminalEvaporationMillimeters": 217.12897295786186,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 94432568469628.97,
+                  "lowKilograms": 0.005172469450377637
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.98363579837146,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.02810538623810363,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 94432568469.62897
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.7572915099275,
+          "year": 3
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 353736517181066240,
+            "cumulativeLakeCaptureKilograms": 3093046422279202,
+            "cumulativePrecipitationKilograms": 341447874775858700,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 1156051976410033,
+              "sent": 40619153621480536,
+              "terminalDelivery": 39463101645070504,
+              "terminalEvaporation": 2857752910266617
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 50941414058817730,
+              "liquidEvaporation": 330566083250887550,
+              "liquidRunoff": 15727884919150174,
+              "melt": 17112167172397316,
+              "rain": 323016715069692350,
+              "snowfall": 18431159706166332,
+              "soilDrainage": 24725272678903828,
+              "soilEvaporation": 20312681019912050
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 9.578417185402307e-16,
+            "pendingRunoffKilograms": 990055952983507.5,
+            "referenceBodyWaterKilograms": 333022750469292800,
+            "residualKilograms": 128,
+            "snowKilograms": 1318992533769016.5,
+            "soilKilograms": 5903460360001846,
+            "surfaceKilograms": 8744354384009.83,
+            "terminalWaterKilograms": 9560221568322690,
+            "vaporKilograms": 12288642405207698,
+            "vaporLedgerResidualKilograms": 146
+          },
+          "evaporationMillimeters": 170.78578357535375,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 780402216193038.6,
+              "annualActualLakeEvaporationKilograms": 138668272786526.94,
+              "annualActualTerminalDeliveryKilograms": 1968825065417299,
+              "annualActualTerminalDeliveryMillimeters": 647.272168214391,
+              "annualActualTerminalEvaporationKilograms": 138668272786526.94,
+              "annualActualTerminalEvaporationMillimeters": 45.58866867638939,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 9465725613894780,
+                  "lowKilograms": 0.9787718149102211
+                },
+                "surface": {
+                  "absoluteLevelMeters": 97.69518383315646,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 3.111957913096537,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 9465725613894.78
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49615399338402.34,
+              "annualActualLakeEvaporationKilograms": 731020277626329.2,
+              "annualActualTerminalDeliveryKilograms": 681468264246207.2,
+              "annualActualTerminalDeliveryMillimeters": 202.82122032728157,
+              "annualActualTerminalEvaporationKilograms": 731020277626329.2,
+              "annualActualTerminalEvaporationMillimeters": 217.5690821877997,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 94495954427909.38,
+                  "lowKilograms": -0.002340040809025279
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.9836546635455,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.02812425141214701,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 94495954427.90938
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.78576752763203,
+          "year": 4
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 440854125748758600,
+            "cumulativeLakeCaptureKilograms": 3923065766350993,
+            "cumulativePrecipitationKilograms": 428565482892034370,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 1473314133465009.2,
+              "sent": 52248650427670000,
+              "terminalDelivery": 50775336294204990,
+              "terminalEvaporation": 3727519021717609
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 64163786116389896,
+              "liquidEvaporation": 410842025042531400,
+              "liquidRunoff": 19815128886583670,
+              "melt": 21783975711897150,
+              "rain": 405462514644533060,
+              "snowfall": 23102968247501284,
+              "soilDrainage": 31950268725826684,
+              "soilEvaporation": 26284581684509572
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 1.5499181357234092e-15,
+            "pendingRunoffKilograms": 990061318205364.2,
+            "referenceBodyWaterKilograms": 330386702888761200,
+            "residualKilograms": 192,
+            "snowKilograms": 1318992535604132.2,
+            "soilKilograms": 5928935706053640,
+            "surfaceKilograms": 8744357774423.734,
+            "terminalWaterKilograms": 12170787980838418,
+            "vaporKilograms": 12288642856724454,
+            "vaporLedgerResidualKilograms": 230
+          },
+          "evaporationMillimeters": 170.79724890758567,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 780402544528895.8,
+              "annualActualLakeEvaporationKilograms": 138668140834382.62,
+              "annualActualTerminalDeliveryKilograms": 1968828332310205,
+              "annualActualTerminalDeliveryMillimeters": 647.2732422401598,
+              "annualActualTerminalEvaporationKilograms": 138668140834382.62,
+              "annualActualTerminalEvaporationMillimeters": 45.58862529571934,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 12076288349899500,
+                  "lowKilograms": -0.3578582794205367
+                },
+                "surface": {
+                  "absoluteLevelMeters": 98.5534340820354,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 3.9702081619754646,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 12076288349899.5
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49616799542895.664,
+              "annualActualLakeEvaporationKilograms": 731097970616609.5,
+              "annualActualTerminalDeliveryKilograms": 681484847584722.8,
+              "annualActualTerminalDeliveryMillimeters": 202.82615592462525,
+              "annualActualTerminalEvaporationKilograms": 731097970616609.5,
+              "annualActualTerminalEvaporationMillimeters": 217.59220547603815,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 94499630938918.05,
+                  "lowKilograms": -0.0014350032133676471
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.983655757762925,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.028125345629572016,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 94499630938.91805
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.79724802237075,
+          "year": 5
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 527975493674424800,
+            "cumulativeLakeCaptureKilograms": 4753085213824910,
+            "cumulativePrecipitationKilograms": 515686850791571500,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 1790577778505389.2,
+              "sent": 63879253171894700,
+              "terminalDelivery": 62088675393389320,
+              "terminalEvaporation": 4597289620712424
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 77387600433427250,
+              "liquidEvaporation": 491117209850004740,
+              "liquidRunoff": 23902733654330490,
+              "melt": 26456015999381040,
+              "rain": 487911842256326340,
+              "snowfall": 27775008535245230,
+              "soilDrainage": 39176004163288640,
+              "soilEvaporation": 32260994203707652
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 1.1466564775399594e-15,
+            "pendingRunoffKilograms": 990062424229812.4,
+            "referenceBodyWaterKilograms": 327754472237344500,
+            "residualKilograms": 192,
+            "snowKilograms": 1318992535864194.5,
+            "soilKilograms": 5950602066430955,
+            "surfaceKilograms": 8744357967242.625,
+            "terminalWaterKilograms": 14781351139271416,
+            "vaporKilograms": 12288642882853534,
+            "vaporLedgerResidualKilograms": 222
+          },
+          "evaporationMillimeters": 170.80461926600293,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 780402562798438.4,
+              "annualActualLakeEvaporationKilograms": 138668133431802.88,
+              "annualActualTerminalDeliveryKilograms": 1968828511209080,
+              "annualActualTerminalDeliveryMillimeters": 647.2733010550666,
+              "annualActualTerminalEvaporationKilograms": 138668133431802.88,
+              "annualActualTerminalEvaporationMillimeters": 45.58862286204256,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 14686851290475214,
+                  "lowKilograms": -0.004671125140514931
+                },
+                "surface": {
+                  "absoluteLevelMeters": 99.41168439816921,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 4.828458478109281,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 14686851290475.215
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49616884675478.19,
+              "annualActualLakeEvaporationKilograms": 731102465563011.5,
+              "annualActualTerminalDeliveryKilograms": 681485798744816.5,
+              "annualActualTerminalDeliveryMillimeters": 202.8264390125709,
+              "annualActualTerminalEvaporationKilograms": 731102465563011.5,
+              "annualActualTerminalEvaporationMillimeters": 217.59354327937015,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 94499848796201.22,
+                  "lowKilograms": -0.0065920142505944135
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.98365582260246,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.028125410469099176,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 94499848796.20122
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.8046192147759,
+          "year": 6
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 615099542453090300,
+            "cumulativeLakeCaptureKilograms": 5583104667852435,
+            "cumulativePrecipitationKilograms": 602810899568463400,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 2107841504448120.5,
+              "sent": 75510556283194240,
+              "terminalDelivery": 73402714778746110,
+              "terminalEvaporation": 5467060484956156
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 90612398958898160,
+              "liquidEvaporation": 571391831129904000,
+              "liquidRunoff": 27990584788885292,
+              "melt": 31128231067343188,
+              "rain": 570363675965117950,
+              "snowfall": 32447223603345410,
+              "soilDrainage": 46402193086901380,
+              "soilEvaporation": 38240650838230110
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 9.05867405909436e-16,
+            "pendingRunoffKilograms": 990063097040551.5,
+            "referenceBodyWaterKilograms": 325124955627958200,
+            "residualKilograms": 256,
+            "snowKilograms": 1318992536002220.5,
+            "soilKilograms": 5969555033766669,
+            "surfaceKilograms": 8744357980188.941,
+            "terminalWaterKilograms": 17391914106586728,
+            "vaporKilograms": 12288642884627156,
+            "vaporLedgerResidualKilograms": 212
+          },
+          "evaporationMillimeters": 170.80987517608267,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 780402564095521.4,
+              "annualActualLakeEvaporationKilograms": 138668132925793,
+              "annualActualTerminalDeliveryKilograms": 1968828522559614,
+              "annualActualTerminalDeliveryMillimeters": 647.2733047866752,
+              "annualActualTerminalEvaporationKilograms": 138668132925793,
+              "annualActualTerminalEvaporationMillimeters": 45.58862269568644,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 17297414244204558,
+                  "lowKilograms": -0.470916400131312
+                },
+                "surface": {
+                  "absoluteLevelMeters": 100.26993471862743,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 5.686708798567493,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 17297414244204.559
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49616889932004.26,
+              "annualActualLakeEvaporationKilograms": 731102731317939.5,
+              "annualActualTerminalDeliveryKilograms": 681485854971904.5,
+              "annualActualTerminalDeliveryMillimeters": 202.8264557470943,
+              "annualActualTerminalEvaporationKilograms": 731102731317939.5,
+              "annualActualTerminalEvaporationMillimeters": 217.5936223743796,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 94499862382170.62,
+                  "lowKilograms": 0.0014580107827044664
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.983655826645965,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.028125414512607933,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 94499862382.17062
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.80987517260542,
+          "year": 7
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 702225449974321800,
+            "cumulativeLakeCaptureKilograms": 6413124122466690,
+            "cumulativePrecipitationKilograms": 689936807089414000,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 2425105235783655,
+              "sent": 87143930856084460,
+              "terminalDelivery": 84718825620300800,
+              "terminalEvaporation": 6336831365853673
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 103837851601959520,
+              "liquidEvaporation": 651666045750395400,
+              "liquidRunoff": 32078599764488508,
+              "melt": 35800574712446876,
+              "rain": 652817239840868700,
+              "snowfall": 37119567248545250,
+              "soilDrainage": 53630289427819280,
+              "soilEvaporation": 44222572858072810
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 1.0549645569966228e-15,
+            "pendingRunoffKilograms": 990063572006975.4,
+            "referenceBodyWaterKilograms": 322498957913776800,
+            "residualKilograms": 320,
+            "snowKilograms": 1318992536098374,
+            "soilKilograms": 5984989316067431,
+            "surfaceKilograms": 8744357982284.944,
+            "terminalWaterKilograms": 20002477063121836,
+            "vaporKilograms": 12288642884908100,
+            "vaporLedgerResidualKilograms": 324
+          },
+          "evaporationMillimeters": 170.8135193086745,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 780402564341971.8,
+              "annualActualLakeEvaporationKilograms": 138668132844444.62,
+              "annualActualTerminalDeliveryKilograms": 1968828523830394,
+              "annualActualTerminalDeliveryMillimeters": 647.2733052044578,
+              "annualActualTerminalEvaporationKilograms": 138668132844444.62,
+              "annualActualTerminalEvaporationMillimeters": 45.58862266894229,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 19907977199532476,
+                  "lowKilograms": 1.5112775280806154
+                },
+                "surface": {
+                  "absoluteLevelMeters": 101.12818503961118,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 6.544959119551254,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 19907977199532.477
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49616890272282.38,
+              "annualActualLakeEvaporationKilograms": 731102748053073,
+              "annualActualTerminalDeliveryKilograms": 681485858987977,
+              "annualActualTerminalDeliveryMillimeters": 202.8264569423733,
+              "annualActualTerminalEvaporationKilograms": 731102748053073,
+              "annualActualTerminalEvaporationMillimeters": 217.59362735515475,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 94499863589357.56,
+                  "lowKilograms": 0.0049102861967242895
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.98365582700525,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.028125414871895578,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 94499863589.35756
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.81351930812392,
+          "year": 8
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 789352301358273800,
+            "cumulativeLakeCaptureKilograms": 7243143577226017,
+            "cumulativePrecipitationKilograms": 777063658473254100,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 2742368967873442,
+              "sent": 98783474888449040,
+              "terminalDelivery": 96041105920575600,
+              "terminalEvaporation": 7206602248337486
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 117063617954470700,
+              "liquidEvaporation": 731940045867447800,
+              "liquidRunoff": 36166693363358664,
+              "melt": 40473002480843330,
+              "rain": 735271663456262900,
+              "snowfall": 41791995016991260,
+              "soilDrainage": 60864476373863180,
+              "soilEvaporation": 50205653242488530
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 1.232980020265669e-15,
+            "pendingRunoffKilograms": 990063816646227.4,
+            "referenceBodyWaterKilograms": 319879895690704450,
+            "residualKilograms": 384,
+            "snowKilograms": 1318992536147931.5,
+            "soilKilograms": 5993488338118991,
+            "surfaceKilograms": 8744357983181.592,
+            "terminalWaterKilograms": 22613040019341036,
+            "vaporKilograms": 12288642885020032,
+            "vaporLedgerResidualKilograms": 384
+          },
+          "evaporationMillimeters": 170.81536978596216,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 780402564457183.2,
+              "annualActualLakeEvaporationKilograms": 138668132809745.75,
+              "annualActualTerminalDeliveryKilograms": 1968828524270100,
+              "annualActualTerminalDeliveryMillimeters": 647.2733053490157,
+              "annualActualTerminalEvaporationKilograms": 138668132809745.75,
+              "annualActualTerminalEvaporationMillimeters": 45.58862265753467,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 22518540155450016,
+                  "lowKilograms": 0.25358323363726143
+                },
+                "surface": {
+                  "absoluteLevelMeters": 101.98643536078879,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 7.403209440728858,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 22518540155450.016
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49616890302144.23,
+              "annualActualLakeEvaporationKilograms": 731102749674067,
+              "annualActualTerminalDeliveryKilograms": 681485859673583,
+              "annualActualTerminalDeliveryMillimeters": 202.826457146426,
+              "annualActualTerminalEvaporationKilograms": 731102749674067,
+              "annualActualTerminalEvaporationMillimeters": 217.59362783760128,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 94499863891017.81,
+                  "lowKilograms": 0.0020897524382292865
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.983655827095035,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.028125414961676868,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 94499863891.0178
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.81536978574283,
+          "year": 9
+        },
+        {
+          "budget": {
+            "cumulativeEvaporationKilograms": 876479479981906600,
+            "cumulativeLakeCaptureKilograms": 8073163032041635,
+            "cumulativePrecipitationKilograms": 864190837096844200,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 3059632700202273.5,
+              "sent": 110428340467813900,
+              "terminalDelivery": 107368707767611630,
+              "terminalEvaporation": 8076373131258601
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 130289484772578220,
+              "liquidEvaporation": 812213969163859700,
+              "liquidRunoff": 40254812154619570,
+              "melt": 45145473264973060,
+              "rain": 817726371295706100,
+              "snowfall": 46464465801138060,
+              "soilDrainage": 68103959513609440,
+              "soilEvaporation": 56189137686788230
+            },
+            "initialMobileWaterKilograms": 363092867643961500,
+            "maximumRelativeLocalSurfaceLedgerResidual": 1.3474686595363153e-15,
+            "pendingRunoffKilograms": 990063900617334.6,
+            "referenceBodyWaterKilograms": 317266433416315140,
+            "residualKilograms": 384,
+            "snowKilograms": 1318992536165004,
+            "soilKilograms": 5996387572180565,
+            "surfaceKilograms": 8744357983557.685,
+            "terminalWaterKilograms": 25223602975637548,
+            "vaporKilograms": 12288642885062738,
+            "vaporLedgerResidualKilograms": 338
+          },
+          "evaporationMillimeters": 170.81601135129122,
+          "lakes": [
+            {
+              "annualActualLakeCaptureKilograms": 780402564507759.1,
+              "annualActualLakeEvaporationKilograms": 138668132795078.5,
+              "annualActualTerminalDeliveryKilograms": 1968828524465964,
+              "annualActualTerminalDeliveryMillimeters": 647.2733054134081,
+              "annualActualTerminalEvaporationKilograms": 138668132795078.5,
+              "annualActualTerminalEvaporationMillimeters": 45.58862265271266,
+              "frozenProbes": [],
+              "leafRegions": [
+                73
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 38,
+                "capacityCubicMeters": 105342625455067.9,
+                "footprintRegions": 1,
+                "liquid": {
+                  "highKilograms": 25129103111628660,
+                  "lowKilograms": 1.3689730843263597
+                },
+                "surface": {
+                  "absoluteLevelMeters": 102.84468568205223,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3041726745101.1123,
+                  "exposedRegions": [
+                    73
+                  ],
+                  "heightAboveMinimumMeters": 8.261459761992304,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 25129103111628.66
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 73
+              },
+              "terminalAreaSquareMeters": 3041726745101.1123,
+              "terminalTemperatureCelsiusByMonth": [
+                22.406752099612095,
+                21.86560142762231,
+                20.599256059761167,
+                19.88411508477681,
+                20.468015596611497,
+                21.730515613698554,
+                22.41051659388962,
+                21.86337868012258,
+                20.597578861027287,
+                19.8880988541507,
+                20.465955165955506,
+                21.71125574673615
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 8559385264305.455
+            },
+            {
+              "annualActualLakeCaptureKilograms": 49616890307858.97,
+              "annualActualLakeEvaporationKilograms": 731102750126036,
+              "annualActualTerminalDeliveryKilograms": 681485859936047,
+              "annualActualTerminalDeliveryMillimeters": 202.82645722454157,
+              "annualActualTerminalEvaporationKilograms": 731102750126036,
+              "annualActualTerminalEvaporationMillimeters": 217.59362797211801,
+              "frozenProbes": [],
+              "leafRegions": [
+                91,
+                96
+              ],
+              "leafSoilWaterKilograms": 0,
+              "observation": {
+                "basinNode": 37,
+                "capacityCubicMeters": 346604604538512.75,
+                "footprintRegions": 2,
+                "liquid": {
+                  "highKilograms": 94499864008887.3,
+                  "lowKilograms": -0.006674353207011929
+                },
+                "surface": {
+                  "absoluteLevelMeters": 54.983655827130114,
+                  "atSpillThreshold": false,
+                  "exposedAreaSquareMeters": 3359945587284.008,
+                  "exposedRegions": [
+                    91
+                  ],
+                  "heightAboveMinimumMeters": 0.028125414996757643,
+                  "reconstructionResidualCubicMeters": 0,
+                  "volumeCubicMeters": 94499864008.8873
+                },
+                "surfaceFailure": null,
+                "terminalRegion": 91
+              },
+              "terminalAreaSquareMeters": 3359945587284.008,
+              "terminalTemperatureCelsiusByMonth": [
+                21.718204590413347,
+                18.19054442810943,
+                14.73809413355455,
+                13.11290464267129,
+                14.258573784529727,
+                17.442562539920377,
+                20.946579359297946,
+                23.501908959726748,
+                24.706920855924885,
+                25.05788890966919,
+                24.952454394184088,
+                24.039530607864197
+              ],
+              "upstreamDryCatchmentAreaSquareMeters": 19538426885449.29
+            }
+          ],
+          "observationLeavesCheckpointExact": true,
+          "precipitationMillimeters": 170.8160113512074,
+          "year": 10
+        }
+      ],
+      "callerIntervalSeconds": 86400,
+      "checkpointContinuationExact": null,
+      "checkpointRoundTripExact": true,
+      "componentVersion": "closed-leaf-lake-1",
+      "continuationNotAttemptedAfterRefusal": false,
+      "elapsedSeconds": 315360000,
+      "failedIntervalAtomic": null,
+      "failure": null,
+      "finalLakeCaptureKilograms": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        7586256369318197,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        486906662723438.1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "finalLakeCaptureLowKilograms": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.03043918259209022,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -0.016106151160784066,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "lakeExchangeModelVersion": "closed-leaf-exchange-1",
+      "maximumRelativeLocalLedgerResidual": 5.5667492212634965e-15,
+      "maximumRelativeMassResidual": 1.057580674860679e-15,
+      "modelVersion": "seasonal-moisture-9",
+      "physicalRunPassed": true,
+      "recipe": {
+        "boundaryWidthKm": 300,
+        "continentalFraction": 0.38,
+        "continentalScale": 1,
+        "detailAmplitudeMeters": 300,
+        "maxPlateSpeedCmPerYear": 8,
+        "modelVersion": "terrain-prep-1",
+        "plateCount": 12,
+        "radiusMeters": 6371000,
+        "randomVersion": "fnv1a-utf8-mulberry32-1",
+        "reliefScale": 1,
+        "schemaVersion": 1,
+        "seed": "seasonal-reference",
+        "subdivision": 2,
+        "terrainPreparationPasses": 4,
+        "water": {
+          "fraction": 0.71,
+          "mode": "coverage"
+        }
+      },
+      "reportVersion": 2,
+      "requestedYears": 10,
+      "scope": "Bounded coupled model-9 leaf lakes: pre-half-stage exposure, intercepted liquid/rain/melt, inactive separately owned submerged soil, delayed runoff, and finite regional lake evaporation. Fixed bed/thermal normals. First-connection crossings reject atomically; no spill/merge/backpressure, calibration, preparedness or desktop promotion. No endpoint probes are evaluated in this coupled report.",
+      "settings": {
+        "closedLakeExchange": "frozenLeafExposure",
+        "effectiveVaporDepthMeters": 2000,
+        "evaporationEnabled": true,
+        "evaporationResponseSeconds": 432000,
+        "initialActiveSurfaceDepthMeters": 1,
+        "maxCoupledStepSeconds": 450,
+        "orography": {
+          "strength": 1,
+          "upliftResponseHeightMeters": 1000
+        },
+        "precipitationEnabled": true,
+        "precipitationResponseSeconds": 21600,
+        "referenceWaterPool": "fastConnectedBody",
+        "routingEnabled": true,
+        "runoff": {
+          "effectiveSpeedMetersPerSecond": 1,
+          "minimumResponseSeconds": 3600
+        },
+        "soilNumerics": "compensated",
+        "surface": {
+          "infiltrationResponseSeconds": 21600,
+          "liquidRunoffResponseSeconds": 86400,
+          "meltKilogramsPerSquareMeterDegreeDay": 3,
+          "soilCapacityKilogramsPerSquareMeter": 150,
+          "soilDrainageResponseSeconds": 2592000,
+          "soilRetainedFraction": 0.6
+        },
+        "surfaceNumerics": "compensated",
+        "terminalNumerics": "compensated",
+        "transport": {
+          "maxOutgoingFraction": 0.8,
+          "maxSubsteps": 4096
+        }
+      },
+      "temperatureSettings": {
+        "axialTiltDegrees": 23.44,
+        "landResponseDays": 20,
+        "lapseRateCelsiusPerMeter": 0.0065,
+        "referenceTemperatureCelsius": 15,
+        "sensitivityCelsiusPerWattPerSquareMeter": 0.09,
+        "solarIrradianceWattsPerSquareMeter": 1360,
+        "waterResponseDays": 60
+      },
+      "windSettings": {
+        "itczShiftFraction": 0.5,
+        "midlatitudePolewardMetersPerSecond": 1,
+        "midlatitudeWesterlyMetersPerSecond": 10,
+        "polarEasterlyMetersPerSecond": 5,
+        "polarEquatorwardMetersPerSecond": 0.5,
+        "tradeEasterlyMetersPerSecond": 7,
+        "tropicalConvergenceMetersPerSecond": 2
+      }
+    }
+  ]
+}

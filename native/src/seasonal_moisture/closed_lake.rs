@@ -1,6 +1,9 @@
 //! Finite, isolated leaf-lake exposure and evaporation. Not coupled seasonal
 //! evolution: callers own the donor and must credit actual atmospheric grants.
-use super::{Model, REFERENCE_POOL_MODEL_VERSION, State, WATER_DENSITY_KILOGRAMS_PER_CUBIC_METER};
+use super::{
+    CLOSED_LAKE_MODEL_VERSION, Model, REFERENCE_POOL_MODEL_VERSION, State,
+    WATER_DENSITY_KILOGRAMS_PER_CUBIC_METER,
+};
 use crate::{
     Recipe, World,
     moisture_transport::total_mass,
@@ -312,10 +315,11 @@ impl Layout {
         &self.lakes
     }
     fn validate_observation(&self, model: &Model, state: &State) -> Result<(), String> {
-        if model.model_version() != REFERENCE_POOL_MODEL_VERSION
+        if ![REFERENCE_POOL_MODEL_VERSION, CLOSED_LAKE_MODEL_VERSION]
+            .contains(&model.model_version())
             || model.origin.recipe != self.recipe
         {
-            return Err("Closed-lake observations require the matching model-8 recipe.".into());
+            return Err("Closed-lake observations require a matching model-8/9 recipe.".into());
         }
         model.budget(state)?;
         Ok(())

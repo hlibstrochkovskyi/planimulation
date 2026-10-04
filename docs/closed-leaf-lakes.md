@@ -1,6 +1,6 @@
 # Closed-leaf lake surface and evaporation component
 
-Implemented as the headless `closed-leaf-lake-1` component. It derives a minimum-basin water surface from a finite high/low liquid donor and evaluates a conservative evaporation interval. It is **not coupled into seasonal evolution**, a new seasonal model/checkpoint version, or a desktop feature. Existing seasonal laws, defaults and clocks are unchanged.
+Implemented as the headless `closed-leaf-lake-1` component. It derives a minimum-basin water surface from a finite high/low liquid donor and evaluates a conservative evaporation interval. This stand-alone service does not itself advance seasonal evolution or introduce a desktop feature. Subsequent, separately versioned [model-9 coupling](coupled-leaf-lakes.md) is documented independently; the original model-8 component controls, defaults and clocks remain unchanged.
 
 ## Purpose and evidence boundary
 
@@ -103,3 +103,5 @@ npm test
 ```
 
 Future coupled lake ownership must define precipitation/melt interception, existing land liquid/soil/snow beneath newly exposed water, atmospheric transfer provenance, thermal-mask assumptions, active spill-receiver/backpressure and exact transfer ownership, and checkpoint/version isolation. A geometric threshold is not an unlimited external drain. Do not add artificial return or change stationarity policy solely to make the decade case pass. A persistent filling transient can be admissible in an evolving world; its physical plausibility and preparedness interpretation still need review.
+
+Subsequent follow-up: [bounded coupled leaf-lake exchange](coupled-leaf-lakes.md) now implements a separately pinned headless model/schema 9 below the first connection, with liquid interception, preserved inactive submerged soil, actual regional evaporation and independent lake identities. This stand-alone component remains a read-only surface/probe service; observations additionally accept matching model-9 states. First-spill/backpressure/merge remains unimplemented, and its threshold refuses rather than draining implicitly.
