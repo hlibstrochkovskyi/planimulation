@@ -8,6 +8,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 
 pub mod preparation;
+pub mod water_return;
 
 pub const MODEL_VERSION: &str = "seasonal-moisture-3";
 pub const OROGRAPHIC_MODEL_VERSION: &str = "seasonal-moisture-4";
@@ -401,6 +402,8 @@ pub struct Model {
     origin: Checkpoint,
     areas: Vec<f64>,
     is_land: Vec<bool>,
+    // Immutable reference connectivity for diagnostics; not another water stock.
+    reference_body_ids: Vec<u32>,
     routing: runoff_transport::Network,
     initial_surface: Vec<f64>,
     initial_total: f64,
@@ -693,6 +696,7 @@ impl Model {
             origin,
             areas: world.surface.areas.clone(),
             is_land: world.water.depth_meters.iter().map(|d| *d == 0.).collect(),
+            reference_body_ids: world.water.body_ids.clone(),
             routing,
             initial_surface,
             initial_total,
