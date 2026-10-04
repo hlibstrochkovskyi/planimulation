@@ -1,17 +1,20 @@
 //! Coupled exclusive leaf owners with exposure frozen for a half-local stage.
-//! Reaching a first connection refuses; no implicit spill collector or merge.
-use super::{Checkpoint, closed_lake, reference_pool};
+//! Version 9 refuses first connections; version 10 settles explicit input queues.
+//! No implicit spill collector or parent merge.
+use super::{Checkpoint, ClosedLakeExchange, closed_lake, leaf_spill, reference_pool};
 use crate::{World, moisture_transport::total_mass, surface_water::CompensatedStock};
 
 pub(super) const MODEL_VERSION: &str = "closed-leaf-exchange-1";
+pub(super) const SPILL_MODEL_VERSION: &str = "closed-leaf-exchange-2";
 
 pub(super) struct Layout {
     pub geometry: closed_lake::Layout,
     pub by_region: Vec<Option<usize>>,
+    pub spill: Option<leaf_spill::Layout>,
 }
 
 impl Layout {
-    pub fn from_world(world: &World) -> Result<Self, String> {
+    pub fn from_world(world: &World, mode: ClosedLakeExchange) -> Result<Self, String> {
         let geometry = closed_lake::Layout::from_world(world)?;
         if crate::basins::Basins::build(&world.surface, &world.terrain.elevation)? != world.basins {
             return Err("Coupled lake geometry has a stale basin hierarchy.".into());
@@ -40,9 +43,15 @@ impl Layout {
                 }
             }
         }
+        let spill = if mode == ClosedLakeExchange::FrozenLeafExposureWithSpill {
+            Some(leaf_spill::Layout::from_world(world, &geometry)?)
+        } else {
+            None
+        };
         Ok(Self {
             geometry,
             by_region,
+            spill,
         })
     }
 
@@ -60,7 +69,7 @@ impl Layout {
             let surface = lake
                 .surface(Self::liquid(cp, r))
                 .map_err(|e| format!("Coupled lake at terminal {r}: {e}"))?;
-            if surface.at_spill_threshold {
+            if surface.at_spill_threshold && self.spill.is_none() {
                 return Err(format!(
                     "Coupled lake at terminal {r} reached its unsupported first connection."
                 ));
@@ -83,10 +92,25 @@ impl Layout {
         CompensatedStock::new(high, low, f64::MAX)?;
         let b = self.by_region[region].ok_or("Capture outside a lake leaf.")?;
         let r = self.geometry.lakes()[b].terminal_region();
-        let old = Self::liquid(cp, r);
+        let old = if let Some(ledger) = &cp.leaf_spill_state {
+            let stock = ledger.pending_input.stock(r)?;
+            closed_lake::Liquid {
+                high_kilograms: stock.high,
+                low_kilograms: stock.low,
+            }
+        } else {
+            Self::liquid(cp, r)
+        };
         let mut donor = CompensatedStock::new(old.high_kilograms, old.low_kilograms, f64::MAX)?;
         donor.credit(high)?;
         donor.credit(low)?;
+        if self.spill.is_some()
+            && high > 0.
+            && donor.high == old.high_kilograms
+            && donor.low == old.low_kilograms
+        {
+            return Err("Lake capture is below its pending owner's pair resolution.".into());
+        }
         let residual = total_mass(&[
             donor.high - old.high_kilograms,
             donor.low - old.low_kilograms,
@@ -103,8 +127,13 @@ impl Layout {
         let mut total = CompensatedStock::new(high_totals[region], low_totals[region], f64::MAX)?;
         total.credit(high)?;
         total.credit(low)?;
-        cp.terminal_water_kilograms[r] = donor.high;
-        cp.terminal_low_kilograms.as_mut().unwrap()[r] = donor.low;
+        if let Some(ledger) = &mut cp.leaf_spill_state {
+            ledger.pending_input.high_kilograms[r] = donor.high;
+            ledger.pending_input.low_kilograms[r] = donor.low;
+        } else {
+            cp.terminal_water_kilograms[r] = donor.high;
+            cp.terminal_low_kilograms.as_mut().unwrap()[r] = donor.low;
+        }
         high_totals[region] = total.high;
         low_totals[region] = total.low;
         Ok(())
@@ -166,10 +195,21 @@ impl Layout {
             let delivered = cp.cumulative_runoff_transfers[r].terminal_delivery;
             let mut terms = vec![liquid.high_kilograms, liquid.low_kilograms, -delivered];
             let mut flows = vec![delivered];
+            if let Some(ledger) = &cp.leaf_spill_state {
+                let pending = ledger.pending_input.stock(r)?;
+                let outgoing = ledger.cumulative_outgoing.stock(r)?;
+                terms.extend([pending.high, pending.low, outgoing.high, outgoing.low]);
+                flows.extend([pending.high, pending.low, outgoing.high, outgoing.low]);
+            }
             for &i in lake.regions() {
                 let e = cp.cumulative_runoff_transfers[i].terminal_evaporation;
                 terms.extend([-high[i], -low[i], e]);
                 flows.extend([high[i], low[i], e]);
+                if let Some(ledger) = &cp.leaf_spill_state {
+                    let incoming = ledger.cumulative_incoming.stock(i)?;
+                    terms.extend([-incoming.high, -incoming.low]);
+                    flows.extend([incoming.high, incoming.low]);
+                }
             }
             let residual = total_mass(&terms);
             let scale = liquid.high_kilograms.max(total_mass(&flows)).max(1.);

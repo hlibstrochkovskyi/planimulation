@@ -83,3 +83,5 @@ npm test
 ```
 
 The report refuses to overwrite existing evidence files. No GUI qualification or default promotion is claimed.
+
+Subsequent follow-up: [model-10 bounded leaf spill](bounded-leaf-spill.md) now applies unique recipient transfers with explicit pending ownership and full lower-sill passage. Model 9 retains its refusal boundary and checkpoint semantics; general parent merge and concurrent spill policy remain open.
