@@ -1,16 +1,18 @@
 //! Coupled exclusive leaf owners with exposure frozen for a half-local stage.
 //! Version 9 refuses first connections; version 10 settles explicit input queues.
-//! No implicit spill collector or parent merge.
-use super::{Checkpoint, ClosedLakeExchange, closed_lake, leaf_spill, reference_pool};
+//! Version 11 supports bounded common-sill parents; no implicit spill collector.
+use super::{Checkpoint, ClosedLakeExchange, closed_lake, leaf_spill, merged_lake, reference_pool};
 use crate::{World, moisture_transport::total_mass, surface_water::CompensatedStock};
 
 pub(super) const MODEL_VERSION: &str = "closed-leaf-exchange-1";
 pub(super) const SPILL_MODEL_VERSION: &str = "closed-leaf-exchange-2";
+pub(super) const MERGE_MODEL_VERSION: &str = "closed-leaf-exchange-3";
 
 pub(super) struct Layout {
     pub geometry: closed_lake::Layout,
     pub by_region: Vec<Option<usize>>,
     pub spill: Option<leaf_spill::Layout>,
+    pub merge: Option<merged_lake::Layout>,
 }
 
 impl Layout {
@@ -43,7 +45,12 @@ impl Layout {
                 }
             }
         }
-        let spill = if mode == ClosedLakeExchange::FrozenLeafExposureWithSpill {
+        let merge = if mode == ClosedLakeExchange::FrozenLeafExposureWithSpillAndMerge {
+            Some(merged_lake::Layout::from_world(world, &geometry)?)
+        } else {
+            None
+        };
+        let spill = if mode != ClosedLakeExchange::FrozenLeafExposure {
             Some(leaf_spill::Layout::from_world(world, &geometry)?)
         } else {
             None
@@ -52,6 +59,7 @@ impl Layout {
             geometry,
             by_region,
             spill,
+            merge,
         })
     }
 
@@ -66,6 +74,13 @@ impl Layout {
         let mut wet = vec![false; self.by_region.len()];
         for lake in self.geometry.lakes() {
             let r = lake.terminal_region();
+            if self
+                .merge
+                .as_ref()
+                .is_some_and(|m| m.terminal_active(cp, r))
+            {
+                continue;
+            }
             let surface = lake
                 .surface(Self::liquid(cp, r))
                 .map_err(|e| format!("Coupled lake at terminal {r}: {e}"))?;
@@ -78,7 +93,22 @@ impl Layout {
                 wet[i] = true;
             }
         }
+        if let Some(merge) = &self.merge {
+            for surface in merge.surfaces(cp)? {
+                for r in surface.exposed_regions {
+                    wet[r] = true;
+                }
+            }
+        }
         Ok(wet)
+    }
+
+    pub fn owns(&self, cp: &Checkpoint, region: usize) -> bool {
+        self.by_region[region].is_some()
+            || self
+                .merge
+                .as_ref()
+                .is_some_and(|m| m.owner(cp, region).is_some())
     }
 
     /// Capture a complete local liquid pair once; the caller clears its owner.
@@ -90,8 +120,12 @@ impl Layout {
         low: f64,
     ) -> Result<(), String> {
         CompensatedStock::new(high, low, f64::MAX)?;
-        let b = self.by_region[region].ok_or("Capture outside a lake leaf.")?;
-        let r = self.geometry.lakes()[b].terminal_region();
+        let r = if let Some(r) = self.merge.as_ref().and_then(|m| m.owner(cp, region)) {
+            r
+        } else {
+            let b = self.by_region[region].ok_or("Capture outside a lake leaf.")?;
+            self.geometry.lakes()[b].terminal_region()
+        };
         let old = if let Some(ledger) = &cp.leaf_spill_state {
             let stock = ledger.pending_input.stock(r)?;
             closed_lake::Liquid {
@@ -152,6 +186,13 @@ impl Layout {
         let mut maximum: f64 = 0.;
         for lake in self.geometry.lakes() {
             let r = lake.terminal_region();
+            if self
+                .merge
+                .as_ref()
+                .is_some_and(|m| m.terminal_active(cp, r))
+            {
+                continue;
+            }
             let before = Self::liquid(cp, r);
             let donor =
                 CompensatedStock::new(before.high_kilograms, before.low_kilograms, f64::MAX)?;
@@ -163,6 +204,9 @@ impl Layout {
             for (&i, grant) in lake.regions().iter().zip(grants) {
                 regional[i] = grant;
             }
+        }
+        if let Some(merge) = &self.merge {
+            maximum = maximum.max(merge.evaporate(cp, demand, &mut regional)?);
         }
         self.exposure(cp)?;
         Ok((regional, maximum))
@@ -181,16 +225,27 @@ impl Layout {
         if high.len() != self.by_region.len() || low.len() != high.len() {
             return Err("Invalid lake capture ledger shape.".into());
         }
+        let mut maximum = match (&self.merge, &cp.merged_lake_state) {
+            (Some(merge), Some(_)) => merge.validate(cp)?,
+            (None, None) => (0., 0),
+            _ => return Err("Merged lake state outside its pinned mode.".into()),
+        };
         for (i, (&h, &l)) in high.iter().zip(low).enumerate() {
             CompensatedStock::new(h, l, f64::MAX)?;
-            if (self.by_region[i].is_none() || cp.elapsed_seconds == 0) && (h != 0. || l != 0.) {
+            if (!self.owns(cp, i) || cp.elapsed_seconds == 0) && (h != 0. || l != 0.) {
                 return Err("Lake capture ledger has the wrong owner or initial state.".into());
             }
         }
         self.exposure(cp)?;
-        let mut maximum = (0., 0);
         for lake in self.geometry.lakes() {
             let r = lake.terminal_region();
+            if self
+                .merge
+                .as_ref()
+                .is_some_and(|m| m.terminal_active(cp, r))
+            {
+                continue;
+            }
             let liquid = Self::liquid(cp, r);
             let delivered = cp.cumulative_runoff_transfers[r].terminal_delivery;
             let mut terms = vec![liquid.high_kilograms, liquid.low_kilograms, -delivered];

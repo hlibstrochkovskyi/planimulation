@@ -1,0 +1,776 @@
+{
+  "directed": {
+    "funding": "Synthetic ledger-balanced queues withdrawn from finite mobile reference water; not a natural climate history.",
+    "group": {
+      "basinNode": 37,
+      "birthLevelMeters": 111.34609838785994,
+      "childCapacitiesKilograms": [
+        1.1552094251520338e+17,
+        2.3475698295916768e+17
+      ],
+      "childTerminals": [
+        8,
+        156
+      ],
+      "regions": [
+        8,
+        141,
+        156
+      ],
+      "surplusCapacityKilograms": 2.6003678350734924e+16
+    },
+    "outcomes": [
+      {
+        "inputs": [
+          [
+            8,
+            1.1552094251520338e+17
+          ],
+          [
+            156,
+            2.3475698295916768e+17
+          ]
+        ],
+        "outcome": {
+          "accepted": true,
+          "budget": {
+            "cumulativeEvaporationKilograms": 3.502779254743711e+17,
+            "cumulativeLakeCaptureKilograms": 3.502779254743711e+17,
+            "cumulativePrecipitationKilograms": 3.502779254743711e+17,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 0.0,
+              "sent": 0.0,
+              "terminalDelivery": 0.0,
+              "terminalEvaporation": 0.0
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 0.0,
+              "liquidEvaporation": 3.502779254743711e+17,
+              "liquidRunoff": 0.0,
+              "melt": 0.0,
+              "rain": 3.502779254743711e+17,
+              "snowfall": 0.0,
+              "soilDrainage": 0.0,
+              "soilEvaporation": 0.0
+            },
+            "initialMobileWaterKilograms": 1.4178849974962422e+18,
+            "maximumRelativeLocalSurfaceLedgerResidual": 6.089784175905142e-17,
+            "mergedLakeWaterKilograms": 3.502779254743711e+17,
+            "pendingLakeInputKilograms": 0.0,
+            "pendingRunoffKilograms": 0.0,
+            "referenceBodyWaterKilograms": 1.0676070720218712e+18,
+            "residualKilograms": 0.0,
+            "snowKilograms": 0.0,
+            "soilKilograms": 0.0,
+            "surfaceKilograms": 0.0,
+            "terminalWaterKilograms": 0.0,
+            "vaporKilograms": 0.0,
+            "vaporLedgerResidualKilograms": 0.0
+          },
+          "parents": {
+            "modelVersion": "common-sill-parent-1",
+            "parents": [
+              {
+                "basinNode": 37,
+                "birthHighKilograms": 3.502779254743711e+17,
+                "birthLowKilograms": -16.0,
+                "surplusHighKilograms": 0.0,
+                "surplusLowKilograms": 0.0
+              }
+            ]
+          },
+          "replay": {
+            "fullCheckpointRoundTripExact": true,
+            "nextHourContinuationExact": true
+          },
+          "surfaces": [
+            {
+              "absoluteLevelMeters": 111.34609838785994,
+              "basinNode": 37,
+              "exposedAreaSquareMeters": 5835877361387.236,
+              "exposedRegions": [
+                8,
+                156
+              ],
+              "reconstructionResidualCubicMeters": 0.0,
+              "relativeHeightAboveBirthMeters": 0.0
+            }
+          ]
+        },
+        "surplusFraction": 0.0
+      },
+      {
+        "completeStateUnchanged": true,
+        "kind": "splitRequired",
+        "message": "Merged lake evaporation requires drying/splitting below the common sill."
+      },
+      {
+        "inputs": [
+          [
+            8,
+            1.220218621028871e+17
+          ],
+          [
+            156,
+            2.3475698295916768e+17
+          ]
+        ],
+        "outcome": {
+          "accepted": true,
+          "budget": {
+            "cumulativeEvaporationKilograms": 3.567788450620548e+17,
+            "cumulativeLakeCaptureKilograms": 3.567788450620548e+17,
+            "cumulativePrecipitationKilograms": 3.567788450620548e+17,
+            "cumulativeRunoffTransfers": {
+              "receivedTransit": 0.0,
+              "sent": 0.0,
+              "terminalDelivery": 0.0,
+              "terminalEvaporation": 0.0
+            },
+            "cumulativeSurfaceTransfers": {
+              "infiltration": 0.0,
+              "liquidEvaporation": 3.567788450620548e+17,
+              "liquidRunoff": 0.0,
+              "melt": 0.0,
+              "rain": 3.567788450620548e+17,
+              "snowfall": 0.0,
+              "soilDrainage": 0.0,
+              "soilEvaporation": 0.0
+            },
+            "initialMobileWaterKilograms": 1.4178849974962422e+18,
+            "maximumRelativeLocalSurfaceLedgerResidual": 6.089784175905142e-17,
+            "mergedLakeWaterKilograms": 3.567788450620548e+17,
+            "pendingLakeInputKilograms": 0.0,
+            "pendingRunoffKilograms": 0.0,
+            "referenceBodyWaterKilograms": 1.0611061524341875e+18,
+            "residualKilograms": 0.0,
+            "snowKilograms": 0.0,
+            "soilKilograms": 0.0,
+            "surfaceKilograms": 0.0,
+            "terminalWaterKilograms": 0.0,
+            "vaporKilograms": 0.0,
+            "vaporLedgerResidualKilograms": 0.0
+          },
+          "parents": {
+            "modelVersion": "common-sill-parent-1",
+            "parents": [
+              {
+                "basinNode": 37,
+                "birthHighKilograms": 3.502779254743711e+17,
+                "birthLowKilograms": -16.0,
+                "surplusHighKilograms": 6500919587683728.0,
+                "surplusLowKilograms": 0.0
+              }
+            ]
+          },
+          "replay": {
+            "fullCheckpointRoundTripExact": true,
+            "nextHourContinuationExact": true
+          },
+          "surfaces": [
+            {
+              "absoluteLevelMeters": 112.07838150273014,
+              "basinNode": 37,
+              "exposedAreaSquareMeters": 8877604106488.35,
+              "exposedRegions": [
+                8,
+                141,
+                156
+              ],
+              "reconstructionResidualCubicMeters": 0.0,
+              "relativeHeightAboveBirthMeters": 0.7322831148701954
+            }
+          ]
+        },
+        "surplusFraction": 0.25
+      },
+      {
+        "budget": {
+          "cumulativeEvaporationKilograms": 3.568178209788799e+17,
+          "cumulativeLakeCaptureKilograms": 3.567788450620548e+17,
+          "cumulativePrecipitationKilograms": 3.567788450620548e+17,
+          "cumulativeRunoffTransfers": {
+            "receivedTransit": 0.0,
+            "sent": 0.0,
+            "terminalDelivery": 0.0,
+            "terminalEvaporation": 2939871754304.246
+          },
+          "cumulativeSurfaceTransfers": {
+            "infiltration": 0.0,
+            "liquidEvaporation": 3.5681488110712557e+17,
+            "liquidRunoff": 0.0,
+            "melt": 0.0,
+            "rain": 3.567788450620548e+17,
+            "snowfall": 0.0,
+            "soilDrainage": 0.0,
+            "soilEvaporation": 0.0
+          },
+          "initialMobileWaterKilograms": 1.4178849974962422e+18,
+          "maximumRelativeLocalSurfaceLedgerResidual": 5.708481148409782e-17,
+          "mergedLakeWaterKilograms": 3.567759051903005e+17,
+          "pendingLakeInputKilograms": 0.0,
+          "pendingRunoffKilograms": 0.0,
+          "referenceBodyWaterKilograms": 1.0610701163891167e+18,
+          "residualKilograms": 0.0,
+          "snowKilograms": 0.0,
+          "soilKilograms": 0.0,
+          "surfaceKilograms": 0.0,
+          "terminalWaterKilograms": 0.0,
+          "vaporKilograms": 38975916825091.79,
+          "vaporLedgerResidualKilograms": 3.7890625
+        },
+        "kind": "aboveBirthEvaporation",
+        "parentRegionalEvaporationKilograms": [
+          826152649816.5426,
+          982867377503.3934,
+          1130851726984.3103
+        ],
+        "parentsAfter": {
+          "modelVersion": "common-sill-parent-1",
+          "parents": [
+            {
+              "basinNode": 37,
+              "birthHighKilograms": 3.502779254743711e+17,
+              "birthLowKilograms": -16.0,
+              "surplusHighKilograms": 6497979715929424.0,
+              "surplusLowKilograms": -0.2463139295578003
+            }
+          ]
+        },
+        "parentsBefore": {
+          "modelVersion": "common-sill-parent-1",
+          "parents": [
+            {
+              "basinNode": 37,
+              "birthHighKilograms": 3.502779254743711e+17,
+              "birthLowKilograms": -16.0,
+              "surplusHighKilograms": 6500919587683728.0,
+              "surplusLowKilograms": 0.0
+            }
+          ]
+        },
+        "replay": {
+          "fullCheckpointRoundTripExact": true,
+          "nextHourContinuationExact": true
+        },
+        "totalRegionalEvaporationKilograms": 38975916825091.79
+      },
+      {
+        "inputs": [
+          [
+            8,
+            1.675282992166732e+17
+          ],
+          [
+            156,
+            2.3475698295916768e+17
+          ]
+        ],
+        "outcome": {
+          "accepted": false,
+          "completeStateUnchanged": true,
+          "message": "Merged lake requires next-parent spill; input remains owned but the interval is refused."
+        },
+        "surplusFraction": 2.0
+      }
+    ],
+    "recipe": {
+      "boundaryWidthKm": 300.0,
+      "continentalFraction": 0.38,
+      "continentalScale": 1.0,
+      "detailAmplitudeMeters": 300.0,
+      "maxPlateSpeedCmPerYear": 8.0,
+      "modelVersion": "basins-1",
+      "plateCount": 12,
+      "radiusMeters": 6371000.0,
+      "randomVersion": "fnv1a-utf8-mulberry32-1",
+      "reliefScale": 1.0,
+      "schemaVersion": 1,
+      "seed": "first-light",
+      "subdivision": 2,
+      "water": {
+        "fraction": 0.3,
+        "mode": "coverage"
+      }
+    },
+    "settings": {
+      "closedLakeExchange": "frozenLeafExposureWithSpillAndMerge",
+      "effectiveVaporDepthMeters": 2000.0,
+      "evaporationEnabled": false,
+      "evaporationResponseSeconds": 432000.0,
+      "initialActiveSurfaceDepthMeters": 10.0,
+      "maxCoupledStepSeconds": 900,
+      "orography": {
+        "strength": 1.0,
+        "upliftResponseHeightMeters": 1000.0
+      },
+      "precipitationEnabled": false,
+      "precipitationResponseSeconds": 21600.0,
+      "referenceWaterPool": "fastConnectedBody",
+      "routingEnabled": false,
+      "runoff": {
+        "effectiveSpeedMetersPerSecond": 1.0,
+        "minimumResponseSeconds": 3600.0
+      },
+      "soilNumerics": "compensated",
+      "surface": {
+        "infiltrationResponseSeconds": 21600.0,
+        "liquidRunoffResponseSeconds": 86400.0,
+        "meltKilogramsPerSquareMeterDegreeDay": 3.0,
+        "soilCapacityKilogramsPerSquareMeter": 150.0,
+        "soilDrainageResponseSeconds": 2592000.0,
+        "soilRetainedFraction": 0.6
+      },
+      "surfaceNumerics": "compensated",
+      "terminalNumerics": "compensated",
+      "transport": {
+        "maxOutgoingFraction": 0.8,
+        "maxSubsteps": 4096
+      }
+    }
+  },
+  "modelVersion": "seasonal-moisture-11",
+  "ordinary": [
+    {
+      "acceptedDays": 40,
+      "activeParents": {
+        "modelVersion": "common-sill-parent-1",
+        "parents": []
+      },
+      "eligibleParents": [],
+      "failure": null,
+      "finalBudget": {
+        "cumulativeEvaporationKilograms": 1.7514091332257154e+16,
+        "cumulativeLakeCaptureKilograms": 0.0,
+        "cumulativePrecipitationKilograms": 6240027796711687.0,
+        "cumulativeRunoffTransfers": {
+          "receivedTransit": 0.0,
+          "sent": 49538676277601.484,
+          "terminalDelivery": 49538676277601.484,
+          "terminalEvaporation": 0.0
+        },
+        "cumulativeSurfaceTransfers": {
+          "infiltration": 543309344506003.44,
+          "liquidEvaporation": 1.751385345306793e+16,
+          "liquidRunoff": 134067942407360.8,
+          "melt": 94775917969945.19,
+          "rain": 5985919481411961.0,
+          "snowfall": 254108315299725.84,
+          "soilDrainage": 0.0,
+          "soilEvaporation": 237879189222.34378
+        },
+        "initialMobileWaterKilograms": 3.5989835351856804e+18,
+        "maximumRelativeLocalSurfaceLedgerResidual": 3.57485438276649e-16,
+        "mergedLakeWaterKilograms": 0.0,
+        "pendingLakeInputKilograms": 0.0,
+        "pendingRunoffKilograms": 84529266129759.25,
+        "referenceBodyWaterKilograms": 3.586915851097832e+18,
+        "residualKilograms": 0.0,
+        "snowKilograms": 159332397329780.66,
+        "soilKilograms": 543071465316781.1,
+        "surfaceKilograms": 6687423526486.623,
+        "terminalWaterKilograms": 0.0,
+        "vaporKilograms": 1.127406353554547e+16,
+        "vaporLedgerResidualKilograms": 2.0
+      },
+      "maximumRelativeGlobalResidual": 1.4226239019834377e-16,
+      "maximumRelativeLocalResidual": 4.988802180330792e-16,
+      "recipe": {
+        "boundaryWidthKm": 300.0,
+        "continentalFraction": 0.38,
+        "continentalScale": 1.0,
+        "detailAmplitudeMeters": 300.0,
+        "maxPlateSpeedCmPerYear": 8.0,
+        "modelVersion": "basins-1",
+        "plateCount": 12,
+        "radiusMeters": 6371000.0,
+        "randomVersion": "fnv1a-utf8-mulberry32-1",
+        "reliefScale": 1.0,
+        "schemaVersion": 1,
+        "seed": "first-light",
+        "subdivision": 2,
+        "water": {
+          "fraction": 0.71,
+          "mode": "coverage"
+        }
+      },
+      "regions": 162,
+      "replay": {
+        "fullCheckpointRoundTripExact": true,
+        "nextHourContinuationExact": true
+      },
+      "settings": {
+        "closedLakeExchange": "frozenLeafExposureWithSpillAndMerge",
+        "effectiveVaporDepthMeters": 2000.0,
+        "evaporationEnabled": true,
+        "evaporationResponseSeconds": 432000.0,
+        "initialActiveSurfaceDepthMeters": 10.0,
+        "maxCoupledStepSeconds": 900,
+        "orography": {
+          "strength": 1.0,
+          "upliftResponseHeightMeters": 1000.0
+        },
+        "precipitationEnabled": true,
+        "precipitationResponseSeconds": 21600.0,
+        "referenceWaterPool": "fastConnectedBody",
+        "routingEnabled": true,
+        "runoff": {
+          "effectiveSpeedMetersPerSecond": 1.0,
+          "minimumResponseSeconds": 3600.0
+        },
+        "soilNumerics": "compensated",
+        "surface": {
+          "infiltrationResponseSeconds": 21600.0,
+          "liquidRunoffResponseSeconds": 86400.0,
+          "meltKilogramsPerSquareMeterDegreeDay": 3.0,
+          "soilCapacityKilogramsPerSquareMeter": 150.0,
+          "soilDrainageResponseSeconds": 2592000.0,
+          "soilRetainedFraction": 0.6
+        },
+        "surfaceNumerics": "compensated",
+        "terminalNumerics": "compensated",
+        "transport": {
+          "maxOutgoingFraction": 0.8,
+          "maxSubsteps": 4096
+        }
+      },
+      "spillEvents": 0
+    },
+    {
+      "acceptedDays": 40,
+      "activeParents": {
+        "modelVersion": "common-sill-parent-1",
+        "parents": []
+      },
+      "eligibleParents": [],
+      "failure": null,
+      "finalBudget": {
+        "cumulativeEvaporationKilograms": 1.7512398646980024e+16,
+        "cumulativeLakeCaptureKilograms": 0.0,
+        "cumulativePrecipitationKilograms": 6238079145190276.0,
+        "cumulativeRunoffTransfers": {
+          "receivedTransit": 0.0,
+          "sent": 49754469847971.02,
+          "terminalDelivery": 49754469847971.02,
+          "terminalEvaporation": 0.0
+        },
+        "cumulativeSurfaceTransfers": {
+          "infiltration": 542252865550018.06,
+          "liquidEvaporation": 1.751216129388359e+16,
+          "liquidRunoff": 134682939237250.52,
+          "melt": 94732248834999.66,
+          "rain": 5984014955846515.0,
+          "snowfall": 254064189343760.25,
+          "soilDrainage": 0.0,
+          "soilEvaporation": 237353096435.41867
+        },
+        "initialMobileWaterKilograms": 3.5989835351856804e+18,
+        "maximumRelativeLocalSurfaceLedgerResidual": 5.603873704806009e-16,
+        "mergedLakeWaterKilograms": 0.0,
+        "pendingLakeInputKilograms": 0.0,
+        "pendingRunoffKilograms": 84928469389279.39,
+        "referenceBodyWaterKilograms": 3.586916211036819e+18,
+        "residualKilograms": 0.0,
+        "snowKilograms": 159331940508760.6,
+        "soilKilograms": 542015512453582.6,
+        "surfaceKilograms": 6728724720154.953,
+        "terminalWaterKilograms": 0.0,
+        "vaporKilograms": 1.1274319501789742e+16,
+        "vaporLedgerResidualKilograms": -6.0
+      },
+      "maximumRelativeGlobalResidual": 1.4226239019834377e-16,
+      "maximumRelativeLocalResidual": 1.194117877572318e-15,
+      "recipe": {
+        "boundaryWidthKm": 300.0,
+        "continentalFraction": 0.38,
+        "continentalScale": 1.0,
+        "detailAmplitudeMeters": 300.0,
+        "maxPlateSpeedCmPerYear": 8.0,
+        "modelVersion": "basins-1",
+        "plateCount": 12,
+        "radiusMeters": 6371000.0,
+        "randomVersion": "fnv1a-utf8-mulberry32-1",
+        "reliefScale": 1.0,
+        "schemaVersion": 1,
+        "seed": "first-light",
+        "subdivision": 2,
+        "water": {
+          "fraction": 0.71,
+          "mode": "coverage"
+        }
+      },
+      "regions": 162,
+      "replay": {
+        "fullCheckpointRoundTripExact": true,
+        "nextHourContinuationExact": true
+      },
+      "settings": {
+        "closedLakeExchange": "frozenLeafExposureWithSpillAndMerge",
+        "effectiveVaporDepthMeters": 2000.0,
+        "evaporationEnabled": true,
+        "evaporationResponseSeconds": 432000.0,
+        "initialActiveSurfaceDepthMeters": 10.0,
+        "maxCoupledStepSeconds": 450,
+        "orography": {
+          "strength": 1.0,
+          "upliftResponseHeightMeters": 1000.0
+        },
+        "precipitationEnabled": true,
+        "precipitationResponseSeconds": 21600.0,
+        "referenceWaterPool": "fastConnectedBody",
+        "routingEnabled": true,
+        "runoff": {
+          "effectiveSpeedMetersPerSecond": 1.0,
+          "minimumResponseSeconds": 3600.0
+        },
+        "soilNumerics": "compensated",
+        "surface": {
+          "infiltrationResponseSeconds": 21600.0,
+          "liquidRunoffResponseSeconds": 86400.0,
+          "meltKilogramsPerSquareMeterDegreeDay": 3.0,
+          "soilCapacityKilogramsPerSquareMeter": 150.0,
+          "soilDrainageResponseSeconds": 2592000.0,
+          "soilRetainedFraction": 0.6
+        },
+        "surfaceNumerics": "compensated",
+        "terminalNumerics": "compensated",
+        "transport": {
+          "maxOutgoingFraction": 0.8,
+          "maxSubsteps": 4096
+        }
+      },
+      "spillEvents": 0
+    },
+    {
+      "acceptedDays": 40,
+      "activeParents": {
+        "modelVersion": "common-sill-parent-1",
+        "parents": []
+      },
+      "eligibleParents": [
+        {
+          "basinNode": 37,
+          "birthLevelMeters": 111.34609838785994,
+          "childCapacitiesKilograms": [
+            1.1552094251520338e+17,
+            2.3475698295916768e+17
+          ],
+          "childTerminals": [
+            8,
+            156
+          ],
+          "regions": [
+            8,
+            141,
+            156
+          ],
+          "surplusCapacityKilograms": 2.6003678350734924e+16
+        }
+      ],
+      "failure": null,
+      "finalBudget": {
+        "cumulativeEvaporationKilograms": 1.0388555855998806e+16,
+        "cumulativeLakeCaptureKilograms": 17595250250037.76,
+        "cumulativePrecipitationKilograms": 2235374977994778.5,
+        "cumulativeRunoffTransfers": {
+          "receivedTransit": 0.0,
+          "sent": 75223620478949.7,
+          "terminalDelivery": 75223620478949.72,
+          "terminalEvaporation": 21157319255.659496
+        },
+        "cumulativeSurfaceTransfers": {
+          "infiltration": 902022334551749.9,
+          "liquidEvaporation": 1.0388192339557656e+16,
+          "liquidRunoff": 225455150746983.0,
+          "melt": 29325591964979.945,
+          "rain": 1871594874860366.2,
+          "snowfall": 363780103134412.3,
+          "soilDrainage": 0.0,
+          "soilEvaporation": 342359121894.69885
+        },
+        "initialMobileWaterKilograms": 1.4178849974962422e+18,
+        "maximumRelativeLocalSurfaceLedgerResidual": 6.141047834531335e-16,
+        "mergedLakeWaterKilograms": 0.0,
+        "pendingLakeInputKilograms": 0.0,
+        "pendingRunoffKilograms": 150231530268033.38,
+        "referenceBodyWaterKilograms": 1.408316549766486e+18,
+        "residualKilograms": 0.0,
+        "snowKilograms": 334454511169432.4,
+        "soilKilograms": 901679975429855.2,
+        "surfaceKilograms": 11305104342194.021,
+        "terminalWaterKilograms": 17595730542648.34,
+        "vaporKilograms": 8153180878004024.0,
+        "vaporLedgerResidualKilograms": -4.0
+      },
+      "maximumRelativeGlobalResidual": 1.805506091481714e-16,
+      "maximumRelativeLocalResidual": 7.822609914987588e-16,
+      "recipe": {
+        "boundaryWidthKm": 300.0,
+        "continentalFraction": 0.38,
+        "continentalScale": 1.0,
+        "detailAmplitudeMeters": 300.0,
+        "maxPlateSpeedCmPerYear": 8.0,
+        "modelVersion": "basins-1",
+        "plateCount": 12,
+        "radiusMeters": 6371000.0,
+        "randomVersion": "fnv1a-utf8-mulberry32-1",
+        "reliefScale": 1.0,
+        "schemaVersion": 1,
+        "seed": "first-light",
+        "subdivision": 2,
+        "water": {
+          "fraction": 0.3,
+          "mode": "coverage"
+        }
+      },
+      "regions": 162,
+      "replay": {
+        "fullCheckpointRoundTripExact": true,
+        "nextHourContinuationExact": true
+      },
+      "settings": {
+        "closedLakeExchange": "frozenLeafExposureWithSpillAndMerge",
+        "effectiveVaporDepthMeters": 2000.0,
+        "evaporationEnabled": true,
+        "evaporationResponseSeconds": 432000.0,
+        "initialActiveSurfaceDepthMeters": 10.0,
+        "maxCoupledStepSeconds": 900,
+        "orography": {
+          "strength": 1.0,
+          "upliftResponseHeightMeters": 1000.0
+        },
+        "precipitationEnabled": true,
+        "precipitationResponseSeconds": 21600.0,
+        "referenceWaterPool": "fastConnectedBody",
+        "routingEnabled": true,
+        "runoff": {
+          "effectiveSpeedMetersPerSecond": 1.0,
+          "minimumResponseSeconds": 3600.0
+        },
+        "soilNumerics": "compensated",
+        "surface": {
+          "infiltrationResponseSeconds": 21600.0,
+          "liquidRunoffResponseSeconds": 86400.0,
+          "meltKilogramsPerSquareMeterDegreeDay": 3.0,
+          "soilCapacityKilogramsPerSquareMeter": 150.0,
+          "soilDrainageResponseSeconds": 2592000.0,
+          "soilRetainedFraction": 0.6
+        },
+        "surfaceNumerics": "compensated",
+        "terminalNumerics": "compensated",
+        "transport": {
+          "maxOutgoingFraction": 0.8,
+          "maxSubsteps": 4096
+        }
+      },
+      "spillEvents": 0
+    },
+    {
+      "acceptedDays": 40,
+      "activeParents": {
+        "modelVersion": "common-sill-parent-1",
+        "parents": []
+      },
+      "eligibleParents": [],
+      "failure": null,
+      "finalBudget": {
+        "cumulativeEvaporationKilograms": 1.8951835252392564e+16,
+        "cumulativeLakeCaptureKilograms": 2825422487166.042,
+        "cumulativePrecipitationKilograms": 8035146133789896.0,
+        "cumulativeRunoffTransfers": {
+          "receivedTransit": 10779055495452.084,
+          "sent": 100040313394281.25,
+          "terminalDelivery": 89261257898829.17,
+          "terminalEvaporation": 1172263588225.8457
+        },
+        "cumulativeSurfaceTransfers": {
+          "infiltration": 677034894504692.0,
+          "liquidEvaporation": 1.8945350081448464e+16,
+          "liquidRunoff": 167066287672189.4,
+          "melt": 64709136960133.27,
+          "rain": 7877437860034818.0,
+          "snowfall": 157708273755077.78,
+          "soilDrainage": 78688704773.59569,
+          "soilEvaporation": 5312907355876.038
+        },
+        "initialMobileWaterKilograms": 3.6039053952148495e+18,
+        "maximumRelativeLocalSurfaceLedgerResidual": 2.073720003568556e-15,
+        "mergedLakeWaterKilograms": 0.0,
+        "pendingLakeInputKilograms": 0.0,
+        "pendingRunoffKilograms": 77883718478133.78,
+        "referenceBodyWaterKilograms": 3.5921310580061363e+18,
+        "residualKilograms": 0.0,
+        "snowKilograms": 92999136794944.52,
+        "soilKilograms": 671643298444042.2,
+        "surfaceKilograms": 7660343981820.205,
+        "terminalWaterKilograms": 7461592411740.16,
+        "vaporKilograms": 1.0916689118602668e+16,
+        "vaporLedgerResidualKilograms": 0.0
+      },
+      "maximumRelativeGlobalResidual": 1.4206810219819235e-16,
+      "maximumRelativeLocalResidual": 2.078159985869182e-15,
+      "recipe": {
+        "boundaryWidthKm": 300.0,
+        "continentalFraction": 0.38,
+        "continentalScale": 1.0,
+        "detailAmplitudeMeters": 300.0,
+        "maxPlateSpeedCmPerYear": 8.0,
+        "modelVersion": "basins-1",
+        "plateCount": 12,
+        "radiusMeters": 6371000.0,
+        "randomVersion": "fnv1a-utf8-mulberry32-1",
+        "reliefScale": 1.0,
+        "schemaVersion": 1,
+        "seed": "first-light",
+        "subdivision": 3,
+        "water": {
+          "fraction": 0.71,
+          "mode": "coverage"
+        }
+      },
+      "regions": 642,
+      "replay": {
+        "fullCheckpointRoundTripExact": true,
+        "nextHourContinuationExact": true
+      },
+      "settings": {
+        "closedLakeExchange": "frozenLeafExposureWithSpillAndMerge",
+        "effectiveVaporDepthMeters": 2000.0,
+        "evaporationEnabled": true,
+        "evaporationResponseSeconds": 432000.0,
+        "initialActiveSurfaceDepthMeters": 10.0,
+        "maxCoupledStepSeconds": 900,
+        "orography": {
+          "strength": 1.0,
+          "upliftResponseHeightMeters": 1000.0
+        },
+        "precipitationEnabled": true,
+        "precipitationResponseSeconds": 21600.0,
+        "referenceWaterPool": "fastConnectedBody",
+        "routingEnabled": true,
+        "runoff": {
+          "effectiveSpeedMetersPerSecond": 1.0,
+          "minimumResponseSeconds": 3600.0
+        },
+        "soilNumerics": "compensated",
+        "surface": {
+          "infiltrationResponseSeconds": 21600.0,
+          "liquidRunoffResponseSeconds": 86400.0,
+          "meltKilogramsPerSquareMeterDegreeDay": 3.0,
+          "soilCapacityKilogramsPerSquareMeter": 150.0,
+          "soilDrainageResponseSeconds": 2592000.0,
+          "soilRetainedFraction": 0.6
+        },
+        "surfaceNumerics": "compensated",
+        "terminalNumerics": "compensated",
+        "transport": {
+          "maxOutgoingFraction": 0.8,
+          "maxSubsteps": 4096
+        }
+      },
+      "spillEvents": 0
+    }
+  ],
+  "reportVersion": "bounded-common-sill-validation-1",
+  "scope": "One-level all-dry parents only; no splitting, next-parent spill, nested merge, external spill into active parents, calibration or desktop promotion."
+}

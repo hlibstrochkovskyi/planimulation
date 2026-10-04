@@ -83,4 +83,4 @@ cargo run --release --locked --manifest-path native/Cargo.toml --example leaf_sp
 npm test
 ```
 
-The report refuses to overwrite evidence files. Next: explicit exclusive parent storage and common-sill merge ownership, then concurrent receiving-frontier policy and qualified dynamic display. Do not grow this bounded leaf adapter into an unversioned collection of implicit overflow exceptions. No default, desktop, stationarity, ecology or calibration promotion is implied.
+The report refuses to overwrite evidence files. The separately pinned [model-11 common-sill mode](common-sill-lakes.md) now applies exclusive storage and merging for one-level all-dry parents; model 10 retains its original same-sill refusal. Contraction/splitting, general concurrent receiving frontiers and qualified dynamic display remain open. Do not grow this bounded leaf adapter into an unversioned collection of implicit overflow exceptions. No default, desktop, stationarity, ecology or calibration promotion is implied.

@@ -1,5 +1,6 @@
-//! Bounded fast fill/spill on exclusive leaves; no parent merge or discharge law.
-use super::{Checkpoint as SeasonalCheckpoint, closed_lake, reference_pool};
+//! Bounded fast fill/spill on exclusive leaves with optional model-11 parent handoff.
+//! No discharge law, general parent frontier or concurrent overflow allocation.
+use super::{Checkpoint as SeasonalCheckpoint, closed_lake, merged_lake, reference_pool};
 use crate::{World, moisture_transport::total_mass, surface_water::CompensatedStock};
 use closed_lake::spill::{Connection, Destination, Route};
 use serde::{Deserialize, Serialize};
@@ -24,7 +25,7 @@ impl Components {
     pub(super) fn stock(&self, r: usize) -> Result<CompensatedStock, String> {
         CompensatedStock::new(self.high_kilograms[r], self.low_kilograms[r], f64::MAX)
     }
-    fn set(&mut self, r: usize, stock: CompensatedStock) {
+    pub(super) fn set(&mut self, r: usize, stock: CompensatedStock) {
         self.high_kilograms[r] = stock.high;
         self.low_kilograms[r] = stock.low;
     }
@@ -104,7 +105,7 @@ fn full(stock: CompensatedStock, cap: f64) -> bool {
 
 /// Move actual scalar grants, retaining tails, without snapping either endpoint.
 /// Four passes bound decomposition of a pair and a compensated capacity deficit.
-fn fill(
+pub(super) fn fill(
     donor: &mut CompensatedStock,
     recipient: &mut CompensatedStock,
     cap: f64,
@@ -223,11 +224,17 @@ impl Layout {
         &self,
         cp: &mut SeasonalCheckpoint,
         pool: &reference_pool::Layout,
+        merge: Option<&merged_lake::Layout>,
     ) -> Result<Vec<Event>, String> {
-        let mut sources = Vec::new();
+        if let Some(m) = merge {
+            m.settle(cp)?;
+        }
         // All local inputs fill their own leaf first, before selecting overflow.
         for (b, connection) in self.connections.iter().enumerate() {
             let r = connection.terminal_region;
+            if merge.is_some_and(|m| m.terminal_active(cp, r)) {
+                continue;
+            }
             let mut input = cp
                 .leaf_spill_state
                 .as_ref()
@@ -243,10 +250,21 @@ impl Layout {
                 .pending_input
                 .set(r, input);
             Self::set_liquid(cp, r, liquid);
-            if !empty(input) {
-                sources.push(b);
-            }
         }
+        if let Some(m) = merge {
+            m.settle(cp)?;
+        }
+        let sources = self
+            .connections
+            .iter()
+            .enumerate()
+            .filter_map(|(b, c)| {
+                let input = &cp.leaf_spill_state.as_ref().unwrap().pending_input;
+                (input.high_kilograms[c.terminal_region] != 0.
+                    || input.low_kilograms[c.terminal_region] != 0.)
+                    .then_some(b)
+            })
+            .collect::<Vec<_>>();
         if sources.len() > 1 {
             return Err(
                 "Concurrent leaf spill sources require a shared event/merge policy.".into(),
@@ -282,6 +300,9 @@ impl Layout {
             let destination = Self::destination_region(&route.destination);
             let grants = match route.destination {
                 Destination::ClosedTerminal { terminal_region } => {
+                    if merge.is_some_and(|m| m.terminal_active(cp, terminal_region)) {
+                        return Err("Leaf spill into an active merged parent requires a receiving-frontier policy.".into());
+                    }
                     let receiver = self.by_terminal[terminal_region]
                         .ok_or("Leaf spill receiver has no exclusive leaf owner.")?;
                     let receiving_crest = self.connections[receiver]
@@ -351,6 +372,21 @@ impl Layout {
                 .unwrap()
                 .pending_input
                 .set(root, donor);
+            if let Some(m) = merge {
+                m.settle_at(cp, root)?;
+                if destination != root {
+                    m.settle_at(cp, destination)?;
+                }
+                if m.terminal_active(cp, root) {
+                    return Ok(events);
+                }
+                if !empty(donor) && m.terminal_active(cp, destination) {
+                    return Err(
+                        "Remaining external spill into a newly merged parent is unsupported."
+                            .into(),
+                    );
+                }
+            }
             if empty(donor) {
                 return Ok(events);
             }
@@ -564,7 +600,7 @@ mod tests {
             .pending_input
             .credit(0, 2500.)
             .unwrap();
-        layout.resolve(&mut cp, &pool).unwrap();
+        layout.resolve(&mut cp, &pool, None).unwrap();
         assert_eq!(cp.terminal_water_kilograms, [2000., 0., 500.]);
         let mut provisional = cp.clone();
         provisional
@@ -576,7 +612,7 @@ mod tests {
             .unwrap();
         assert!(
             layout
-                .resolve(&mut provisional, &pool)
+                .resolve(&mut provisional, &pool, None)
                 .unwrap_err()
                 .contains("parent merge")
         );
@@ -594,7 +630,7 @@ mod tests {
             .unwrap();
         assert!(
             layout
-                .resolve(&mut cp, &pool)
+                .resolve(&mut cp, &pool, None)
                 .unwrap_err()
                 .contains("unique geographic route")
         );
@@ -608,7 +644,7 @@ mod tests {
         layout.reference_level = 2.;
         assert!(
             layout
-                .resolve(&mut cp, &pool)
+                .resolve(&mut cp, &pool, None)
                 .unwrap_err()
                 .contains("backpressured")
         );
@@ -623,7 +659,7 @@ mod tests {
             .pending_input
             .credit(0, 1234.)
             .unwrap();
-        assert!(layout.resolve(&mut cp, &pool).unwrap().is_empty());
+        assert!(layout.resolve(&mut cp, &pool, None).unwrap().is_empty());
         assert_eq!(cp.terminal_water_kilograms, [1234.]);
         assert_eq!(
             cp.leaf_spill_state.as_ref().unwrap().pending_input.total(),
