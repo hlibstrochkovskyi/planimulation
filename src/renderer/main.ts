@@ -2,7 +2,7 @@ import './style.css';
 import { DEFAULT_RECIPE, parseRecipe } from '../core/recipe';
 import type { Recipe } from '../core/recipe';
 import type { World } from '../core/world';
-import type { DesktopAPI, PreparedWaterWorld, PrescribedWaterMode, WaterBudget, WaterFrame } from '../shared/desktop-api';
+import type { DesktopAPI, PreparedMoistureWorld, PreparedWaterWorld, PrescribedWaterMode, WaterBudget, WaterFrame } from '../shared/desktop-api';
 import { SurfaceMap } from './map';
 import type { Layer, ViewMode } from './map';
 import { BOUNDARY_NAMES, speedCmPerYear } from '../core/tectonics';
@@ -56,6 +56,8 @@ const moistureStart = element<HTMLButtonElement>('moisture-start');
 const moistureStep = element<HTMLButtonElement>('moisture-step');
 const moisturePlay = element<HTMLButtonElement>('moisture-play');
 const moistureInterval = element<HTMLSelectElement>('moisture-interval');
+const moistureOpen = element<HTMLButtonElement>('open-seasonal');
+const moistureSave = element<HTMLButtonElement>('save-seasonal');
 const number = new Intl.NumberFormat('en', { maximumFractionDigits: 1 });
 const budgetNumber = new Intl.NumberFormat('en', { maximumSignificantDigits: 6 });
 let world: World | null = null;
@@ -105,6 +107,12 @@ function updateExperimentControls(): void {
   moisturePlay.disabled = !hasSeasonal || finished || (!moisturePlaying && busy);
   moisturePlay.textContent = moisturePlaying ? 'Pause seasonal water' : 'Run seasonal water';
   moistureInterval.disabled = busy || moisturePlaying;
+  // File actions require a settled, paused snapshot; the pause control remains
+  // usable while an already requested interval finishes.
+  moistureOpen.disabled = busy || moisturePlaying || playing;
+  moistureSave.disabled = !hasSeasonal || busy || moisturePlaying || playing;
+  element<HTMLButtonElement>('generate').disabled = checkpointOpening || waterBusy;
+  element<HTMLButtonElement>('open-recipe').disabled = checkpointOpening || waterBusy;
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-layer]')) {
     if (isMoistureLayer(button.dataset.layer ?? '')) button.disabled = !hasSeasonal || generating;
   }
@@ -133,7 +141,7 @@ function renderMoisture(): void {
     delete element('moisture-time').dataset.requestMilliseconds;
     delete element('moisture-budget-details').dataset.relativeMassResidual;
     delete element('moisture-budget-details').dataset.relativeLedgerResidual;
-    element('moisture-time').textContent = 'Not initialized · regeneration discards the seasonal run';
+    element('moisture-time').textContent = 'Not initialized · regeneration discards unsaved seasonal progress';
     element('moisture-step-note').textContent = 'No interval recorded. Playback waits for each native response; frame rate does not set model time.';
     element('moisture-budget-note').textContent = 'Initialize seasonal water to inspect its approximate binary64 accounting. Do not add it to the full initial water inventory.';
     element('moisture-budget-details').replaceChildren(); element('moisture-selection-details').replaceChildren();
@@ -143,7 +151,9 @@ function renderMoisture(): void {
   }
   element('moisture-time').textContent = moistureCalendar(frame.elapsedSeconds);
   const month = Math.floor((Math.floor(frame.elapsedSeconds / 86400) % 365) * 12 / 365) + 1;
-  element('moisture-step-note').textContent = `Last interval ${frame.intervalSeconds / 3600} h · ${frame.coupledSubsteps} coupled / ${frame.transportSubsteps} transport substeps · next forcing month ${month}. The normals selector is independent. Pause may finish one requested interval.`;
+  element('moisture-step-note').textContent = frame.intervalSeconds === 0
+    ? `Read-only observation · no interval transfers · next forcing month ${month}. Advance to record new rates; the normals selector is independent.`
+    : `Last interval ${frame.intervalSeconds / 3600} h · ${frame.coupledSubsteps} coupled / ${frame.transportSubsteps} transport substeps · next forcing month ${month}. The normals selector is independent. Pause may finish one requested interval.`;
   const budget = frame.budget;
   element('moisture-budget-details').dataset.relativeMassResidual = String(budget.residualKilograms / Math.max(budget.initialMobileWaterKilograms, 1));
   element('moisture-budget-details').dataset.relativeLedgerResidual = String(budget.maximumRelativeLocalSurfaceLedgerResidual);
@@ -160,7 +170,7 @@ function renderMoisture(): void {
     ['Cumulative terminal delivery · flow integral', volume(budget.cumulativeRunoffTransfers.terminalDelivery)],
     ['Cumulative terminal evaporation · flow integral', volume(budget.cumulativeRunoffTransfers.terminalEvaporation)],
   ]);
-  element('moisture-budget-note').textContent = `${frame.modelVersion} · six exclusive stocks. Flow integrals can count recirculated water and must not be added to the inventory. Fixed geography; no lake levels or deep-water replenishment. Seasonal desktop saving is not implemented.`;
+  element('moisture-budget-note').textContent = `${frame.modelVersion} · six exclusive stocks. Flow integrals can count recirculated water and must not be added to the inventory. Fixed geography; no lake levels or deep-water replenishment. Save seasonal checkpoint preserves the complete native state, not just these display values.`;
   if (selected === null) {
     element('moisture-selection-title').textContent = 'Select a region';
     element('moisture-selection-details').replaceChildren();
@@ -484,7 +494,8 @@ function updateExaggeration(): void {
 element('exaggeration').addEventListener('change', updateExaggeration);
 resolutionInput.addEventListener('change', () => { plateCountInput.max = String(Math.min(32, 10 * 4 ** Number(resolutionInput.value) + 2)); });
 
-async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): Promise<void> {
+async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | PreparedMoistureWorld): Promise<void> {
+  if (!prepared && (checkpointOpening || waterBusy)) return;
   pause(); map.cancelPreparation();
   const request = ++generationId;
   const start = performance.now();
@@ -503,15 +514,16 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     showStatus('Preparing GPU geometry for both views…');
     await map.setWorld(result.world);
     map.setTemperatureMonth(Number(temperatureMonthInput.value));
-    const restoredFrame = prepared?.waterFrame ?? null;
+    const restoredFrame = prepared && 'waterFrame' in prepared ? prepared.waterFrame : null;
+    const restoredMoisture = prepared && 'moistureFrame' in prepared ? prepared.moistureFrame : null;
     if (restoredFrame) map.setWaterFrame(restoredFrame);
     if (request !== generationId) return;
     // Queue acceptance before any subsequent UI action; no await between view
     // publication and this request. The old native world survives preparation.
     const accepted = api.acceptWorld(result.epoch);
     world = result.world; epoch = result.epoch; selected = null; waterFrame = null; waterBudget = null;
-    moistureFrame = null;
-    map.setMoistureFrame(null); renderMoisture();
+    moistureFrame = restoredMoisture;
+    map.setMoistureFrame(moistureFrame); renderMoisture();
     temperatureNormals = null; windNormals = null;
     map.setTemperatureNormals(null); map.setWindNormals(null);
     waterBusy = false; budgetBusyEpoch = null;
@@ -564,6 +576,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     element('diagnostic-tick').textContent = 'Step 0';
     element('water-step').textContent = 'Select a source region · manual input, no elapsed time';
     element('model-label').textContent = `${world.recipe.modelVersion.toUpperCase()} · STATIC INITIAL CONDITIONS`;
+    if (restoredMoisture) element('model-label').textContent = `${restoredMoisture.modelVersion.toUpperCase()} · FIXED GEOGRAPHY`;
     renderWaterBudget();
     if (restoredFrame) applyWaterFrame(restoredFrame, false);
     updateLegend();
@@ -607,7 +620,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
       element('wind-note').textContent = `Seasonal surface-wind normals unavailable: ${windError}`;
     }
     if ((currentLayer === 'temperature' && !temperatureNormals) || (currentLayer === 'windSpeed' && !windNormals)
-      || isMoistureLayer(currentLayer)) {
+      || (isMoistureLayer(currentLayer) && !moistureFrame)) {
       document.querySelector<HTMLButtonElement>('[data-layer="surface"]')?.click();
     }
     cancel.hidden = true; save.disabled = false; saveResolved.disabled = false; exportView.disabled = false;
@@ -616,6 +629,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld): P
     document.body.dataset.state = 'ready';
     updateExperimentControls();
     showStatus(temperatureError || windError ? `World ready; climate layer unavailable: ${temperatureError ?? windError}`
+      : restoredMoisture ? `Seasonal checkpoint restored at ${restoredMoisture.elapsedSeconds} elapsed seconds. Complete stocks and ledgers are ready to continue.`
       : restoredFrame ? `Water checkpoint restored at prescribed step ${restoredFrame.step}. Exact stocks are ready to continue.`
       : `${world.recipe.plateCount} connected plates · ${world.tectonics.boundaryTypes.length} boundary segments · ${(world.stats.arrayBytes / 2 ** 20).toFixed(1)} MiB of model arrays · Static kinematics, no geological time integration`);
   } catch (error) {
@@ -730,6 +744,29 @@ waterSave.addEventListener('click', async () => {
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
   finally { if (epoch === activeEpoch) waterBusy = false; updateExperimentControls(); }
 });
+moistureOpen.addEventListener('click', async () => {
+  if (checkpointOpening || waterBusy || advancing || moistureBusyEpoch === epoch || budgetBusyEpoch === epoch
+    || document.body.dataset.state === 'generating') return;
+  pause(); checkpointOpening = true; updateExperimentControls();
+  try {
+    const prepared = await api.openSeasonalCheckpoint();
+    if (prepared) await generate(null, prepared);
+    else showStatus('Seasonal checkpoint opening canceled.');
+  } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
+  finally { checkpointOpening = false; updateExperimentControls(); }
+});
+moistureSave.addEventListener('click', async () => {
+  if (!world || !moistureFrame || checkpointOpening || waterBusy || advancing || moistureBusyEpoch === epoch
+    || document.body.dataset.state === 'generating') return;
+  pause();
+  const activeEpoch = epoch, seconds = moistureFrame.elapsedSeconds;
+  waterBusy = true; updateExperimentControls();
+  try {
+    if (await api.saveSeasonalCheckpoint(activeEpoch)) showStatus(`Complete seasonal checkpoint saved at ${seconds} elapsed seconds.`);
+    else showStatus('Seasonal checkpoint saving canceled.');
+  } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
+  finally { if (epoch === activeEpoch) waterBusy = false; updateExperimentControls(); }
+});
 
 function pause(): void {
   playing = false; clearTimeout(playbackTimer);
@@ -805,9 +842,10 @@ cancel.addEventListener('click', () => {
 });
 element('new-seed').addEventListener('click', () => { seedInput.value = crypto.randomUUID().slice(0, 8); });
 element('open-recipe').addEventListener('click', async () => {
+  if (checkpointOpening || waterBusy) return;
   try {
     const recipe = await api.openRecipe();
-    if (recipe) { const validated = parseRecipe(recipe); setInputs(validated); void generate(validated); }
+    if (recipe && !checkpointOpening && !waterBusy) { const validated = parseRecipe(recipe); setInputs(validated); void generate(validated); }
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
 });
 save.addEventListener('click', async () => {

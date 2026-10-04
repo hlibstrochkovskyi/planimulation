@@ -93,6 +93,18 @@ fn display_wire_is_field_major_exact_headless_data_without_geometry_or_model_mut
     for _ in 0..5 {
         let step = model.advance(&mut state, 86400).unwrap();
         let saved = state.checkpoint();
+        let mut checkpoint_bytes = Vec::new();
+        wire::seasonal_checkpoint(&mut checkpoint_bytes, &model, &state).unwrap();
+        let header_length = u32::from_le_bytes(checkpoint_bytes[..4].try_into().unwrap()) as usize;
+        let header: serde_json::Value =
+            serde_json::from_slice(&checkpoint_bytes[4..4 + header_length]).unwrap();
+        assert_eq!(header["kind"], "moistureCheckpoint");
+        assert_eq!(header["protocol"], 11);
+        assert_eq!(header["elapsedSeconds"], state.elapsed_seconds());
+        let restored: planimulation_core::seasonal_moisture::Checkpoint =
+            serde_json::from_slice(&checkpoint_bytes[4 + header_length..]).unwrap();
+        assert_eq!(restored, saved);
+        assert_eq!(Model::restore(restored).unwrap().1, state);
         assert_frame(&model, &state, Some(&step), 86400);
         assert_frame(&model, &state, None, 0);
         assert_eq!(state.checkpoint(), saved);

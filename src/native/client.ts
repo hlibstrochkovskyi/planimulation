@@ -6,14 +6,15 @@ import type { World } from '../core/world';
 import { validateWater } from '../core/water';
 import { validateDrainage } from '../core/drainage';
 import { BASIN_ANALYSIS_VERSION, validateBasins } from '../core/basins';
-import type { DiagnosticFrame, PreparedWaterWorld, PrescribedWaterMode, WaterBudget, WaterFrame } from '../shared/desktop-api';
+import type { DiagnosticFrame, PreparedMoistureWorld, PreparedWaterWorld, PrescribedWaterMode, WaterBudget, WaterFrame } from '../shared/desktop-api';
 import { DEFAULT_TEMPERATURE_SETTINGS, TEMPERATURE_DAYS_PER_YEAR, TEMPERATURE_MODEL_VERSION, TEMPERATURE_MONTHS_PER_YEAR } from '../core/seasonal-temperature';
 import type { TemperatureNormals } from '../core/seasonal-temperature';
 import { DEFAULT_WIND_SETTINGS, WIND_MODEL_VERSION } from '../core/seasonal-wind';
 import type { WindNormals } from '../core/seasonal-wind';
 import { decodeSeasonalMoisture } from './seasonal-moisture';
 import type { MoistureBudget, MoistureFrame } from '../shared/seasonal-moisture';
-import { MOISTURE_MAX_SECONDS } from '../shared/seasonal-moisture';
+import { MOISTURE_MAX_SECONDS, MOISTURE_MODEL_VERSION } from '../shared/seasonal-moisture';
+import { MAX_SEASONAL_CHECKPOINT_BYTES, MAX_SEASONAL_COMMAND_BYTES } from '../shared/seasonal-checkpoint';
 
 const MAX_BYTES = 32 * 2 ** 20;
 const MAX_COMMAND_BYTES = 8 * 2 ** 20;
@@ -41,7 +42,7 @@ export class FrameReader {
     return out;
   }
   push(chunk: Buffer): void {
-    if (this.length + chunk.length > MAX_BYTES + 32772) throw new Error('Native frame exceeds memory budget.');
+    if (this.length + chunk.length > MAX_SEASONAL_CHECKPOINT_BYTES + 32772) throw new Error('Native frame exceeds memory budget.');
     if (chunk.length) { this.chunks.push(chunk); this.length += chunk.length; }
     for (;;) {
       if (this.headerLength === null) {
@@ -52,8 +53,9 @@ export class FrameReader {
       if (this.header === null) {
         if (this.length < this.headerLength) return;
         const h = JSON.parse(this.take(this.headerLength).toString('utf8')) as Header;
-        if (!h || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0 || h.byteLength > MAX_BYTES
-          || (h.kind === 'moisture' ? h.protocol !== 11 : (h.protocol !== 9 && h.protocol !== 10)
+        if (!h || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0
+          || h.byteLength > (h.kind === 'moistureCheckpoint' ? MAX_SEASONAL_CHECKPOINT_BYTES : MAX_BYTES)
+          || (h.kind === 'moisture' || h.kind === 'moistureCheckpoint' ? h.protocol !== 11 : (h.protocol !== 9 && h.protocol !== 10)
             || !['world', 'frame', 'water', 'temperature', 'wind', 'checkpoint', 'error'].includes(h.kind))) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
@@ -199,8 +201,14 @@ export class NativeSession {
   request(command: object): Promise<Packet> {
     if (this.closed) return Promise.reject(new Error('Native session is closed.'));
     if (this.pending) return Promise.reject(new Error('Native session is busy.'));
+    const restore = command as { command?: unknown; checkpointJson?: unknown };
+    const seasonal = restore.command === 'restoreMoisture';
+    if (seasonal && (typeof restore.checkpointJson !== 'string'
+      || Buffer.byteLength(restore.checkpointJson) > MAX_SEASONAL_CHECKPOINT_BYTES)) {
+      return Promise.reject(new Error('Seasonal checkpoint exceeds the 64 MiB limit or is not JSON text.'));
+    }
     const line = `${JSON.stringify(command)}\n`;
-    if (Buffer.byteLength(line) > MAX_COMMAND_BYTES) return Promise.reject(new Error('Command too large.'));
+    if (Buffer.byteLength(line) > (seasonal ? MAX_SEASONAL_COMMAND_BYTES : MAX_COMMAND_BYTES)) return Promise.reject(new Error('Command too large.'));
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => this.close('Native request timed out.'), 60_000);
       this.pending = { resolve, reject, timer };
@@ -331,10 +339,13 @@ export class NativeController {
   private moistureInitialized = false;
   private moistureBudget: MoistureBudget | undefined;
   private sequence = 0;
-  private prepared: { epoch: number; count: number; waterStep: number } | null = null;
+  private revision = 0;
+  private prepared: { epoch: number; count: number; waterStep: number; moistureFrame?: MoistureFrame } | null = null;
   private preparedWorld: World | null = null;
   private activeWorld: World | null = null;
   constructor(private readonly executable: string) {}
+  /** File dialogs must not resurrect an intent canceled/replaced while reading. */
+  get preparationRevision(): number { return this.revision; }
   async generate(recipe: Recipe): Promise<{ world: World; epoch: number }> {
     this.cancel();
     const session = new NativeSession(this.executable);
@@ -372,16 +383,49 @@ export class NativeController {
       session.close(); if (this.candidate === session) this.candidate = null; throw error;
     }
   }
+  async loadSeasonalCheckpoint(contents: string): Promise<PreparedMoistureWorld> {
+    if (typeof contents !== 'string' || Buffer.byteLength(contents) > MAX_SEASONAL_CHECKPOINT_BYTES) {
+      throw new Error('Seasonal checkpoint exceeds the 64 MiB limit or is not JSON text.');
+    }
+    const checkpoint = JSON.parse(contents) as { schemaVersion?: unknown; modelVersion?: unknown; recipe?: unknown; elapsedSeconds?: unknown } | null;
+    if (!checkpoint || checkpoint.schemaVersion !== 3 || checkpoint.modelVersion !== MOISTURE_MODEL_VERSION) {
+      throw new Error('Unsupported seasonal-moisture checkpoint version.');
+    }
+    const recipe = parseRecipe(checkpoint.recipe);
+    const seconds = checkpoint.elapsedSeconds;
+    if (!Number.isSafeInteger(seconds) || (seconds as number) < 0 || (seconds as number) > MOISTURE_MAX_SECONDS) {
+      throw new Error('Invalid seasonal checkpoint clock.');
+    }
+    this.cancel();
+    const session = new NativeSession(this.executable);
+    this.candidate = session;
+    try {
+      const world = decodeWorld(await session.request({ command: 'generate', recipe }));
+      // Pass original decimal tokens and roundoff signs to the authoritative Rust
+      // parser. JS parsing above only preflights origin/version/clock metadata.
+      const packet = await session.request({ command: 'restoreMoisture', checkpointJson: contents });
+      const frame = decodeSeasonalMoisture(packet, world, 0, seconds as number, 0);
+      if (this.candidate !== session) throw new Error('Native task canceled.');
+      const epoch = ++this.sequence, moistureFrame = { ...frame, epoch };
+      this.prepared = { epoch, count: world.stats.regionCount, waterStep: 0, moistureFrame };
+      this.preparedWorld = world;
+      return { world, moistureFrame, epoch };
+    } catch (error) {
+      session.close(); if (this.candidate === session) this.candidate = null; throw error;
+    }
+  }
   accept(epoch: number): void {
     if (!this.candidate || !this.preparedWorld || this.prepared?.epoch !== epoch) throw new Error('No matching prepared world.');
+    this.revision++;
     this.active?.close(); this.active = this.candidate; this.candidate = null;
     this.activeWorld = this.preparedWorld; this.preparedWorld = null;
     this.epoch = epoch; this.count = this.prepared.count; this.tick = 0;
-    this.waterStep = this.prepared.waterStep; this.prepared = null;
-    this.moistureSeconds = 0; this.moistureInitialized = false;
-    this.moistureBudget = undefined;
+    this.waterStep = this.prepared.waterStep;
+    const moisture = this.prepared.moistureFrame; this.prepared = null;
+    this.moistureSeconds = moisture?.elapsedSeconds ?? 0; this.moistureInitialized = moisture !== undefined;
+    this.moistureBudget = moisture?.budget;
   }
-  cancel(): void { this.candidate?.close(); this.candidate = null; this.prepared = null; this.preparedWorld = null; }
+  cancel(): void { this.revision++; this.candidate?.close(); this.candidate = null; this.prepared = null; this.preparedWorld = null; }
   resolvedInitialWorld(epoch: number): World {
     if (!this.active || !this.activeWorld || this.candidate || epoch !== this.epoch) {
       throw new Error('No matching active world.');
@@ -464,6 +508,24 @@ export class NativeController {
       session.close(); throw new Error('Invalid native water checkpoint.');
     }
     return `${contents}\n`;
+  }
+  async exportSeasonalCheckpoint(epoch: number): Promise<string> {
+    if (!this.active || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    if (!this.moistureInitialized) throw new Error('Initialize seasonal water before saving it.');
+    const session = this.active;
+    const { header, bytes } = await session.request({ command: 'exportMoisture' });
+    if (this.active !== session || this.epoch !== epoch) throw new Error('Stale seasonal checkpoint.');
+    try {
+      if (header.kind !== 'moistureCheckpoint' || header.protocol !== 11 || header.byteLength !== bytes.length
+        || header.schemaVersion !== 3 || header.modelVersion !== MOISTURE_MODEL_VERSION
+        || header.elapsedSeconds !== this.moistureSeconds || bytes.length === 0
+        || bytes.length >= MAX_SEASONAL_CHECKPOINT_BYTES) throw new Error('Invalid native seasonal checkpoint.');
+      const contents = bytes.toString('utf8');
+      const saved = JSON.parse(contents) as { schemaVersion?: unknown; modelVersion?: unknown; elapsedSeconds?: unknown };
+      if (saved.schemaVersion !== 3 || saved.modelVersion !== MOISTURE_MODEL_VERSION
+        || saved.elapsedSeconds !== this.moistureSeconds) throw new Error('Invalid native seasonal checkpoint.');
+      return `${contents}\n`;
+    } catch (error) { session.close(); throw error; }
   }
   async inspectWaterBudget(epoch: number): Promise<WaterBudget> {
     const saved = JSON.parse(await this.exportWaterCheckpoint(epoch)) as {

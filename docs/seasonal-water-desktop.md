@@ -33,7 +33,7 @@ Seasonal frames only change a scalar texture; they do not rebuild terrain or wat
 
 The named preload operation is `seasonalMoisture(epoch, seconds)`. Integer `seconds = 0` initializes or observes without advancing; `1..86400` advances an initialized model. Requests reject stale epochs, simultaneous session commands, invalid durations, and clock-limit violations. The native process independently validates these rules and mixed-mode restrictions.
 
-Only `kind: "moisture"` uses protocol 11. Initial world protocols 9/10, diagnostic frames, manual water, and read-only normal frames are unchanged. The existing 32 KiB header and 32 MiB body bounds remain in force. The header carries region count, six model versions, resolved moisture/temperature/wind settings, elapsed/interval seconds, substep counts, residual diagnostics, and the full global budget.
+The display kind `moisture` and the subsequently added complete `moistureCheckpoint` export use protocol 11. Initial world protocols 9/10, diagnostic frames, manual water, and read-only normal frames are unchanged. The existing 32 KiB header and 32 MiB display-body bounds remain in force; complete checkpoint JSON has its separate [64 MiB bound](seasonal-water-checkpoints.md). The display header carries region count, six model versions, resolved moisture/temperature/wind settings, elapsed/interval seconds, substep counts, residual diagnostics, and the full global budget.
 
 The binary body is little-endian, field-major Float64, exactly `18 × N × 8` bytes:
 
@@ -75,6 +75,6 @@ The largest grid showed occasional 50–70 ms scheduling gaps. This does not est
 
 ## Persistence and next work
 
-A display frame is not a complete checkpoint: it omits cumulative regional corrections and other resumable data. The native model already has complete schema-3 checkpoint replay, but **desktop seasonal save/load is not implemented** in this increment. Recipes, resolved initial-world exports, and manual water checkpoints do not preserve a seasonal run. Regeneration or closing/reloading the application discards it; the UI states this explicitly.
+A display frame is not a complete checkpoint: it omits cumulative regional corrections and other resumable data. The subsequent [desktop checkpoint integration](seasonal-water-checkpoints.md) now saves and restores the complete schema-3 native state. Pause playback and finish its current interval before file operations. Loading uses candidate-process validation and starts paused with an observation rather than a fabricated last-interval rate. Recipes, resolved initial-world exports, and manual water checkpoints do not preserve a seasonal run. Regeneration or closing/reloading discards unsaved progress.
 
-The next bounded integration is desktop save/load of the complete seasonal checkpoint with candidate-process validation and exact continuation tests. Lake spill levels, groundwater, changing geometry, terrain lifting, weather, ecology, and calibration remain separate model gates. Milestone D is still incomplete.
+Complete desktop checkpoint replay closes that persistence gate, not the physical climate/hydrology gates. Lake spill levels, groundwater, changing geometry, terrain lifting, terrain-dependent precipitation, weather, ecology, and calibration remain separate model work. Milestone D is still incomplete.

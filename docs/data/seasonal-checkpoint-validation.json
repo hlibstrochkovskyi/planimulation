@@ -1,0 +1,59 @@
+{
+  "recordVersion": 1,
+  "date": "2026-10-03",
+  "environment": "Supported Linux build; same native executable for uninterrupted and restored branches",
+  "moistureModelVersion": "seasonal-moisture-3",
+  "checkpointSchemaVersion": 3,
+  "physicalModelChanged": false,
+  "validationCommands": {
+    "npm test": "Passed: strict TypeScript, all native targets, and 64 Node test cases",
+    "npm run test:desktop": "Passed: real Electron with only file dialogs stubbed",
+    "cargo fmt --manifest-path native/Cargo.toml -- --check": "Passed",
+    "cargo clippy --locked --manifest-path native/Cargo.toml --all-targets -- -D warnings": "Passed",
+    "git diff --check": "Passed"
+  },
+  "checkpointFileLimitBytes": 67108864,
+  "ordinaryCommandLimitBytes": 8388608,
+  "seasonalRestoreEnvelopeLimitBytes": 134218752,
+  "replayChecks": [
+    {
+      "subdivision": 2,
+      "regionCount": 162,
+      "saveElapsedSeconds": 31536000,
+      "continueSeconds": 86400,
+      "nonzeroSurfaceAndRunoffRoundoffRequired": true,
+      "stocksTransfersBudgetsAndCompleteJsonMatch": true
+    },
+    {
+      "subdivision": 6,
+      "regionCount": 40962,
+      "recipe": "DEFAULT_RECIPE with subdivision 6",
+      "saveElapsedSeconds": 172800,
+      "checkpointFileBytesIncludingNewline": 15001764,
+      "continueSeconds": 3600,
+      "completeJsonMatch": true,
+      "longRunFineGridStabilityClaimed": false
+    }
+  ],
+  "realDesktopChecks": [
+    "Complete native JSON save/load and identical next-day continuation at subdivision 5",
+    "Flat atlas and relief globe after restoration",
+    "Damaged and oversize file rejection preserves accepted native state",
+    "Canceled dialogs and failed save rename preserve native state and saved files",
+    "Delayed stale dialog cannot resurrect a canceled/replaced request",
+    "Pinned recipe, clock, cumulative budget, paused mode, and zero-interval observation restore"
+  ],
+  "additionalChecks": [
+    "Signed zero retained without JS numeric reserialization",
+    "All model version pins and default-settings restrictions",
+    "Cancellation during candidate generation with an accepted interval in flight",
+    "Schema, unknown-field, stock-shape, ledger, clock, and roundoff corruption rejection",
+    "Bounded strict-UTF-8 file reads and same-directory synced temporary publication"
+  ],
+  "limits": [
+    "No cross-platform or cross-version bitwise replay guarantee",
+    "No camera, selected-region, diagnostic, or previous display-interval state",
+    "No explicit directory fsync or full power-loss durability guarantee",
+    "No changed hydrology equations, lake levels, shoreline, groundwater, or calibrated climate"
+  ]
+}

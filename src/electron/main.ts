@@ -1,13 +1,14 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, session } from 'electron';
 import type { IpcMainInvokeEvent } from 'electron';
-import { randomUUID } from 'node:crypto';
-import { open, rename, unlink, writeFile } from 'node:fs/promises';
+import { open, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseRecipe, serializeRecipe } from '../core/recipe';
 import { NativeController } from '../native/client';
 import { writeResolvedWorld } from '../native/resolved-export';
 import { parseCaptureRect } from '../shared/capture';
+import { MAX_SEASONAL_CHECKPOINT_BYTES } from '../shared/seasonal-checkpoint';
+import { readCheckpoint, writeCheckpoint } from './checkpoint-files';
 
 const rendererFile = path.join(__dirname, '../renderer/index.html');
 const rendererURL = pathToFileURL(rendererFile).href;
@@ -61,22 +62,13 @@ void app.whenReady().then(() => {
   });
   ipcMain.handle('water:openCheckpoint', async (event) => {
     const window = senderWindow(event);
+    const revision = core.preparationRevision;
     const result = await dialog.showOpenDialog(window, { properties: ['openFile'],
       filters: [{ name: 'Prescribed-water checkpoint', extensions: ['json'] }] });
     if (result.canceled) return null;
-    const file = await open(result.filePaths[0], 'r');
-    try {
-      if ((await file.stat()).size > MAX_CHECKPOINT_BYTES) throw new Error('Water checkpoint exceeds the 8 MiB limit.');
-      const buffer = Buffer.alloc(MAX_CHECKPOINT_BYTES + 1);
-      let count = 0;
-      while (count < buffer.length) {
-        const { bytesRead } = await file.read(buffer, count, buffer.length - count, count);
-        if (bytesRead === 0) break;
-        count += bytesRead;
-      }
-      if (count > MAX_CHECKPOINT_BYTES) throw new Error('Water checkpoint exceeds the 8 MiB limit.');
-      return await core.loadWaterCheckpoint(JSON.parse(buffer.subarray(0, count).toString('utf8')));
-    } finally { await file.close(); }
+    const contents = await readCheckpoint(result.filePaths[0], MAX_CHECKPOINT_BYTES, 'Water checkpoint');
+    if (revision !== core.preparationRevision) throw new Error('Checkpoint opening was canceled or replaced.');
+    return core.loadWaterCheckpoint(JSON.parse(contents));
   });
   ipcMain.handle('water:saveCheckpoint', async (event, epoch: number) => {
     const window = senderWindow(event);
@@ -84,14 +76,27 @@ void app.whenReady().then(() => {
       filters: [{ name: 'Prescribed-water checkpoint', extensions: ['json'] }] });
     if (result.canceled || !result.filePath) return false;
     const contents = await core.exportWaterCheckpoint(epoch);
-    const temporary = `${result.filePath}.tmp-${randomUUID()}`;
-    try {
-      await writeFile(temporary, contents, { encoding: 'utf8', flag: 'wx' });
-      await rename(temporary, result.filePath);
-    } catch (error) {
-      await unlink(temporary).catch(() => {});
-      throw error;
-    }
+    await writeCheckpoint(result.filePath, contents);
+    return true;
+  });
+  ipcMain.handle('seasonal:openCheckpoint', async (event) => {
+    const window = senderWindow(event), revision = core.preparationRevision;
+    const result = await dialog.showOpenDialog(window, { properties: ['openFile'],
+      filters: [{ name: 'Seasonal-water checkpoint (schema 3)', extensions: ['json'] }] });
+    if (result.canceled) return null;
+    const contents = await readCheckpoint(result.filePaths[0], MAX_SEASONAL_CHECKPOINT_BYTES, 'Seasonal checkpoint');
+    if (revision !== core.preparationRevision) throw new Error('Checkpoint opening was canceled or replaced.');
+    return core.loadSeasonalCheckpoint(contents);
+  });
+  ipcMain.handle('seasonal:saveCheckpoint', async (event, epoch: number) => {
+    const window = senderWindow(event), world = core.resolvedInitialWorld(epoch);
+    // Snapshot before the dialog; subsequent file I/O cannot change its clock.
+    const contents = await core.exportSeasonalCheckpoint(epoch);
+    const result = await dialog.showSaveDialog(window, { defaultPath: 'seasonal-water-checkpoint.json',
+      filters: [{ name: 'Seasonal-water checkpoint (schema 3)', extensions: ['json'] }] });
+    if (result.canceled || !result.filePath) return false;
+    if (core.resolvedInitialWorld(epoch) !== world) throw new Error('World changed during seasonal checkpoint export.');
+    await writeCheckpoint(result.filePath, contents);
     return true;
   });
   ipcMain.handle('water:inspectBudget', (event, epoch: number) => {

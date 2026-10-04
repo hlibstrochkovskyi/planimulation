@@ -2,7 +2,9 @@ use planimulation_core::{
     Recipe, World,
     exact_initial_accounting::exact_units,
     prescribed_water_inventory::{Checkpoint, PrescribedWaterInventory},
-    seasonal_moisture::{Model as MoistureModel, State as MoistureState},
+    seasonal_moisture::{
+        Checkpoint as MoistureCheckpoint, Model as MoistureModel, State as MoistureState,
+    },
     seasonal_temperature::{Normals, Settings},
     seasonal_wind::{Normals as WindNormals, Settings as WindSettings},
     wire,
@@ -14,17 +16,35 @@ use std::io::{self, BufRead, Read};
 #[derive(Deserialize)]
 #[serde(tag = "command", rename_all = "camelCase", deny_unknown_fields)]
 enum Command {
-    Generate { recipe: Recipe },
-    Advance { steps: u32 },
-    PrescribeWater { region: usize, mode: WaterMode },
+    Generate {
+        recipe: Recipe,
+    },
+    Advance {
+        steps: u32,
+    },
+    PrescribeWater {
+        region: usize,
+        mode: WaterMode,
+    },
     ExportWater,
-    RestoreWater { checkpoint: Box<Checkpoint> },
+    RestoreWater {
+        checkpoint: Box<Checkpoint>,
+    },
     SeasonalTemperature,
     SeasonalWind,
-    SeasonalMoisture { seconds: u32 },
+    SeasonalMoisture {
+        seconds: u32,
+    },
+    ExportMoisture,
+    RestoreMoisture {
+        #[serde(rename = "checkpointJson")]
+        checkpoint_json: String,
+    },
 }
 
 const MAX_COMMAND_BYTES: u64 = 8 * 1024 * 1024;
+const MAX_SEASONAL_CHECKPOINT_BYTES: usize = wire::MAX_SEASONAL_CHECKPOINT_BYTES;
+const MAX_SEASONAL_COMMAND_BYTES: u64 = 2 * MAX_SEASONAL_CHECKPOINT_BYTES as u64 + 1024;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -43,16 +63,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut line = Vec::new();
         let count = input
             .by_ref()
-            .take(MAX_COMMAND_BYTES + 1)
+            .take(MAX_SEASONAL_COMMAND_BYTES + 1)
             .read_until(b'\n', &mut line)?;
         if count == 0 {
             break;
         }
-        if count as u64 > MAX_COMMAND_BYTES {
-            return Err("Command exceeds 8 MiB".into());
+        if count as u64 > MAX_SEASONAL_COMMAND_BYTES {
+            return Err("Command exceeds the seasonal restore envelope limit.".into());
         }
         let result = (|| -> Result<(), String> {
             let command: Command = serde_json::from_slice(&line).map_err(|e| e.to_string())?;
+            if count as u64 > MAX_COMMAND_BYTES
+                && !matches!(command, Command::RestoreMoisture { .. })
+            {
+                return Err("Command exceeds 8 MiB.".into());
+            }
             match command {
                 Command::Generate { recipe } => {
                     let next = World::generate(recipe)?;
@@ -116,6 +141,47 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         water_state = None;
                         moisture_state = Some((model, state));
                     }
+                }
+                Command::ExportMoisture => {
+                    let (model, state) = moisture_state
+                        .as_ref()
+                        .ok_or("Initialize seasonal water before saving it.")?;
+                    wire::seasonal_checkpoint(&mut output, model, state)?;
+                }
+                Command::RestoreMoisture { checkpoint_json } => {
+                    let w = world.as_ref().ok_or("Generate a world first.")?;
+                    if moisture_state.is_some()
+                        || water_state
+                            .as_ref()
+                            .is_some_and(|state| state.checkpoint().step > 0)
+                    {
+                        return Err(
+                            "Restore seasonal water in a separate generated session.".into()
+                        );
+                    }
+                    if checkpoint_json.len() > MAX_SEASONAL_CHECKPOINT_BYTES {
+                        return Err("Seasonal checkpoint exceeds 64 MiB.".into());
+                    }
+                    let checkpoint: MoistureCheckpoint =
+                        serde_json::from_str(&checkpoint_json).map_err(|e| e.to_string())?;
+                    if checkpoint.recipe != w.recipe {
+                        return Err(
+                            "Seasonal checkpoint recipe does not match the generated world.".into(),
+                        );
+                    }
+                    if checkpoint.settings != Default::default()
+                        || checkpoint.temperature_settings != Default::default()
+                        || checkpoint.wind_settings != Default::default()
+                    {
+                        return Err(
+                            "Desktop seasonal checkpoints require the pinned default settings."
+                                .into(),
+                        );
+                    }
+                    let (model, state) = MoistureModel::restore(checkpoint)?;
+                    wire::seasonal_moisture(&mut output, &model, &state, None, 0)?;
+                    water_state = None;
+                    moisture_state = Some((model, state));
                 }
                 Command::PrescribeWater { region, mode } => {
                     if moisture_state.is_some() {

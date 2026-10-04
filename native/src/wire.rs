@@ -5,6 +5,8 @@ use crate::{
 use serde_json::json;
 use std::io::{self, Write};
 
+pub const MAX_SEASONAL_CHECKPOINT_BYTES: usize = 64 * 1024 * 1024;
+
 fn f64s(out: &mut Vec<u8>, values: impl Iterator<Item = f64>) {
     for v in values {
         out.extend_from_slice(&v.to_le_bytes());
@@ -111,6 +113,28 @@ pub fn arrays(w: &World) -> Vec<u8> {
 /// v9: adds exact prescribed-water checkpoint transfer; world arrays are unchanged.
 pub fn send(out: &mut impl Write, header: serde_json::Value, bytes: &[u8]) -> io::Result<()> {
     send_versioned(out, header, bytes, 9)
+}
+/// Export the complete resumable state, never the eighteen-field display frame.
+pub fn seasonal_checkpoint(
+    out: &mut impl Write,
+    model: &crate::seasonal_moisture::Model,
+    state: &crate::seasonal_moisture::State,
+) -> Result<(), String> {
+    model.budget(state)?;
+    let bytes = serde_json::to_vec(&state.checkpoint()).map_err(|e| e.to_string())?;
+    // Reserve one byte for the desktop file's final newline.
+    if bytes.len() >= MAX_SEASONAL_CHECKPOINT_BYTES {
+        return Err("Seasonal checkpoint exceeds 64 MiB.".into());
+    }
+    send_versioned(
+        out,
+        json!({"kind":"moistureCheckpoint", "schemaVersion":3,
+        "modelVersion":crate::seasonal_moisture::MODEL_VERSION,
+        "elapsedSeconds":state.elapsed_seconds()}),
+        &bytes,
+        11,
+    )
+    .map_err(|e| e.to_string())
 }
 fn send_versioned(
     out: &mut impl Write,

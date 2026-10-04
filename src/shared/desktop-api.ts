@@ -10,6 +10,7 @@ export type PrescribedWaterMode = 'oneCubicKilometer' | 'fillToSpill';
 export interface WaterFrame { epoch: number; step: number; inputUnits: string; acceptedInputUnits: string;
   depthMeters: Float64Array; surfaceLevelsMeters: Float64Array; bodyIds: Uint32Array; mainOceanId: number }
 export interface PreparedWaterWorld { world: World; waterFrame: WaterFrame; epoch: number }
+export interface PreparedMoistureWorld { world: World; moistureFrame: MoistureFrame; epoch: number }
 export interface WaterBudget { epoch: number; step: number; initialTotalUnits: string; acceptedInputUnits: string;
   storedTotalUnits: string; stocks: Array<{ branch: number; volumeUnits: string }> }
 
@@ -24,6 +25,8 @@ export interface DesktopAPI {
   seasonalTemperature(epoch: number): Promise<TemperatureNormals>;
   seasonalWind(epoch: number): Promise<WindNormals>;
   seasonalMoisture(epoch: number, seconds: number): Promise<MoistureFrame>;
+  openSeasonalCheckpoint(): Promise<PreparedMoistureWorld | null>;
+  saveSeasonalCheckpoint(epoch: number): Promise<boolean>;
   prescribeWater(epoch: number, region: number, mode: PrescribedWaterMode): Promise<WaterFrame>;
   openWaterCheckpoint(): Promise<PreparedWaterWorld | null>;
   saveWaterCheckpoint(epoch: number): Promise<boolean>;

@@ -6,10 +6,16 @@ import { NativeController, NativeSession, decodeWorld, FrameReader } from '../sr
 import type { Packet } from '../src/native/client';
 import { decodeSeasonalMoisture } from '../src/native/seasonal-moisture';
 import { MOISTURE_STOCK_FIELDS, SURFACE_TRANSFER_FIELDS, RUNOFF_TRANSFER_FIELDS } from '../src/shared/seasonal-moisture';
+import { MAX_SEASONAL_CHECKPOINT_BYTES } from '../src/shared/seasonal-checkpoint';
 import { MOISTURE_LAYERS, isMoistureLayer, moistureLayerValue, moistureLayerColor, moistureCalendar } from '../src/renderer/seasonal-moisture';
 
 const executable = path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core');
 const recipe = { ...DEFAULT_RECIPE, subdivision: 2 };
+type EditableCheckpoint = Record<string, unknown> & {
+  settings: Record<string, unknown>; temperatureSettings: { axialTiltDegrees: number };
+  windSettings: Record<string, unknown>; surfaceKilograms: number[]; vaporKilograms: number[];
+  soilKilograms: Array<number | null>; cumulativeSurfaceTransferRoundoff: number[][];
+};
 
 test('seasonal desktop snapshots match hourly/daily headless native state without changing geography', async () => {
   const daily = new NativeController(executable), hourly = new NativeController(executable);
@@ -72,7 +78,8 @@ test('seasonal commands reject invalid clocks, overlapping requests, stale epoch
 });
 
 test('daily desktop accounting continues through monthly forcing and a full year boundary', async () => {
-  const core = new NativeController(executable);
+  const core = new NativeController(executable), restored = new NativeController(executable);
+  let restoredEpoch = 0;
   try {
     const { world, epoch } = await core.generate(recipe); core.accept(epoch);
     await core.seasonalMoisture(epoch, 0);
@@ -83,14 +90,137 @@ test('daily desktop accounting continues through monthly forcing and a full year
       assert.ok(frame.budget.cumulativePrecipitationKilograms >= previousRain);
       previousRain = frame.budget.cumulativePrecipitationKilograms;
       assert.ok(Math.abs(frame.budget.residualKilograms) / Math.max(frame.budget.initialMobileWaterKilograms, 1) < 1e-12);
+      if (day === 365) {
+        const contents = await core.exportSeasonalCheckpoint(epoch);
+        const saved = JSON.parse(contents);
+        assert.ok(saved.cumulativeSurfaceTransferRoundoff.flat().some((value: number) => value !== 0));
+        assert.ok(saved.cumulativeRunoffTransferRoundoff.flat().some((value: number) => value !== 0));
+        const loaded = await restored.loadSeasonalCheckpoint(contents);
+        assert.deepEqual(loaded.moistureFrame.stocks, frame.stocks);
+        assert.deepEqual(loaded.moistureFrame.budget, frame.budget);
+        assert.equal(loaded.moistureFrame.intervalSeconds, 0);
+        restoredEpoch = loaded.epoch; restored.accept(restoredEpoch);
+        assert.equal(await restored.exportSeasonalCheckpoint(restoredEpoch), contents);
+      }
       if (day === 366) {
         assert.ok(previousRain > 0);
         assert.ok(frame.budget.cumulativeRunoffTransfers.terminalDelivery > 0);
         assert.ok(frame.budget.cumulativeRunoffTransfers.terminalEvaporation > 0);
         assert.equal(world.checksum, core.resolvedInitialWorld(epoch).checksum);
+        const replay = await restored.seasonalMoisture(restoredEpoch, 86400);
+        assert.deepEqual(replay.stocks, frame.stocks); assert.deepEqual(replay.budget, frame.budget);
+        assert.deepEqual(replay.surfaceTransfers, frame.surfaceTransfers);
+        assert.deepEqual(replay.runoffTransfers, frame.runoffTransfers);
+        assert.equal(await restored.exportSeasonalCheckpoint(restoredEpoch), await core.exportSeasonalCheckpoint(epoch));
       }
     }
-  } finally { core.close(); }
+  } finally { core.close(); restored.close(); }
+});
+
+test('complete seasonal loading is transactional, mode-isolated, pinned, and preserves original numeric tokens', async () => {
+  const core = new NativeController(executable), raw = new NativeSession(executable);
+  try {
+    const { world, epoch } = await core.generate(recipe); core.accept(epoch);
+    await assert.rejects(core.exportSeasonalCheckpoint(epoch), /Initialize/);
+    await core.seasonalMoisture(epoch, 0);
+    const initial = await core.exportSeasonalCheckpoint(epoch);
+    // A signed zero correction is valid, but JS JSON.parse/stringify loses its
+    // sign. Preserve original checkpoint text all the way to Rust.
+    const signed = initial.replace('"cumulativeSurfaceTransferRoundoff":[[0.0,', '"cumulativeSurfaceTransferRoundoff":[[-0.0,');
+    assert.notEqual(signed, initial);
+    const signedPrepared = await core.loadSeasonalCheckpoint(signed); core.accept(signedPrepared.epoch);
+    assert.equal(await core.exportSeasonalCheckpoint(signedPrepared.epoch), signed);
+    const firstDay = await core.seasonalMoisture(signedPrepared.epoch, 86400);
+    const saved = await core.exportSeasonalCheckpoint(signedPrepared.epoch);
+    const mutations: Array<(value: EditableCheckpoint) => void> = [
+      (cp) => { cp.schemaVersion = 2; }, (cp) => { cp.modelVersion = 'future'; },
+      ...['transportModelVersion', 'temperatureModelVersion', 'windModelVersion', 'surfaceModelVersion', 'runoffModelVersion']
+        .map((key) => (cp: EditableCheckpoint) => { cp[key] = 'future'; }),
+      (cp) => { cp.settings.routingEnabled = false; },
+      (cp) => { cp.temperatureSettings.axialTiltDegrees += 1; },
+      (cp) => { cp.windSettings.unexpected = 0; },
+      (cp) => { cp.unexpected = 1; }, (cp) => { cp.elapsedSeconds = -1; },
+      (cp) => { cp.elapsedSeconds = 3650 * 86400 + 1; },
+      (cp) => { cp.surfaceKilograms[0] += 1e30; },
+      (cp) => { cp.vaporKilograms.pop(); }, (cp) => { cp.soilKilograms[0] = null; },
+      (cp) => { cp.cumulativeSurfaceTransferRoundoff[0][0] = 1e30; },
+    ];
+    for (const mutate of mutations) {
+      const cp = JSON.parse(saved) as EditableCheckpoint; mutate(cp);
+      await assert.rejects(core.loadSeasonalCheckpoint(JSON.stringify(cp)));
+      assert.equal(await core.exportSeasonalCheckpoint(signedPrepared.epoch), saved);
+      assert.equal(core.resolvedInitialWorld(signedPrepared.epoch).checksum, world.checksum);
+    }
+    await assert.rejects(core.loadSeasonalCheckpoint('{invalid'));
+    await assert.rejects(core.loadSeasonalCheckpoint('{"inventoryVersion":"prescribed-water-inventory-2"}'), /version/);
+    // Whitespace/newlines are safe inside the escaped restore envelope; no
+    // numeric tokens need to be normalized to fit a single command line.
+    const candidate = await core.loadSeasonalCheckpoint(saved.replace('{', '{\n  '));
+    await assert.rejects(core.seasonalMoisture(signedPrepared.epoch, 0), /matching/);
+    core.cancel(); assert.throws(() => core.accept(candidate.epoch), /matching/);
+    assert.deepEqual((await core.seasonalMoisture(signedPrepared.epoch, 0)).stocks, firstDay.stocks);
+    const advancing = core.seasonalMoisture(signedPrepared.epoch, 3600);
+    const preparing = core.loadSeasonalCheckpoint(saved);
+    const canceled = assert.rejects(preparing, /canceled|closed/);
+    core.cancel(); await canceled;
+    const advanced = await advancing;
+    assert.equal(advanced.elapsedSeconds, firstDay.elapsedSeconds + 3600);
+    assert.deepEqual((await core.seasonalMoisture(signedPrepared.epoch, 0)).stocks, advanced.stocks);
+    const replacement = await core.generate({ ...recipe, seed: 'before-seasonal-restore' }); core.accept(replacement.epoch);
+    const loaded = await core.loadSeasonalCheckpoint(saved); core.accept(loaded.epoch);
+    assert.equal(core.resolvedInitialWorld(loaded.epoch).checksum, world.checksum);
+    assert.equal(await core.exportSeasonalCheckpoint(loaded.epoch), saved);
+    await assert.rejects(core.exportSeasonalCheckpoint(signedPrepared.epoch), /matching/);
+    await assert.rejects(core.prescribeWater(loaded.epoch, 0, 'oneCubicKilometer'), /separate manual/);
+    // Direct native commands must enforce the same provenance/default/mode
+    // restrictions even when bypassing TypeScript preflight.
+    await raw.request({ command: 'generate', recipe: { ...recipe, seed: 'wrong-seasonal-origin' } });
+    await assert.rejects(raw.request({ command: 'restoreMoisture', checkpointJson: saved }), /recipe/);
+    await raw.request({ command: 'generate', recipe });
+    await raw.request({ command: 'restoreMoisture', checkpointJson: saved });
+    await assert.rejects(raw.request({ command: 'restoreMoisture', checkpointJson: saved }), /separate generated/);
+    assert.equal((await raw.request({ command: 'exportMoisture' })).bytes.toString('utf8') + '\n', saved);
+  } finally { core.close(); raw.close(); }
+});
+
+test('seasonal checkpoints replay at the largest supported grid without the manual eight-MiB cap', async () => {
+  const core = new NativeController(executable), replay = new NativeController(executable);
+  try {
+    const prepared = await core.generate({ ...DEFAULT_RECIPE, subdivision: 6 }); core.accept(prepared.epoch);
+    await core.seasonalMoisture(prepared.epoch, 0);
+    await core.seasonalMoisture(prepared.epoch, 86400);
+    const current = await core.seasonalMoisture(prepared.epoch, 86400);
+    const contents = await core.exportSeasonalCheckpoint(prepared.epoch);
+    const bytes = Buffer.byteLength(contents);
+    assert.ok(bytes > 8 * 2 ** 20 && bytes <= MAX_SEASONAL_CHECKPOINT_BYTES);
+    const loaded = await replay.loadSeasonalCheckpoint(contents); replay.accept(loaded.epoch);
+    assert.equal(loaded.world.stats.regionCount, 40962);
+    assert.deepEqual(loaded.moistureFrame.stocks, current.stocks);
+    assert.equal(await replay.exportSeasonalCheckpoint(loaded.epoch), contents);
+    await core.seasonalMoisture(prepared.epoch, 3600); await replay.seasonalMoisture(loaded.epoch, 3600);
+    assert.equal(await replay.exportSeasonalCheckpoint(loaded.epoch), await core.exportSeasonalCheckpoint(prepared.epoch));
+    console.log(`Level-6 two-day seasonal checkpoint: ${bytes} bytes; exact one-hour continuation.`);
+  } finally { core.close(); replay.close(); }
+});
+
+test('checkpoint protocol and command budgets stay kind-specific', async () => {
+  const prefix = Buffer.alloc(4);
+  for (const header of [
+    { protocol: 11, kind: 'moistureCheckpoint', byteLength: MAX_SEASONAL_CHECKPOINT_BYTES + 1 },
+    { protocol: 9, kind: 'moistureCheckpoint', byteLength: 1 },
+    { protocol: 11, kind: 'moisture', byteLength: 32 * 2 ** 20 + 1 },
+    { protocol: 9, kind: 'checkpoint', byteLength: 32 * 2 ** 20 + 1 },
+  ]) {
+    const encoded = Buffer.from(JSON.stringify(header)); prefix.writeUInt32LE(encoded.length);
+    assert.throws(() => new FrameReader(() => {}).push(Buffer.concat([prefix, encoded])));
+  }
+  const session = new NativeSession(executable);
+  try {
+    await assert.rejects(session.request({ command: 'restoreMoisture', checkpointJson: ' '.repeat(MAX_SEASONAL_CHECKPOINT_BYTES + 1) }), /64 MiB/);
+    await assert.rejects(session.request({ command: 'restoreMoisture', checkpointJson: {} }), /JSON text/);
+    await assert.rejects(session.request({ command: 'generate', recipe: ' '.repeat(8 * 2 ** 20) }), /too large/);
+    await assert.rejects(session.request({ command: 'exportMoisture' }), /Initialize/);
+  } finally { session.close(); }
 });
 
 test('protocol 11 validates finite ownership, pinned settings, exact frame shapes, and flow/budget reconciliation', async () => {

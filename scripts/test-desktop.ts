@@ -1,11 +1,12 @@
 import { strict as assert } from 'node:assert';
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, open, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { _electron as electron, expect } from '@playwright/test';
 import { CONTINUOUS_PLATES_MODEL_VERSION, DEFAULT_RECIPE, parseRecipe } from '../src/core/recipe';
 import { NativeController } from '../src/native/client';
 import { basinTree } from '../src/core/basins';
+import { MAX_SEASONAL_CHECKPOINT_BYTES } from '../src/shared/seasonal-checkpoint';
 
 const temp = await mkdtemp(path.join(os.tmpdir(), 'planimulation-desktop-'));
 const recipePath = path.join(temp, 'recipe.json');
@@ -51,7 +52,7 @@ try {
   }, { ...DEFAULT_RECIPE });
   assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'inspectWaterBudget', 'openRecipe', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalTemperature', 'seasonalWind']);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'inspectWaterBudget', 'openRecipe', 'openSeasonalCheckpoint', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveSeasonalCheckpoint', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalTemperature', 'seasonalWind']);
   await expect(page.locator('[data-layer="temperature"]')).toBeEnabled();
   await expect(page.locator('#temperature-month')).toBeEnabled();
   await page.locator('[data-layer="temperature"]').click();
@@ -595,6 +596,8 @@ try {
   const beforePlay = Number(await canvas.getAttribute('data-moisture-seconds'));
   await page.locator('#moisture-play').click();
   await expect(canvas).not.toHaveAttribute('data-moisture-seconds', String(beforePlay));
+  await expect(page.locator('#save-seasonal')).toBeDisabled();
+  await expect(page.locator('#open-seasonal')).toBeDisabled();
   await page.getByRole('button', { name: 'Pause seasonal water', exact: true }).click();
   await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
   const pausedTime = await canvas.getAttribute('data-moisture-seconds');
@@ -631,6 +634,128 @@ try {
   } finally { seasonalReference.close(); }
   await page.locator('[data-layer="vaporWater"]').click();
   await canvas.screenshot({ path: executablePath ? 'artifacts/seasonal-water-map-packaged.png' : 'artifacts/seasonal-water-map.png' });
+  // Persist complete native state through real file I/O, not a mocked bridge.
+  const seasonalPath = path.join(temp, 'seasonal-water-checkpoint.json');
+  await app.evaluate(({ dialog }, destination) => {
+    dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
+  }, seasonalPath);
+  await expect(page.locator('#save-seasonal')).toBeEnabled();
+  await page.locator('#save-seasonal').click();
+  await expect(page.locator('#status')).toContainText(`saved at ${seasonalSeconds} elapsed seconds`);
+  const savedSeasonalText = await readFile(seasonalPath, 'utf8'), savedSeasonal = JSON.parse(savedSeasonalText);
+  assert.equal(savedSeasonal.schemaVersion, 3);
+  assert.equal(savedSeasonal.elapsedSeconds, seasonalSeconds);
+  assert.equal(savedSeasonal.surfaceKilograms.length, 10242);
+  assert.equal(savedSeasonal.cumulativeSurfaceTransferRoundoff.length, 10242);
+  const savedSeasonalBudget = await page.locator('#moisture-budget-details').innerText();
+  await app.evaluate(({ dialog }) => { dialog.showSaveDialog = async () => ({ canceled: true, filePath: '' }); });
+  await page.locator('#save-seasonal').click();
+  await expect(page.locator('#status')).toContainText('saving canceled');
+  assert.equal(await readFile(seasonalPath, 'utf8'), savedSeasonalText);
+  // A failed rename must not replace a target directory or discard native state.
+  const deniedSeasonalPath = path.join(temp, 'checkpoint-directory'); await mkdir(deniedSeasonalPath);
+  await app.evaluate(({ dialog }, destination) => {
+    dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
+  }, deniedSeasonalPath);
+  await page.locator('#save-seasonal').click();
+  await expect(page.locator('#status')).toHaveClass(/error/);
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds));
+  await app.evaluate(({ dialog }, destination) => {
+    dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
+  }, seasonalPath);
+  await page.locator('#moisture-step').click();
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds + 86400));
+  await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
+  await page.locator('#save-seasonal').click();
+  await expect(page.locator('#status')).toContainText(`saved at ${seasonalSeconds + 86400} elapsed seconds`);
+  const uninterrupted = await readFile(seasonalPath, 'utf8');
+  await writeFile(seasonalPath, savedSeasonalText);
+  // Failed/canceled file operations preserve both visible and native state.
+  const damagedSeasonalPath = path.join(temp, 'damaged-seasonal.json');
+  await writeFile(damagedSeasonalPath, JSON.stringify({ ...savedSeasonal, vaporKilograms: [] }));
+  await app.evaluate(({ dialog }, destination) => {
+    dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [destination] });
+  }, damagedSeasonalPath);
+  await page.locator('#open-seasonal').click();
+  await expect(page.locator('#status')).toHaveClass(/error/);
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds + 86400));
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
+  await page.locator('#save-seasonal').click();
+  await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
+  assert.equal(await readFile(seasonalPath, 'utf8'), uninterrupted);
+  await writeFile(seasonalPath, savedSeasonalText);
+  await app.evaluate(({ dialog }) => { dialog.showOpenDialog = async () => ({ canceled: true, filePaths: [] }); });
+  await page.locator('#open-seasonal').click();
+  await expect(page.locator('#status')).toContainText('opening canceled');
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds + 86400));
+  const oversizedSeasonalPath = path.join(temp, 'oversized-seasonal.json');
+  const oversizedSeasonalFile = await open(oversizedSeasonalPath, 'w');
+  try { await oversizedSeasonalFile.truncate(MAX_SEASONAL_CHECKPOINT_BYTES + 1); }
+  finally { await oversizedSeasonalFile.close(); }
+  await app.evaluate(({ dialog }, destination) => {
+    dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [destination] });
+  }, oversizedSeasonalPath);
+  await page.locator('#open-seasonal').click();
+  await expect(page.locator('#status')).toContainText('exceeds the 64 MiB limit');
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds + 86400));
+  // Exercise the main-process intent guard independently of disabled UI buttons:
+  // a delayed old dialog cannot resurrect a canceled/replaced candidate.
+  await app.evaluate(({ dialog }, destination) => {
+    const holder = globalThis as unknown as { releaseCheckpointDialog?: () => void };
+    dialog.showOpenDialog = () => new Promise((resolve) => {
+      holder.releaseCheckpointDialog = () => {
+        delete holder.releaseCheckpointDialog;
+        resolve({ canceled: false, filePaths: [destination] });
+      };
+    });
+  }, seasonalPath);
+  const delayedOpen = page.evaluate(async () => {
+    try { await window.desktop.openSeasonalCheckpoint(); return 'Unexpected prepared checkpoint.'; }
+    catch (error) { return String(error); }
+  });
+  await expect.poll(() => app.evaluate(() => typeof (globalThis as unknown as { releaseCheckpointDialog?: unknown }).releaseCheckpointDialog)).toBe('function');
+  await page.evaluate(async (recipe) => {
+    await window.desktop.generate(recipe); await window.desktop.cancelGeneration();
+  }, { ...DEFAULT_RECIPE, subdivision: 2, seed: 'replacement-during-checkpoint-dialog' });
+  await app.evaluate(() => (globalThis as unknown as { releaseCheckpointDialog: () => void }).releaseCheckpointDialog());
+  assert.match(await delayedOpen, /canceled or replaced/);
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds + 86400));
+  await page.locator('#save-seasonal').click();
+  await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
+  assert.equal(await readFile(seasonalPath, 'utf8'), uninterrupted);
+  await writeFile(seasonalPath, savedSeasonalText);
+  // Restore into a different accepted world; its saved origin must win, not the
+  // unsaved form values or current geography. Both GPU views remain usable.
+  await page.locator('#seed').fill('world-before-seasonal-restore');
+  await page.locator('#subdivision').selectOption('2');
+  await page.locator('#generate').click();
+  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
+  await expect(page.locator('#region-count')).toHaveText('162');
+  await app.evaluate(({ dialog }, destination) => {
+    dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [destination] });
+  }, seasonalPath);
+  await page.locator('#open-seasonal').click();
+  await expect(page.locator('#status')).toContainText(`restored at ${seasonalSeconds} elapsed seconds`, { timeout: 30000 });
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds));
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
+  await expect(page.locator('#seed')).toHaveValue(DEFAULT_RECIPE.seed);
+  await expect(page.locator('#subdivision')).toHaveValue(String(DEFAULT_RECIPE.subdivision));
+  await expect(page.locator('#moisture-budget-details')).toHaveText(savedSeasonalBudget, { useInnerText: true });
+  await expect(page.locator('#moisture-step-note')).toContainText('no interval transfers');
+  await expect(page.locator('#save-water')).toBeDisabled();
+  await page.locator('[data-layer="vaporWater"]').click();
+  await page.getByRole('button', { name: 'Globe', exact: true }).click();
+  await expect(canvas).toHaveAttribute('data-active-layer', 'vaporWater');
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds));
+  await page.locator('#save-seasonal').click();
+  await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
+  assert.equal(await readFile(seasonalPath, 'utf8'), savedSeasonalText);
+  await page.locator('#moisture-step').click();
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds + 86400));
+  await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
+  await page.locator('#save-seasonal').click();
+  await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
+  assert.equal(await readFile(seasonalPath, 'utf8'), uninterrupted, 'GUI save/load retains exact uninterrupted full-checkpoint continuation.');
   await page.locator('#seed').fill(DEFAULT_RECIPE.seed);
   await page.locator('#generate').click();
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
