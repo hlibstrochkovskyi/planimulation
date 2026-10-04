@@ -6,6 +6,8 @@ The [version-2 record](seasonal-moisture-2.md) and its measured results remain h
 
 An October 4 [experimental version-4 upslope response](orographic-response.md) accelerates removal of existing supersaturation using terrain/wind, without changing these version-3 equations or defaults. It has independent schema/protocol pins, controls, and retained refinement failures. Baseline evidence below is not a validation of that new mode.
 
+A subsequent [headless version-5 soil-precision candidate](soil-precision.md) persists normalized high/low components of the same soil stock and preserves legacy models. It passes the two original soil witnesses but rejects annual snow-ledger qualification; it has no desktop protocol and is not a default-mode upgrade.
+
 ## Initial ownership
 
 The atmosphere starts dry. Liquid starts as a finite active partition of generated reference water:

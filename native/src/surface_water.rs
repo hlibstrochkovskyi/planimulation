@@ -3,6 +3,9 @@
 use serde::{Deserialize, Serialize};
 
 pub const MODEL_VERSION: &str = "surface-water-1";
+pub const COMPENSATED_MODEL_VERSION: &str = "surface-water-compensated-soil-1";
+mod soil_precision;
+pub(crate) use soil_precision::validate as validate_soil_precision;
 const DAY: f64 = 86400.;
 
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
@@ -148,6 +151,13 @@ pub struct Step {
     pub residual_kilograms: f64,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct CompensatedStep {
+    pub step: Step,
+    /// A signed low component of the same soil stock, unlike a ledger correction.
+    pub soil_low_kilograms: f64,
+}
+
 /// Interval-wide coefficients: avoid evaluating three exponentials per region.
 pub(crate) struct Response {
     settings: Settings,
@@ -205,8 +215,90 @@ pub(crate) fn advance_prepared(
     potential_evaporation: f64,
     response: &Response,
 ) -> Result<Step, String> {
+    Ok(advance_with_precision(
+        before,
+        area,
+        is_land,
+        temperature,
+        precipitation,
+        potential_evaporation,
+        response,
+        None,
+    )?
+    .step)
+}
+
+/// Headless candidate: same process order/laws, with a persistent soil low part.
+#[allow(clippy::too_many_arguments)]
+pub fn advance_compensated(
+    before: Stocks,
+    soil_low: f64,
+    area: f64,
+    is_land: bool,
+    temperature: f64,
+    precipitation: f64,
+    potential_evaporation: f64,
+    seconds: f64,
+    settings: Settings,
+) -> Result<CompensatedStep, String> {
+    settings.validate()?;
+    advance_compensated_prepared(
+        before,
+        soil_low,
+        area,
+        is_land,
+        temperature,
+        precipitation,
+        potential_evaporation,
+        &Response::new(seconds, settings)?,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn advance_compensated_prepared(
+    before: Stocks,
+    soil_low: f64,
+    area: f64,
+    is_land: bool,
+    temperature: f64,
+    precipitation: f64,
+    potential_evaporation: f64,
+    response: &Response,
+) -> Result<CompensatedStep, String> {
+    advance_with_precision(
+        before,
+        area,
+        is_land,
+        temperature,
+        precipitation,
+        potential_evaporation,
+        response,
+        Some(soil_low),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn advance_with_precision(
+    before: Stocks,
+    area: f64,
+    is_land: bool,
+    temperature: f64,
+    precipitation: f64,
+    potential_evaporation: f64,
+    response: &Response,
+    soil_low: Option<f64>,
+) -> Result<CompensatedStep, String> {
     let settings = response.settings;
     before.validate(area, is_land, settings)?;
+    let mut precise = soil_low
+        .map(|low| {
+            soil_precision::Soil::new(
+                before.soil,
+                low,
+                area * settings.soil_capacity_kilograms_per_square_meter,
+            )
+        })
+        .transpose()?;
     if !temperature.is_finite()
         || !(-100. ..=50.).contains(&temperature)
         || [precipitation, potential_evaporation]
@@ -244,14 +336,29 @@ pub(crate) fn advance_prepared(
             flux.soil_evaporation = ((potential_evaporation - flux.liquid_evaporation)
                 * (stocks.soil / capacity))
                 .min(stocks.soil);
-            stocks.soil -= flux.soil_evaporation;
-            flux.infiltration = (stocks.liquid * response.infiltration_fraction)
-                .min((capacity - stocks.soil).max(0.));
+            if let Some(soil) = &mut precise {
+                flux.soil_evaporation = soil.withdraw(flux.soil_evaporation);
+                stocks.soil = soil.high;
+            } else {
+                stocks.soil -= flux.soil_evaporation;
+            }
+            let requested_infiltration = stocks.liquid * response.infiltration_fraction;
+            if let Some(soil) = &mut precise {
+                flux.infiltration = soil.deposit(requested_infiltration, capacity);
+                stocks.soil = soil.high;
+            } else {
+                flux.infiltration = requested_infiltration.min((capacity - stocks.soil).max(0.));
+                stocks.soil += flux.infiltration;
+            }
             stocks.liquid -= flux.infiltration;
-            stocks.soil += flux.infiltration;
             flux.soil_drainage = (stocks.soil - capacity * settings.soil_retained_fraction).max(0.)
                 * response.drainage_fraction;
-            stocks.soil -= flux.soil_drainage;
+            if let Some(soil) = &mut precise {
+                flux.soil_drainage = soil.withdraw(flux.soil_drainage);
+                stocks.soil = soil.high;
+            } else {
+                stocks.soil -= flux.soil_drainage;
+            }
         }
     }
     if is_land {
@@ -260,9 +367,19 @@ pub(crate) fn advance_prepared(
         stocks.pending_runoff += flux.liquid_runoff + flux.soil_drainage;
     }
     stocks.validate(area, is_land, settings)?;
-    let residual = (stocks.total() - before.total()) - precipitation
+    let low = precise.map_or(0., |soil| soil.low);
+    if let Some(soil) = precise {
+        soil_precision::Soil::new(soil.high, soil.low, capacity)?;
+    }
+    if !is_land && low != 0. {
+        return Err("Reference water cannot own a soil low component.".into());
+    }
+    let legacy_residual = (stocks.total() - before.total()) - precipitation
         + flux.liquid_evaporation
         + flux.soil_evaporation;
+    let residual = soil_low.map_or(legacy_residual, |before_low| {
+        legacy_residual + (low - before_low)
+    });
     let scale = before
         .total()
         .max(precipitation)
@@ -274,9 +391,12 @@ pub(crate) fn advance_prepared(
     {
         return Err("Surface-water transfer exceeds its arithmetic tolerance.".into());
     }
-    Ok(Step {
-        stocks,
-        transfers: flux,
-        residual_kilograms: residual,
+    Ok(CompensatedStep {
+        step: Step {
+            stocks,
+            transfers: flux,
+            residual_kilograms: residual,
+        },
+        soil_low_kilograms: low,
     })
 }

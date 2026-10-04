@@ -29,6 +29,7 @@ A native [moisture-transport kernel and headless report](docs/moisture-transport
 | [Moisture transport](docs/moisture-transport.md) | Conservative native column-water transport, seasonal headless runs, numerical checks, and coupling limits |
 | [Finite seasonal moisture](docs/seasonal-moisture.md) | Six owned water stocks, runoff return, bounded checkpoints, matched controls, and integration tests |
 | [Experimental upslope response](docs/orographic-response.md) | Opt-in terrain/wind supersaturation response, directed controls, schema-4 replay, and retained refinement failures |
+| [Checkpointed soil precision](docs/soil-precision.md) | Headless compensated-soil candidate, independent rounding audits, preserved legacy results, and failed annual snow qualification |
 | [Seasonal-water desktop](docs/seasonal-water-desktop.md) | Run/pause, eight dynamic layers, interval inspection, versioned frames, baseline timing evidence, and limits |
 | [Seasonal-water checkpoints](docs/seasonal-water-checkpoints.md) | Complete native state, candidate validation, bounded file I/O, exact continuation, and limits |
 | [Typed surface water](docs/surface-water.md) | Empirical snowmelt, soil bucket, pending-runoff ownership, defaults, and limitations |

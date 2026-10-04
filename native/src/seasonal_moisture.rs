@@ -9,10 +9,17 @@ use serde::{Deserialize, Serialize};
 
 pub const MODEL_VERSION: &str = "seasonal-moisture-3";
 pub const OROGRAPHIC_MODEL_VERSION: &str = "seasonal-moisture-4";
+pub const SOIL_PRECISION_MODEL_VERSION: &str = "seasonal-moisture-5";
 pub const SECONDS_PER_DAY: u64 = 86400;
 pub const MAX_ELAPSED_SECONDS: u64 = 3650 * SECONDS_PER_DAY;
 pub const WATER_DENSITY_KILOGRAMS_PER_CUBIC_METER: f64 = 1000.;
 const VAPOR_GAS_CONSTANT: f64 = 461.5;
+
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SoilNumerics {
+    Compensated,
+}
 
 // Missing means legacy; a present null is not an unrecorded/default algorithm.
 fn present_option<'de, D: serde::Deserializer<'de>, T: Deserialize<'de>>(
@@ -41,6 +48,12 @@ pub struct Settings {
         deserialize_with = "present_option"
     )]
     pub orography: Option<orographic_response::Settings>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "present_option"
+    )]
+    pub soil_numerics: Option<SoilNumerics>,
 }
 
 impl Default for Settings {
@@ -58,6 +71,7 @@ impl Default for Settings {
             routing_enabled: true,
             runoff: runoff_transport::Settings::default(),
             orography: None,
+            soil_numerics: None,
         }
     }
 }
@@ -69,6 +83,11 @@ impl Settings {
         self.runoff.validate()?;
         if let Some(orography) = self.orography {
             orography.validate()?;
+        }
+        if self.soil_numerics.is_some() && self.orography.is_none() {
+            return Err(
+                "The compensated-soil candidate currently requires the upslope model.".into(),
+            );
         }
         if !(60..=21600).contains(&self.max_coupled_step_seconds) {
             return Err("Coupled moisture step limit must be 60–21600 seconds.".into());
@@ -236,6 +255,12 @@ pub struct Checkpoint {
     pub surface_kilograms: Vec<f64>,
     pub snow_kilograms: Vec<f64>,
     pub soil_kilograms: Vec<f64>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "present_option"
+    )]
+    pub soil_low_kilograms: Option<Vec<f64>>,
     pub pending_runoff_kilograms: Vec<f64>,
     pub terminal_water_kilograms: Vec<f64>,
     pub cumulative_runoff_transfers: Vec<runoff_transport::Transfers>,
@@ -269,13 +294,18 @@ impl State {
     pub fn soil_kilograms(&self) -> &[f64] {
         &self.0.soil_kilograms
     }
+    /// Signed low component of the same soil stock in the headless candidate.
+    pub fn soil_low_kilograms(&self) -> Option<&[f64]> {
+        self.0.soil_low_kilograms.as_deref()
+    }
     pub fn pending_runoff_kilograms(&self) -> &[f64] {
         &self.0.pending_runoff_kilograms
     }
     pub fn terminal_water_kilograms(&self) -> &[f64] {
         &self.0.terminal_water_kilograms
     }
-    /// Each owned stock exactly once, for complete-state refinement comparisons.
+    /// Rounded leading fields of the six stocks, for legacy/refinement displays.
+    /// The compensated candidate's signed soil low part is available separately.
     pub fn owned_stocks(&self) -> impl Iterator<Item = &f64> {
         self.surface_kilograms()
             .iter()
@@ -284,6 +314,11 @@ impl State {
             .chain(self.pending_runoff_kilograms())
             .chain(self.terminal_water_kilograms())
             .chain(self.vapor_kilograms())
+    }
+    /// All representation components; low soil is part of soil, not a seventh stock.
+    pub fn owned_stock_components(&self) -> impl Iterator<Item = &f64> {
+        self.owned_stocks()
+            .chain(self.soil_low_kilograms().into_iter().flatten())
     }
 }
 
@@ -339,12 +374,29 @@ pub struct Step {
     pub budget: Budget,
 }
 
+/// Read-only diagnostic of a provisional local operation. Observations from a
+/// rejected caller interval must not be mistaken for committed transfers.
+#[derive(Clone, Copy, Debug)]
+pub struct SurfaceObservation {
+    pub coupled_start_seconds: u64,
+    pub phase: usize,
+    pub region: usize,
+    pub local_seconds: f64,
+    pub before: surface_water::Stocks,
+    pub after: surface_water::Step,
+    pub before_soil_low_kilograms: f64,
+    pub after_soil_low_kilograms: f64,
+}
+
 impl Model {
     pub fn model_version(&self) -> &str {
         &self.origin.model_version
     }
     pub fn checkpoint_schema_version(&self) -> u32 {
         self.origin.schema_version
+    }
+    pub fn surface_model_version(&self) -> &str {
+        &self.origin.surface_model_version
     }
     pub fn orographic_uplift(&self) -> Option<&[Vec<f64>]> {
         self.orographic_forcing
@@ -483,8 +535,16 @@ impl Model {
             return Err("Initial mobile-water overflow.".into());
         }
         let origin = Checkpoint {
-            schema_version: if settings.orography.is_some() { 4 } else { 3 },
-            model_version: if settings.orography.is_some() {
+            schema_version: if settings.soil_numerics.is_some() {
+                5
+            } else if settings.orography.is_some() {
+                4
+            } else {
+                3
+            },
+            model_version: if settings.soil_numerics.is_some() {
+                SOIL_PRECISION_MODEL_VERSION
+            } else if settings.orography.is_some() {
                 OROGRAPHIC_MODEL_VERSION
             } else {
                 MODEL_VERSION
@@ -493,7 +553,12 @@ impl Model {
             transport_model_version: crate::moisture_transport::MODEL_VERSION.into(),
             temperature_model_version: seasonal_temperature::MODEL_VERSION.into(),
             wind_model_version: seasonal_wind::MODEL_VERSION.into(),
-            surface_model_version: surface_water::MODEL_VERSION.into(),
+            surface_model_version: if settings.soil_numerics.is_some() {
+                surface_water::COMPENSATED_MODEL_VERSION
+            } else {
+                surface_water::MODEL_VERSION
+            }
+            .into(),
             runoff_model_version: runoff_transport::MODEL_VERSION.into(),
             orographic_model_version: settings
                 .orography
@@ -506,6 +571,7 @@ impl Model {
             surface_kilograms: initial_surface.clone(),
             snow_kilograms: vec![0.; n],
             soil_kilograms: vec![0.; n],
+            soil_low_kilograms: settings.soil_numerics.map(|_| vec![0.; n]),
             pending_runoff_kilograms: vec![0.; n],
             terminal_water_kilograms: vec![0.; n],
             cumulative_runoff_transfers: vec![runoff_transport::Transfers::default(); n],
@@ -550,11 +616,26 @@ impl Model {
                     Some(orographic_response::MODEL_VERSION)
                 )
         );
-        if !supported
+        let compensated = checkpoint.schema_version == 5
+            && checkpoint.model_version == SOIL_PRECISION_MODEL_VERSION
+            && checkpoint.settings.orography.is_some()
+            && checkpoint.settings.soil_numerics == Some(SoilNumerics::Compensated)
+            && checkpoint.orographic_model_version.as_deref()
+                == Some(orographic_response::MODEL_VERSION)
+            && checkpoint.soil_low_kilograms.is_some();
+        let legacy = supported
+            && checkpoint.settings.soil_numerics.is_none()
+            && checkpoint.soil_low_kilograms.is_none();
+        let surface_version = if compensated {
+            surface_water::COMPENSATED_MODEL_VERSION
+        } else {
+            surface_water::MODEL_VERSION
+        };
+        if !(legacy || compensated)
             || checkpoint.transport_model_version != crate::moisture_transport::MODEL_VERSION
             || checkpoint.temperature_model_version != seasonal_temperature::MODEL_VERSION
             || checkpoint.wind_model_version != seasonal_wind::MODEL_VERSION
-            || checkpoint.surface_model_version != surface_water::MODEL_VERSION
+            || checkpoint.surface_model_version != surface_version
             || checkpoint.runoff_model_version != runoff_transport::MODEL_VERSION
         {
             return Err("Unsupported seasonal-moisture checkpoint version.".into());
@@ -602,6 +683,23 @@ impl Model {
             {
                 return Err("Invalid seasonal-moisture checkpoint stock or ledger.".into());
             }
+        }
+        match (&cp.soil_low_kilograms, cp.settings.soil_numerics) {
+            (None, None) => {}
+            (Some(low), Some(SoilNumerics::Compensated)) if low.len() == self.areas.len() => {
+                for (i, &value) in low.iter().enumerate() {
+                    surface_water::validate_soil_precision(
+                        cp.soil_kilograms[i],
+                        value,
+                        self.areas[i]
+                            * cp.settings.surface.soil_capacity_kilograms_per_square_meter,
+                    )?;
+                    if !self.is_land[i] && value != 0. {
+                        return Err("Soil low component on reference water.".into());
+                    }
+                }
+            }
+            _ => return Err("Invalid compensated-soil checkpoint shape or mode.".into()),
         }
         if cp.cumulative_surface_transfers.len() != self.areas.len()
             || cp.cumulative_surface_transfer_roundoff.len() != self.areas.len()
@@ -751,7 +849,18 @@ impl Model {
                     + f.infiltration
                     + f.liquid_runoff,
                 stocks.snow - (f.snowfall - f.melt),
-                stocks.soil - f.infiltration + f.soil_evaporation + f.soil_drainage,
+                cp.soil_low_kilograms.as_ref().map_or(
+                    stocks.soil - f.infiltration + f.soil_evaporation + f.soil_drainage,
+                    |low| {
+                        total_mass(&[
+                            stocks.soil,
+                            low[i],
+                            -f.infiltration,
+                            f.soil_evaporation,
+                            f.soil_drainage,
+                        ])
+                    },
+                ),
                 stocks.pending_runoff - f.liquid_runoff - f.soil_drainage - route.received_transit
                     + route.sent,
                 cp.cumulative_evaporation_kilograms[i]
@@ -775,7 +884,17 @@ impl Model {
         }
         let surface = total_mass(&cp.surface_kilograms);
         let snow = total_mass(&cp.snow_kilograms);
-        let soil = total_mass(&cp.soil_kilograms);
+        let soil = if let Some(low) = &cp.soil_low_kilograms {
+            total_mass(
+                &cp.soil_kilograms
+                    .iter()
+                    .chain(low)
+                    .copied()
+                    .collect::<Vec<_>>(),
+            )
+        } else {
+            total_mass(&cp.soil_kilograms)
+        };
         let runoff = total_mass(&cp.pending_runoff_kilograms);
         let terminal = total_mass(&cp.terminal_water_kilograms);
         let vapor = total_mass(&cp.vapor_kilograms);
@@ -880,6 +999,17 @@ impl Model {
     }
 
     pub fn advance(&self, state: &mut State, seconds: u32) -> Result<Step, String> {
+        self.advance_observed(state, seconds, |_| {})
+    }
+
+    /// Same physical path and transactional state as `advance`; the observer
+    /// receives copied local diagnostics, including a later-rejected interval.
+    pub fn advance_observed(
+        &self,
+        state: &mut State,
+        seconds: u32,
+        mut observe: impl FnMut(SurfaceObservation),
+    ) -> Result<Step, String> {
         self.budget(state)?;
         if seconds == 0
             || u64::from(seconds) > SECONDS_PER_DAY
@@ -989,26 +1119,58 @@ impl Model {
                         &mut next.cumulative_runoff_transfer_roundoff[i],
                     );
                     runoff_transfers[i].accumulate(terminal_flux, &mut runoff_step_roundoff[i]);
-                    let result = surface_water::advance_prepared(
-                        surface_water::Stocks {
-                            liquid: next.surface_kilograms[i],
-                            snow: next.snow_kilograms[i],
-                            soil: next.soil_kilograms[i],
-                            pending_runoff: next.pending_runoff_kilograms[i],
-                        },
-                        self.areas[i],
-                        self.is_land[i],
-                        self.temperatures[month][i],
-                        deposited,
-                        potential_evaporation - terminal_evaporation,
-                        &surface_response,
-                    )?;
+                    let before = surface_water::Stocks {
+                        liquid: next.surface_kilograms[i],
+                        snow: next.snow_kilograms[i],
+                        soil: next.soil_kilograms[i],
+                        pending_runoff: next.pending_runoff_kilograms[i],
+                    };
+                    let before_low = next.soil_low_kilograms.as_ref().map_or(0., |low| low[i]);
+                    let (result, after_low) = if next.soil_low_kilograms.is_some() {
+                        let precise = surface_water::advance_compensated_prepared(
+                            before,
+                            before_low,
+                            self.areas[i],
+                            self.is_land[i],
+                            self.temperatures[month][i],
+                            deposited,
+                            potential_evaporation - terminal_evaporation,
+                            &surface_response,
+                        )?;
+                        (precise.step, precise.soil_low_kilograms)
+                    } else {
+                        (
+                            surface_water::advance_prepared(
+                                before,
+                                self.areas[i],
+                                self.is_land[i],
+                                self.temperatures[month][i],
+                                deposited,
+                                potential_evaporation - terminal_evaporation,
+                                &surface_response,
+                            )?,
+                            0.,
+                        )
+                    };
+                    observe(SurfaceObservation {
+                        coupled_start_seconds: next.elapsed_seconds,
+                        phase,
+                        region: i,
+                        local_seconds: interval as f64 * 0.5,
+                        before,
+                        after: result,
+                        before_soil_low_kilograms: before_low,
+                        after_soil_low_kilograms: after_low,
+                    });
                     let evaporated = result.transfers.liquid_evaporation
                         + result.transfers.soil_evaporation
                         + terminal_evaporation;
                     next.surface_kilograms[i] = result.stocks.liquid;
                     next.snow_kilograms[i] = result.stocks.snow;
                     next.soil_kilograms[i] = result.stocks.soil;
+                    if let Some(low) = &mut next.soil_low_kilograms {
+                        low[i] = after_low;
+                    }
                     next.pending_runoff_kilograms[i] = result.stocks.pending_runoff;
                     next.vapor_kilograms[i] = (vapor - deposited) + evaporated;
                     next.cumulative_surface_transfers[i].accumulate_compensated(

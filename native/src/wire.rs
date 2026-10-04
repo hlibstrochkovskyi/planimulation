@@ -120,6 +120,9 @@ pub fn seasonal_checkpoint(
     model: &crate::seasonal_moisture::Model,
     state: &crate::seasonal_moisture::State,
 ) -> Result<(), String> {
+    if model.settings().soil_numerics.is_some() {
+        return Err("The compensated-soil candidate is headless-only; no desktop checkpoint protocol is defined.".into());
+    }
     model.budget(state)?;
     let bytes = serde_json::to_vec(&state.checkpoint()).map_err(|e| e.to_string())?;
     // Reserve one byte for the desktop file's final newline.
@@ -257,6 +260,9 @@ pub fn seasonal_moisture(
     step: Option<&crate::seasonal_moisture::Step>,
     interval_seconds: u32,
 ) -> Result<(), String> {
+    if model.settings().soil_numerics.is_some() {
+        return Err("The compensated-soil candidate is headless-only; no desktop display protocol is defined.".into());
+    }
     if interval_seconds > 86400
         || u64::from(interval_seconds) > state.elapsed_seconds()
         || step.is_some() != (interval_seconds > 0)
