@@ -74,15 +74,15 @@ fn classify(temperatures: impl Iterator<Item = f64>) -> ThermalRegime {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-struct Snapshot {
-    seconds: u64,
+pub(super) struct Snapshot {
+    pub(super) seconds: u64,
     // Region-major high/low pairs of the same six owned stocks.
-    stocks: Vec<[[f64; 2]; STOCKS]>,
+    pub(super) stocks: Vec<[[f64; 2]; STOCKS]>,
     // Native cumulative leading totals; roundoff arrays are not physical water.
-    cumulative_flows: Vec<[f64; FLOWS]>,
+    pub(super) cumulative_flows: Vec<[f64; FLOWS]>,
 }
 impl Snapshot {
-    fn capture(model: &Model, state: &State) -> Result<Self, String> {
+    pub(super) fn capture(model: &Model, state: &State) -> Result<Self, String> {
         model.budget(state)?;
         let cp = &state.0;
         let stocks = (0..model.areas.len())
@@ -127,7 +127,7 @@ impl Snapshot {
             cumulative_flows,
         })
     }
-    fn annual_flows(&self, before: &Self) -> Result<Vec<[f64; FLOWS]>, String> {
+    pub(super) fn annual_flows(&self, before: &Self) -> Result<Vec<[f64; FLOWS]>, String> {
         let result: Vec<_> = self
             .cumulative_flows
             .iter()
@@ -148,7 +148,12 @@ pub struct StateChange {
     pub maximum_local_component_l1_change_millimeters: f64,
     pub maximum_local_change_region: usize,
 }
-fn state_change(before: &Snapshot, after: &Snapshot, areas: &[f64], initial: f64) -> StateChange {
+pub(super) fn state_change(
+    before: &Snapshot,
+    after: &Snapshot,
+    areas: &[f64],
+    initial: f64,
+) -> StateChange {
     let mut regional = Vec::with_capacity(areas.len());
     let (mut maximum, mut witness) = (0., 0);
     for (i, &area) in areas.iter().enumerate() {
@@ -179,7 +184,7 @@ pub struct FlowChange {
     pub maximum_criterion_excess_region: usize,
     pub maximum_criterion_excess_flow: usize,
 }
-fn flow_change(
+pub(super) fn flow_change(
     before: &[[f64; FLOWS]],
     after: &[[f64; FLOWS]],
     areas: &[f64],

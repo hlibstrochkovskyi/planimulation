@@ -115,3 +115,5 @@ npm test
 Add `--output NEW_FILE` to retain a full generated report without terminal-output truncation. The report tool refuses to overwrite an existing file. Four allocator tests, seven integration tests, the full native/72-Node regression suite, formatting, and Clippy with warnings denied pass. No GUI qualification is claimed; the new mode is deliberately not displayed.
 
 Next: body-aware annual regional diagnostics and longer refined controls, review of fast internal availability versus finite redistribution, then explicit display ownership/inspection before desktop promotion. Closed-lake area/storage/spill, evolving geography, thermodynamic freezing, atmosphere/energy calibration, weather, and ecology remain separate gates. Do not infer readiness from sustained rainfall alone.
+
+Subsequent follow-up: [body-aware annual stationarity diagnostics](body-seasonal-preparation.md) now compare true body owners separately from regional stocks, without inventing local water distributions or inheriting the old cold-lock interpretation. The bounded candidates remain diagnostic outcomes, not prepared-state or desktop promotion.

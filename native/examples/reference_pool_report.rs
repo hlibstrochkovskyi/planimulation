@@ -4,13 +4,20 @@ use planimulation_core::{
     moisture_transport::total_mass,
     seasonal_moisture::{
         MAX_ELAPSED_SECONDS, Model, ReferenceWaterPool, Settings, SoilNumerics, SurfaceNumerics,
-        TerminalNumerics,
+        TerminalNumerics, body_preparation, preparation,
     },
 };
 use serde_json::{Value, json};
 use std::io::Write;
 
-fn run(world: &World, depth: f64, limit: u32, years: u32, pooled: bool) -> Result<Value, String> {
+fn run(
+    world: &World,
+    depth: f64,
+    limit: u32,
+    years: u32,
+    pooled: bool,
+    diagnose: bool,
+) -> Result<Value, String> {
     let settings = Settings {
         orography: Some(Default::default()),
         soil_numerics: Some(SoilNumerics::Compensated),
@@ -23,6 +30,17 @@ fn run(world: &World, depth: f64, limit: u32, years: u32, pooled: bool) -> Resul
     };
     let model = Model::from_world(world, settings, Default::default(), Default::default())?;
     let mut state = model.initial_state();
+    let criteria = preparation::Criteria::default();
+    let mut regional_monitor = if diagnose && !pooled {
+        Some(preparation::Monitor::new(&model, &state, criteria)?)
+    } else {
+        None
+    };
+    let mut body_monitor = if diagnose && pooled {
+        Some(body_preparation::Monitor::new(&model, &state, criteria)?)
+    } else {
+        None
+    };
     let area = total_mass(&world.surface.areas);
     let mut annual = Vec::new();
     let mut last_p = 0.;
@@ -70,9 +88,35 @@ fn run(world: &World, depth: f64, limit: u32, years: u32, pooled: bool) -> Resul
             }
             total_mass(&parts)
         };
-        annual.push(json!({"year":year, "precipitationMillimeters":(p-last_p)/area,
+        let mut entry = json!({"year":year, "precipitationMillimeters":(p-last_p)/area,
             "evaporationMillimeters":(e-last_e)/area, "connectedReferenceLiquidKilograms":wet_liquid_and_terminal,
-            "budget":budget}));
+            "budget":budget});
+        let assessment = if let Some(monitor) = &mut regional_monitor {
+            Some(
+                monitor
+                    .observe_year(&state)
+                    .and_then(|a| serde_json::to_value(a).map_err(|e| e.to_string())),
+            )
+        } else {
+            body_monitor.as_mut().map(|monitor| {
+                monitor
+                    .observe_year(&state)
+                    .and_then(|a| serde_json::to_value(a).map_err(|e| e.to_string()))
+            })
+        };
+        if let Some(assessment) = assessment {
+            match assessment {
+                Ok(value) => entry["preparationAssessment"] = value,
+                Err(error) => {
+                    failure = Some(format!(
+                        "Annual diagnostic validation at year {year}: {error}"
+                    ));
+                    annual.push(entry);
+                    break 'years;
+                }
+            }
+        }
+        annual.push(entry);
         last_p = p;
         last_e = e;
     }
@@ -94,8 +138,7 @@ fn run(world: &World, depth: f64, limit: u32, years: u32, pooled: bool) -> Resul
     } else {
         None
     };
-    Ok(
-        json!({"recipe":world.recipe,"settings":settings,"temperatureSettings":model.temperature_settings(),"windSettings":model.wind_settings(),
+    let mut report = json!({"recipe":world.recipe,"settings":settings,"temperatureSettings":model.temperature_settings(),"windSettings":model.wind_settings(),
         "schemaVersion":cp.schema_version,"modelVersion":cp.model_version,"surfaceModelVersion":cp.surface_model_version,
         "referenceBodyModelVersion":cp.reference_body_model_version,"terminalStockModelVersion":cp.terminal_stock_model_version,
         "transportModelVersion":cp.transport_model_version,"temperatureModelVersion":cp.temperature_model_version,
@@ -104,8 +147,24 @@ fn run(world: &World, depth: f64, limit: u32, years: u32, pooled: bool) -> Resul
         "actualMaximumCoupledStepSeconds":model.maximum_coupled_step_seconds()?,"annual":annual,"budget":model.budget(&state)?,
         "maximumRelativeMassResidual":max_global,"maximumRelativeLocalLedgerResidual":max_local,
         "checkpointRoundTripExact":replay,"checkpointContinuationExact":continuation,
-        "failure":failure,"failedIntervalAtomic":atomic,"passed":failure.is_none() && replay && continuation != Some(false)}),
-    )
+        "failure":failure,"failedIntervalAtomic":atomic,"passed":failure.is_none() && replay && continuation != Some(false)});
+    if diagnose {
+        report["preparationDiagnosticVersion"] = json!(if pooled {
+            body_preparation::DIAGNOSTIC_VERSION
+        } else {
+            preparation::DIAGNOSTIC_VERSION
+        });
+        report["preparationCriteria"] = json!(criteria);
+        report["lastDiagnosticObservationSeconds"] = json!(
+            regional_monitor
+                .as_ref()
+                .map(preparation::Monitor::last_observed_seconds)
+                .or_else(|| body_monitor
+                    .as_ref()
+                    .map(body_preparation::Monitor::last_observed_seconds))
+        );
+    }
+    Ok(report)
 }
 
 fn main() -> Result<(), String> {
@@ -120,12 +179,15 @@ fn main() -> Result<(), String> {
     } else {
         None
     };
-    if args.iter().any(|a| a != "--refined" && a != "--decade")
+    if args
+        .iter()
+        .any(|a| a != "--refined" && a != "--decade" && a != "--preparation")
         || args.iter().filter(|a| *a == "--refined").count() > 1
         || args.iter().filter(|a| *a == "--decade").count() > 1
+        || args.iter().filter(|a| *a == "--preparation").count() > 1
     {
         return Err(
-            "Usage: reference_pool_report [--refined] [--decade] [--output NEW_FILE]".into(),
+            "Usage: reference_pool_report [--refined] [--decade] [--preparation] [--output NEW_FILE]".into(),
         );
     }
     let output = output_path
@@ -142,6 +204,7 @@ fn main() -> Result<(), String> {
     } else {
         2
     };
+    let diagnose = args.iter().any(|a| a == "--preparation");
     let limit = if args.iter().any(|a| a == "--refined") {
         450
     } else {
@@ -162,7 +225,7 @@ fn main() -> Result<(), String> {
                 eprintln!(
                     "Reference pool: radius {radius}, depth {depth}, pooled {pooled}, years {years}, ceiling {limit} s"
                 );
-                cases.push(match run(&world, depth, limit, years, pooled) {
+                cases.push(match run(&world, depth, limit, years, pooled, diagnose) {
                     Ok(value) => value,
                     Err(error) => json!({"recipe":recipe,"depthMeters":depth,"pooled":pooled,"requestedYears":years,"coupledCeilingSeconds":limit,"passed":false,"stage":"construction or persistence validation","failure":error}),
                 });
@@ -170,8 +233,26 @@ fn main() -> Result<(), String> {
         }
     }
     let failures = cases.iter().filter(|c| c["passed"] != true).count();
-    let report = json!({"reportVersion":1,"failureCount":failures,"numericRunQualificationPassed":failures==0,"cases":cases,
+    let mut report = json!({"reportVersion":1,"failureCount":failures,"numericRunQualificationPassed":failures==0,"cases":cases,
         "scope":"Matched version-7/8 finite active inventories with fixed reference geography and local atmosphere response; common connected-body availability is an explicit uncalibrated approximation. Regional arrival provenance remains recorded. Annual flows difference leading cumulative totals, not independent integrals. No default or desktop promotion, stationarity classification, clock reset, new lake geometry, current solver, or climate-readiness claim."});
+    if diagnose {
+        report["reportVersion"] = json!(2);
+        report["bodyPreparationDiagnosticVersion"] = json!(body_preparation::DIAGNOSTIC_VERSION);
+        report["regionalStockColumns"] =
+            json!(["liquid", "snow", "soil", "transit", "terminal", "vapor"]);
+        report["regionalFlowColumns"] = json!([
+            "precipitation",
+            "evaporation",
+            "generatedRunoff",
+            "snowfall",
+            "terminalDelivery"
+        ]);
+        report["bodyFlowColumns"] =
+            json!(["rain", "melt", "terminalDelivery", "liquidEvaporation"]);
+        report["scope"] = json!(
+            "Adds read-only whole-year stationarity assessments with distinct version-7 regional and version-8 body ownership. All physical report fields retain the unobserved path. A candidate under recorded uncalibrated criteria is not climate/eco readiness; body areas are fixed reference footprints, not virtual regional stock or changing lake surfaces. Body flow totals are explanatory leading-field differences; eligibility uses all owner stocks and regional annual flow comparisons. No physical law, conservation tolerance, clock, checkpoint, default, or desktop change."
+        );
+    }
     if let Some(mut file) = output {
         serde_json::to_writer(&mut file, &report).map_err(|e| e.to_string())?;
         writeln!(file).map_err(|e| e.to_string())?;

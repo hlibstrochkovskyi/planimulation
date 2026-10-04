@@ -18,6 +18,8 @@ The monitor keeps O(N) preceding boundary stocks and regional flow totals, not e
 
 Diagnostic version: `seasonal-preparation-analysis-1`. Supported physical models are explicitly `seasonal-moisture-3` through `seasonal-moisture-7`. A future snow/lake/thermal law must review this analysis rather than silently inheriting its cold-storage interpretation. Physical model and checkpoint versions remain unchanged.
 
+Version 8 has a separate [body-aware observer](body-seasonal-preparation.md), `body-seasonal-preparation-analysis-1`, that includes authoritative connected-body liquid and retains local dry/snow/soil/transit/vapor ownership. It does not reinterpret the cold-storage proof or historical results below. This legacy observer continues to refuse model 8.
+
 Stocks, in column order, are liquid, snow, soil, pending runoff/transit, terminal water, and vapor. Signed low components belong to their corresponding condensed stocks. They are included separately in sums and changes; cumulative summation corrections are not water.
 
 For each annual stock comparison:

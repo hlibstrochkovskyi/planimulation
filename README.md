@@ -35,6 +35,7 @@ A native [moisture-transport kernel and headless report](docs/moisture-transport
 | [Seasonal preparation diagnostics](docs/seasonal-preparation.md) | Read-only annual stock/flow stationarity checks, cold-storage controls, and retained ten-year drift |
 | [Water-return analysis](docs/water-return-analysis.md) | Connected-body/closed-sink ownership and retained frozen liquid-demand controls |
 | [Finite reference-water pool](docs/reference-water-pool.md) | Opt-in headless model 8: finite body-owned liquid, conservative evaporation allocation, and matched legacy controls |
+| [Body-aware seasonal diagnostics](docs/body-seasonal-preparation.md) | Annual body/regional stock and flow checks, recorded candidates, and retained closed-dry storage drift |
 | [Seasonal-water desktop](docs/seasonal-water-desktop.md) | Run/pause, eight dynamic layers, interval inspection, versioned frames, baseline timing evidence, and limits |
 | [Seasonal-water checkpoints](docs/seasonal-water-checkpoints.md) | Complete native state, candidate validation, bounded file I/O, exact continuation, and limits |
 | [Typed surface water](docs/surface-water.md) | Empirical snowmelt, soil bucket, pending-runoff ownership, defaults, and limitations |
