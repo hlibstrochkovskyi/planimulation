@@ -6,6 +6,8 @@ The October 4 [upslope-response increment](orographic-response.md) additionally 
 
 ## Use and saved scope
 
+The [surface/terminal precision increment](surface-precision.md) separately supports version 7/schema 7 via `preciseMoistureCheckpoint`, protocol 13. Its four signed low-component arrays and terminal-stock module pin are native physical state, not ledger corrections. Original decimal tokens, candidate validation, exact continuation, and file bounds remain unchanged. Headless-only schemas 5/6 reject; no file is silently upgraded. Historical version-3 validation below remains separate evidence.
+
 Pause seasonal playback and wait for its outstanding interval to finish. **Save seasonal checkpoint** exports a settled native snapshot. **Open seasonal checkpoint** can replace either an ordinary world or a paused seasonal/manual session through a separate candidate process. A canceled or failed open keeps the accepted native state and its displayed fields.
 
 The checkpoint contains the full generation recipe; moisture, transport, temperature, wind, surface, and runoff model versions; all resolved climate settings; elapsed integer seconds; six owned stock arrays; cumulative regional surface/routing transfers; signed Kahan roundoff corrections; and cumulative evaporation/precipitation. Restore regenerates fixed physical geometry and forcing using the pinned recipe and validates the full checkpoint in Rust.

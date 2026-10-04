@@ -2,6 +2,8 @@
 
 Implemented and measured October 4, 2026. This is a **headless-only numerical candidate**, not a new climate law or a qualified desktop mode. `seasonal-moisture-5`, schema 5, uses `surface-water-compensated-soil-1` with the existing opt-in upslope response. Default version 3 and desktop version 4 remain unchanged. Milestone D is incomplete.
 
+The subsequent [surface/terminal continuation](surface-precision.md) retains this version-5 model and its failed qualification while adding versions 6/7. Version 7 has a separate opt-in desktop mode and bounded ten-year evidence; version 5 remains headless-only. The measurements below are historical, not silently upgraded results.
+
 ## Diagnosis before correction
 
 The [version-4 refinement record](data/orographic-response-validation.json) retains two soil-ledger rejections at 60-second coupling. Surface transfer totals already use compensated accumulation; soil stocks still used ordinary floating-point additions/subtractions. Compensating a flow ledger does not compensate the stock it describes.

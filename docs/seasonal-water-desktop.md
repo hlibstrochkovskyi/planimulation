@@ -6,8 +6,10 @@ The October 4 [experimental upslope response](orographic-response.md) adds a sep
 
 ## Operation and ownership
 
+The [surface/terminal precision increment](surface-precision.md) also exposes **Initialize precise upslope**, version 7/schema 7/protocol 13. It retains low components for liquid, snow, soil, and terminal stocks in complete checkpoints; display arrays remain rounded leading fields. Versions 3/4 and their buttons remain unchanged. Choose this third mode before initialization; it is not a calibrated climate model. The older timing table below is not a version-7 benchmark.
+
 1. Generate a world and select a region in the flat atlas or globe.
-2. Choose **Initialize baseline water** or **Initialize upslope response**. Initialization is lazy; ordinary world viewing does not allocate or run the seasonal model.
+2. Choose **Initialize baseline water**, **Initialize upslope response**, or **Initialize precise upslope**. Initialization is lazy; ordinary world viewing does not allocate or run the seasonal model.
 3. Choose a one-hour or one-day caller interval. **Advance one interval** submits exactly that elapsed duration; **Run seasonal water** repeats bounded requests.
 4. **Pause seasonal water** stops scheduling. One already requested interval can finish and publish its accepted result. There is no queued backlog of future days.
 

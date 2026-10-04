@@ -120,7 +120,7 @@ pub fn seasonal_checkpoint(
     model: &crate::seasonal_moisture::Model,
     state: &crate::seasonal_moisture::State,
 ) -> Result<(), String> {
-    if model.settings().soil_numerics.is_some() {
+    if model.settings().soil_numerics.is_some() && model.settings().terminal_numerics.is_none() {
         return Err("The compensated-soil candidate is headless-only; no desktop checkpoint protocol is defined.".into());
     }
     model.budget(state)?;
@@ -131,11 +131,11 @@ pub fn seasonal_checkpoint(
     }
     send_versioned(
         out,
-        json!({"kind":if model.settings().orography.is_some() { "orographicMoistureCheckpoint" } else { "moistureCheckpoint" }, "schemaVersion":model.checkpoint_schema_version(),
+        json!({"kind":if model.settings().surface_numerics.is_some() { "preciseMoistureCheckpoint" } else if model.settings().orography.is_some() { "orographicMoistureCheckpoint" } else { "moistureCheckpoint" }, "schemaVersion":model.checkpoint_schema_version(),
         "modelVersion":model.model_version(),
         "elapsedSeconds":state.elapsed_seconds()}),
         &bytes,
-        if model.settings().orography.is_some() { 12 } else { 11 },
+        if model.settings().surface_numerics.is_some() { 13 } else if model.settings().orography.is_some() { 12 } else { 11 },
     )
     .map_err(|e| e.to_string())
 }
@@ -251,7 +251,7 @@ pub fn water_frame(
     )
 }
 
-/// Protocols 11 (baseline) and 12 (upslope response) display finite seasonal water, not lake geometry
+/// Protocols 11/12/13 display finite seasonal water, not lake geometry
 /// or a complete checkpoint. Initial world and existing frame layouts stay unchanged.
 pub fn seasonal_moisture(
     out: &mut impl Write,
@@ -260,7 +260,7 @@ pub fn seasonal_moisture(
     step: Option<&crate::seasonal_moisture::Step>,
     interval_seconds: u32,
 ) -> Result<(), String> {
-    if model.settings().soil_numerics.is_some() {
+    if model.settings().soil_numerics.is_some() && model.settings().terminal_numerics.is_none() {
         return Err("The compensated-soil candidate is headless-only; no desktop display protocol is defined.".into());
     }
     if interval_seconds > 86400
@@ -301,9 +301,9 @@ pub fn seasonal_moisture(
         );
     }
     let mut header = json!({
-        "kind":if model.settings().orography.is_some() { "orographicMoisture" } else { "moisture" }, "regionCount":count,
+        "kind":if model.settings().surface_numerics.is_some() { "preciseMoisture" } else if model.settings().orography.is_some() { "orographicMoisture" } else { "moisture" }, "regionCount":count,
         "modelVersion":model.model_version(),
-        "surfaceModelVersion":crate::surface_water::MODEL_VERSION,
+        "surfaceModelVersion":model.surface_model_version(),
         "runoffModelVersion":crate::runoff_transport::MODEL_VERSION,
         "transportModelVersion":crate::moisture_transport::MODEL_VERSION,
         "temperatureModelVersion":crate::seasonal_temperature::MODEL_VERSION,
@@ -320,11 +320,17 @@ pub fn seasonal_moisture(
     if model.settings().orography.is_some() {
         header["orographicModelVersion"] = json!(crate::orographic_response::MODEL_VERSION);
     }
+    if model.settings().terminal_numerics.is_some() {
+        header["terminalStockModelVersion"] =
+            json!(crate::seasonal_moisture::TERMINAL_STOCK_MODEL_VERSION);
+    }
     send_versioned(
         out,
         header,
         &bytes,
-        if model.settings().orography.is_some() {
+        if model.settings().surface_numerics.is_some() {
+            13
+        } else if model.settings().orography.is_some() {
             12
         } else {
             11

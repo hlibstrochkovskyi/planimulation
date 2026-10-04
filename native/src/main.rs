@@ -37,6 +37,7 @@ enum Command {
     },
     ExportMoisture,
     InitializeOrographicMoisture,
+    InitializePreciseMoisture,
     RestoreMoisture {
         #[serde(rename = "checkpointJson")]
         checkpoint_json: String,
@@ -143,7 +144,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         moisture_state = Some((model, state));
                     }
                 }
-                Command::InitializeOrographicMoisture => {
+                command @ (Command::InitializeOrographicMoisture
+                | Command::InitializePreciseMoisture) => {
+                    let precise = matches!(command, Command::InitializePreciseMoisture);
                     let w = world.as_ref().ok_or("Generate a world first.")?;
                     if moisture_state.is_some()
                         || water_state
@@ -156,6 +159,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                     let settings = planimulation_core::seasonal_moisture::Settings {
                         orography: Some(Default::default()),
+                        soil_numerics: precise.then_some(
+                            planimulation_core::seasonal_moisture::SoilNumerics::Compensated,
+                        ),
+                        surface_numerics: precise.then_some(
+                            planimulation_core::seasonal_moisture::SurfaceNumerics::Compensated,
+                        ),
+                        terminal_numerics: precise.then_some(
+                            planimulation_core::seasonal_moisture::TerminalNumerics::Compensated,
+                        ),
                         ..Default::default()
                     };
                     let model = MoistureModel::from_world(
@@ -198,6 +210,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                     let desktop_settings = planimulation_core::seasonal_moisture::Settings {
                         orography: checkpoint.settings.orography.map(|_| Default::default()),
+                        soil_numerics: checkpoint.settings.surface_numerics.map(|_| {
+                            planimulation_core::seasonal_moisture::SoilNumerics::Compensated
+                        }),
+                        surface_numerics: checkpoint.settings.surface_numerics,
+                        terminal_numerics: checkpoint.settings.terminal_numerics,
                         ..Default::default()
                     };
                     if checkpoint.settings != desktop_settings

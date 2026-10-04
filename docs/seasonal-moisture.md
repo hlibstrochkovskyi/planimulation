@@ -8,6 +8,8 @@ An October 4 [experimental version-4 upslope response](orographic-response.md) a
 
 A subsequent [headless version-5 soil-precision candidate](soil-precision.md) persists normalized high/low components of the same soil stock and preserves legacy models. It passes the two original soil witnesses but rejects annual snow-ledger qualification; it has no desktop protocol and is not a default-mode upgrade.
 
+The later [surface/terminal precision continuation](surface-precision.md) retains versions 5/6 and adds opt-in desktop version 7 with persistent liquid/snow/soil/terminal components, matched annual checks, and ten-year refinement/replay evidence. These are numerical changes, not new physical laws; version 3's evidence below is preserved.
+
 ## Initial ownership
 
 The atmosphere starts dry. Liquid starts as a finite active partition of generated reference water:

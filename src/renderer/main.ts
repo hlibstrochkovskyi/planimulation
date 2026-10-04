@@ -54,6 +54,7 @@ const temperatureLayerButton = document.querySelector<HTMLButtonElement>('[data-
 const windLayerButton = document.querySelector<HTMLButtonElement>('[data-layer="windSpeed"]')!;
 const moistureStart = element<HTMLButtonElement>('moisture-start');
 const moistureStartOrographic = element<HTMLButtonElement>('moisture-start-orographic');
+const moistureStartPrecise = element<HTMLButtonElement>('moisture-start-precise');
 const moistureStep = element<HTMLButtonElement>('moisture-step');
 const moisturePlay = element<HTMLButtonElement>('moisture-play');
 const moistureInterval = element<HTMLSelectElement>('moisture-interval');
@@ -104,6 +105,7 @@ function updateExperimentControls(): void {
   const finished = (moistureFrame?.elapsedSeconds ?? 0) >= MOISTURE_MAX_SECONDS;
   moistureStart.disabled = !world || busy || playing || hasSeasonal || (waterFrame?.step ?? 0) > 0;
   moistureStartOrographic.disabled = moistureStart.disabled;
+  moistureStartPrecise.disabled = moistureStart.disabled;
   moistureStep.disabled = !hasSeasonal || busy || moisturePlaying || finished;
   // Pause must remain available while the current native step is in flight.
   moisturePlay.disabled = !hasSeasonal || finished || (!moisturePlaying && busy);
@@ -173,7 +175,8 @@ function renderMoisture(): void {
     ['Cumulative terminal evaporation · flow integral', volume(budget.cumulativeRunoffTransfers.terminalEvaporation)],
   ]);
   const response = 'orography' in frame.settings ? ' · experimental upslope-enhanced removal of supersaturation; not calibrated' : '';
-  element('moisture-budget-note').textContent = `${frame.modelVersion}${response} · six exclusive stocks. Flow integrals can count recirculated water and must not be added to the inventory. Fixed geography; no lake levels or deep-water replenishment. Save seasonal checkpoint preserves the complete native state, not just these display values.`;
+  const precision = 'terminalNumerics' in frame.settings ? ' · checkpointed liquid/snow/soil/terminal low components; regional display values are rounded leading fields' : '';
+  element('moisture-budget-note').textContent = `${frame.modelVersion}${response}${precision} · six exclusive stocks. Flow integrals can count recirculated water and must not be added to the inventory. Fixed geography; no lake levels or deep-water replenishment. Save seasonal checkpoint preserves the complete native state, not just these display values.`;
   if (selected === null) {
     element('moisture-selection-title').textContent = 'Select a region';
     element('moisture-selection-details').replaceChildren();
@@ -192,15 +195,15 @@ function renderMoisture(): void {
   updateExperimentControls();
 }
 
-async function requestMoisture(seconds: number, initializeOrographic = false): Promise<void> {
+async function requestMoisture(seconds: number, initialize?: 'orographic' | 'precise'): Promise<void> {
   if (!world || moistureBusyEpoch === epoch || waterBusy || checkpointOpening || advancing
     || budgetBusyEpoch === epoch || document.body.dataset.state === 'generating') return;
   const activeEpoch = epoch, origin = world, request = generationId;
   moistureBusyEpoch = activeEpoch; updateExperimentControls();
   const started = performance.now();
   try {
-    const frame = initializeOrographic
-      ? await api.initializeOrographicMoisture(activeEpoch)
+    const frame = initialize
+      ? initialize === 'precise' ? await api.initializePreciseMoisture(activeEpoch) : await api.initializeOrographicMoisture(activeEpoch)
       : await api.seasonalMoisture(activeEpoch, seconds);
     const requestMilliseconds = performance.now() - started;
     // An accepted old-world step may finish while a replacement is preparing.
@@ -229,7 +232,8 @@ function pauseMoisture(): void {
   moisturePlaying = false; clearTimeout(moistureTimer); updateExperimentControls();
 }
 moistureStart.addEventListener('click', () => { pause(); void requestMoisture(0); });
-moistureStartOrographic.addEventListener('click', () => { pause(); void requestMoisture(0, true); });
+moistureStartOrographic.addEventListener('click', () => { pause(); void requestMoisture(0, 'orographic'); });
+moistureStartPrecise.addEventListener('click', () => { pause(); void requestMoisture(0, 'precise'); });
 moistureStep.addEventListener('click', () => { pause(); void requestMoisture(Number(moistureInterval.value)); });
 moisturePlay.addEventListener('click', () => {
   if (moisturePlaying) pauseMoisture();

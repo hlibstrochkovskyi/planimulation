@@ -1,7 +1,7 @@
 //! Floating expansions audit legacy soil, compensated soil, and retained snow drift.
 use planimulation_core::{
     Recipe, World,
-    seasonal_moisture::{Model, Settings, SoilNumerics},
+    seasonal_moisture::{Model, Settings, SoilNumerics, SurfaceNumerics},
     seasonal_temperature, seasonal_wind,
 };
 use serde_json::json;
@@ -34,14 +34,22 @@ fn sum(values: impl IntoIterator<Item = f64>) -> f64 {
 }
 fn main() -> Result<(), String> {
     let args: Vec<_> = std::env::args().skip(1).collect();
-    let (compensated, snow) = match args.as_slice() {
-        [] => (false, false),
-        [arg] if arg == "--compensated" => (true, false),
-        [arg, stock] if arg == "--compensated" && stock == "--snow" => (true, true),
-        _ => return Err("Usage: soil_ledger_probe [--compensated [--snow]]".into()),
+    let (compensated, snow, precise_surface, liquid) = match args.as_slice() {
+        [] => (false, false, false, false),
+        [arg] if arg == "--compensated" => (true, false, false, false),
+        [arg, stock] if arg == "--compensated" && stock == "--snow" => (true, true, false, false),
+        [arg] if arg == "--surface" => (true, true, true, false),
+        [arg, stock] if arg == "--surface" && stock == "--liquid" => (true, false, true, true),
+        _ => {
+            return Err(
+                "Usage: soil_ledger_probe [--compensated [--snow] | --surface [--liquid]]".into(),
+            );
+        }
     };
     let mut cases = Vec::new();
-    let fixtures = if snow {
+    let fixtures = if liquid {
+        [("seasonal-reference", 38), ("moisture-coast", 34)]
+    } else if snow {
         [("seasonal-reference", 151), ("moisture-coast", 95)]
     } else {
         [("seasonal-reference", 99), ("moisture-coast", 103)]
@@ -61,6 +69,7 @@ fn main() -> Result<(), String> {
                 orography: Some(Default::default()),
                 max_coupled_step_seconds: 60,
                 soil_numerics: compensated.then_some(SoilNumerics::Compensated),
+                surface_numerics: precise_surface.then_some(SurfaceNumerics::Compensated),
                 ..Default::default()
             },
             seasonal_temperature::Settings::default(),
@@ -72,8 +81,8 @@ fn main() -> Result<(), String> {
         let mut operations = 0;
         let mut maximum_local_relative_error: f64 = 0.;
         let mut failure = None;
-        let days = if snow { 365 } else { 40 };
-        let caller = if snow { 3600 } else { 60 };
+        let days = if precise_surface || snow { 365 } else { 40 };
+        let caller = if precise_surface || snow { 3600 } else { 60 };
         while state.elapsed_seconds() < days * 86400 {
             let before = state.clone();
             let result = model.advance_observed(&mut state, caller, |obs| {
@@ -81,12 +90,22 @@ fn main() -> Result<(), String> {
                     return;
                 }
                 let f = obs.after.transfers;
-                let local = if snow {
+                let local = if liquid {
+                    [
+                        obs.after.stocks.liquid,
+                        obs.after_liquid_low_kilograms,
+                        -obs.before.liquid,
+                        -obs.before_liquid_low_kilograms,
+                        -f.rain,
+                        -f.melt,
+                        f.liquid_evaporation + f.infiltration + f.liquid_runoff,
+                    ]
+                } else if snow {
                     [
                         obs.after.stocks.snow,
-                        0.,
+                        obs.after_snow_low_kilograms,
                         -obs.before.snow,
-                        0.,
+                        -obs.before_snow_low_kilograms,
                         -f.snowfall,
                         f.melt,
                         0.,
@@ -102,19 +121,44 @@ fn main() -> Result<(), String> {
                         f.soil_drainage,
                     ]
                 };
-                for v in local {
+                // Keep separate loss terms for the independent liquid audit;
+                // pre-summing them would introduce its own rounding witness.
+                let terms = if liquid {
+                    vec![
+                        obs.after.stocks.liquid,
+                        obs.after_liquid_low_kilograms,
+                        -obs.before.liquid,
+                        -obs.before_liquid_low_kilograms,
+                        -f.rain,
+                        -f.melt,
+                        f.liquid_evaporation,
+                        f.infiltration,
+                        f.liquid_runoff,
+                    ]
+                } else {
+                    local.to_vec()
+                };
+                for &v in &terms {
                     add(&mut drift, v);
                 }
-                let transfers = if snow {
-                    [f.snowfall, -f.melt, 0.]
+                let transfers = if liquid {
+                    vec![
+                        f.rain,
+                        f.melt,
+                        -f.liquid_evaporation,
+                        -f.infiltration,
+                        -f.liquid_runoff,
+                    ]
+                } else if snow {
+                    vec![f.snowfall, -f.melt]
                 } else {
-                    [f.infiltration, -f.soil_evaporation, -f.soil_drainage]
+                    vec![f.infiltration, -f.soil_evaporation, -f.soil_drainage]
                 };
                 for v in transfers {
                     add(&mut flux, v);
                 }
                 maximum_local_relative_error = maximum_local_relative_error.max(
-                    sum(local).abs()
+                    sum(terms).abs()
                         / obs
                             .before
                             .total()
@@ -144,7 +188,7 @@ fn main() -> Result<(), String> {
     println!(
         "{}",
         serde_json::to_string_pretty(
-            &json!({"probeVersion":3,"compensated":compensated,"stock":if snow {"snow"} else {"soil"},"cases":cases})
+            &json!({"probeVersion":4,"compensated":compensated,"surfaceCompensated":precise_surface,"stock":if liquid {"liquid"} else if snow {"snow"} else {"soil"},"cases":cases})
         )
         .map_err(|e| e.to_string())?
     );

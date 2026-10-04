@@ -12,6 +12,8 @@ October 4 climate increment: [experimental upslope response](orographic-response
 
 October 4 numerical follow-up: [checkpointed soil precision](soil-precision.md) independently diagnoses accumulated stock rounding and adds a headless-only schema-5 two-component soil representation without budget repair or widened tolerances. Both original witnesses and all six forty-day refined cases now pass, with exact same-build replay and unchanged version-4 budgets. Both attempted annual qualifications reject the still-uncompensated snow ledger around days 160/188; failures and independent audits remain recorded. Persistent precision for other long-lived stocks and broader sensitivity are the next gates. No desktop/default promotion or ecology advancement follows from short-run success.
 
+October 4 continuation: [persistent condensed-water precision](surface-precision.md) extends that representation to liquid/snow in headless version 6 and terminal water in version 7. The version-6 ten-year refined terminal rejection remains retained and reproducible. Version 7 passes six matched/refined annual cases, three denser-grid annual checks, and both default/refined ten-year references; complete replay and a separately selected protocol-13 desktop mode preserve its four low-component arrays. No climate law, tolerance, default model, or earlier checkpoint changes. Next gates are parameter controls, spatially paired terrain/rainfall/runoff evidence, and seasonal summaries; weather, lake ownership, groundwater, ecology, and calibration remain open.
+
 ## 1. Selected foundation stack
 
 The application uses Electron with a TypeScript interface and Three.js/WebGL 2 for both the flat atlas and globe. An independent Rust executable owns geometry, generation, diagnostic transport, and the separate finite seasonal-water state. A Node.js headless adapter uses the same executable. Dependencies are recorded in npm and Cargo lockfiles.
@@ -116,6 +118,8 @@ The finite seasonal-moisture increment closes bounded source/recipient exchange 
 The subsequent [upslope-response increment](orographic-response.md) implements a limited terrain-sensitive acceleration of existing supersaturation in version 4, not additional cooling, clouds, or a general rain-shadow solver. It preserves version 3 and adds matched-cadence controls, explicit refinement failures, and schema-4 desktop save/load. Groundwater, general basin ownership, thermodynamic freezing, and calibration remain open.
 
 The [headless soil-precision candidate](soil-precision.md) fixes the two measured soil rounding witnesses with checkpointed low components while preserving legacy models. Its annual snow-ledger refusals prevent desktop/default promotion; numerical precision work is not a new physical mechanism or climate qualification.
+
+The [surface/terminal continuation](surface-precision.md) retains those failures in versions 5/6 and adds separately pinned version 7, with complete desktop replay and bounded ten-year refinement evidence. It remains opt-in and empirical; closing these measured precision gates does not satisfy D's general climate/hydrology deliverable.
 
 Work includes seasonal heating, thermal memory, a tangent wind field, evaporation, moisture transport, precipitation, snow, soil and simplified groundwater stores, runoff, and lakes. Initial state preparation has a criterion and an iteration limit. Introduce coherent weather disturbances after establishing the baseline seasonal behavior.
 

@@ -67,4 +67,6 @@ Native tests cover analytic gradient convergence, rotation/datum/radius controls
 
 ## Next gates
 
+The later [surface/terminal precision continuation](surface-precision.md) adds separate opt-in version 7 with matched annual/ten-year evidence and protocol-13 desktop replay. Version 4 and the retained failures described here are unchanged. Parameter controls, paired terrain/rainfall diagnostics, and seasonal summaries remain necessary; numerical precision is not climate calibration.
+
 The [soil-precision follow-up](soil-precision.md) diagnoses the retained 60 s soil-ledger witnesses and resolves them in a separate headless version 5 without changing version 4, physics, or tolerances. Its annual qualification still rejects the snow ledger; the original version-4 failures above remain historical evidence. Persistent precision for other long-lived stocks and broader temporal/spatial/parameter evidence are required before promotion. Cloud storage/advection, condensation/fallout delays, re-evaporation, atmospheric pressure/mass/energy, mountain waves, blocking, and thermodynamic foehn effects are absent. Wind remains prescribed, not terrain-deflected. Weather, lake levels/spill ownership, groundwater, ecology, and calibration remain future work.

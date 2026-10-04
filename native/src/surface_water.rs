@@ -4,8 +4,10 @@ use serde::{Deserialize, Serialize};
 
 pub const MODEL_VERSION: &str = "surface-water-1";
 pub const COMPENSATED_MODEL_VERSION: &str = "surface-water-compensated-soil-1";
-mod soil_precision;
-pub(crate) use soil_precision::validate as validate_soil_precision;
+pub const PRECISE_SURFACE_MODEL_VERSION: &str = "surface-water-compensated-surface-1";
+mod stock_precision;
+pub(crate) use stock_precision::Stock as CompensatedStock;
+pub(crate) use stock_precision::validate as validate_stock_precision;
 const DAY: f64 = 86400.;
 
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
@@ -158,6 +160,15 @@ pub struct CompensatedStep {
     pub soil_low_kilograms: f64,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct PreciseSurfaceStep {
+    pub step: Step,
+    pub soil_low_kilograms: f64,
+    /// Signed component of the same snow water-equivalent mass.
+    pub snow_low_kilograms: f64,
+    pub liquid_low_kilograms: f64,
+}
+
 /// Interval-wide coefficients: avoid evaluating three exponentials per region.
 pub(crate) struct Response {
     settings: Settings,
@@ -224,6 +235,8 @@ pub(crate) fn advance_prepared(
         potential_evaporation,
         response,
         None,
+        None,
+        None,
     )?
     .step)
 }
@@ -265,6 +278,67 @@ pub(crate) fn advance_compensated_prepared(
     potential_evaporation: f64,
     response: &Response,
 ) -> Result<CompensatedStep, String> {
+    let result = advance_with_precision(
+        before,
+        area,
+        is_land,
+        temperature,
+        precipitation,
+        potential_evaporation,
+        response,
+        Some(soil_low),
+        None,
+        None,
+    )?;
+    Ok(CompensatedStep {
+        step: result.step,
+        soil_low_kilograms: result.soil_low_kilograms,
+    })
+}
+
+/// Headless liquid/snow/soil candidate; no new transfer physics.
+#[allow(clippy::too_many_arguments)]
+pub fn advance_precise_surface(
+    before: Stocks,
+    soil_low: f64,
+    snow_low: f64,
+    liquid_low: f64,
+    area: f64,
+    is_land: bool,
+    temperature: f64,
+    precipitation: f64,
+    potential_evaporation: f64,
+    seconds: f64,
+    settings: Settings,
+) -> Result<PreciseSurfaceStep, String> {
+    settings.validate()?;
+    advance_precise_surface_prepared(
+        before,
+        soil_low,
+        snow_low,
+        liquid_low,
+        area,
+        is_land,
+        temperature,
+        precipitation,
+        potential_evaporation,
+        &Response::new(seconds, settings)?,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn advance_precise_surface_prepared(
+    before: Stocks,
+    soil_low: f64,
+    snow_low: f64,
+    liquid_low: f64,
+    area: f64,
+    is_land: bool,
+    temperature: f64,
+    precipitation: f64,
+    potential_evaporation: f64,
+    response: &Response,
+) -> Result<PreciseSurfaceStep, String> {
     advance_with_precision(
         before,
         area,
@@ -274,6 +348,8 @@ pub(crate) fn advance_compensated_prepared(
         potential_evaporation,
         response,
         Some(soil_low),
+        Some(snow_low),
+        Some(liquid_low),
     )
 }
 
@@ -287,17 +363,25 @@ fn advance_with_precision(
     potential_evaporation: f64,
     response: &Response,
     soil_low: Option<f64>,
-) -> Result<CompensatedStep, String> {
+    snow_low: Option<f64>,
+    liquid_low: Option<f64>,
+) -> Result<PreciseSurfaceStep, String> {
     let settings = response.settings;
     before.validate(area, is_land, settings)?;
     let mut precise = soil_low
         .map(|low| {
-            soil_precision::Soil::new(
+            stock_precision::Stock::new(
                 before.soil,
                 low,
                 area * settings.soil_capacity_kilograms_per_square_meter,
             )
         })
+        .transpose()?;
+    let mut precise_snow = snow_low
+        .map(|low| stock_precision::Stock::new(before.snow, low, f64::MAX))
+        .transpose()?;
+    let mut precise_liquid = liquid_low
+        .map(|low| stock_precision::Stock::new(before.liquid, low, f64::MAX))
         .transpose()?;
     if !temperature.is_finite()
         || !(-100. ..=50.).contains(&temperature)
@@ -312,10 +396,20 @@ fn advance_with_precision(
     let warm = temperature > 0.;
     if warm {
         flux.rain = precipitation;
-        stocks.liquid += precipitation;
+        if let Some(liquid) = &mut precise_liquid {
+            liquid.credit(precipitation)?;
+            stocks.liquid = liquid.high;
+        } else {
+            stocks.liquid += precipitation;
+        }
     } else {
         flux.snowfall = precipitation;
-        stocks.snow += precipitation;
+        if let Some(snow) = &mut precise_snow {
+            snow.credit(precipitation)?;
+            stocks.snow = snow.high;
+        } else {
+            stocks.snow += precipitation;
+        }
     }
     let capacity = area * settings.soil_capacity_kilograms_per_square_meter;
     if warm {
@@ -327,10 +421,26 @@ fn advance_with_precision(
             return Err("Surface-water melt forcing overflow.".into());
         }
         flux.melt = stocks.snow.min(potential_melt);
-        stocks.snow -= flux.melt;
-        stocks.liquid += flux.melt;
+        if let Some(snow) = &mut precise_snow {
+            // Use the demand, not rounded high mass, to make tiny tails eligible.
+            flux.melt = snow.withdraw(potential_melt);
+            stocks.snow = snow.high;
+        } else {
+            stocks.snow -= flux.melt;
+        }
+        if let Some(liquid) = &mut precise_liquid {
+            liquid.credit(flux.melt)?;
+            stocks.liquid = liquid.high;
+        } else {
+            stocks.liquid += flux.melt;
+        }
         flux.liquid_evaporation = potential_evaporation.min(stocks.liquid);
-        stocks.liquid -= flux.liquid_evaporation;
+        if let Some(liquid) = &mut precise_liquid {
+            flux.liquid_evaporation = liquid.withdraw(potential_evaporation);
+            stocks.liquid = liquid.high;
+        } else {
+            stocks.liquid -= flux.liquid_evaporation;
+        }
         if is_land {
             // Dry soil limits access to the remaining atmospheric demand.
             flux.soil_evaporation = ((potential_evaporation - flux.liquid_evaporation)
@@ -342,7 +452,10 @@ fn advance_with_precision(
             } else {
                 stocks.soil -= flux.soil_evaporation;
             }
-            let requested_infiltration = stocks.liquid * response.infiltration_fraction;
+            let nominal_infiltration = stocks.liquid * response.infiltration_fraction;
+            let requested_infiltration = precise_liquid.map_or(nominal_infiltration, |liquid| {
+                nominal_infiltration.min(liquid.available())
+            });
             if let Some(soil) = &mut precise {
                 flux.infiltration = soil.deposit(requested_infiltration, capacity);
                 stocks.soil = soil.high;
@@ -350,7 +463,15 @@ fn advance_with_precision(
                 flux.infiltration = requested_infiltration.min((capacity - stocks.soil).max(0.));
                 stocks.soil += flux.infiltration;
             }
-            stocks.liquid -= flux.infiltration;
+            if let Some(liquid) = &mut precise_liquid {
+                let grant = liquid.withdraw(flux.infiltration);
+                if grant != flux.infiltration {
+                    return Err("Infiltration exceeds its represented liquid donor.".into());
+                }
+                stocks.liquid = liquid.high;
+            } else {
+                stocks.liquid -= flux.infiltration;
+            }
             flux.soil_drainage = (stocks.soil - capacity * settings.soil_retained_fraction).max(0.)
                 * response.drainage_fraction;
             if let Some(soil) = &mut precise {
@@ -363,13 +484,18 @@ fn advance_with_precision(
     }
     if is_land {
         flux.liquid_runoff = stocks.liquid * response.runoff_fraction;
-        stocks.liquid -= flux.liquid_runoff;
+        if let Some(liquid) = &mut precise_liquid {
+            flux.liquid_runoff = liquid.withdraw(flux.liquid_runoff);
+            stocks.liquid = liquid.high;
+        } else {
+            stocks.liquid -= flux.liquid_runoff;
+        }
         stocks.pending_runoff += flux.liquid_runoff + flux.soil_drainage;
     }
     stocks.validate(area, is_land, settings)?;
     let low = precise.map_or(0., |soil| soil.low);
     if let Some(soil) = precise {
-        soil_precision::Soil::new(soil.high, soil.low, capacity)?;
+        stock_precision::Stock::new(soil.high, soil.low, capacity)?;
     }
     if !is_land && low != 0. {
         return Err("Reference water cannot own a soil low component.".into());
@@ -377,8 +503,22 @@ fn advance_with_precision(
     let legacy_residual = (stocks.total() - before.total()) - precipitation
         + flux.liquid_evaporation
         + flux.soil_evaporation;
-    let residual = soil_low.map_or(legacy_residual, |before_low| {
+    let soil_residual = soil_low.map_or(legacy_residual, |before_low| {
         legacy_residual + (low - before_low)
+    });
+    let snow_low_after = precise_snow.map_or(0., |snow| snow.low);
+    if let Some(snow) = precise_snow {
+        stock_precision::Stock::new(snow.high, snow.low, f64::MAX)?;
+    }
+    let snow_residual = snow_low.map_or(soil_residual, |before_low| {
+        soil_residual + (snow_low_after - before_low)
+    });
+    let liquid_low_after = precise_liquid.map_or(0., |liquid| liquid.low);
+    if let Some(liquid) = precise_liquid {
+        stock_precision::Stock::new(liquid.high, liquid.low, f64::MAX)?;
+    }
+    let residual = liquid_low.map_or(snow_residual, |before_low| {
+        snow_residual + (liquid_low_after - before_low)
     });
     let scale = before
         .total()
@@ -391,12 +531,14 @@ fn advance_with_precision(
     {
         return Err("Surface-water transfer exceeds its arithmetic tolerance.".into());
     }
-    Ok(CompensatedStep {
+    Ok(PreciseSurfaceStep {
         step: Step {
             stocks,
             transfers: flux,
             residual_kilograms: residual,
         },
         soil_low_kilograms: low,
+        snow_low_kilograms: snow_low_after,
+        liquid_low_kilograms: liquid_low_after,
     })
 }
