@@ -3,15 +3,23 @@
 use crate::{
     Recipe, World,
     moisture_transport::{Flow, Geometry, total_mass},
-    runoff_transport, seasonal_temperature, seasonal_wind, surface_water,
+    orographic_response, runoff_transport, seasonal_temperature, seasonal_wind, surface_water,
 };
 use serde::{Deserialize, Serialize};
 
 pub const MODEL_VERSION: &str = "seasonal-moisture-3";
+pub const OROGRAPHIC_MODEL_VERSION: &str = "seasonal-moisture-4";
 pub const SECONDS_PER_DAY: u64 = 86400;
 pub const MAX_ELAPSED_SECONDS: u64 = 3650 * SECONDS_PER_DAY;
 pub const WATER_DENSITY_KILOGRAMS_PER_CUBIC_METER: f64 = 1000.;
 const VAPOR_GAS_CONSTANT: f64 = 461.5;
+
+// Missing means legacy; a present null is not an unrecorded/default algorithm.
+fn present_option<'de, D: serde::Deserializer<'de>, T: Deserialize<'de>>(
+    deserializer: D,
+) -> Result<Option<T>, D::Error> {
+    T::deserialize(deserializer).map(Some)
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -27,6 +35,12 @@ pub struct Settings {
     pub surface: surface_water::Settings,
     pub routing_enabled: bool,
     pub runoff: runoff_transport::Settings,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "present_option"
+    )]
+    pub orography: Option<orographic_response::Settings>,
 }
 
 impl Default for Settings {
@@ -43,6 +57,7 @@ impl Default for Settings {
             surface: surface_water::Settings::default(),
             routing_enabled: true,
             runoff: runoff_transport::Settings::default(),
+            orography: None,
         }
     }
 }
@@ -52,6 +67,9 @@ impl Settings {
         self.transport.validate()?;
         self.surface.validate()?;
         self.runoff.validate()?;
+        if let Some(orography) = self.orography {
+            orography.validate()?;
+        }
         if !(60..=21600).contains(&self.max_coupled_step_seconds) {
             return Err("Coupled moisture step limit must be 60–21600 seconds.".into());
         }
@@ -204,6 +222,12 @@ pub struct Checkpoint {
     pub wind_model_version: String,
     pub surface_model_version: String,
     pub runoff_model_version: String,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "present_option"
+    )]
+    pub orographic_model_version: Option<String>,
     pub recipe: Recipe,
     pub settings: Settings,
     pub temperature_settings: seasonal_temperature::Settings,
@@ -273,6 +297,13 @@ pub struct Model {
     temperatures: Vec<Vec<f64>>,
     capacities: Vec<Vec<f64>>,
     flows: Vec<Flow>,
+    orographic_forcing: Option<OrographicForcing>,
+}
+
+struct OrographicForcing {
+    uplift_meters_per_second: Vec<Vec<f64>>,
+    additional_rates_per_second: Vec<Vec<f64>>,
+    maximum_rate_per_second: f64,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -309,6 +340,17 @@ pub struct Step {
 }
 
 impl Model {
+    pub fn model_version(&self) -> &str {
+        &self.origin.model_version
+    }
+    pub fn checkpoint_schema_version(&self) -> u32 {
+        self.origin.schema_version
+    }
+    pub fn orographic_uplift(&self) -> Option<&[Vec<f64>]> {
+        self.orographic_forcing
+            .as_ref()
+            .map(|f| f.uplift_meters_per_second.as_slice())
+    }
     /// Read-only resolved configuration for adapters; display frames are not checkpoints.
     pub fn settings(&self) -> Settings {
         self.origin.settings
@@ -371,6 +413,60 @@ impl Model {
                 )
             })
             .collect::<Result<Vec<_>, _>>()?;
+        let orographic_forcing = if let Some(orography) = settings.orography {
+            let heights: Vec<_> = world
+                .terrain
+                .elevation
+                .iter()
+                .enumerate()
+                .map(|(i, &bed)| {
+                    if world.water.depth_meters[i] > 0. {
+                        world.water.level_meters
+                    } else {
+                        bed
+                    }
+                })
+                .collect();
+            let gradients = orographic_response::terrain_gradients(
+                &world.surface,
+                world.recipe.radius_meters,
+                &heights,
+            )?;
+            let winds = seasonal_wind::Normals::from_world(
+                world,
+                wind_settings,
+                temperature_settings.axial_tilt_degrees,
+            )?;
+            let mut uplifts = Vec::with_capacity(12);
+            let mut rates = Vec::with_capacity(12);
+            let mut maximum: f64 = 0.;
+            for month in 0..12 {
+                let mut uplift = Vec::with_capacity(gradients.len());
+                let mut rate = Vec::with_capacity(gradients.len());
+                for (i, &gradient) in gradients.iter().enumerate() {
+                    let point = world.surface.centers[i];
+                    let wind = seasonal_wind::tangent_vector(
+                        point,
+                        winds.monthly_east_meters_per_second[month][i],
+                        winds.monthly_north_meters_per_second[month][i],
+                    );
+                    let w = orographic_response::uplift(point, gradient, wind)?;
+                    let k = orography.additional_rate_per_second(w)?;
+                    maximum = maximum.max(k);
+                    uplift.push(w);
+                    rate.push(k);
+                }
+                uplifts.push(uplift);
+                rates.push(rate);
+            }
+            Some(OrographicForcing {
+                uplift_meters_per_second: uplifts,
+                additional_rates_per_second: rates,
+                maximum_rate_per_second: maximum,
+            })
+        } else {
+            None
+        };
         let initial_surface: Vec<_> = world
             .surface
             .areas
@@ -387,13 +483,21 @@ impl Model {
             return Err("Initial mobile-water overflow.".into());
         }
         let origin = Checkpoint {
-            schema_version: 3,
-            model_version: MODEL_VERSION.into(),
+            schema_version: if settings.orography.is_some() { 4 } else { 3 },
+            model_version: if settings.orography.is_some() {
+                OROGRAPHIC_MODEL_VERSION
+            } else {
+                MODEL_VERSION
+            }
+            .into(),
             transport_model_version: crate::moisture_transport::MODEL_VERSION.into(),
             temperature_model_version: seasonal_temperature::MODEL_VERSION.into(),
             wind_model_version: seasonal_wind::MODEL_VERSION.into(),
             surface_model_version: surface_water::MODEL_VERSION.into(),
             runoff_model_version: runoff_transport::MODEL_VERSION.into(),
+            orographic_model_version: settings
+                .orography
+                .map(|_| orographic_response::MODEL_VERSION.into()),
             recipe: world.recipe.clone(),
             settings,
             temperature_settings,
@@ -422,6 +526,7 @@ impl Model {
             temperatures: normals.monthly_temperature_celsius,
             capacities,
             flows,
+            orographic_forcing,
         })
     }
 
@@ -430,8 +535,22 @@ impl Model {
     }
 
     pub fn restore(checkpoint: Checkpoint) -> Result<(Self, State), String> {
-        if checkpoint.schema_version != 3
-            || checkpoint.model_version != MODEL_VERSION
+        let supported = matches!(
+            (
+                checkpoint.schema_version,
+                checkpoint.model_version.as_str(),
+                checkpoint.settings.orography,
+                checkpoint.orographic_model_version.as_deref(),
+            ),
+            (3, MODEL_VERSION, None, None)
+                | (
+                    4,
+                    OROGRAPHIC_MODEL_VERSION,
+                    Some(_),
+                    Some(orographic_response::MODEL_VERSION)
+                )
+        );
+        if !supported
             || checkpoint.transport_model_version != crate::moisture_transport::MODEL_VERSION
             || checkpoint.temperature_model_version != seasonal_temperature::MODEL_VERSION
             || checkpoint.wind_model_version != seasonal_wind::MODEL_VERSION
@@ -460,6 +579,7 @@ impl Model {
             || cp.wind_model_version != origin.wind_model_version
             || cp.surface_model_version != origin.surface_model_version
             || cp.runoff_model_version != origin.runoff_model_version
+            || cp.orographic_model_version != origin.orographic_model_version
             || cp.recipe != origin.recipe
             || cp.settings != origin.settings
             || cp.temperature_settings != origin.temperature_settings
@@ -715,6 +835,50 @@ impl Model {
         self.validate_checkpoint(&state.0)
     }
 
+    /// Actual response/routing bound, including any pinned upslope response.
+    /// Caller intervals shorter than this bound provide temporal refinement.
+    pub fn maximum_coupled_step_seconds(&self) -> Result<u64, String> {
+        let settings = self.origin.settings;
+        let mut coupled_limit = u64::from(settings.max_coupled_step_seconds);
+        for (enabled, tau) in [
+            (
+                settings.evaporation_enabled,
+                settings.evaporation_response_seconds,
+            ),
+            (
+                settings.precipitation_enabled,
+                settings.precipitation_response_seconds,
+            ),
+            (true, settings.surface.infiltration_response_seconds),
+            (true, settings.surface.liquid_runoff_response_seconds),
+            (true, settings.surface.soil_drainage_response_seconds),
+        ] {
+            if enabled {
+                coupled_limit = coupled_limit.min((tau / 6.).floor() as u64);
+            }
+        }
+        if settings.routing_enabled {
+            coupled_limit = coupled_limit.min(self.routing.maximum_coupled_step_seconds());
+        }
+        if settings.precipitation_enabled
+            && let Some(forcing) = &self.orographic_forcing
+            && forcing.maximum_rate_per_second > 0.
+        {
+            let limit = (1.
+                / (6.
+                    * (1. / settings.precipitation_response_seconds
+                        + forcing.maximum_rate_per_second)))
+                .floor();
+            coupled_limit = coupled_limit.min(limit as u64);
+            // Canonical hour divisors preserve default hourly/daily batching.
+            coupled_limit = (1..=3600)
+                .rev()
+                .find(|&dt| 3600 % dt == 0 && dt <= coupled_limit)
+                .ok_or("Orographic response requires unsupported sub-second coupling.")?;
+        }
+        Ok(coupled_limit)
+    }
+
     pub fn advance(&self, state: &mut State, seconds: u32) -> Result<Step, String> {
         self.budget(state)?;
         if seconds == 0
@@ -737,26 +901,13 @@ impl Model {
         let mut coupled_substeps = 0;
         let mut maximum_vapor_column: f64 = 0.;
         let settings = self.origin.settings;
-        let mut coupled_limit = u64::from(settings.max_coupled_step_seconds);
-        for (enabled, tau) in [
-            (
-                settings.evaporation_enabled,
-                settings.evaporation_response_seconds,
-            ),
-            (
-                settings.precipitation_enabled,
-                settings.precipitation_response_seconds,
-            ),
-            (true, settings.surface.infiltration_response_seconds),
-            (true, settings.surface.liquid_runoff_response_seconds),
-            (true, settings.surface.soil_drainage_response_seconds),
-        ] {
-            if enabled {
-                coupled_limit = coupled_limit.min((tau / 6.).floor() as u64);
-            }
-        }
-        if settings.routing_enabled {
-            coupled_limit = coupled_limit.min(self.routing.maximum_coupled_step_seconds());
+        let coupled_limit = self.maximum_coupled_step_seconds()?;
+        if settings.orography.is_some()
+            && (state.elapsed_seconds() % coupled_limit + u64::from(seconds))
+                .div_ceil(coupled_limit)
+                > 4096
+        {
+            return Err("Orographic interval exceeds the 4096 coupled-step work limit; use a shorter caller interval.".into());
         }
         let mut prepared_routing = None;
         while next.elapsed_seconds < end {
@@ -799,7 +950,21 @@ impl Model {
                     let vapor = next.vapor_kilograms[i];
                     let capacity = self.capacities[month][i];
                     let potential_evaporation = (capacity - vapor).max(0.) * evaporation_fraction;
-                    let deposited = (vapor - capacity).max(0.) * precipitation_fraction;
+                    let extra_rate = self
+                        .orographic_forcing
+                        .as_ref()
+                        .map_or(0., |f| f.additional_rates_per_second[month][i]);
+                    let deposited = if settings.precipitation_enabled && extra_rate > 0. {
+                        orographic_response::deposition(
+                            vapor,
+                            capacity,
+                            1. / settings.precipitation_response_seconds,
+                            extra_rate,
+                            interval as f64 * 0.5,
+                        )?
+                    } else {
+                        (vapor - capacity).max(0.) * precipitation_fraction
+                    };
                     let terminal_evaporation = if self.temperatures[month][i] > 0. {
                         potential_evaporation.min(next.terminal_water_kilograms[i])
                     } else {

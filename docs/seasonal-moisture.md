@@ -4,6 +4,8 @@
 
 The [version-2 record](seasonal-moisture-2.md) and its measured results remain historical evidence. Versions 1/2 checkpoints are rejected rather than silently reinterpreted. Original source-free moisture reports and manual basin-water accounting remain unchanged.
 
+An October 4 [experimental version-4 upslope response](orographic-response.md) accelerates removal of existing supersaturation using terrain/wind, without changing these version-3 equations or defaults. It has independent schema/protocol pins, controls, and retained refinement failures. Baseline evidence below is not a validation of that new mode.
+
 ## Initial ownership
 
 The atmosphere starts dry. Liquid starts as a finite active partition of generated reference water:

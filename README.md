@@ -28,7 +28,8 @@ A native [moisture-transport kernel and headless report](docs/moisture-transport
 | [Seasonal surface-wind normals](docs/seasonal-wind.md) | Prescribed monthly wind vectors and map layer, assumptions, headless report, and limits |
 | [Moisture transport](docs/moisture-transport.md) | Conservative native column-water transport, seasonal headless runs, numerical checks, and coupling limits |
 | [Finite seasonal moisture](docs/seasonal-moisture.md) | Six owned water stocks, runoff return, bounded checkpoints, matched controls, and integration tests |
-| [Seasonal-water desktop](docs/seasonal-water-desktop.md) | Run/pause, eight dynamic layers, interval exchange inspection, protocol 11, timing evidence, and limits |
+| [Experimental upslope response](docs/orographic-response.md) | Opt-in terrain/wind supersaturation response, directed controls, schema-4 replay, and retained refinement failures |
+| [Seasonal-water desktop](docs/seasonal-water-desktop.md) | Run/pause, eight dynamic layers, interval inspection, versioned frames, baseline timing evidence, and limits |
 | [Seasonal-water checkpoints](docs/seasonal-water-checkpoints.md) | Complete native state, candidate validation, bounded file I/O, exact continuation, and limits |
 | [Typed surface water](docs/surface-water.md) | Empirical snowmelt, soil bucket, pending-runoff ownership, defaults, and limitations |
 | [Delayed runoff](docs/runoff-transport.md) | Neighbor transfers, physical response times, terminal retention/evaporation, and analytic controls |

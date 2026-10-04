@@ -25,6 +25,7 @@ export interface DesktopAPI {
   seasonalTemperature(epoch: number): Promise<TemperatureNormals>;
   seasonalWind(epoch: number): Promise<WindNormals>;
   seasonalMoisture(epoch: number, seconds: number): Promise<MoistureFrame>;
+  initializeOrographicMoisture(epoch: number): Promise<MoistureFrame>;
   openSeasonalCheckpoint(): Promise<PreparedMoistureWorld | null>;
   saveSeasonalCheckpoint(epoch: number): Promise<boolean>;
   prescribeWater(epoch: number, region: number, mode: PrescribedWaterMode): Promise<WaterFrame>;

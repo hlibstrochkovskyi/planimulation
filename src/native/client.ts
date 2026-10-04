@@ -13,7 +13,7 @@ import { DEFAULT_WIND_SETTINGS, WIND_MODEL_VERSION } from '../core/seasonal-wind
 import type { WindNormals } from '../core/seasonal-wind';
 import { decodeSeasonalMoisture } from './seasonal-moisture';
 import type { MoistureBudget, MoistureFrame } from '../shared/seasonal-moisture';
-import { MOISTURE_MAX_SECONDS, MOISTURE_MODEL_VERSION } from '../shared/seasonal-moisture';
+import { MOISTURE_MAX_SECONDS, MOISTURE_MODEL_VERSION, OROGRAPHIC_MOISTURE_MODEL_VERSION } from '../shared/seasonal-moisture';
 import { MAX_SEASONAL_CHECKPOINT_BYTES, MAX_SEASONAL_COMMAND_BYTES } from '../shared/seasonal-checkpoint';
 
 const MAX_BYTES = 32 * 2 ** 20;
@@ -54,8 +54,9 @@ export class FrameReader {
         if (this.length < this.headerLength) return;
         const h = JSON.parse(this.take(this.headerLength).toString('utf8')) as Header;
         if (!h || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0
-          || h.byteLength > (h.kind === 'moistureCheckpoint' ? MAX_SEASONAL_CHECKPOINT_BYTES : MAX_BYTES)
-          || (h.kind === 'moisture' || h.kind === 'moistureCheckpoint' ? h.protocol !== 11 : (h.protocol !== 9 && h.protocol !== 10)
+          || h.byteLength > (['moistureCheckpoint', 'orographicMoistureCheckpoint'].includes(h.kind) ? MAX_SEASONAL_CHECKPOINT_BYTES : MAX_BYTES)
+          || (['orographicMoisture', 'orographicMoistureCheckpoint'].includes(h.kind) ? h.protocol !== 12
+            : h.kind === 'moisture' || h.kind === 'moistureCheckpoint' ? h.protocol !== 11 : (h.protocol !== 9 && h.protocol !== 10)
             || !['world', 'frame', 'water', 'temperature', 'wind', 'checkpoint', 'error'].includes(h.kind))) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
@@ -337,6 +338,7 @@ export class NativeController {
   private waterStep = 0;
   private moistureSeconds = 0;
   private moistureInitialized = false;
+  private moistureOrographic = false;
   private moistureBudget: MoistureBudget | undefined;
   private sequence = 0;
   private revision = 0;
@@ -388,7 +390,8 @@ export class NativeController {
       throw new Error('Seasonal checkpoint exceeds the 64 MiB limit or is not JSON text.');
     }
     const checkpoint = JSON.parse(contents) as { schemaVersion?: unknown; modelVersion?: unknown; recipe?: unknown; elapsedSeconds?: unknown } | null;
-    if (!checkpoint || checkpoint.schemaVersion !== 3 || checkpoint.modelVersion !== MOISTURE_MODEL_VERSION) {
+    const orographic = checkpoint?.schemaVersion === 4 && checkpoint.modelVersion === OROGRAPHIC_MOISTURE_MODEL_VERSION;
+    if (!checkpoint || (!orographic && (checkpoint.schemaVersion !== 3 || checkpoint.modelVersion !== MOISTURE_MODEL_VERSION))) {
       throw new Error('Unsupported seasonal-moisture checkpoint version.');
     }
     const recipe = parseRecipe(checkpoint.recipe);
@@ -404,7 +407,7 @@ export class NativeController {
       // Pass original decimal tokens and roundoff signs to the authoritative Rust
       // parser. JS parsing above only preflights origin/version/clock metadata.
       const packet = await session.request({ command: 'restoreMoisture', checkpointJson: contents });
-      const frame = decodeSeasonalMoisture(packet, world, 0, seconds as number, 0);
+      const frame = decodeSeasonalMoisture(packet, world, 0, seconds as number, 0, undefined, orographic);
       if (this.candidate !== session) throw new Error('Native task canceled.');
       const epoch = ++this.sequence, moistureFrame = { ...frame, epoch };
       this.prepared = { epoch, count: world.stats.regionCount, waterStep: 0, moistureFrame };
@@ -423,6 +426,7 @@ export class NativeController {
     this.waterStep = this.prepared.waterStep;
     const moisture = this.prepared.moistureFrame; this.prepared = null;
     this.moistureSeconds = moisture?.elapsedSeconds ?? 0; this.moistureInitialized = moisture !== undefined;
+    this.moistureOrographic = moisture?.modelVersion === OROGRAPHIC_MOISTURE_MODEL_VERSION;
     this.moistureBudget = moisture?.budget;
   }
   cancel(): void { this.revision++; this.candidate?.close(); this.candidate = null; this.prepared = null; this.preparedWorld = null; }
@@ -462,18 +466,27 @@ export class NativeController {
     catch (error) { session.close(); throw error; }
   }
   async seasonalMoisture(epoch: number, seconds: number): Promise<MoistureFrame> {
+    return this.requestMoisture(epoch, seconds, false);
+  }
+  async initializeOrographicMoisture(epoch: number): Promise<MoistureFrame> {
+    return this.requestMoisture(epoch, 0, true);
+  }
+  private async requestMoisture(epoch: number, seconds: number, initializeOrographic: boolean): Promise<MoistureFrame> {
     if (!this.active || !this.activeWorld || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
     if (!Number.isSafeInteger(seconds) || seconds < 0 || seconds > 86400
       || this.moistureSeconds + seconds > MOISTURE_MAX_SECONDS) throw new Error('Invalid seasonal-water interval or ten-year clock limit.');
     if (!this.moistureInitialized && seconds !== 0) throw new Error('Initialize seasonal water before advancing its clock.');
     if (this.waterStep > 0) throw new Error('Regenerate before starting seasonal water after manual water input.');
+    if (initializeOrographic && this.moistureInitialized) throw new Error('Regenerate before choosing a different seasonal-water model.');
     const session = this.active, origin = this.activeWorld;
-    const packet = await session.request({ command: 'seasonalMoisture', seconds });
+    const packet = await session.request(initializeOrographic ? { command: 'initializeOrographicMoisture' } : { command: 'seasonalMoisture', seconds });
     if (this.active !== session || this.epoch !== epoch) throw new Error('Stale seasonal-water response.');
     try {
-      const frame = decodeSeasonalMoisture(packet, origin, epoch, this.moistureSeconds + seconds, seconds, this.moistureBudget);
+      const orographic = initializeOrographic || this.moistureOrographic;
+      const frame = decodeSeasonalMoisture(packet, origin, epoch, this.moistureSeconds + seconds, seconds, this.moistureBudget, orographic);
       this.moistureSeconds = frame.elapsedSeconds; this.moistureInitialized = true;
       this.moistureBudget = frame.budget;
+      this.moistureOrographic = orographic;
       return frame;
     } catch (error) { session.close(); throw error; }
   }
@@ -515,14 +528,17 @@ export class NativeController {
     const session = this.active;
     const { header, bytes } = await session.request({ command: 'exportMoisture' });
     if (this.active !== session || this.epoch !== epoch) throw new Error('Stale seasonal checkpoint.');
+    const version = this.moistureOrographic ? OROGRAPHIC_MOISTURE_MODEL_VERSION : MOISTURE_MODEL_VERSION;
+    const schema = this.moistureOrographic ? 4 : 3;
     try {
-      if (header.kind !== 'moistureCheckpoint' || header.protocol !== 11 || header.byteLength !== bytes.length
-        || header.schemaVersion !== 3 || header.modelVersion !== MOISTURE_MODEL_VERSION
+      if (header.kind !== (this.moistureOrographic ? 'orographicMoistureCheckpoint' : 'moistureCheckpoint')
+        || header.protocol !== (this.moistureOrographic ? 12 : 11) || header.byteLength !== bytes.length
+        || header.schemaVersion !== schema || header.modelVersion !== version
         || header.elapsedSeconds !== this.moistureSeconds || bytes.length === 0
         || bytes.length >= MAX_SEASONAL_CHECKPOINT_BYTES) throw new Error('Invalid native seasonal checkpoint.');
       const contents = bytes.toString('utf8');
       const saved = JSON.parse(contents) as { schemaVersion?: unknown; modelVersion?: unknown; elapsedSeconds?: unknown };
-      if (saved.schemaVersion !== 3 || saved.modelVersion !== MOISTURE_MODEL_VERSION
+      if (saved.schemaVersion !== schema || saved.modelVersion !== version
         || saved.elapsedSeconds !== this.moistureSeconds) throw new Error('Invalid native seasonal checkpoint.');
       return `${contents}\n`;
     } catch (error) { session.close(); throw error; }

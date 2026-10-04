@@ -2,6 +2,8 @@
 
 Status: implemented October 3, 2026. This connects the existing complete `seasonal-moisture-3` schema-3 state to desktop file operations. Physical equations, model versions, default parameters, generated geography, and manual water accounting are unchanged. It is a complete checkpoint of this bounded seasonal model, not every subsystem of a future planet simulation.
 
+The October 4 [upslope-response increment](orographic-response.md) additionally supports complete version-4/schema-4 state with pinned default orographic settings and `orographicModelVersion`. Its export kind is `orographicMoistureCheckpoint`, protocol 12; its display kind is `orographicMoisture`, also protocol 12. Shape/bounds/candidate/file/numeric-transport rules below are shared. Schema/model/settings/module pins must agree; restoration never silently upgrades a legacy file. The validation record linked below remains historical version-3 evidence; the new mode has its [own evidence and retained failures](data/orographic-response-validation.json).
+
 ## Use and saved scope
 
 Pause seasonal playback and wait for its outstanding interval to finish. **Save seasonal checkpoint** exports a settled native snapshot. **Open seasonal checkpoint** can replace either an ordinary world or a paused seasonal/manual session through a separate candidate process. A canceled or failed open keeps the accepted native state and its displayed fields.

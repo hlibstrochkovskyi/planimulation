@@ -36,6 +36,7 @@ enum Command {
         seconds: u32,
     },
     ExportMoisture,
+    InitializeOrographicMoisture,
     RestoreMoisture {
         #[serde(rename = "checkpointJson")]
         checkpoint_json: String,
@@ -142,6 +143,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         moisture_state = Some((model, state));
                     }
                 }
+                Command::InitializeOrographicMoisture => {
+                    let w = world.as_ref().ok_or("Generate a world first.")?;
+                    if moisture_state.is_some()
+                        || water_state
+                            .as_ref()
+                            .is_some_and(|s| s.checkpoint().step > 0)
+                    {
+                        return Err(
+                            "Regenerate before choosing a different seasonal-water model.".into(),
+                        );
+                    }
+                    let settings = planimulation_core::seasonal_moisture::Settings {
+                        orography: Some(Default::default()),
+                        ..Default::default()
+                    };
+                    let model = MoistureModel::from_world(
+                        w,
+                        settings,
+                        Default::default(),
+                        Default::default(),
+                    )?;
+                    let state = model.initial_state();
+                    wire::seasonal_moisture(&mut output, &model, &state, None, 0)?;
+                    water_state = None;
+                    moisture_state = Some((model, state));
+                }
                 Command::ExportMoisture => {
                     let (model, state) = moisture_state
                         .as_ref()
@@ -169,7 +196,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             "Seasonal checkpoint recipe does not match the generated world.".into(),
                         );
                     }
-                    if checkpoint.settings != Default::default()
+                    let desktop_settings = planimulation_core::seasonal_moisture::Settings {
+                        orography: checkpoint.settings.orography.map(|_| Default::default()),
+                        ..Default::default()
+                    };
+                    if checkpoint.settings != desktop_settings
                         || checkpoint.temperature_settings != Default::default()
                         || checkpoint.wind_settings != Default::default()
                     {

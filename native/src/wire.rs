@@ -128,11 +128,11 @@ pub fn seasonal_checkpoint(
     }
     send_versioned(
         out,
-        json!({"kind":"moistureCheckpoint", "schemaVersion":3,
-        "modelVersion":crate::seasonal_moisture::MODEL_VERSION,
+        json!({"kind":if model.settings().orography.is_some() { "orographicMoistureCheckpoint" } else { "moistureCheckpoint" }, "schemaVersion":model.checkpoint_schema_version(),
+        "modelVersion":model.model_version(),
         "elapsedSeconds":state.elapsed_seconds()}),
         &bytes,
-        11,
+        if model.settings().orography.is_some() { 12 } else { 11 },
     )
     .map_err(|e| e.to_string())
 }
@@ -248,7 +248,7 @@ pub fn water_frame(
     )
 }
 
-/// Protocol 11 is a display snapshot of finite seasonal water, not lake geometry
+/// Protocols 11 (baseline) and 12 (upslope response) display finite seasonal water, not lake geometry
 /// or a complete checkpoint. Initial world and existing frame layouts stay unchanged.
 pub fn seasonal_moisture(
     out: &mut impl Write,
@@ -294,9 +294,9 @@ pub fn seasonal_moisture(
             (0..count).map(|i| step.map_or(0., |s| s.runoff_transfers[i].values()[component])),
         );
     }
-    send_versioned(out, json!({
-        "kind":"moisture", "regionCount":count,
-        "modelVersion":crate::seasonal_moisture::MODEL_VERSION,
+    let mut header = json!({
+        "kind":if model.settings().orography.is_some() { "orographicMoisture" } else { "moisture" }, "regionCount":count,
+        "modelVersion":model.model_version(),
         "surfaceModelVersion":crate::surface_water::MODEL_VERSION,
         "runoffModelVersion":crate::runoff_transport::MODEL_VERSION,
         "transportModelVersion":crate::moisture_transport::MODEL_VERSION,
@@ -310,5 +310,19 @@ pub fn seasonal_moisture(
         "maximumAbsoluteLocalExchangeResidualKilograms":step.map_or(0., |s| s.maximum_absolute_local_exchange_residual_kilograms),
         "maximumAbsoluteRoutingResidualKilograms":step.map_or(0., |s| s.maximum_absolute_routing_residual_kilograms),
         "budget":budget,
-    }), &bytes, 11).map_err(|e| e.to_string())
+    });
+    if model.settings().orography.is_some() {
+        header["orographicModelVersion"] = json!(crate::orographic_response::MODEL_VERSION);
+    }
+    send_versioned(
+        out,
+        header,
+        &bytes,
+        if model.settings().orography.is_some() {
+            12
+        } else {
+            11
+        },
+    )
+    .map_err(|e| e.to_string())
 }

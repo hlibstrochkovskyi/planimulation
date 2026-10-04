@@ -55,6 +55,9 @@ void app.whenReady().then(() => {
   ipcMain.handle('world:seasonalMoisture', (event, epoch: number, seconds: number) => {
     senderWindow(event); return core.seasonalMoisture(epoch, seconds);
   });
+  ipcMain.handle('world:initializeOrographicMoisture', (event, epoch: number) => {
+    senderWindow(event); return core.initializeOrographicMoisture(epoch);
+  });
   ipcMain.handle('world:prescribeWater', (event, epoch: number, region: number, mode: unknown) => {
     senderWindow(event);
     if (mode !== 'oneCubicKilometer' && mode !== 'fillToSpill') throw new Error('Invalid prescribed-water mode.');
@@ -82,7 +85,7 @@ void app.whenReady().then(() => {
   ipcMain.handle('seasonal:openCheckpoint', async (event) => {
     const window = senderWindow(event), revision = core.preparationRevision;
     const result = await dialog.showOpenDialog(window, { properties: ['openFile'],
-      filters: [{ name: 'Seasonal-water checkpoint (schema 3)', extensions: ['json'] }] });
+      filters: [{ name: 'Seasonal-water checkpoint (schema 3 or 4)', extensions: ['json'] }] });
     if (result.canceled) return null;
     const contents = await readCheckpoint(result.filePaths[0], MAX_SEASONAL_CHECKPOINT_BYTES, 'Seasonal checkpoint');
     if (revision !== core.preparationRevision) throw new Error('Checkpoint opening was canceled or replaced.');
@@ -93,7 +96,7 @@ void app.whenReady().then(() => {
     // Snapshot before the dialog; subsequent file I/O cannot change its clock.
     const contents = await core.exportSeasonalCheckpoint(epoch);
     const result = await dialog.showSaveDialog(window, { defaultPath: 'seasonal-water-checkpoint.json',
-      filters: [{ name: 'Seasonal-water checkpoint (schema 3)', extensions: ['json'] }] });
+      filters: [{ name: 'Seasonal-water checkpoint (schema 3 or 4)', extensions: ['json'] }] });
     if (result.canceled || !result.filePath) return false;
     if (core.resolvedInitialWorld(epoch) !== world) throw new Error('World changed during seasonal checkpoint export.');
     await writeCheckpoint(result.filePath, contents);

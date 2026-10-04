@@ -2,10 +2,12 @@
 
 Status: implemented October 3, 2026. This is an opt-in viewer/controller for the unchanged `seasonal-moisture-3` finite-water model, not general planetary hydrology. The same Rust model runs headlessly and in the desktop native process. Generation recipes, initial-world fingerprints, and earlier water-frame layouts remain unchanged.
 
+The October 4 [experimental upslope response](orographic-response.md) adds a separately selected version-4 mode and schema-4 persistence. Baseline physics/protocol-11 evidence below remains unchanged. The active mode is shown in the footer and budget note; **Initialize upslope response** must be chosen before initialization. Regenerate or open a checkpoint to switch modes. Its named initialization bridge uses protocol-12 display frames with the same eighteen-field layout. Other operations advance/observe the selected mode; default initialization is still version 3. The recorded performance measurements below are for version 3, not a version-4 benchmark.
+
 ## Operation and ownership
 
 1. Generate a world and select a region in the flat atlas or globe.
-2. Choose **Initialize seasonal water**. Initialization is lazy; ordinary world viewing does not allocate or run the seasonal model.
+2. Choose **Initialize baseline water** or **Initialize upslope response**. Initialization is lazy; ordinary world viewing does not allocate or run the seasonal model.
 3. Choose a one-hour or one-day caller interval. **Advance one interval** submits exactly that elapsed duration; **Run seasonal water** repeats bounded requests.
 4. **Pause seasonal water** stops scheduling. One already requested interval can finish and publish its accepted result. There is no queued backlog of future days.
 

@@ -2,6 +2,8 @@ import type { TemperatureSettings } from '../core/seasonal-temperature';
 import type { WindSettings } from '../core/seasonal-wind';
 
 export const MOISTURE_MODEL_VERSION = 'seasonal-moisture-3';
+export const OROGRAPHIC_MOISTURE_MODEL_VERSION = 'seasonal-moisture-4';
+export const OROGRAPHIC_RESPONSE_MODEL_VERSION = 'orographic-response-1';
 export const MOISTURE_MAX_SECONDS = 3650 * 86400;
 export const MOISTURE_STOCK_FIELDS = ['surfaceKilograms', 'snowKilograms', 'soilKilograms',
   'pendingRunoffKilograms', 'terminalWaterKilograms', 'vaporKilograms'] as const;
@@ -23,6 +25,9 @@ export const DEFAULT_MOISTURE_SETTINGS = {
     liquidRunoffResponseSeconds: 86400, soilDrainageResponseSeconds: 2592000 },
   routingEnabled: true, runoff: { effectiveSpeedMetersPerSecond: 1, minimumResponseSeconds: 3600 },
 } as const;
+export const DEFAULT_OROGRAPHIC_MOISTURE_SETTINGS = {
+  ...DEFAULT_MOISTURE_SETTINGS, orography: { upliftResponseHeightMeters: 1000, strength: 1 },
+} as const;
 
 export interface MoistureBudget extends Record<MoistureStock, number> {
   initialMobileWaterKilograms: number;
@@ -39,8 +44,8 @@ export interface MoistureBudget extends Record<MoistureStock, number> {
  * RNG state, or resumable simulation state is transferred here. */
 export interface MoistureFrame {
   epoch: number;
-  modelVersion: typeof MOISTURE_MODEL_VERSION;
-  settings: typeof DEFAULT_MOISTURE_SETTINGS;
+  modelVersion: typeof MOISTURE_MODEL_VERSION | typeof OROGRAPHIC_MOISTURE_MODEL_VERSION;
+  settings: typeof DEFAULT_MOISTURE_SETTINGS | typeof DEFAULT_OROGRAPHIC_MOISTURE_SETTINGS;
   temperatureSettings: TemperatureSettings;
   windSettings: WindSettings;
   elapsedSeconds: number;

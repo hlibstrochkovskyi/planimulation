@@ -53,6 +53,7 @@ const temperatureMonthInput = element<HTMLSelectElement>('temperature-month');
 const temperatureLayerButton = document.querySelector<HTMLButtonElement>('[data-layer="temperature"]')!;
 const windLayerButton = document.querySelector<HTMLButtonElement>('[data-layer="windSpeed"]')!;
 const moistureStart = element<HTMLButtonElement>('moisture-start');
+const moistureStartOrographic = element<HTMLButtonElement>('moisture-start-orographic');
 const moistureStep = element<HTMLButtonElement>('moisture-step');
 const moisturePlay = element<HTMLButtonElement>('moisture-play');
 const moistureInterval = element<HTMLSelectElement>('moisture-interval');
@@ -102,6 +103,7 @@ function updateExperimentControls(): void {
   const hasSeasonal = moistureFrame !== null;
   const finished = (moistureFrame?.elapsedSeconds ?? 0) >= MOISTURE_MAX_SECONDS;
   moistureStart.disabled = !world || busy || playing || hasSeasonal || (waterFrame?.step ?? 0) > 0;
+  moistureStartOrographic.disabled = moistureStart.disabled;
   moistureStep.disabled = !hasSeasonal || busy || moisturePlaying || finished;
   // Pause must remain available while the current native step is in flight.
   moisturePlay.disabled = !hasSeasonal || finished || (!moisturePlaying && busy);
@@ -170,7 +172,8 @@ function renderMoisture(): void {
     ['Cumulative terminal delivery · flow integral', volume(budget.cumulativeRunoffTransfers.terminalDelivery)],
     ['Cumulative terminal evaporation · flow integral', volume(budget.cumulativeRunoffTransfers.terminalEvaporation)],
   ]);
-  element('moisture-budget-note').textContent = `${frame.modelVersion} · six exclusive stocks. Flow integrals can count recirculated water and must not be added to the inventory. Fixed geography; no lake levels or deep-water replenishment. Save seasonal checkpoint preserves the complete native state, not just these display values.`;
+  const response = 'orography' in frame.settings ? ' · experimental upslope-enhanced removal of supersaturation; not calibrated' : '';
+  element('moisture-budget-note').textContent = `${frame.modelVersion}${response} · six exclusive stocks. Flow integrals can count recirculated water and must not be added to the inventory. Fixed geography; no lake levels or deep-water replenishment. Save seasonal checkpoint preserves the complete native state, not just these display values.`;
   if (selected === null) {
     element('moisture-selection-title').textContent = 'Select a region';
     element('moisture-selection-details').replaceChildren();
@@ -189,14 +192,16 @@ function renderMoisture(): void {
   updateExperimentControls();
 }
 
-async function requestMoisture(seconds: number): Promise<void> {
+async function requestMoisture(seconds: number, initializeOrographic = false): Promise<void> {
   if (!world || moistureBusyEpoch === epoch || waterBusy || checkpointOpening || advancing
     || budgetBusyEpoch === epoch || document.body.dataset.state === 'generating') return;
   const activeEpoch = epoch, origin = world, request = generationId;
   moistureBusyEpoch = activeEpoch; updateExperimentControls();
   const started = performance.now();
   try {
-    const frame = await api.seasonalMoisture(activeEpoch, seconds);
+    const frame = initializeOrographic
+      ? await api.initializeOrographicMoisture(activeEpoch)
+      : await api.seasonalMoisture(activeEpoch, seconds);
     const requestMilliseconds = performance.now() - started;
     // An accepted old-world step may finish while a replacement is preparing.
     // Retain it until that world is actually replaced, including cancellation.
@@ -204,7 +209,7 @@ async function requestMoisture(seconds: number): Promise<void> {
     moistureFrame = frame; map.setMoistureFrame(frame);
     waterBudget = null; renderWaterBudget(); renderMoisture(); updateLegend();
     element('moisture-time').dataset.requestMilliseconds = String(requestMilliseconds);
-    element('model-label').textContent = `${world.recipe.modelVersion.toUpperCase()} · SEASONAL-MOISTURE-3 · FIXED GEOGRAPHY`;
+    element('model-label').textContent = `${world.recipe.modelVersion.toUpperCase()} · ${frame.modelVersion.toUpperCase()} · FIXED GEOGRAPHY`;
     if (request === generationId) showStatus(`Seasonal water ${frame.elapsedSeconds / 86400} days · native request + IPC ${number.format(requestMilliseconds)} ms · relative total-water residual ${(frame.budget.residualKilograms / Math.max(frame.budget.initialMobileWaterKilograms, 1)).toExponential(2)}.`);
     if (frame.elapsedSeconds >= MOISTURE_MAX_SECONDS) pauseMoisture();
   } catch (error) {
@@ -224,6 +229,7 @@ function pauseMoisture(): void {
   moisturePlaying = false; clearTimeout(moistureTimer); updateExperimentControls();
 }
 moistureStart.addEventListener('click', () => { pause(); void requestMoisture(0); });
+moistureStartOrographic.addEventListener('click', () => { pause(); void requestMoisture(0, true); });
 moistureStep.addEventListener('click', () => { pause(); void requestMoisture(Number(moistureInterval.value)); });
 moisturePlay.addEventListener('click', () => {
   if (moisturePlaying) pauseMoisture();
