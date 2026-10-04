@@ -119,4 +119,6 @@ Full project tests (strict TypeScript, all native targets, and Node adapter chec
 
 ## Remaining integration gates
 
+The later [accepted seasonal-sensitivity report](seasonal-sensitivity.md) observes version 7 without changing these laws. It retains separate years and matched parameter interventions; finite-stock trajectories must not be mislabeled as an established periodic climatology.
+
 This increment closes a bounded runoff-return path; it does not select a full planetary hydrology default. Coasts, bed, drainage, initial wet/dry temperature mask, and terrain remain fixed. Terminal pools have no spill thresholds, shared-body leveling, area curves, seepage, or shoreline updates. Transit has no channel evaporation/infiltration, width/depth, slope-dependent speed, sediment, flood waves, or momentum balance. Deep water and groundwater are excluded. Geography/thermal feedback, terrain-dependent rainfall, climate calibration, and coherent weather remain separate work. The subsequent [desktop checkpoint integration](seasonal-water-checkpoints.md) now preserves this complete bounded state without changing its equations.
