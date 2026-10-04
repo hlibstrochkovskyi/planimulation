@@ -9,6 +9,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 
 pub mod body_preparation;
+pub mod closed_lake;
 pub mod preparation;
 mod reference_pool;
 pub mod water_return;
