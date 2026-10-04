@@ -32,6 +32,7 @@ A native [moisture-transport kernel and headless report](docs/moisture-transport
 | [Checkpointed soil precision](docs/soil-precision.md) | Headless compensated-soil candidate, independent rounding audits, preserved legacy results, and failed annual snow qualification |
 | [Persistent surface precision](docs/surface-precision.md) | Versioned liquid/snow/soil/terminal components, retained failures, annual/ten-year checks, and opt-in desktop replay |
 | [Seasonal sensitivity](docs/seasonal-sensitivity.md) | Accepted monthly histories, matched parameter controls, regional differences, and separate recorded years |
+| [Seasonal preparation diagnostics](docs/seasonal-preparation.md) | Read-only annual stock/flow stationarity checks, cold-storage controls, and retained ten-year drift |
 | [Seasonal-water desktop](docs/seasonal-water-desktop.md) | Run/pause, eight dynamic layers, interval inspection, versioned frames, baseline timing evidence, and limits |
 | [Seasonal-water checkpoints](docs/seasonal-water-checkpoints.md) | Complete native state, candidate validation, bounded file I/O, exact continuation, and limits |
 | [Typed surface water](docs/surface-water.md) | Empirical snowmelt, soil bucket, pending-runoff ownership, defaults, and limitations |

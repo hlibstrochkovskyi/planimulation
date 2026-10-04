@@ -7,6 +7,8 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
+pub mod preparation;
+
 pub const MODEL_VERSION: &str = "seasonal-moisture-3";
 pub const OROGRAPHIC_MODEL_VERSION: &str = "seasonal-moisture-4";
 pub const SOIL_PRECISION_MODEL_VERSION: &str = "seasonal-moisture-5";
