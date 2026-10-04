@@ -10,6 +10,8 @@ A subsequent [headless version-5 soil-precision candidate](soil-precision.md) pe
 
 The later [surface/terminal precision continuation](surface-precision.md) retains versions 5/6 and adds opt-in desktop version 7 with persistent liquid/snow/soil/terminal components, matched annual checks, and ten-year refinement/replay evidence. These are numerical changes, not new physical laws; version 3's evidence below is preserved.
 
+The subsequent [headless connected-reference-water candidate](reference-water-pool.md) uses a separately pinned model/schema 8. It replaces wet regional liquid/terminal owners with finite body-owned liquid and assumes fast common availability within each existing body. This is a new physical approximation, not a precision fix or default upgrade. The six-stock equations and legacy evidence below describe versions 3–7, not that body-owned path.
+
 ## Initial ownership
 
 The atmosphere starts dry. Liquid starts as a finite active partition of generated reference water:
