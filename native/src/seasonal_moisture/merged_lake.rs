@@ -1,9 +1,13 @@
-//! Bounded one-level, all-dry common-sill parents. No drying/splitting or next spill.
+//! Bounded one-level, all-dry common-sill parents. Model 12 adds reversible drying.
+//! Neither contract supports nested activation or next-parent spill.
 use super::{Checkpoint as SeasonalCheckpoint, closed_lake, leaf_spill, reference_pool};
 use crate::{World, moisture_transport::total_mass, reservoir, surface_water::CompensatedStock};
 use serde::{Deserialize, Serialize};
 
 pub const MODEL_VERSION: &str = "common-sill-parent-1";
+pub const FRONTIER_MODEL_VERSION: &str = "common-sill-frontier-2";
+mod depletion;
+pub mod frontier;
 
 #[cfg(test)]
 mod tests;
@@ -47,12 +51,19 @@ pub struct Checkpoint {
     pub model_version: String,
     /// Strictly increasing basin nodes; children cease owning liquid at activation.
     pub parents: Vec<Parent>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "super::present_option"
+    )]
+    pub frontier: Option<frontier::Checkpoint>,
 }
 impl Checkpoint {
     pub(super) fn empty() -> Self {
         Self {
             model_version: MODEL_VERSION.into(),
             parents: Vec::new(),
+            frontier: None,
         }
     }
     pub(super) fn total(&self) -> f64 {
@@ -152,6 +163,7 @@ pub(super) struct Layout {
     groups: Vec<Group>,
     by_terminal: Vec<Option<usize>>,
     by_region: Vec<Option<usize>>,
+    pub split_enabled: bool,
 }
 impl Layout {
     pub fn from_world(world: &World, leaves: &closed_lake::Layout) -> Result<Self, String> {
@@ -287,6 +299,7 @@ impl Layout {
             groups,
             by_terminal,
             by_region,
+            split_enabled: false,
         })
     }
     pub fn candidates(&self) -> Vec<Candidate> {
@@ -335,6 +348,15 @@ impl Layout {
         let group = &self.groups[g];
         let d = &group.description;
         if self.active(cp, g).is_none()
+            && (!self.split_enabled
+                || d.child_terminals.iter().any(|&r| {
+                    cp.leaf_spill_state
+                        .as_ref()
+                        .unwrap()
+                        .pending_input
+                        .high_kilograms[r]
+                        > 0.
+                }))
             && d.child_terminals
                 .iter()
                 .zip(&d.child_capacities_kilograms)
@@ -343,6 +365,7 @@ impl Layout {
                         && cp.terminal_low_kilograms.as_ref().unwrap()[r] == 0.
                 })
         {
+            self.record_merge(cp, g)?;
             let parent = Parent {
                 basin_node: d.basin_node,
                 birth_high_kilograms: group.birth.high,
@@ -433,11 +456,15 @@ impl Layout {
         Ok(maximum)
     }
     pub fn validate(&self, cp: &SeasonalCheckpoint) -> Result<(f64, usize), String> {
+        if self.split_enabled {
+            return self.validate_frontier(cp);
+        }
         let state = cp
             .merged_lake_state
             .as_ref()
             .ok_or("Missing merged lake state.")?;
         if state.model_version != MODEL_VERSION
+            || state.frontier.is_some()
             || state.parents.len() > self.groups.len()
             || state
                 .parents

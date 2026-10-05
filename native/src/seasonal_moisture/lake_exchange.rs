@@ -1,12 +1,14 @@
 //! Coupled exclusive leaf owners with exposure frozen for a half-local stage.
 //! Version 9 refuses first connections; version 10 settles explicit input queues.
 //! Version 11 supports bounded common-sill parents; no implicit spill collector.
+//! Version 12 adds one-level contraction/splitting and lifetime owner provenance.
 use super::{Checkpoint, ClosedLakeExchange, closed_lake, leaf_spill, merged_lake, reference_pool};
 use crate::{World, moisture_transport::total_mass, surface_water::CompensatedStock};
 
 pub(super) const MODEL_VERSION: &str = "closed-leaf-exchange-1";
 pub(super) const SPILL_MODEL_VERSION: &str = "closed-leaf-exchange-2";
 pub(super) const MERGE_MODEL_VERSION: &str = "closed-leaf-exchange-3";
+pub(super) const FRONTIER_MODEL_VERSION: &str = "closed-leaf-exchange-4";
 
 pub(super) struct Layout {
     pub geometry: closed_lake::Layout,
@@ -45,8 +47,14 @@ impl Layout {
                 }
             }
         }
-        let merge = if mode == ClosedLakeExchange::FrozenLeafExposureWithSpillAndMerge {
-            Some(merged_lake::Layout::from_world(world, &geometry)?)
+        let merge = if matches!(
+            mode,
+            ClosedLakeExchange::FrozenLeafExposureWithSpillAndMerge
+                | ClosedLakeExchange::FrozenCommonSillFrontier
+        ) {
+            let mut merge = merged_lake::Layout::from_world(world, &geometry)?;
+            merge.split_enabled = mode == ClosedLakeExchange::FrozenCommonSillFrontier;
+            Some(merge)
         } else {
             None
         };
@@ -111,6 +119,11 @@ impl Layout {
                 .is_some_and(|m| m.owner(cp, region).is_some())
     }
 
+    pub fn accounts(&self, cp: &Checkpoint, region: usize) -> bool {
+        self.by_region[region].is_some()
+            || self.merge.as_ref().is_some_and(|m| m.accounts(cp, region))
+    }
+
     /// Capture a complete local liquid pair once; the caller clears its owner.
     pub fn capture(
         &self,
@@ -120,6 +133,9 @@ impl Layout {
         low: f64,
     ) -> Result<(), String> {
         CompensatedStock::new(high, low, f64::MAX)?;
+        if let Some(merge) = &self.merge {
+            merge.record_capture(cp, region, high, low)?;
+        }
         let r = if let Some(r) = self.merge.as_ref().and_then(|m| m.owner(cp, region)) {
             r
         } else {
@@ -179,7 +195,7 @@ impl Layout {
         &self,
         cp: &mut Checkpoint,
         demand: &[f64],
-    ) -> Result<(Vec<f64>, f64), String> {
+    ) -> Result<(Vec<(usize, f64)>, f64), String> {
         // Do not hide an unsupported crossing by evaporating back below it.
         self.exposure(cp)?;
         let mut regional = vec![0.; self.by_region.len()];
@@ -197,7 +213,12 @@ impl Layout {
             let donor =
                 CompensatedStock::new(before.high_kilograms, before.low_kilograms, f64::MAX)?;
             let requests: Vec<_> = lake.regions().iter().map(|&i| demand[i]).collect();
-            let (after, grants, residual) = reference_pool::allocate(donor, &requests)?;
+            let (after, grants, residual) = if self.merge.as_ref().is_some_and(|m| m.split_enabled)
+            {
+                merged_lake::frontier::checked_allocation(donor, &requests)?
+            } else {
+                reference_pool::allocate(donor, &requests)?
+            };
             cp.terminal_water_kilograms[r] = after.high;
             cp.terminal_low_kilograms.as_mut().unwrap()[r] = after.low;
             maximum = maximum.max(residual.abs());
@@ -205,11 +226,24 @@ impl Layout {
                 regional[i] = grant;
             }
         }
+        let mut frontier_packets = Vec::new();
         if let Some(merge) = &self.merge {
-            maximum = maximum.max(merge.evaporate(cp, demand, &mut regional)?);
+            if merge.split_enabled {
+                let (packets, residual) = merge.evaporate_frontier(cp, demand, &self.geometry)?;
+                frontier_packets = packets;
+                maximum = maximum.max(residual);
+            } else {
+                maximum = maximum.max(merge.evaporate(cp, demand, &mut regional)?);
+            }
         }
         self.exposure(cp)?;
-        Ok((regional, maximum))
+        let mut packets: Vec<_> = regional
+            .into_iter()
+            .enumerate()
+            .filter(|(_, g)| *g > 0.)
+            .collect();
+        packets.extend(frontier_packets);
+        Ok((packets, maximum))
     }
 
     /// One lake identity replaces endpoint-only identities in this version.
@@ -232,8 +266,28 @@ impl Layout {
         };
         for (i, (&h, &l)) in high.iter().zip(low).enumerate() {
             CompensatedStock::new(h, l, f64::MAX)?;
-            if (!self.owns(cp, i) || cp.elapsed_seconds == 0) && (h != 0. || l != 0.) {
+            if (!self.accounts(cp, i) || cp.elapsed_seconds == 0) && (h != 0. || l != 0.) {
                 return Err("Lake capture ledger has the wrong owner or initial state.".into());
+            }
+            if self.by_region[i].is_none()
+                && let Some(history) = cp
+                    .merged_lake_state
+                    .as_ref()
+                    .and_then(|m| m.frontier.as_ref())
+            {
+                let capture = history.capture_by_parent.stock(i)?;
+                let evaporation = history.evaporation_from_parent.stock(i)?;
+                if (capture.high, capture.low) != (h, l)
+                    || total_mass(&[
+                        evaporation.high,
+                        evaporation.low,
+                        -cp.cumulative_runoff_transfers[i].terminal_evaporation,
+                    ])
+                    .abs()
+                        > 1e-12 * evaporation.high.max(1.)
+                {
+                    return Err("Parent-only region flow lacks lifecycle provenance.".into());
+                }
             }
         }
         self.exposure(cp)?;
@@ -242,7 +296,7 @@ impl Layout {
             if self
                 .merge
                 .as_ref()
-                .is_some_and(|m| m.terminal_active(cp, r))
+                .is_some_and(|m| !m.split_enabled && m.terminal_active(cp, r))
             {
                 continue;
             }
@@ -265,6 +319,11 @@ impl Layout {
                     terms.extend([-incoming.high, -incoming.low]);
                     flows.extend([incoming.high, incoming.low]);
                 }
+            }
+            if let Some(merge) = &self.merge {
+                let history = merge.leaf_terms(cp, lake)?;
+                flows.extend(history.iter().map(|v| v.abs()));
+                terms.extend(history);
             }
             let residual = total_mass(&terms);
             let scale = liquid.high_kilograms.max(total_mass(&flows)).max(1.);

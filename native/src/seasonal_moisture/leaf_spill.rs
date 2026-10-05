@@ -16,7 +16,7 @@ pub struct Components {
     pub low_kilograms: Vec<f64>,
 }
 impl Components {
-    fn zero(n: usize) -> Self {
+    pub(super) fn zero(n: usize) -> Self {
         Self {
             high_kilograms: vec![0.; n],
             low_kilograms: vec![0.; n],

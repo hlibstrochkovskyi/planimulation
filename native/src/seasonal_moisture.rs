@@ -29,6 +29,7 @@ pub const REFERENCE_POOL_MODEL_VERSION: &str = "seasonal-moisture-8";
 pub const CLOSED_LAKE_MODEL_VERSION: &str = "seasonal-moisture-9";
 pub const LEAF_SPILL_MODEL_VERSION: &str = "seasonal-moisture-10";
 pub const MERGED_LAKE_MODEL_VERSION: &str = "seasonal-moisture-11";
+pub const COMMON_SILL_FRONTIER_MODEL_VERSION: &str = "seasonal-moisture-12";
 pub const TERMINAL_STOCK_MODEL_VERSION: &str = "terminal-stock-compensated-1";
 pub const SECONDS_PER_DAY: u64 = 86400;
 pub const MAX_ELAPSED_SECONDS: u64 = 3650 * SECONDS_PER_DAY;
@@ -65,6 +66,7 @@ pub enum ClosedLakeExchange {
     FrozenLeafExposure,
     FrozenLeafExposureWithSpill,
     FrozenLeafExposureWithSpillAndMerge,
+    FrozenCommonSillFrontier,
 }
 
 // Missing means legacy; a present null is not an unrecorded/default algorithm.
@@ -790,8 +792,11 @@ impl Model {
             .closed_lake_exchange
             .map(|mode| lake_exchange::Layout::from_world(world, mode))
             .transpose()?;
-        let with_merge = settings.closed_lake_exchange
-            == Some(ClosedLakeExchange::FrozenLeafExposureWithSpillAndMerge);
+        let with_frontier =
+            settings.closed_lake_exchange == Some(ClosedLakeExchange::FrozenCommonSillFrontier);
+        let with_merge = with_frontier
+            || settings.closed_lake_exchange
+                == Some(ClosedLakeExchange::FrozenLeafExposureWithSpillAndMerge);
         let with_spill = with_merge
             || settings.closed_lake_exchange
                 == Some(ClosedLakeExchange::FrozenLeafExposureWithSpill);
@@ -821,7 +826,9 @@ impl Model {
             }
         }
         let origin = Checkpoint {
-            schema_version: if with_merge {
+            schema_version: if with_frontier {
+                12
+            } else if with_merge {
                 11
             } else if with_spill {
                 10
@@ -840,7 +847,9 @@ impl Model {
             } else {
                 3
             },
-            model_version: if with_merge {
+            model_version: if with_frontier {
+                COMMON_SILL_FRONTIER_MODEL_VERSION
+            } else if with_merge {
                 MERGED_LAKE_MODEL_VERSION
             } else if with_spill {
                 LEAF_SPILL_MODEL_VERSION
@@ -896,7 +905,9 @@ impl Model {
             reference_body_high_kilograms: reference_pool.as_ref().map(|_| body_high),
             reference_body_low_kilograms: reference_pool.as_ref().map(|_| body_low),
             closed_lake_model_version: lake_exchange.as_ref().map(|_| {
-                if with_merge {
+                if with_frontier {
+                    lake_exchange::FRONTIER_MODEL_VERSION
+                } else if with_merge {
                     lake_exchange::MERGE_MODEL_VERSION
                 } else if with_spill {
                     lake_exchange::SPILL_MODEL_VERSION
@@ -908,7 +919,19 @@ impl Model {
             cumulative_lake_capture_kilograms: lake_exchange.as_ref().map(|_| vec![0.; n]),
             cumulative_lake_capture_low_kilograms: lake_exchange.as_ref().map(|_| vec![0.; n]),
             leaf_spill_state: with_spill.then(|| leaf_spill::Checkpoint::zero(n)),
-            merged_lake_state: with_merge.then(merged_lake::Checkpoint::empty),
+            merged_lake_state: if with_frontier {
+                Some(
+                    lake_exchange
+                        .as_ref()
+                        .unwrap()
+                        .merge
+                        .as_ref()
+                        .unwrap()
+                        .frontier_checkpoint(),
+                )
+            } else {
+                with_merge.then(merged_lake::Checkpoint::empty)
+            },
             pending_runoff_kilograms: vec![0.; n],
             terminal_water_kilograms: vec![0.; n],
             cumulative_runoff_transfers: vec![runoff_transport::Transfers::default(); n],
@@ -1021,10 +1044,27 @@ impl Model {
                 .leaf_spill_state
                 .as_ref()
                 .is_some_and(|s| s.model_version == leaf_spill::MODEL_VERSION)
+            && checkpoint.merged_lake_state.as_ref().is_some_and(|s| {
+                s.model_version == merged_lake::MODEL_VERSION && s.frontier.is_none()
+            })
+            && checkpoint.cumulative_lake_capture_kilograms.is_some()
+            && checkpoint.cumulative_lake_capture_low_kilograms.is_some();
+        let frontier_lake = checkpoint.schema_version == 12
+            && checkpoint.model_version == COMMON_SILL_FRONTIER_MODEL_VERSION
+            && checkpoint.settings.closed_lake_exchange
+                == Some(ClosedLakeExchange::FrozenCommonSillFrontier)
+            && checkpoint.closed_lake_model_version.as_deref()
+                == Some(lake_exchange::FRONTIER_MODEL_VERSION)
             && checkpoint
-                .merged_lake_state
+                .leaf_spill_state
                 .as_ref()
-                .is_some_and(|s| s.model_version == merged_lake::MODEL_VERSION)
+                .is_some_and(|s| s.model_version == leaf_spill::MODEL_VERSION)
+            && checkpoint.merged_lake_state.as_ref().is_some_and(|s| {
+                s.model_version == merged_lake::FRONTIER_MODEL_VERSION
+                    && s.frontier
+                        .as_ref()
+                        .is_some_and(|f| f.model_version == merged_lake::frontier::MODEL_VERSION)
+            })
             && checkpoint.cumulative_lake_capture_kilograms.is_some()
             && checkpoint.cumulative_lake_capture_low_kilograms.is_some();
         let pooled = ((checkpoint.schema_version == 8
@@ -1032,7 +1072,8 @@ impl Model {
             && legacy_lake)
             || coupled_lake
             || spilling_lake
-            || merging_lake)
+            || merging_lake
+            || frontier_lake)
             && checkpoint.settings.reference_water_pool
                 == Some(ReferenceWaterPool::FastConnectedBody)
             && checkpoint.reference_body_model_version.as_deref()
@@ -1071,7 +1112,7 @@ impl Model {
         };
         if !(((legacy || compensated || precise_surface) && legacy_terminal) || precise_terminal)
             || (!pooled && !legacy_pool)
-            || (!coupled_lake && !spilling_lake && !merging_lake && !legacy_lake)
+            || (!coupled_lake && !spilling_lake && !merging_lake && !frontier_lake && !legacy_lake)
             || checkpoint.transport_model_version != crate::moisture_transport::MODEL_VERSION
             || checkpoint.temperature_model_version != seasonal_temperature::MODEL_VERSION
             || checkpoint.wind_model_version != seasonal_wind::MODEL_VERSION
@@ -1348,7 +1389,7 @@ impl Model {
             let lake_region = self
                 .lake_exchange
                 .as_ref()
-                .is_some_and(|layout| layout.owns(cp, i));
+                .is_some_and(|layout| layout.accounts(cp, i));
             if pooled_region && route.terminal_evaporation != 0. {
                 return Err(
                     "Body-owned evaporation recorded as regional terminal evaporation.".into(),
@@ -2112,11 +2153,27 @@ impl Model {
                     let (grants, residual) =
                         layout.evaporate(&mut next, lake_demand.as_ref().unwrap())?;
                     max_local_residual = max_local_residual.max(residual);
-                    for (i, grant) in grants.into_iter().enumerate() {
+                    // Frontier packets can decompose one owned pair. Combine each
+                    // physical receiver's complete transfer before scalar vapor rounding.
+                    let mut vapor_receipts = (self.origin.schema_version == 12).then(|| {
+                        vec![surface_water::CompensatedStock::new(0., 0., f64::MAX).unwrap(); n]
+                    });
+                    for (i, grant) in grants {
                         if grant == 0. {
                             continue;
                         }
-                        next.vapor_kilograms[i] += grant;
+                        if let Some(receipts) = &mut vapor_receipts {
+                            let before = receipts[i];
+                            receipts[i].credit(grant)?;
+                            if (before.high, before.low) == (receipts[i].high, receipts[i].low) {
+                                return Err(
+                                    "Common-sill evaporation receipt is below pair resolution."
+                                        .into(),
+                                );
+                            }
+                        } else {
+                            next.vapor_kilograms[i] += grant;
+                        }
                         let transfer = runoff_transport::Transfers {
                             terminal_evaporation: grant,
                             ..Default::default()
@@ -2132,6 +2189,37 @@ impl Model {
                         if phase == 1 {
                             maximum_vapor_column =
                                 maximum_vapor_column.max(next.vapor_kilograms[i] / self.areas[i]);
+                        }
+                    }
+                    if let Some(receipts) = vapor_receipts {
+                        for (i, receipt) in receipts.into_iter().enumerate() {
+                            if receipt.high == 0. {
+                                continue;
+                            }
+                            let before = next.vapor_kilograms[i];
+                            let mut combined =
+                                surface_water::CompensatedStock::new(before, 0., f64::MAX)?;
+                            combined.credit(receipt.high)?;
+                            combined.credit(receipt.low)?;
+                            let after = combined.high;
+                            let residual = crate::moisture_transport::total_mass(&[
+                                after - before,
+                                -receipt.high,
+                                -receipt.low,
+                            ]);
+                            if after == before
+                                || !residual.is_finite()
+                                || residual.abs()
+                                    > 32. * f64::EPSILON * before.max(receipt.high).max(1.)
+                            {
+                                return Err("Common-sill vapor receipt exceeds its local scalar rounding bound.".into());
+                            }
+                            next.vapor_kilograms[i] = after;
+                            max_local_residual = max_local_residual.max(residual.abs());
+                            if phase == 1 {
+                                maximum_vapor_column =
+                                    maximum_vapor_column.max(after / self.areas[i]);
+                            }
                         }
                     }
                 }
@@ -2181,6 +2269,15 @@ impl Model {
                             .terminal_low_kilograms
                             .as_ref()
                             .map_or(0., |low| low[i]);
+                        if let Some(merge) =
+                            self.lake_exchange.as_ref().and_then(|l| l.merge.as_ref())
+                        {
+                            merge.record_delivery(
+                                &mut next,
+                                i,
+                                routed.terminal_delivery_kilograms[i],
+                            )?;
+                        }
                         if self.reference_pool.is_some() && !self.is_land[i] {
                             self.credit_reference_body(
                                 &mut next,

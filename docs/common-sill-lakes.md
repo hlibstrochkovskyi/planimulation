@@ -1,5 +1,7 @@
 # Bounded common-sill lake parents
 
+The separately pinned [model-12 continuation](common-sill-frontier.md) now applies one-level drying/splitting. The model-11 contract and retained results below remain unchanged.
+
 Implemented October 5, 2026 as opt-in native **`seasonal-moisture-11` / schema 11**. This applies a bounded parent transition inside seasonal exchange, not just a storage experiment. Defaults and desktop models remain unchanged. General hydrology and milestones C/D remain incomplete.
 
 ## Selected scope and physical approximation

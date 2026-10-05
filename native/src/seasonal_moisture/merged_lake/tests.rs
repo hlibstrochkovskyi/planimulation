@@ -1,6 +1,11 @@
 use super::*;
 
 fn chain(heights: &[f64]) -> (Layout, SeasonalCheckpoint) {
+    let (layout, cp, _) = chain_geometry(heights);
+    (layout, cp)
+}
+
+fn chain_geometry(heights: &[f64]) -> (Layout, SeasonalCheckpoint, closed_lake::Layout) {
     // Synthetic reciprocal topology is for directed operator tests, not recipe restore.
     let recipe = serde_json::from_str(include_str!(
         "../../../../docs/scenarios/seasonal-temperature.json"
@@ -52,7 +57,7 @@ fn chain(heights: &[f64]) -> (Layout, SeasonalCheckpoint) {
     cp.cumulative_lake_capture_kilograms = Some(vec![0.; n]);
     cp.cumulative_lake_capture_low_kilograms = Some(vec![0.; n]);
     cp.cumulative_runoff_transfers = vec![Default::default(); n];
-    (layout, cp)
+    (layout, cp, geometry)
 }
 
 #[test]
@@ -168,4 +173,93 @@ fn birth_only_owner_has_no_fictitious_evaporation_and_tiny_debits_refuse() {
             .unwrap_err()
             .contains("resolution")
     );
+}
+
+#[test]
+fn reversible_three_way_frontier_retains_provenance_and_independent_children() {
+    let (mut layout, mut cp, geometry) = chain_geometry(&[0., 2., 1., 2., 0.]);
+    layout.split_enabled = true;
+    cp.merged_lake_state = Some(layout.frontier_checkpoint());
+    let description = layout.groups[0].description.clone();
+    for (&r, &cap) in description
+        .child_terminals
+        .iter()
+        .zip(&description.child_capacities_kilograms)
+    {
+        cp.terminal_water_kilograms[r] = cap;
+        cp.cumulative_lake_capture_kilograms.as_mut().unwrap()[r] = cap;
+    }
+    // At exactly zero depth on the sill, children remain separate, avoiding chatter.
+    layout.settle(&mut cp).unwrap();
+    assert!(cp.merged_lake_state.as_ref().unwrap().parents.is_empty());
+    let r = description.child_terminals[0];
+    cp.leaf_spill_state
+        .as_mut()
+        .unwrap()
+        .pending_input
+        .high_kilograms[r] = 1500.;
+    cp.cumulative_lake_capture_kilograms.as_mut().unwrap()[r] += 1500.;
+    layout.settle(&mut cp).unwrap();
+    assert_eq!(layout.validate(&cp).unwrap().0, 0.);
+    // A second parent-only capture must remain attributable after this parent dries.
+    layout.record_capture(&mut cp, 1, 500., 0.).unwrap();
+    cp.cumulative_lake_capture_kilograms.as_mut().unwrap()[1] = 500.;
+    cp.leaf_spill_state
+        .as_mut()
+        .unwrap()
+        .pending_input
+        .high_kilograms[r] = 500.;
+    layout.settle(&mut cp).unwrap();
+    // Dyadic proportional shares: common layer is 2000 / 4000 = half the demand.
+    let (packets, residual) = layout
+        .evaporate_frontier(&mut cp, &[256., 512., 768., 1024., 1440.], &geometry)
+        .unwrap();
+    assert_eq!(residual, 0.);
+    for (i, grant) in &packets {
+        cp.cumulative_runoff_transfers[*i].terminal_evaporation += grant;
+    }
+    assert!(cp.merged_lake_state.as_ref().unwrap().parents.is_empty());
+    assert_eq!(cp.terminal_water_kilograms, [1872., 0., 616., 0., 1280.]);
+    assert_eq!(cp.terminal_low_kilograms.as_ref().unwrap(), &[0.; 5]);
+    assert_eq!(layout.validate(&cp).unwrap().0, 0.);
+    let owned: i128 = cp.terminal_water_kilograms.iter().map(|v| *v as i128).sum();
+    let evaporated: i128 = packets.iter().map(|(_, v)| *v as i128).sum();
+    assert_eq!(owned + evaporated, 7000);
+    let history = cp
+        .merged_lake_state
+        .as_ref()
+        .unwrap()
+        .frontier
+        .as_ref()
+        .unwrap();
+    assert_eq!(history.merge_counts, [1]);
+    assert_eq!(history.split_counts, [1]);
+    // Refill only the actual deficits; historical parent-only flows remain untouched.
+    for (&r, &cap) in description
+        .child_terminals
+        .iter()
+        .zip(&description.child_capacities_kilograms)
+    {
+        let refill = cap - cp.terminal_water_kilograms[r];
+        cp.terminal_water_kilograms[r] = cap;
+        cp.cumulative_lake_capture_kilograms.as_mut().unwrap()[r] += refill;
+    }
+    cp.leaf_spill_state
+        .as_mut()
+        .unwrap()
+        .pending_input
+        .high_kilograms[r] = 512.;
+    cp.cumulative_lake_capture_kilograms.as_mut().unwrap()[r] += 512.;
+    cp.elapsed_seconds = 2;
+    layout.settle(&mut cp).unwrap();
+    assert_eq!(layout.validate(&cp).unwrap().0, 0.);
+    let history = cp
+        .merged_lake_state
+        .as_ref()
+        .unwrap()
+        .frontier
+        .as_ref()
+        .unwrap();
+    assert_eq!(history.merge_counts, [2]);
+    assert_eq!(history.split_counts, [1]);
 }
