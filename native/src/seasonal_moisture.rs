@@ -22,6 +22,7 @@ pub mod leaf_spill;
 pub mod merged_lake;
 pub mod preparation;
 mod reference_pool;
+pub mod surface_flow;
 pub mod water_return;
 
 pub const MODEL_VERSION: &str = "seasonal-moisture-3";
@@ -36,6 +37,7 @@ pub const MERGED_LAKE_MODEL_VERSION: &str = "seasonal-moisture-11";
 pub const COMMON_SILL_FRONTIER_MODEL_VERSION: &str = "seasonal-moisture-12";
 pub const RECEIVING_FRONTIER_MODEL_VERSION: &str = "seasonal-moisture-13";
 pub const PARENT_OUTLET_MODEL_VERSION: &str = "seasonal-moisture-14";
+pub const REGIONAL_SURFACE_MODEL_VERSION: &str = "seasonal-moisture-15";
 pub const TERMINAL_STOCK_MODEL_VERSION: &str = "terminal-stock-compensated-1";
 pub const SECONDS_PER_DAY: u64 = 86400;
 pub const MAX_ELAPSED_SECONDS: u64 = 3650 * SECONDS_PER_DAY;
@@ -75,6 +77,7 @@ pub enum ClosedLakeExchange {
     FrozenCommonSillFrontier,
     FrozenCommonSillReceiving,
     FrozenCommonSillOutlets,
+    FrozenRegionalSurfaceFlow(surface_flow::Settings),
 }
 
 // Missing means legacy; a present null is not an unrecorded/default algorithm.
@@ -162,6 +165,11 @@ impl Default for Settings {
 
 impl Settings {
     pub fn validate(self) -> Result<(), String> {
+        if let Some(ClosedLakeExchange::FrozenRegionalSurfaceFlow(settings)) =
+            self.closed_lake_exchange
+        {
+            settings.validate()?;
+        }
         self.transport.validate()?;
         self.surface.validate()?;
         self.runoff.validate()?;
@@ -435,7 +443,15 @@ pub struct Checkpoint {
         deserialize_with = "present_option"
     )]
     pub merged_lake_state: Option<merged_lake::Checkpoint>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "present_option"
+    )]
+    pub regional_surface_flow: Option<surface_flow::Checkpoint>,
     pub pending_runoff_kilograms: Vec<f64>,
+    /// Terminal/basin liquid in older modes; regional pooled liquid in schema 15.
+    /// Reference-body liquid remains separately owned in models 8 and later.
     pub terminal_water_kilograms: Vec<f64>,
     pub cumulative_runoff_transfers: Vec<runoff_transport::Transfers>,
     pub cumulative_runoff_transfer_roundoff: Vec<[f64; 4]>,
@@ -595,8 +611,9 @@ pub struct Budget {
     pub residual_kilograms: f64,
     pub cumulative_evaporation_kilograms: f64,
     pub cumulative_precipitation_kilograms: f64,
-    /// Includes body identities in versions 8–14, leaf identities in 9–14,
-    /// leaf spill identities in 10–14 and parent identities in 11–14.
+    /// Includes body identities in versions 8–15, leaf identities in 9–14,
+    /// leaf spill identities in 10–14, parent identities in 11–14,
+    /// and actual-face regional identities in version 15.
     pub maximum_relative_local_surface_ledger_residual: f64,
     pub vapor_ledger_residual_kilograms: f64,
 }
@@ -607,6 +624,8 @@ pub struct Step {
     pub leaf_spill_events: Option<Vec<leaf_spill::Event>>,
     /// Separate typed parent sources; present only in model 14.
     pub parent_spill_events: Option<Vec<merged_lake::outgoing::Event>>,
+    /// Accepted face-flow and precision-deferral diagnostics, only in model 15.
+    pub regional_surface_flow: Option<surface_flow::FlowBudget>,
     pub evaporation_kilograms: Vec<f64>,
     pub precipitation_kilograms: Vec<f64>,
     pub surface_transfers: Vec<surface_water::Transfers>,
@@ -802,6 +821,10 @@ impl Model {
             .closed_lake_exchange
             .map(|mode| lake_exchange::Layout::from_world(world, mode))
             .transpose()?;
+        let with_regional = matches!(
+            settings.closed_lake_exchange,
+            Some(ClosedLakeExchange::FrozenRegionalSurfaceFlow(_))
+        );
         let with_outlets =
             settings.closed_lake_exchange == Some(ClosedLakeExchange::FrozenCommonSillOutlets);
         let with_receiving = with_outlets
@@ -840,7 +863,9 @@ impl Model {
             }
         }
         let origin = Checkpoint {
-            schema_version: if with_outlets {
+            schema_version: if with_regional {
+                15
+            } else if with_outlets {
                 14
             } else if with_receiving {
                 13
@@ -865,7 +890,9 @@ impl Model {
             } else {
                 3
             },
-            model_version: if with_outlets {
+            model_version: if with_regional {
+                REGIONAL_SURFACE_MODEL_VERSION
+            } else if with_outlets {
                 PARENT_OUTLET_MODEL_VERSION
             } else if with_receiving {
                 RECEIVING_FRONTIER_MODEL_VERSION
@@ -927,7 +954,9 @@ impl Model {
             reference_body_high_kilograms: reference_pool.as_ref().map(|_| body_high),
             reference_body_low_kilograms: reference_pool.as_ref().map(|_| body_low),
             closed_lake_model_version: lake_exchange.as_ref().map(|_| {
-                if with_outlets {
+                if with_regional {
+                    surface_flow::MODEL_VERSION
+                } else if with_outlets {
                     lake_exchange::OUTLET_MODEL_VERSION
                 } else if with_receiving {
                     lake_exchange::RECEIVING_MODEL_VERSION
@@ -945,6 +974,10 @@ impl Model {
             cumulative_lake_capture_kilograms: lake_exchange.as_ref().map(|_| vec![0.; n]),
             cumulative_lake_capture_low_kilograms: lake_exchange.as_ref().map(|_| vec![0.; n]),
             leaf_spill_state: with_spill.then(|| leaf_spill::Checkpoint::zero(n)),
+            regional_surface_flow: lake_exchange
+                .as_ref()
+                .and_then(|l| l.regional.as_ref())
+                .map(|l| l.initial_checkpoint()),
             merged_lake_state: if with_frontier {
                 Some(
                     lake_exchange
@@ -990,6 +1023,9 @@ impl Model {
     }
 
     pub fn restore(checkpoint: Checkpoint) -> Result<(Self, State), String> {
+        if (checkpoint.schema_version == 15) != checkpoint.regional_surface_flow.is_some() {
+            return Err("Regional surface-flow history outside its pinned model.".into());
+        }
         let supported = matches!(
             (
                 checkpoint.schema_version,
@@ -1137,6 +1173,21 @@ impl Model {
             })
             && checkpoint.cumulative_lake_capture_kilograms.is_some()
             && checkpoint.cumulative_lake_capture_low_kilograms.is_some();
+        let regional_lake = checkpoint.schema_version == 15
+            && checkpoint.model_version == REGIONAL_SURFACE_MODEL_VERSION
+            && matches!(
+                checkpoint.settings.closed_lake_exchange,
+                Some(ClosedLakeExchange::FrozenRegionalSurfaceFlow(_))
+            )
+            && checkpoint.closed_lake_model_version.as_deref() == Some(surface_flow::MODEL_VERSION)
+            && checkpoint
+                .regional_surface_flow
+                .as_ref()
+                .is_some_and(|s| s.model_version == surface_flow::MODEL_VERSION)
+            && checkpoint.leaf_spill_state.is_none()
+            && checkpoint.merged_lake_state.is_none()
+            && checkpoint.cumulative_lake_capture_kilograms.is_some()
+            && checkpoint.cumulative_lake_capture_low_kilograms.is_some();
         let pooled = ((checkpoint.schema_version == 8
             && checkpoint.model_version == REFERENCE_POOL_MODEL_VERSION
             && legacy_lake)
@@ -1145,7 +1196,8 @@ impl Model {
             || merging_lake
             || frontier_lake
             || receiving_lake
-            || outlet_lake)
+            || outlet_lake
+            || regional_lake)
             && checkpoint.settings.reference_water_pool
                 == Some(ReferenceWaterPool::FastConnectedBody)
             && checkpoint.reference_body_model_version.as_deref()
@@ -1190,6 +1242,7 @@ impl Model {
                 && !frontier_lake
                 && !receiving_lake
                 && !outlet_lake
+                && !regional_lake
                 && !legacy_lake)
             || checkpoint.transport_model_version != crate::moisture_transport::MODEL_VERSION
             || checkpoint.temperature_model_version != seasonal_temperature::MODEL_VERSION
@@ -1212,6 +1265,9 @@ impl Model {
 
     fn validate_checkpoint(&self, cp: &Checkpoint) -> Result<Budget, String> {
         let origin = &self.origin;
+        if cp.regional_surface_flow.is_some() != origin.regional_surface_flow.is_some() {
+            return Err("Regional surface-flow history outside its pinned model.".into());
+        }
         if cp.schema_version != origin.schema_version
             || cp.model_version != origin.model_version
             || cp.transport_model_version != origin.transport_model_version
@@ -1487,7 +1543,11 @@ impl Model {
                 );
             }
             if (!self.routing.is_terminal(i)
-                && (terminal != 0.
+                && ((terminal != 0.
+                    && !self
+                        .lake_exchange
+                        .as_ref()
+                        .is_some_and(|l| l.regional.is_some()))
                     || route.terminal_delivery != 0.
                     || (!lake_region && route.terminal_evaporation != 0.)))
                 || (self.routing.is_terminal(i) && route.received_transit != 0.)
@@ -1610,6 +1670,12 @@ impl Model {
             local_residual = residual;
             local_witness = (region, 10);
         }
+        let regional_incoming = self
+            .lake_exchange
+            .as_ref()
+            .and_then(|l| l.regional.as_ref())
+            .map(|l| l.incoming(cp))
+            .transpose()?;
         let body_water = if let Some(layout) = &self.reference_pool {
             let high = cp.reference_body_high_kilograms.as_ref().unwrap();
             let low = cp.reference_body_low_kilograms.as_ref().unwrap();
@@ -1631,6 +1697,10 @@ impl Model {
                     if let Some(incoming) = merged_lake::outgoing::incoming(cp, i)? {
                         terms.extend([-incoming.high, -incoming.low]);
                         flows.extend([incoming.high, incoming.low]);
+                    }
+                    if let Some(incoming) = &regional_incoming {
+                        terms.extend([-incoming[i].high, -incoming[i].low]);
+                        flows.extend([incoming[i].high, incoming[i].low]);
                     }
                 }
                 let residual = total_mass(&terms);
@@ -1834,10 +1904,30 @@ impl Model {
         state: &State,
     ) -> Result<lake_frontier::Observation, String> {
         self.budget(state)?;
+        if self
+            .lake_exchange
+            .as_ref()
+            .is_some_and(|l| l.regional.is_some())
+        {
+            return Err("Regional surface flow does not use basin-owned lake observations.".into());
+        }
         self.lake_exchange
             .as_ref()
             .ok_or("Closed-lake frontier inspection requires a coupled lake model.")?
             .observe_frontier(&state.0)
+    }
+
+    /// Read-only regional water fields; no basin ownership or display interpolation.
+    pub fn regional_surface_observation(
+        &self,
+        state: &State,
+    ) -> Result<surface_flow::Observation, String> {
+        self.budget(state)?;
+        self.lake_exchange
+            .as_ref()
+            .and_then(|l| l.regional.as_ref())
+            .ok_or("Regional water observation requires its pinned model.")?
+            .observe(&state.0)
     }
 
     /// Actual response/routing bound, including any pinned upslope response.
@@ -1996,6 +2086,10 @@ impl Model {
         let mut lake_demand = self.lake_exchange.as_ref().map(|_| vec![0.; n]);
         let mut leaf_spill_events = next.leaf_spill_state.as_ref().map(|_| Vec::new());
         let mut parent_spill_events = merged_lake::outgoing::state(&next).map(|_| Vec::new());
+        let mut regional_surface_flow = next
+            .regional_surface_flow
+            .as_ref()
+            .map(|_| surface_flow::FlowBudget::default());
         let settings = self.origin.settings;
         let coupled_limit = self.maximum_coupled_step_seconds()?;
         if settings.orography.is_some()
@@ -2292,13 +2386,16 @@ impl Model {
                         &mut leaf_spill_events,
                         &mut parent_spill_events,
                     )?;
-                    let (grants, residual) =
-                        layout.evaporate(&mut next, lake_demand.as_ref().unwrap())?;
+                    let (grants, residual) = layout.evaporate(
+                        &mut next,
+                        lake_demand.as_ref().unwrap(),
+                        regional_surface_flow.as_mut(),
+                    )?;
                     max_local_residual = max_local_residual.max(residual);
                     // Frontier packets can decompose one owned pair. Combine each
                     // physical receiver's complete transfer before scalar vapor rounding.
                     let mut vapor_receipts =
-                        matches!(self.origin.schema_version, 12..=14).then(|| {
+                        matches!(self.origin.schema_version, 12..=15).then(|| {
                             vec![surface_water::CompensatedStock::new(0., 0., f64::MAX).unwrap(); n]
                         });
                     for (i, grant) in grants {
@@ -2477,6 +2574,14 @@ impl Model {
                         &mut parent_spill_events,
                     )?;
                     layout.exposure(&next)?;
+                    if let Some(regional) = &layout.regional {
+                        let flow = regional.advance(
+                            &mut next,
+                            self.reference_pool.as_ref().unwrap(),
+                            interval as f64 * 0.5,
+                        )?;
+                        regional_surface_flow.as_mut().unwrap().accumulate(flow);
+                    }
                 }
             }
             next.elapsed_seconds += interval;
@@ -2487,6 +2592,7 @@ impl Model {
         Ok(Step {
             leaf_spill_events,
             parent_spill_events,
+            regional_surface_flow,
             evaporation_kilograms: evaporation,
             precipitation_kilograms: precipitation,
             surface_transfers,

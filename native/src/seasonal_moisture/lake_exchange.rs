@@ -4,7 +4,11 @@
 //! Version 12 adds one-level contraction/splitting and lifetime owner provenance.
 //! Version 13 receives unique leaf spill into active one-level parents below a head ceiling.
 //! Version 14 additionally permits bounded outgoing excess from a full one-level parent.
-use super::{Checkpoint, ClosedLakeExchange, closed_lake, leaf_spill, merged_lake, reference_pool};
+//! Version 15 instead owns regional columns and moves water over physical faces.
+use super::{
+    Checkpoint, ClosedLakeExchange, closed_lake, leaf_spill, merged_lake, reference_pool,
+    surface_flow,
+};
 use crate::{World, moisture_transport::total_mass, surface_water::CompensatedStock};
 
 pub(super) const MODEL_VERSION: &str = "closed-leaf-exchange-1";
@@ -19,11 +23,17 @@ pub(super) struct Layout {
     pub by_region: Vec<Option<usize>>,
     pub spill: Option<leaf_spill::Layout>,
     pub merge: Option<merged_lake::Layout>,
+    pub regional: Option<surface_flow::Layout>,
 }
 
 impl Layout {
     pub fn from_world(world: &World, mode: ClosedLakeExchange) -> Result<Self, String> {
         let geometry = closed_lake::Layout::from_world(world)?;
+        let regional = if let ClosedLakeExchange::FrozenRegionalSurfaceFlow(settings) = mode {
+            Some(surface_flow::Layout::from_world(world, settings)?)
+        } else {
+            None
+        };
         if crate::basins::Basins::build(&world.surface, &world.terrain.elevation)? != world.basins {
             return Err("Coupled lake geometry has a stale basin hierarchy.".into());
         }
@@ -77,7 +87,7 @@ impl Layout {
         } else {
             None
         };
-        let spill = if mode != ClosedLakeExchange::FrozenLeafExposure {
+        let spill = if mode != ClosedLakeExchange::FrozenLeafExposure && regional.is_none() {
             Some(leaf_spill::Layout::from_world(world, &geometry)?)
         } else {
             None
@@ -87,6 +97,7 @@ impl Layout {
             by_region,
             spill,
             merge,
+            regional,
         })
     }
 
@@ -98,6 +109,9 @@ impl Layout {
     }
 
     pub fn exposure(&self, cp: &Checkpoint) -> Result<Vec<bool>, String> {
+        if let Some(regional) = &self.regional {
+            return Ok(regional.wet(cp));
+        }
         let mut wet = vec![false; self.by_region.len()];
         for lake in self.geometry.lakes() {
             let r = lake.terminal_region();
@@ -131,6 +145,9 @@ impl Layout {
     }
 
     pub fn owns(&self, cp: &Checkpoint, region: usize) -> bool {
+        if let Some(regional) = &self.regional {
+            return regional.land[region];
+        }
         self.by_region[region].is_some()
             || self
                 .merge
@@ -139,6 +156,9 @@ impl Layout {
     }
 
     pub fn accounts(&self, cp: &Checkpoint, region: usize) -> bool {
+        if let Some(regional) = &self.regional {
+            return regional.land[region];
+        }
         self.by_region[region].is_some()
             || self.merge.as_ref().is_some_and(|m| m.accounts(cp, region))
     }
@@ -155,7 +175,9 @@ impl Layout {
         if let Some(merge) = &self.merge {
             merge.record_capture(cp, region, high, low)?;
         }
-        let r = if let Some(r) = self.merge.as_ref().and_then(|m| m.owner(cp, region)) {
+        let r = if self.regional.is_some() {
+            region
+        } else if let Some(r) = self.merge.as_ref().and_then(|m| m.owner(cp, region)) {
             r
         } else {
             let b = self.by_region[region].ok_or("Capture outside a lake leaf.")?;
@@ -214,8 +236,59 @@ impl Layout {
         &self,
         cp: &mut Checkpoint,
         demand: &[f64],
+        mut precision_budget: Option<&mut surface_flow::FlowBudget>,
     ) -> Result<(Vec<(usize, f64)>, f64), String> {
-        // Do not hide an unsupported crossing by evaporating back below it.
+        if let Some(regional) = &self.regional {
+            let mut packets = Vec::new();
+            let mut maximum: f64 = 0.;
+            for (r, &request) in demand.iter().enumerate() {
+                if !regional.land[r] {
+                    continue;
+                }
+                let mut donor = CompensatedStock::new(
+                    cp.terminal_water_kilograms[r],
+                    cp.terminal_low_kilograms.as_ref().unwrap()[r],
+                    f64::MAX,
+                )?;
+                let before = donor;
+                let mut receipt = CompensatedStock::new(0., 0., f64::MAX)?;
+                let grants = if request > 0. {
+                    leaf_spill::fill(&mut donor, &mut receipt, request)?
+                } else {
+                    Vec::new()
+                };
+                if receipt.high > 0. {
+                    let mut vapor = CompensatedStock::new(cp.vapor_kilograms[r], 0., f64::MAX)?;
+                    vapor.credit(receipt.high)?;
+                    vapor.credit(receipt.low)?;
+                    if vapor.high == cp.vapor_kilograms[r] {
+                        let budget = precision_budget
+                            .as_deref_mut()
+                            .ok_or("Missing regional precision diagnostics.")?;
+                        budget.deferred_evaporation_requests += 1;
+                        budget.deferred_evaporation_request_kilograms += receipt.high + receipt.low;
+                        budget.maximum_deferred_evaporation_kilograms = budget
+                            .maximum_deferred_evaporation_kilograms
+                            .max(receipt.high + receipt.low);
+                        // No debit/evaporation history is published. Actual water
+                        // remains in this column, not in unowned atmospheric roundoff.
+                        continue;
+                    }
+                }
+                let residual = total_mass(&[
+                    donor.high - before.high,
+                    donor.low - before.low,
+                    receipt.high,
+                    receipt.low,
+                ]);
+                cp.terminal_water_kilograms[r] = donor.high;
+                cp.terminal_low_kilograms.as_mut().unwrap()[r] = donor.low;
+                packets.extend(grants.into_iter().map(|v| (r, v)));
+                maximum = maximum.max(residual.abs());
+            }
+            return Ok((packets, maximum));
+        }
+        // Basin modes must not hide an unsupported crossing by evaporating below it.
         self.exposure(cp)?;
         let mut regional = vec![0.; self.by_region.len()];
         let mut maximum: f64 = 0.;
@@ -265,8 +338,11 @@ impl Layout {
         Ok((packets, maximum))
     }
 
-    /// One lake identity replaces endpoint-only identities in this version.
+    /// Basin identities or, in model 15, independent actual-face regional identities.
     pub fn validate(&self, cp: &Checkpoint) -> Result<(f64, usize), String> {
+        if let Some(regional) = &self.regional {
+            return regional.validate(cp);
+        }
         let high = cp
             .cumulative_lake_capture_kilograms
             .as_ref()
