@@ -5,6 +5,7 @@
 //! Version 11 adds one-level all-dry common-sill parent owners above birth.
 //! Version 12 additionally contracts and splits those one-level parents.
 //! Version 13 receives unique-edge leaf spill into an already active parent.
+//! Version 14 sends full-parent queue excess through a unique bounded outlet.
 //! Fixed bed/thermal forcing; no general split/merge, hydraulic discharge or energy feedback.
 use crate::{
     Recipe, World,
@@ -34,6 +35,7 @@ pub const LEAF_SPILL_MODEL_VERSION: &str = "seasonal-moisture-10";
 pub const MERGED_LAKE_MODEL_VERSION: &str = "seasonal-moisture-11";
 pub const COMMON_SILL_FRONTIER_MODEL_VERSION: &str = "seasonal-moisture-12";
 pub const RECEIVING_FRONTIER_MODEL_VERSION: &str = "seasonal-moisture-13";
+pub const PARENT_OUTLET_MODEL_VERSION: &str = "seasonal-moisture-14";
 pub const TERMINAL_STOCK_MODEL_VERSION: &str = "terminal-stock-compensated-1";
 pub const SECONDS_PER_DAY: u64 = 86400;
 pub const MAX_ELAPSED_SECONDS: u64 = 3650 * SECONDS_PER_DAY;
@@ -72,6 +74,7 @@ pub enum ClosedLakeExchange {
     FrozenLeafExposureWithSpillAndMerge,
     FrozenCommonSillFrontier,
     FrozenCommonSillReceiving,
+    FrozenCommonSillOutlets,
 }
 
 // Missing means legacy; a present null is not an unrecorded/default algorithm.
@@ -592,16 +595,18 @@ pub struct Budget {
     pub residual_kilograms: f64,
     pub cumulative_evaporation_kilograms: f64,
     pub cumulative_precipitation_kilograms: f64,
-    /// Includes body identities in versions 8–11, leaf identities in 9–11,
-    /// direct spill identities in 10/11 and parent identities in 11.
+    /// Includes body identities in versions 8–14, leaf identities in 9–14,
+    /// leaf spill identities in 10–14 and parent identities in 11–14.
     pub maximum_relative_local_surface_ledger_residual: f64,
     pub vapor_ledger_residual_kilograms: f64,
 }
 
 #[derive(Debug)]
 pub struct Step {
-    /// Present in versions 10/11, and returned only after atomic acceptance.
+    /// Present in versions 10–14, and returned only after atomic acceptance.
     pub leaf_spill_events: Option<Vec<leaf_spill::Event>>,
+    /// Separate typed parent sources; present only in model 14.
+    pub parent_spill_events: Option<Vec<merged_lake::outgoing::Event>>,
     pub evaporation_kilograms: Vec<f64>,
     pub precipitation_kilograms: Vec<f64>,
     pub surface_transfers: Vec<surface_water::Transfers>,
@@ -797,8 +802,10 @@ impl Model {
             .closed_lake_exchange
             .map(|mode| lake_exchange::Layout::from_world(world, mode))
             .transpose()?;
-        let with_receiving =
-            settings.closed_lake_exchange == Some(ClosedLakeExchange::FrozenCommonSillReceiving);
+        let with_outlets =
+            settings.closed_lake_exchange == Some(ClosedLakeExchange::FrozenCommonSillOutlets);
+        let with_receiving = with_outlets
+            || settings.closed_lake_exchange == Some(ClosedLakeExchange::FrozenCommonSillReceiving);
         let with_frontier = with_receiving
             || settings.closed_lake_exchange == Some(ClosedLakeExchange::FrozenCommonSillFrontier);
         let with_merge = with_frontier
@@ -833,7 +840,9 @@ impl Model {
             }
         }
         let origin = Checkpoint {
-            schema_version: if with_receiving {
+            schema_version: if with_outlets {
+                14
+            } else if with_receiving {
                 13
             } else if with_frontier {
                 12
@@ -856,7 +865,9 @@ impl Model {
             } else {
                 3
             },
-            model_version: if with_receiving {
+            model_version: if with_outlets {
+                PARENT_OUTLET_MODEL_VERSION
+            } else if with_receiving {
                 RECEIVING_FRONTIER_MODEL_VERSION
             } else if with_frontier {
                 COMMON_SILL_FRONTIER_MODEL_VERSION
@@ -916,7 +927,9 @@ impl Model {
             reference_body_high_kilograms: reference_pool.as_ref().map(|_| body_high),
             reference_body_low_kilograms: reference_pool.as_ref().map(|_| body_low),
             closed_lake_model_version: lake_exchange.as_ref().map(|_| {
-                if with_receiving {
+                if with_outlets {
+                    lake_exchange::OUTLET_MODEL_VERSION
+                } else if with_receiving {
                     lake_exchange::RECEIVING_MODEL_VERSION
                 } else if with_frontier {
                     lake_exchange::FRONTIER_MODEL_VERSION
@@ -1077,6 +1090,7 @@ impl Model {
                     && s.frontier.as_ref().is_some_and(|f| {
                         f.model_version == merged_lake::frontier::MODEL_VERSION
                             && f.spill_to_parent.is_none()
+                            && f.outgoing_spill.is_none()
                     })
             })
             && checkpoint.cumulative_lake_capture_kilograms.is_some()
@@ -1096,6 +1110,29 @@ impl Model {
                     && s.frontier.as_ref().is_some_and(|f| {
                         f.model_version == merged_lake::receiving::LIFECYCLE_MODEL_VERSION
                             && f.spill_to_parent.is_some()
+                            && f.outgoing_spill.is_none()
+                    })
+            })
+            && checkpoint.cumulative_lake_capture_kilograms.is_some()
+            && checkpoint.cumulative_lake_capture_low_kilograms.is_some();
+        let outlet_lake = checkpoint.schema_version == 14
+            && checkpoint.model_version == PARENT_OUTLET_MODEL_VERSION
+            && checkpoint.settings.closed_lake_exchange
+                == Some(ClosedLakeExchange::FrozenCommonSillOutlets)
+            && checkpoint.closed_lake_model_version.as_deref()
+                == Some(lake_exchange::OUTLET_MODEL_VERSION)
+            && checkpoint
+                .leaf_spill_state
+                .as_ref()
+                .is_some_and(|s| s.model_version == leaf_spill::MODEL_VERSION)
+            && checkpoint.merged_lake_state.as_ref().is_some_and(|s| {
+                s.model_version == merged_lake::outgoing::PARENT_MODEL_VERSION
+                    && s.frontier.as_ref().is_some_and(|f| {
+                        f.model_version == merged_lake::outgoing::LIFECYCLE_MODEL_VERSION
+                            && f.spill_to_parent.is_some()
+                            && f.outgoing_spill.as_ref().is_some_and(|s| {
+                                s.model_version == merged_lake::outgoing::MODEL_VERSION
+                            })
                     })
             })
             && checkpoint.cumulative_lake_capture_kilograms.is_some()
@@ -1107,7 +1144,8 @@ impl Model {
             || spilling_lake
             || merging_lake
             || frontier_lake
-            || receiving_lake)
+            || receiving_lake
+            || outlet_lake)
             && checkpoint.settings.reference_water_pool
                 == Some(ReferenceWaterPool::FastConnectedBody)
             && checkpoint.reference_body_model_version.as_deref()
@@ -1151,6 +1189,7 @@ impl Model {
                 && !merging_lake
                 && !frontier_lake
                 && !receiving_lake
+                && !outlet_lake
                 && !legacy_lake)
             || checkpoint.transport_model_version != crate::moisture_transport::MODEL_VERSION
             || checkpoint.temperature_model_version != seasonal_temperature::MODEL_VERSION
@@ -1316,8 +1355,21 @@ impl Model {
                     (None, None) => (0., 0),
                     _ => return Err("Leaf spill accounting outside its pinned mode.".into()),
                 };
+                let parent_graph = match &layout.merge {
+                    Some(m) => m.validate_outgoing(
+                        cp,
+                        self.reference_pool.as_ref().unwrap(),
+                        layout.spill.as_ref().unwrap(),
+                    )?,
+                    None => (0., 0),
+                };
                 let lake = layout.validate(cp)?;
-                Some(if graph.0 > lake.0 { graph } else { lake })
+                Some(
+                    [graph, parent_graph, lake]
+                        .into_iter()
+                        .max_by(|a, b| a.0.total_cmp(&b.0))
+                        .unwrap(),
+                )
             }
             None if cp.cumulative_lake_capture_kilograms.is_none()
                 && cp.cumulative_lake_capture_low_kilograms.is_none()
@@ -1576,6 +1628,10 @@ impl Model {
                         terms.extend([-incoming.high, -incoming.low]);
                         flows.extend([incoming.high, incoming.low]);
                     }
+                    if let Some(incoming) = merged_lake::outgoing::incoming(cp, i)? {
+                        terms.extend([-incoming.high, -incoming.low]);
+                        flows.extend([incoming.high, incoming.low]);
+                    }
                 }
                 let residual = total_mass(&terms);
                 let scale = initial_high.max(high[b]).max(total_mass(&flows)).max(1.);
@@ -1751,6 +1807,15 @@ impl Model {
             .as_ref()
             .map(|m| m.candidates())
     }
+    /// Generated parent outlet alternatives, not an authorization to apply flow.
+    pub fn parent_spill_connections(&self) -> Option<Vec<merged_lake::outgoing::Connection>> {
+        self.lake_exchange
+            .as_ref()?
+            .merge
+            .as_ref()?
+            .outgoing_connections
+            .clone()
+    }
 
     /// Read-only active parent surfaces under this exact model and checkpoint.
     pub fn merged_lake_surfaces(&self, state: &State) -> Result<Vec<merged_lake::Surface>, String> {
@@ -1867,6 +1932,35 @@ impl Model {
         Ok(())
     }
 
+    fn resolve_spills(
+        &self,
+        cp: &mut Checkpoint,
+        leaf_events: &mut Option<Vec<leaf_spill::Event>>,
+        parent_events: &mut Option<Vec<merged_lake::outgoing::Event>>,
+    ) -> Result<(), String> {
+        let Some(layout) = &self.lake_exchange else {
+            return Ok(());
+        };
+        let Some(spill) = &layout.spill else {
+            return Ok(());
+        };
+        let pool = self.reference_pool.as_ref().unwrap();
+        let events = if parent_events.is_some() {
+            spill.resolve_with_parent(cp, pool, layout.merge.as_ref(), parent_events.as_mut())?
+        } else {
+            spill.resolve(cp, pool, layout.merge.as_ref())?
+        };
+        leaf_spill::append_events(leaf_events.as_mut().unwrap(), events)?;
+        if parent_events.as_ref().map_or(0, Vec::len) + leaf_events.as_ref().map_or(0, Vec::len)
+            > 4096
+        {
+            return Err(
+                "Combined leaf/parent spill exceeds the 4096 caller-interval grant bound.".into(),
+            );
+        }
+        Ok(())
+    }
+
     fn advance_with_observers(
         &self,
         state: &mut State,
@@ -1901,6 +1995,7 @@ impl Model {
         };
         let mut lake_demand = self.lake_exchange.as_ref().map(|_| vec![0.; n]);
         let mut leaf_spill_events = next.leaf_spill_state.as_ref().map(|_| Vec::new());
+        let mut parent_spill_events = merged_lake::outgoing::state(&next).map(|_| Vec::new());
         let settings = self.origin.settings;
         let coupled_limit = self.maximum_coupled_step_seconds()?;
         if settings.orography.is_some()
@@ -2192,23 +2287,18 @@ impl Model {
                     }
                 }
                 if let Some(layout) = &self.lake_exchange {
-                    if let Some(spill) = &layout.spill {
-                        leaf_spill::append_events(
-                            leaf_spill_events.as_mut().unwrap(),
-                            spill.resolve(
-                                &mut next,
-                                self.reference_pool.as_ref().unwrap(),
-                                layout.merge.as_ref(),
-                            )?,
-                        )?;
-                    }
+                    self.resolve_spills(
+                        &mut next,
+                        &mut leaf_spill_events,
+                        &mut parent_spill_events,
+                    )?;
                     let (grants, residual) =
                         layout.evaporate(&mut next, lake_demand.as_ref().unwrap())?;
                     max_local_residual = max_local_residual.max(residual);
                     // Frontier packets can decompose one owned pair. Combine each
                     // physical receiver's complete transfer before scalar vapor rounding.
                     let mut vapor_receipts =
-                        matches!(self.origin.schema_version, 12 | 13).then(|| {
+                        matches!(self.origin.schema_version, 12..=14).then(|| {
                             vec![surface_water::CompensatedStock::new(0., 0., f64::MAX).unwrap(); n]
                         });
                     for (i, grant) in grants {
@@ -2381,16 +2471,11 @@ impl Model {
                     }
                 }
                 if let Some(layout) = &self.lake_exchange {
-                    if let Some(spill) = &layout.spill {
-                        leaf_spill::append_events(
-                            leaf_spill_events.as_mut().unwrap(),
-                            spill.resolve(
-                                &mut next,
-                                self.reference_pool.as_ref().unwrap(),
-                                layout.merge.as_ref(),
-                            )?,
-                        )?;
-                    }
+                    self.resolve_spills(
+                        &mut next,
+                        &mut leaf_spill_events,
+                        &mut parent_spill_events,
+                    )?;
                     layout.exposure(&next)?;
                 }
             }
@@ -2401,6 +2486,7 @@ impl Model {
         *state = State(next);
         Ok(Step {
             leaf_spill_events,
+            parent_spill_events,
             evaporation_kilograms: evaporation,
             precipitation_kilograms: precipitation,
             surface_transfers,

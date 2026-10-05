@@ -51,12 +51,18 @@ fn descend(
     world: &World,
     start: usize,
     source_branch: usize,
+    include_children: bool,
 ) -> Result<(Vec<u32>, Destination), String> {
     let n = world.surface.areas.len();
     let mut region = start;
     let mut path = Vec::new();
     for _ in 0..n {
-        if region >= n || world.basins.region_nodes()[region] == source_branch {
+        if region >= n
+            || world.basins.region_nodes()[region] == source_branch
+            || (include_children
+                && world.basins.nodes()[world.basins.region_nodes()[region]].parent
+                    == Some(source_branch))
+        {
             return Err("First spill re-enters its source or leaves the surface.".into());
         }
         path.push(region as u32);
@@ -100,41 +106,14 @@ fn descend(
 /// This is an inspection/preparation API, not per-tick routing.
 pub fn first_connections(world: &World) -> Result<Vec<Connection>, String> {
     let layout = Layout::from_world(world)?;
-    if world.drainage.flat_steps.len() != world.surface.areas.len() {
-        return Err("First-spill flat-routing fields differ.".into());
-    }
-    world
-        .drainage
-        .route_runoff_units(&vec![0; world.surface.areas.len()])?;
-    let geometry = SpillConnections::build(&world.surface, &world.terrain.elevation)?;
-    if geometry.basins() != &world.basins {
-        return Err("First-spill hierarchy does not match generated lake geometry.".into());
-    }
+    let geometry = checked_geometry(world)?;
     layout
         .lakes()
         .iter()
         .map(|lake| {
             let source = lake.basin_node();
             let node = &world.basins.nodes()[source];
-            let mut routes = Vec::new();
-            for receiver in geometry.receivers(source)? {
-                for plateau in receiver.plateaus {
-                    let passage = geometry.passage(source, receiver.branch, plateau)?;
-                    let entry =
-                        *passage.regions.last().ok_or("Empty first-spill passage.")? as usize;
-                    let (downhill_regions, destination) = descend(world, entry, source)?;
-                    routes.push(Route {
-                        receiving_branch: receiver.branch,
-                        sill_plateau: plateau,
-                        sill_passage_regions: passage.regions,
-                        downhill_regions,
-                        destination,
-                    });
-                }
-            }
-            if node.parent.is_some() && routes.is_empty() {
-                return Err("Non-root closed leaf has no first-connection passage.".into());
-            }
+            let routes = branch_routes(world, &geometry, source, false)?;
             Ok(Connection {
                 terminal_region: lake.terminal_region(),
                 basin_node: source,
@@ -149,4 +128,46 @@ pub fn first_connections(world: &World) -> Result<Vec<Connection>, String> {
             })
         })
         .collect()
+}
+
+pub(crate) fn checked_geometry(world: &World) -> Result<SpillConnections, String> {
+    if world.drainage.flat_steps.len() != world.surface.areas.len() {
+        return Err("First-spill flat-routing fields differ.".into());
+    }
+    world
+        .drainage
+        .route_runoff_units(&vec![0; world.surface.areas.len()])?;
+    let geometry = SpillConnections::build(&world.surface, &world.terrain.elevation)?;
+    if geometry.basins() != &world.basins {
+        return Err("First-spill hierarchy does not match generated lake geometry.".into());
+    }
+    Ok(geometry)
+}
+
+/// Parent use is deliberately limited to immediate minimum-leaf children.
+pub(crate) fn branch_routes(
+    world: &World,
+    geometry: &SpillConnections,
+    source: usize,
+    include_children: bool,
+) -> Result<Vec<Route>, String> {
+    let mut routes = Vec::new();
+    for receiver in geometry.receivers(source)? {
+        for plateau in receiver.plateaus {
+            let passage = geometry.passage(source, receiver.branch, plateau)?;
+            let entry = *passage.regions.last().ok_or("Empty first-spill passage.")? as usize;
+            let (downhill_regions, destination) = descend(world, entry, source, include_children)?;
+            routes.push(Route {
+                receiving_branch: receiver.branch,
+                sill_plateau: plateau,
+                sill_passage_regions: passage.regions,
+                downhill_regions,
+                destination,
+            });
+        }
+    }
+    if world.basins.nodes()[source].parent.is_some() && routes.is_empty() {
+        return Err("Non-root closed leaf has no first-connection passage.".into());
+    }
+    Ok(routes)
 }

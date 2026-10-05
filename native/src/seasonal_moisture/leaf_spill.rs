@@ -1,4 +1,4 @@
-//! Bounded fast fill/spill on exclusive leaves with optional model-11 parent handoff.
+//! Bounded fast fill/spill on exclusive leaves with opt-in one-level parent handoff.
 //! No discharge law, general parent frontier or concurrent overflow allocation.
 use super::{Checkpoint as SeasonalCheckpoint, closed_lake, merged_lake, reference_pool};
 use crate::{World, moisture_transport::total_mass, surface_water::CompensatedStock};
@@ -202,7 +202,7 @@ impl Layout {
         cp.terminal_water_kilograms[r] = stock.high;
         cp.terminal_low_kilograms.as_mut().unwrap()[r] = stock.low;
     }
-    fn destination_region(destination: &Destination) -> usize {
+    pub(super) fn destination_region(destination: &Destination) -> usize {
         match *destination {
             Destination::ClosedTerminal { terminal_region } => terminal_region,
             Destination::ReferenceBody { contact_region, .. } => contact_region,
@@ -219,12 +219,85 @@ impl Layout {
         Ok(&routes[0])
     }
 
+    pub(super) fn has_terminal(&self, r: usize) -> bool {
+        self.by_terminal[r].is_some()
+    }
+    pub(super) fn reference_below(&self, head: f64) -> bool {
+        self.reference_level.is_finite() && self.reference_level < head
+    }
+    pub(super) fn receive_terminal(
+        &self,
+        cp: &mut SeasonalCheckpoint,
+        r: usize,
+        head: f64,
+        donor: &mut CompensatedStock,
+        merge: Option<&merged_lake::Layout>,
+    ) -> Result<Vec<f64>, String> {
+        if let Some(m) = merge.filter(|m| m.terminal_active(cp, r)) {
+            return m.receive_spill(cp, r, head, donor);
+        }
+        let receiver =
+            self.by_terminal[r].ok_or("Leaf spill receiver has no exclusive leaf owner.")?;
+        let crest = self.connections[receiver]
+            .first_connection_level_meters
+            .ok_or("Leaf spill recipient has no resolved capacity-bounded outlet.")?;
+        if crest > head {
+            return Err("Leaf spill recipient capacity lies above the supplying head.".into());
+        }
+        let cap = self.capacity(receiver)?;
+        let mut liquid = Self::liquid(cp, r, cap)?;
+        let grants = fill(donor, &mut liquid, cap)?;
+        Self::set_liquid(cp, r, liquid);
+        Ok(grants)
+    }
+    pub(super) fn receive_reference(
+        &self,
+        cp: &mut SeasonalCheckpoint,
+        pool: &reference_pool::Layout,
+        body_id: u32,
+        contact: usize,
+        head: f64,
+        donor: &mut CompensatedStock,
+    ) -> Result<Vec<f64>, String> {
+        if !self.reference_below(head) {
+            return Err(
+                "Leaf spill reference recipient is backpressured under the fixed-level assumption."
+                    .into(),
+            );
+        }
+        let body = pool.by_region[contact].ok_or("Leaf spill misses a reference contact.")?;
+        if pool.ids[body] != body_id {
+            return Err("Leaf spill reference contact has the wrong body.".into());
+        }
+        let mut liquid = CompensatedStock::new(
+            cp.reference_body_high_kilograms.as_ref().unwrap()[body],
+            cp.reference_body_low_kilograms.as_ref().unwrap()[body],
+            f64::MAX,
+        )?;
+        let grants = fill(donor, &mut liquid, f64::MAX)?;
+        cp.reference_body_high_kilograms.as_mut().unwrap()[body] = liquid.high;
+        cp.reference_body_low_kilograms.as_mut().unwrap()[body] = liquid.low;
+        if !empty(*donor) {
+            return Err("Leaf spill reference stock reached its arithmetic ceiling.".into());
+        }
+        Ok(grants)
+    }
+
     /// Provisional only: the enclosing seasonal interval supplies atomic commit.
     pub fn resolve(
         &self,
         cp: &mut SeasonalCheckpoint,
         pool: &reference_pool::Layout,
         merge: Option<&merged_lake::Layout>,
+    ) -> Result<Vec<Event>, String> {
+        self.resolve_with_parent(cp, pool, merge, None)
+    }
+    pub fn resolve_with_parent(
+        &self,
+        cp: &mut SeasonalCheckpoint,
+        pool: &reference_pool::Layout,
+        merge: Option<&merged_lake::Layout>,
+        parent_events: Option<&mut Vec<merged_lake::outgoing::Event>>,
     ) -> Result<Vec<Event>, String> {
         if let Some(m) = merge {
             m.settle(cp)?;
@@ -259,16 +332,37 @@ impl Layout {
             .iter()
             .enumerate()
             .filter_map(|(b, c)| {
+                if merge.is_some_and(|m| m.terminal_active(cp, c.terminal_region)) {
+                    return None;
+                }
                 let input = &cp.leaf_spill_state.as_ref().unwrap().pending_input;
                 (input.high_kilograms[c.terminal_region] != 0.
                     || input.low_kilograms[c.terminal_region] != 0.)
                     .then_some(b)
             })
             .collect::<Vec<_>>();
+        let parent_sources = merge
+            .map(|m| m.outgoing_sources(cp))
+            .transpose()?
+            .unwrap_or_default();
+        if !parent_sources.is_empty() && sources.len() + parent_sources.len() > 1 {
+            return Err(
+                "Concurrent parent/leaf spilling owners require a shared event/merge policy."
+                    .into(),
+            );
+        }
         if sources.len() > 1 {
             return Err(
                 "Concurrent leaf spill sources require a shared event/merge policy.".into(),
             );
+        }
+        if let Some(&g) = parent_sources.first() {
+            let sink = parent_events.ok_or("Missing parent spill event buffer.")?;
+            merged_lake::outgoing::append_events(
+                sink,
+                merge.unwrap().spill_pending(cp, pool, self, g)?,
+            )?;
+            return Ok(Vec::new());
         }
         let Some(&source) = sources.first() else {
             return Ok(Vec::new());
@@ -300,55 +394,13 @@ impl Layout {
             let destination = Self::destination_region(&route.destination);
             let grants = match route.destination {
                 Destination::ClosedTerminal { terminal_region } => {
-                    if let Some(m) = merge.filter(|m| m.terminal_active(cp, terminal_region)) {
-                        m.receive_spill(cp, terminal_region, crest, &mut donor)?
-                    } else {
-                        let receiver = self.by_terminal[terminal_region]
-                            .ok_or("Leaf spill receiver has no exclusive leaf owner.")?;
-                        let receiving_crest = self.connections[receiver]
-                            .first_connection_level_meters
-                            .ok_or(
-                                "Leaf spill recipient has no resolved capacity-bounded outlet.",
-                            )?;
-                        if receiving_crest > crest {
-                            return Err(
-                                "Leaf spill recipient capacity lies above the supplying head."
-                                    .into(),
-                            );
-                        }
-                        let cap = self.capacity(receiver)?;
-                        let mut liquid = Self::liquid(cp, terminal_region, cap)?;
-                        let grants = fill(&mut donor, &mut liquid, cap)?;
-                        Self::set_liquid(cp, terminal_region, liquid);
-                        grants
-                    }
+                    self.receive_terminal(cp, terminal_region, crest, &mut donor, merge)?
                 }
                 Destination::ReferenceBody {
                     body_id,
                     contact_region,
                 } => {
-                    if !self.reference_level.is_finite() || self.reference_level >= crest {
-                        return Err("Leaf spill reference recipient is backpressured under the fixed-level assumption.".into());
-                    }
-                    let body = pool.by_region[contact_region]
-                        .ok_or("Leaf spill misses a reference contact.")?;
-                    if pool.ids[body] != body_id {
-                        return Err("Leaf spill reference contact has the wrong body.".into());
-                    }
-                    let mut liquid = CompensatedStock::new(
-                        cp.reference_body_high_kilograms.as_ref().unwrap()[body],
-                        cp.reference_body_low_kilograms.as_ref().unwrap()[body],
-                        f64::MAX,
-                    )?;
-                    let grants = fill(&mut donor, &mut liquid, f64::MAX)?;
-                    cp.reference_body_high_kilograms.as_mut().unwrap()[body] = liquid.high;
-                    cp.reference_body_low_kilograms.as_mut().unwrap()[body] = liquid.low;
-                    if !empty(donor) {
-                        return Err(
-                            "Leaf spill reference stock reached its arithmetic ceiling.".into()
-                        );
-                    }
-                    grants
+                    self.receive_reference(cp, pool, body_id, contact_region, crest, &mut donor)?
                 }
             };
             for grant in grants {
@@ -629,6 +681,245 @@ mod tests {
         layout.resolve(&mut cp, &pool, Some(&merge)).unwrap();
         merge.validate(&cp).unwrap();
         (layout, cp, pool, merge)
+    }
+
+    fn outlet_fixture(
+        heights: &[f64],
+        bodies: &[u32],
+        inputs: &[(usize, f64)],
+    ) -> (
+        Layout,
+        SeasonalCheckpoint,
+        reference_pool::Layout,
+        merged_lake::Layout,
+    ) {
+        let (leaves, mut cp, pool, world) = chain_geometry(heights, bodies);
+        let geometry = closed_lake::Layout::from_world(&world).unwrap();
+        let mut merge = merged_lake::Layout::from_world(&world, &geometry).unwrap();
+        merge.split_enabled = true;
+        merge.receiving_enabled = true;
+        merge.outgoing_connections = Some(merge.build_outlets(&world).unwrap());
+        cp.merged_lake_state = Some(merge.frontier_checkpoint());
+        cp.cumulative_lake_capture_kilograms = Some(vec![0.; heights.len()]);
+        cp.cumulative_lake_capture_low_kilograms = Some(vec![0.; heights.len()]);
+        cp.cumulative_runoff_transfers = vec![Default::default(); heights.len()];
+        for &(r, amount) in inputs {
+            cp.cumulative_lake_capture_kilograms.as_mut().unwrap()[r] = amount;
+            cp.leaf_spill_state
+                .as_mut()
+                .unwrap()
+                .pending_input
+                .credit(r, amount)
+                .unwrap();
+        }
+        (leaves, cp, pool, merge)
+    }
+
+    #[test]
+    fn full_parent_spills_actual_queue_excess_to_body_or_unfilled_leaf() {
+        for bodies in [[1, 0, 0, 0, 0], [0; 5]] {
+            let (leaves, mut cp, pool, merge) =
+                outlet_fixture(&[0., 4., 0., 2., 0.], &bodies, &[(2, 8500.), (4, 2000.)]);
+            let mut parents = Vec::new();
+            assert!(
+                leaves
+                    .resolve_with_parent(&mut cp, &pool, Some(&merge), Some(&mut parents))
+                    .unwrap()
+                    .is_empty()
+            );
+            assert_eq!(parents.len(), 1);
+            assert_eq!(parents[0].kilograms, 500.);
+            assert_eq!(parents[0].input_terminal_region, 2);
+            assert_eq!(parents[0].route.sill_passage_regions, [2, 1, 0]);
+            let parent = &cp.merged_lake_state.as_ref().unwrap().parents[0];
+            assert_eq!(
+                (parent.birth_high_kilograms, parent.birth_low_kilograms),
+                (4000., 0.)
+            );
+            assert_eq!(
+                (parent.surplus_high_kilograms, parent.surplus_low_kilograms),
+                (6000., 0.)
+            );
+            assert_eq!(
+                cp.leaf_spill_state.as_ref().unwrap().pending_input.total(),
+                0.
+            );
+            assert_eq!(
+                cp.leaf_spill_state
+                    .as_ref()
+                    .unwrap()
+                    .cumulative_outgoing
+                    .total(),
+                0.
+            );
+            if bodies[0] == 1 {
+                assert_eq!(cp.reference_body_high_kilograms.as_ref().unwrap(), &[500.]);
+            } else {
+                assert_eq!(cp.terminal_water_kilograms[0], 500.);
+            }
+            leaves.validate(&cp, &pool).unwrap();
+            merge.validate_outgoing(&cp, &pool, &leaves).unwrap();
+            merge.validate(&cp).unwrap();
+        }
+    }
+
+    #[test]
+    fn full_parent_can_supply_active_peer_without_reviving_either_child() {
+        let (leaves, mut cp, pool, merge) = outlet_fixture(
+            &[0., 2., 0., 4., 0., 2., 0.],
+            &[0; 7],
+            &[(0, 8500.), (2, 2000.), (4, 3000.), (6, 2000.)],
+        );
+        let mut events = Vec::new();
+        leaves
+            .resolve_with_parent(&mut cp, &pool, Some(&merge), Some(&mut events))
+            .unwrap();
+        assert_eq!(events.len(), 1);
+        assert_eq!(
+            events[0].route.destination,
+            Destination::ClosedTerminal { terminal_region: 4 }
+        );
+        assert_eq!(events[0].kilograms, 500.);
+        assert!(cp.terminal_water_kilograms.iter().all(|&v| v == 0.));
+        let parents = &cp.merged_lake_state.as_ref().unwrap().parents;
+        assert_eq!(parents.len(), 2);
+        assert_eq!(parents[0].surplus_high_kilograms, 6000.);
+        assert_eq!(parents[1].surplus_high_kilograms, 1500.);
+        let history = cp
+            .merged_lake_state
+            .as_ref()
+            .unwrap()
+            .frontier
+            .as_ref()
+            .unwrap();
+        assert_eq!(
+            history.spill_to_parent.as_ref().unwrap().high_kilograms[4],
+            500.
+        );
+        assert_eq!(
+            history
+                .outgoing_spill
+                .as_ref()
+                .unwrap()
+                .cumulative_incoming
+                .high_kilograms[4],
+            500.
+        );
+        merge.validate_outgoing(&cp, &pool, &leaves).unwrap();
+        merge.validate(&cp).unwrap();
+    }
+
+    #[test]
+    fn parent_outlet_preserves_signed_queue_tails_in_actual_body_and_flow_pairs() {
+        for low in [-2_f64.powi(-50), 2_f64.powi(-50)] {
+            let (leaves, mut cp, pool, merge) = outlet_fixture(
+                &[0., 4., 0., 2., 0.],
+                &[1, 0, 0, 0, 0],
+                &[(2, 8500.), (4, 2000.)],
+            );
+            cp.leaf_spill_state
+                .as_mut()
+                .unwrap()
+                .pending_input
+                .credit(2, low)
+                .unwrap();
+            cp.cumulative_lake_capture_low_kilograms.as_mut().unwrap()[2] = low;
+            leaves
+                .resolve_with_parent(&mut cp, &pool, Some(&merge), Some(&mut Vec::new()))
+                .unwrap();
+            assert_eq!(
+                (
+                    cp.reference_body_high_kilograms.as_ref().unwrap()[0],
+                    cp.reference_body_low_kilograms.as_ref().unwrap()[0]
+                ),
+                (500., low)
+            );
+            let ledger = cp
+                .merged_lake_state
+                .as_ref()
+                .unwrap()
+                .frontier
+                .as_ref()
+                .unwrap()
+                .outgoing_spill
+                .as_ref()
+                .unwrap();
+            assert_eq!(
+                (
+                    ledger.cumulative_outgoing.high_kilograms[0],
+                    ledger.cumulative_outgoing.low_kilograms[0]
+                ),
+                (500., low)
+            );
+            assert_eq!(
+                (
+                    ledger.cumulative_incoming.high_kilograms[0],
+                    ledger.cumulative_incoming.low_kilograms[0]
+                ),
+                (500., low)
+            );
+            merge.validate_outgoing(&cp, &pool, &leaves).unwrap();
+            merge.validate(&cp).unwrap();
+        }
+    }
+
+    #[test]
+    fn parent_outlet_refuses_junction_concurrency_receiver_overflow_and_backpressure() {
+        let cases = [
+            (
+                vec![0., 4., 0., 2., 0.],
+                vec![0; 5],
+                vec![(2, 13000.), (4, 2000.)],
+                "receiver requires overflow",
+            ),
+            (
+                vec![0., 4., 0., 2., 0., 4., 0.],
+                vec![0; 7],
+                vec![(2, 14500.), (4, 2000.)],
+                "unique geographic route",
+            ),
+            (
+                vec![0., 2., 0., 4., 0., 2., 0.],
+                vec![0; 7],
+                vec![(0, 8500.), (2, 2000.), (4, 8500.), (6, 2000.)],
+                "Concurrent parent/leaf",
+            ),
+        ];
+        for (heights, bodies, inputs, message) in cases {
+            let (leaves, mut cp, pool, merge) = outlet_fixture(&heights, &bodies, &inputs);
+            assert!(
+                leaves
+                    .resolve_with_parent(&mut cp, &pool, Some(&merge), Some(&mut Vec::new()))
+                    .unwrap_err()
+                    .contains(message)
+            );
+            assert_eq!(
+                cp.merged_lake_state
+                    .as_ref()
+                    .unwrap()
+                    .frontier
+                    .as_ref()
+                    .unwrap()
+                    .outgoing_spill
+                    .as_ref()
+                    .unwrap()
+                    .cumulative_outgoing
+                    .total(),
+                0.
+            );
+        }
+        let (mut leaves, mut cp, pool, merge) = outlet_fixture(
+            &[0., 4., 0., 2., 0.],
+            &[1, 0, 0, 0, 0],
+            &[(2, 8500.), (4, 2000.)],
+        );
+        leaves.reference_level = 4.;
+        assert!(
+            leaves
+                .resolve_with_parent(&mut cp, &pool, Some(&merge), Some(&mut Vec::new()))
+                .unwrap_err()
+                .contains("backpressured")
+        );
     }
 
     #[test]

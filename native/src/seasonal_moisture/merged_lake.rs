@@ -1,5 +1,6 @@
 //! Bounded one-level, all-dry common-sill parents. Model 12 adds reversible drying.
-//! Model 13 adds bounded external arrivals; none supports nested activation or next-parent spill.
+//! Model 13 adds bounded external arrivals; model 14 adds unique bounded parent outlets.
+//! None supports nested activation or general overflow chains.
 use super::{Checkpoint as SeasonalCheckpoint, closed_lake, leaf_spill, reference_pool};
 use crate::{World, moisture_transport::total_mass, reservoir, surface_water::CompensatedStock};
 use serde::{Deserialize, Serialize};
@@ -8,6 +9,7 @@ pub const MODEL_VERSION: &str = "common-sill-parent-1";
 pub const FRONTIER_MODEL_VERSION: &str = "common-sill-frontier-2";
 mod depletion;
 pub mod frontier;
+pub mod outgoing;
 pub mod receiving;
 
 #[cfg(test)]
@@ -166,6 +168,7 @@ pub(super) struct Layout {
     by_region: Vec<Option<usize>>,
     pub split_enabled: bool,
     pub receiving_enabled: bool,
+    pub outgoing_connections: Option<Vec<outgoing::Connection>>,
 }
 impl Layout {
     pub fn from_world(world: &World, leaves: &closed_lake::Layout) -> Result<Self, String> {
@@ -303,6 +306,7 @@ impl Layout {
             by_region,
             split_enabled: false,
             receiving_enabled: false,
+            outgoing_connections: None,
         })
     }
     pub fn candidates(&self) -> Vec<Candidate> {
@@ -402,7 +406,7 @@ impl Layout {
                     .pending_input
                     .stock(r)?;
                 leaf_spill::fill(&mut input, &mut surplus, group.capacity())?;
-                if input.high != 0. || input.low != 0. {
+                if self.outgoing_connections.is_none() && (input.high != 0. || input.low != 0.) {
                     return Err("Merged lake requires next-parent spill; input remains owned but the interval is refused.".into());
                 }
                 cp.leaf_spill_state

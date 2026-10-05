@@ -24,6 +24,12 @@ pub struct Checkpoint {
         deserialize_with = "super::super::present_option"
     )]
     pub spill_to_parent: Option<leaf_spill::Components>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "super::super::present_option"
+    )]
+    pub outgoing_spill: Option<super::outgoing::Checkpoint>,
 }
 
 fn state(cp: &SeasonalCheckpoint) -> &Checkpoint {
@@ -75,7 +81,9 @@ impl Layout {
     pub fn frontier_checkpoint(&self) -> ParentCheckpoint {
         let n = self.by_region.len();
         ParentCheckpoint {
-            model_version: if self.receiving_enabled {
+            model_version: if self.outgoing_connections.is_some() {
+                super::outgoing::PARENT_MODEL_VERSION
+            } else if self.receiving_enabled {
                 super::receiving::PARENT_MODEL_VERSION
             } else {
                 super::FRONTIER_MODEL_VERSION
@@ -83,7 +91,9 @@ impl Layout {
             .into(),
             parents: Vec::new(),
             frontier: Some(Checkpoint {
-                model_version: if self.receiving_enabled {
+                model_version: if self.outgoing_connections.is_some() {
+                    super::outgoing::LIFECYCLE_MODEL_VERSION
+                } else if self.receiving_enabled {
                     super::receiving::LIFECYCLE_MODEL_VERSION
                 } else {
                     MODEL_VERSION
@@ -98,6 +108,10 @@ impl Layout {
                 spill_to_parent: self
                     .receiving_enabled
                     .then(|| leaf_spill::Components::zero(n)),
+                outgoing_spill: self
+                    .outgoing_connections
+                    .as_ref()
+                    .map(|_| super::outgoing::Checkpoint::zero(self.groups.len(), n)),
             }),
         }
     }
@@ -318,12 +332,16 @@ impl Layout {
             .as_ref()
             .ok_or("Missing common-sill lifecycle accounting.")?;
         let n = self.by_region.len();
-        let parent_version = if self.receiving_enabled {
+        let parent_version = if self.outgoing_connections.is_some() {
+            super::outgoing::PARENT_MODEL_VERSION
+        } else if self.receiving_enabled {
             super::receiving::PARENT_MODEL_VERSION
         } else {
             super::FRONTIER_MODEL_VERSION
         };
-        let lifecycle_version = if self.receiving_enabled {
+        let lifecycle_version = if self.outgoing_connections.is_some() {
+            super::outgoing::LIFECYCLE_MODEL_VERSION
+        } else if self.receiving_enabled {
             super::receiving::LIFECYCLE_MODEL_VERSION
         } else {
             MODEL_VERSION
@@ -331,6 +349,7 @@ impl Layout {
         if parent_state.model_version != parent_version
             || history.model_version != lifecycle_version
             || history.spill_to_parent.is_some() != self.receiving_enabled
+            || history.outgoing_spill.is_some() != self.outgoing_connections.is_some()
             || history.merge_counts.len() != self.groups.len()
             || history.split_counts.len() != self.groups.len()
             || parent_state.parents.len() > self.groups.len()
@@ -382,13 +401,19 @@ impl Layout {
                         0.,
                         f64::MAX,
                     )?),
-                    4 => Some(
-                        cp.leaf_spill_state
+                    4 => {
+                        let mut incoming = cp
+                            .leaf_spill_state
                             .as_ref()
                             .unwrap()
                             .cumulative_incoming
-                            .stock(r)?,
-                    ),
+                            .stock(r)?;
+                        if let Some(parent) = super::outgoing::incoming(cp, r)? {
+                            incoming.credit(parent.high)?;
+                            incoming.credit(parent.low)?;
+                        }
+                        Some(incoming)
+                    }
                     _ => None,
                 };
                 if let Some(actual) = actual {
@@ -424,6 +449,10 @@ impl Layout {
                 );
             }
             let mut terms = Vec::new();
+            if let Some(outgoing) = &history.outgoing_spill {
+                let flow = outgoing.cumulative_outgoing.stock(g)?;
+                terms.extend([flow.high, flow.low]);
+            }
             if let Some(p) = active {
                 let parent = &parent_state.parents[p];
                 if (parent.birth_high_kilograms, parent.birth_low_kilograms)

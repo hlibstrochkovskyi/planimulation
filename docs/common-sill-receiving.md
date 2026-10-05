@@ -65,3 +65,5 @@ npm test
 ```
 
 Next gates are nested/higher-parent ownership and outgoing spill, explicit ambiguous/concurrent-source policy, broader repeated forcing and qualified dynamic display. Weather, groundwater, ecology and climate calibration remain separate future work.
+
+Follow-up: [model 14 bounded parent outlets](parent-outlet.md) adds outgoing owned excess through one unique real outlet, without changing this model-13 contract. Higher/nested ownership and general receiver-overflow chains remain unsupported.

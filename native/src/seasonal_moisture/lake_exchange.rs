@@ -3,6 +3,7 @@
 //! Version 11 supports bounded common-sill parents; no implicit spill collector.
 //! Version 12 adds one-level contraction/splitting and lifetime owner provenance.
 //! Version 13 receives unique leaf spill into active one-level parents below a head ceiling.
+//! Version 14 additionally permits bounded outgoing excess from a full one-level parent.
 use super::{Checkpoint, ClosedLakeExchange, closed_lake, leaf_spill, merged_lake, reference_pool};
 use crate::{World, moisture_transport::total_mass, surface_water::CompensatedStock};
 
@@ -11,6 +12,7 @@ pub(super) const SPILL_MODEL_VERSION: &str = "closed-leaf-exchange-2";
 pub(super) const MERGE_MODEL_VERSION: &str = "closed-leaf-exchange-3";
 pub(super) const FRONTIER_MODEL_VERSION: &str = "closed-leaf-exchange-4";
 pub(super) const RECEIVING_MODEL_VERSION: &str = "closed-leaf-exchange-5";
+pub(super) const OUTLET_MODEL_VERSION: &str = "closed-leaf-exchange-6";
 
 pub(super) struct Layout {
     pub geometry: closed_lake::Layout,
@@ -54,14 +56,23 @@ impl Layout {
             ClosedLakeExchange::FrozenLeafExposureWithSpillAndMerge
                 | ClosedLakeExchange::FrozenCommonSillFrontier
                 | ClosedLakeExchange::FrozenCommonSillReceiving
+                | ClosedLakeExchange::FrozenCommonSillOutlets
         ) {
             let mut merge = merged_lake::Layout::from_world(world, &geometry)?;
             merge.split_enabled = matches!(
                 mode,
                 ClosedLakeExchange::FrozenCommonSillFrontier
                     | ClosedLakeExchange::FrozenCommonSillReceiving
+                    | ClosedLakeExchange::FrozenCommonSillOutlets
             );
-            merge.receiving_enabled = mode == ClosedLakeExchange::FrozenCommonSillReceiving;
+            merge.receiving_enabled = matches!(
+                mode,
+                ClosedLakeExchange::FrozenCommonSillReceiving
+                    | ClosedLakeExchange::FrozenCommonSillOutlets
+            );
+            if mode == ClosedLakeExchange::FrozenCommonSillOutlets {
+                merge.outgoing_connections = Some(merge.build_outlets(world)?);
+            }
             Some(merge)
         } else {
             None
@@ -324,6 +335,10 @@ impl Layout {
                 flows.extend([high[i], low[i], e]);
                 if let Some(ledger) = &cp.leaf_spill_state {
                     let incoming = ledger.cumulative_incoming.stock(i)?;
+                    terms.extend([-incoming.high, -incoming.low]);
+                    flows.extend([incoming.high, incoming.low]);
+                }
+                if let Some(incoming) = merged_lake::outgoing::incoming(cp, i)? {
                     terms.extend([-incoming.high, -incoming.low]);
                     flows.extend([incoming.high, incoming.low]);
                 }
