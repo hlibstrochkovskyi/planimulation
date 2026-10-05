@@ -50,6 +50,18 @@ Pins are `frozenCommonSillFrontier`, `closed-leaf-exchange-4`, `common-sill-fron
 
 Storage is `O(N + K)`: four new high/low flow pairs per region and two counts per eligible group. Geometry remains disjoint one-level storage; splitting uses an indexed child lookup rather than rescanning every leaf for each parent. Runtime/memory at the largest grid is not yet qualified.
 
+## Read-only current-owner inspection
+
+The subsequent `Model::closed_lake_frontier` API derives one `seasonal-closed-lake-frontier-1` observation from a validated matching model/state. It supports coupled models 9–12 without changing their equations, pins, checkpoints or desktop protocols. It is a native data contract, not a desktop view.
+
+The observation includes its observation/model versions, clock and resolved generation recipe: region and basin IDs belong to that exact geography. It contains stable basin-node-sorted owners. A leaf supplies its exact high/low liquid and derived minimum-relative surface; a parent supplies its unchanged inherited/surplus pairs and birth-relative surface. Deactivated children are **omitted**, not described as independent dry lakes. After splitting, the children return as separate owners and the parent disappears. Independent dry leaves remain explicit with no level or exposed regions.
+
+`surfaceOwnerBasinNodes` labels only positive-depth **closed-lake** regions. A null value is not a general dry-land verdict: initial reference water bodies remain outside this service. Whole-region exposure and optional absolute display levels are taken from the existing core geometry, not recomputed from interpolated rendering relief. Duplicate owners or wet-region assignments reject instead of producing a partially valid snapshot.
+
+Positive pending inputs are separate exact pairs with their actual terminal and current owner basin node. They are not already counted in an owner's liquid surface. A queue at a deactivated child terminal belongs to its active parent; querying the observation cannot settle it or expand the water surface early. This distinction also holds before a first fill, when substantial queued water can coexist with dry leaf surfaces.
+
+Three additional controls verify ownership before filling, after merging and after splitting, exact unchanged state/continuation under observation, queue/surface separation for an active parent, legacy model-11 birth-only parents, all coupled versions, reference-body separation, fully wet worlds, stable ordering/serialized field names and foreign-model rejection. The read-only service does not widen obsolete observers or wire writers and is not a restorable checkpoint.
+
 ## Validation and remaining gates
 
 Directed unit controls cover exact three-child ownership, parent-only capture, a merge/split/remerge cycle, independent child contraction, integer-product birth transfers, signed tails, exact tied shares, unresolved-tie refusal, request permutation and unrepresentable debits.
@@ -69,4 +81,6 @@ npm test
 
 Next-parent overflow, unrelated spill into an active parent, nested ownership and ambiguous/concurrent spill remain explicit atomic refusals. Those receiving-frontier transitions are the next implementation gate, followed by broader repeated forcing and qualified dynamic display. Weather, groundwater, ecology, climate calibration and general planet-wide water dynamics are not promoted by this increment.
 
-Final verification: full `npm test` passes native all-target tests and all 72 Node tests. The seven parent/operator unit tests and all nine new integration tests pass, with a separate release-mode integration run. Warnings-denied all-target Clippy, formatting and diff checks pass. The newly generated model-11 report exactly matches its preceding retained report object; the model-12 report exactly matches the new retained evidence. The pre-existing ignored long release qualification is unchanged; no new tests are ignored.
+Drying/splitting increment verification: full `npm test` passes native all-target tests and all 72 Node tests. The seven parent/operator unit tests and all nine transition integration tests pass, with a separate release-mode integration run. Warnings-denied all-target Clippy, formatting and diff checks pass. The newly generated model-11 report exactly matches its preceding retained report object; the model-12 report exactly matches the new retained evidence. The pre-existing ignored long release qualification is unchanged; no new tests are ignored.
+
+Read-only inspection follow-up verification: all 43 library unit tests, the three new observation controls in debug mode, and all 20 model-11/model-12 integration tests in release mode pass. The latter repeat all nine transition controls and the unchanged forty-day physical-state comparisons. Warnings-denied all-target Clippy, TypeScript type checking, formatting and diff checks pass. This isolated native API addition does not change the desktop bridge or extend its supported model set; no GUI validation is claimed.

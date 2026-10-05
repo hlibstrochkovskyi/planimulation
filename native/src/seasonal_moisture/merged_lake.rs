@@ -320,6 +320,11 @@ impl Layout {
         self.active(cp, g)?;
         Some(self.groups[g].description.child_terminals[0])
     }
+    pub fn active_owner_node(&self, cp: &SeasonalCheckpoint, r: usize) -> Option<usize> {
+        let g = self.by_region[r]?;
+        self.active(cp, g)?;
+        Some(self.groups[g].description.basin_node)
+    }
     pub fn surfaces(&self, cp: &SeasonalCheckpoint) -> Result<Vec<Surface>, String> {
         self.groups
             .iter()

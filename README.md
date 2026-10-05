@@ -40,7 +40,7 @@ A native [moisture-transport kernel and headless report](docs/moisture-transport
 | [Coupled leaf-lake exchange](docs/coupled-leaf-lakes.md) | Opt-in headless model 9: applied exposure/interception and finite evaporation below the first connection; no spill/merge |
 | [Applied bounded leaf spill](docs/bounded-leaf-spill.md) | Opt-in headless model 10: fill the actual receiving lake before lower-sill passage to a wet contact; explicit queues, flow ledgers and rollback; no parent merge |
 | [Bounded common-sill parents](docs/common-sill-lakes.md) | Opt-in headless model 11: exclusive one-level parent contents, above-sill exposure/exchange, strict replay and atomic split/next-spill refusal |
-| [Reversible common-sill lakes](docs/common-sill-frontier.md) | Opt-in headless model 12: applied one-level drying/splitting, independent child contraction, lifetime flow provenance and strict replay |
+| [Reversible common-sill lakes](docs/common-sill-frontier.md) | Opt-in headless model 12: one-level drying/splitting, lifetime provenance, strict replay and read-only current-owner inspection |
 | [Seasonal-water desktop](docs/seasonal-water-desktop.md) | Run/pause, eight dynamic layers, interval inspection, versioned frames, baseline timing evidence, and limits |
 | [Seasonal-water checkpoints](docs/seasonal-water-checkpoints.md) | Complete native state, candidate validation, bounded file I/O, exact continuation, and limits |
 | [Typed surface water](docs/surface-water.md) | Empirical snowmelt, soil bucket, pending-runoff ownership, defaults, and limitations |

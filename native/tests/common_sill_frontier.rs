@@ -612,3 +612,261 @@ fn aligned_hourly_and_daily_callers_cross_the_same_split_exactly() {
             .is_empty()
     );
 }
+
+#[test]
+fn frontier_observation_tracks_exclusive_owners_and_does_not_change_continuation() {
+    use planimulation_core::seasonal_moisture::lake_frontier::Owner;
+    let (world, model, group) = fixture();
+    let mut inputs: Vec<_> = group
+        .child_terminals
+        .iter()
+        .zip(&group.child_capacities_kilograms)
+        .map(|(&r, &cap)| (r, cap))
+        .collect();
+    inputs[0].1 += group.surplus_capacity_kilograms.unwrap() * 1e-6;
+    let (model, mut state) = Model::restore(funded(&model, &world, &inputs)).unwrap();
+    let before = state.checkpoint();
+    let queued = model.closed_lake_frontier(&state).unwrap();
+    assert_eq!(state.checkpoint(), before);
+    assert_eq!(queued.pending_inputs.len(), 2);
+    assert!(queued.surface_owner_basin_nodes.iter().all(Option::is_none));
+    assert!(
+        queued
+            .owners
+            .iter()
+            .all(|o| matches!(o,Owner::Leaf {liquid,..} if liquid.high_kilograms==0.))
+    );
+    model.advance(&mut state, 1).unwrap();
+    let before = state.checkpoint();
+    let merged = model.closed_lake_frontier(&state).unwrap();
+    assert_eq!(state.checkpoint(), before);
+    assert!(merged.pending_inputs.is_empty());
+    let parent = merged
+        .owners
+        .iter()
+        .find(|o| o.basin_node() == group.basin_node)
+        .unwrap();
+    assert!(matches!(parent, Owner::Parent { .. }));
+    assert!(merged.owners.iter().all(|o|!matches!(o,Owner::Leaf {terminal_region,..} if group.child_terminals.contains(terminal_region))));
+    for &r in parent.exposed_regions() {
+        assert_eq!(merged.surface_owner_basin_nodes[r], Some(group.basin_node));
+    }
+    let mut cp = state.checkpoint();
+    cp.settings.evaporation_enabled = true;
+    let (model, mut state) = Model::restore(cp).unwrap();
+    model.advance(&mut state, 3600).unwrap();
+    let mut unobserved = state.clone();
+    let before = serde_json::to_string(&state.checkpoint()).unwrap();
+    let split = model.closed_lake_frontier(&state).unwrap();
+    assert_eq!(serde_json::to_string(&state.checkpoint()).unwrap(), before);
+    assert!(
+        split
+            .owners
+            .iter()
+            .all(|o| o.basin_node() != group.basin_node)
+    );
+    for &r in &group.child_terminals {
+        let leaf = split
+            .owners
+            .iter()
+            .find(|o| matches!(o,Owner::Leaf {terminal_region,..} if *terminal_region==r))
+            .unwrap();
+        assert_eq!(split.surface_owner_basin_nodes[r], Some(leaf.basin_node()));
+    }
+    let sill = group
+        .regions
+        .iter()
+        .copied()
+        .find(|&r| world.terrain.elevation[r] == group.birth_level_meters)
+        .unwrap();
+    assert_eq!(split.surface_owner_basin_nodes[sill], None);
+    let mut independently_wet = vec![None; world.surface.areas.len()];
+    for owner in &split.owners {
+        for &r in owner.exposed_regions() {
+            assert!(independently_wet[r].replace(owner.basin_node()).is_none());
+        }
+    }
+    assert_eq!(independently_wet, split.surface_owner_basin_nodes);
+    assert!(
+        split
+            .owners
+            .windows(2)
+            .all(|w| w[0].basin_node() < w[1].basin_node())
+    );
+    assert_eq!(split.observation_version, "seasonal-closed-lake-frontier-1");
+    assert_eq!(split.simulation_model_version, "seasonal-moisture-12");
+    assert_eq!(split.recipe, world.recipe);
+    let json = serde_json::to_value(&split).unwrap();
+    assert_eq!(json["owners"][0]["ownerKind"], "leaf");
+    assert!(json["owners"][0]["basinNode"].is_number());
+    model.advance(&mut state, 60).unwrap();
+    model.advance(&mut unobserved, 60).unwrap();
+    assert_eq!(state, unobserved);
+}
+
+#[test]
+fn frontier_observation_preserves_legacy_contracts_and_reference_body_separation() {
+    use planimulation_core::seasonal_moisture::lake_frontier::Owner;
+    let (world, _, group) = fixture();
+    for mode in [
+        ClosedLakeExchange::FrozenLeafExposure,
+        ClosedLakeExchange::FrozenLeafExposureWithSpill,
+        ClosedLakeExchange::FrozenLeafExposureWithSpillAndMerge,
+        ClosedLakeExchange::FrozenCommonSillFrontier,
+    ] {
+        let model = Model::from_world(
+            &world,
+            Settings {
+                closed_lake_exchange: Some(mode),
+                ..settings()
+            },
+            Default::default(),
+            Default::default(),
+        )
+        .unwrap();
+        let mut state = model.initial_state();
+        let initial = model.closed_lake_frontier(&state).unwrap();
+        assert!(!initial.owners.is_empty());
+        assert!(initial.pending_inputs.is_empty());
+        for (r, &body) in world.water.body_ids.iter().enumerate() {
+            if body > 0 {
+                assert_eq!(initial.surface_owner_basin_nodes[r], None);
+            }
+        }
+        if mode == ClosedLakeExchange::FrozenLeafExposureWithSpillAndMerge {
+            let inputs: Vec<_> = group
+                .child_terminals
+                .iter()
+                .zip(&group.child_capacities_kilograms)
+                .map(|(&r, &cap)| (r, cap))
+                .collect();
+            let (model, mut funded) = Model::restore(funded(&model, &world, &inputs)).unwrap();
+            model.advance(&mut funded, 1).unwrap();
+            let observation = model.closed_lake_frontier(&funded).unwrap();
+            assert!(observation.owners.iter().any(|o|matches!(o,Owner::Parent {contents,..} if contents.basin_node==group.basin_node && contents.surplus_high_kilograms==0.)));
+        }
+        model.advance(&mut state, 1).unwrap();
+        assert_eq!(
+            model.closed_lake_frontier(&state).unwrap().owners,
+            initial.owners
+        );
+    }
+    let old = Model::from_world(
+        &world,
+        Settings {
+            closed_lake_exchange: None,
+            ..settings()
+        },
+        Default::default(),
+        Default::default(),
+    )
+    .unwrap();
+    let before = old.initial_state();
+    assert!(old.closed_lake_frontier(&before).is_err());
+    assert_eq!(before, old.initial_state());
+    let mut recipe = world.recipe.clone();
+    recipe.water = planimulation_core::water::WaterSettings::Coverage { fraction: 1. };
+    let all_water = World::generate(recipe).unwrap();
+    let other = Model::from_world(
+        &all_water,
+        settings(),
+        Default::default(),
+        Default::default(),
+    )
+    .unwrap();
+    let observation = other.closed_lake_frontier(&other.initial_state()).unwrap();
+    assert!(observation.owners.is_empty() && observation.pending_inputs.is_empty());
+    assert!(
+        observation
+            .surface_owner_basin_nodes
+            .iter()
+            .all(Option::is_none)
+    );
+    let matching =
+        Model::from_world(&world, settings(), Default::default(), Default::default()).unwrap();
+    assert!(
+        matching
+            .closed_lake_frontier(&other.initial_state())
+            .is_err()
+    );
+}
+
+#[test]
+fn frontier_queue_keeps_its_parent_owner_without_becoming_surface_water_early() {
+    let (world, _, state, group) = activated(0.25);
+    let mut cp = state.checkpoint();
+    let r = group.child_terminals[0];
+    let amount = 64.;
+    let body = cp
+        .reference_body_high_kilograms
+        .as_ref()
+        .unwrap()
+        .iter()
+        .enumerate()
+        .max_by(|a, b| a.1.total_cmp(b.1))
+        .unwrap()
+        .0;
+    let mut ids = world.water.body_ids.clone();
+    ids.sort_unstable();
+    ids.dedup();
+    ids.retain(|&id| id > 0);
+    let contact = world
+        .water
+        .body_ids
+        .iter()
+        .position(|&id| id == ids[body])
+        .unwrap();
+    credit(
+        &mut cp.reference_body_high_kilograms.as_mut().unwrap()[body],
+        &mut cp.reference_body_low_kilograms.as_mut().unwrap()[body],
+        -amount,
+    );
+    cp.cumulative_surface_transfers[contact].liquid_evaporation += amount;
+    cp.cumulative_evaporation_kilograms[contact] += amount;
+    cp.cumulative_surface_transfers[r].rain += amount;
+    cp.cumulative_precipitation_kilograms[r] += amount;
+    credit(
+        &mut cp.cumulative_lake_capture_kilograms.as_mut().unwrap()[r],
+        &mut cp.cumulative_lake_capture_low_kilograms.as_mut().unwrap()[r],
+        amount,
+    );
+    let parent_capture = &mut cp
+        .merged_lake_state
+        .as_mut()
+        .unwrap()
+        .frontier
+        .as_mut()
+        .unwrap()
+        .capture_by_parent;
+    credit(
+        &mut parent_capture.high_kilograms[r],
+        &mut parent_capture.low_kilograms[r],
+        amount,
+    );
+    cp.leaf_spill_state
+        .as_mut()
+        .unwrap()
+        .pending_input
+        .high_kilograms[r] = amount;
+    let before = cp.merged_lake_state.as_ref().unwrap().parents[0].clone();
+    let (model, mut state) = Model::restore(cp).unwrap();
+    let untouched = state.clone();
+    let queued = model.closed_lake_frontier(&state).unwrap();
+    assert_eq!(state, untouched);
+    assert_eq!(queued.pending_inputs.len(), 1);
+    assert_eq!(queued.pending_inputs[0].terminal_region, r);
+    assert_eq!(queued.pending_inputs[0].owner_basin_node, group.basin_node);
+    assert_eq!(queued.pending_inputs[0].liquid.high_kilograms, amount);
+    assert_eq!(
+        model.budget(&state).unwrap().pending_lake_input_kilograms,
+        Some(amount)
+    );
+    model.advance(&mut state, 1).unwrap();
+    let settled = model.closed_lake_frontier(&state).unwrap();
+    assert!(settled.pending_inputs.is_empty());
+    let after = &state.checkpoint().merged_lake_state.unwrap().parents[0];
+    assert_eq!(
+        after.surplus_high_kilograms,
+        before.surplus_high_kilograms + amount
+    );
+}

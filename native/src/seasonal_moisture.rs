@@ -3,6 +3,7 @@
 //! Version 9 couples minimum-leaf lake exposure below the first connection.
 //! Version 10 adds bounded fast leaf spill with explicit pending/input owners.
 //! Version 11 adds one-level all-dry common-sill parent owners above birth.
+//! Version 12 additionally contracts and splits those one-level parents.
 //! Fixed bed/thermal forcing; no general split/merge, hydraulic discharge or energy feedback.
 use crate::{
     Recipe, World,
@@ -14,6 +15,7 @@ use serde::{Deserialize, Serialize};
 pub mod body_preparation;
 pub mod closed_lake;
 mod lake_exchange;
+pub mod lake_frontier;
 pub mod leaf_spill;
 pub mod merged_lake;
 pub mod preparation;
@@ -1719,8 +1721,21 @@ impl Model {
         self.lake_exchange
             .as_ref()
             .and_then(|l| l.merge.as_ref())
-            .ok_or("Merged lake inspection requires seasonal model 11.")?
+            .ok_or("Merged lake inspection requires a pinned common-sill model.")?
             .surfaces(&state.0)
+    }
+
+    /// Current closed-lake owners only; reference bodies and pending queues are distinct.
+    /// This derives geometry without changing simulation state or desktop protocols.
+    pub fn closed_lake_frontier(
+        &self,
+        state: &State,
+    ) -> Result<lake_frontier::Observation, String> {
+        self.budget(state)?;
+        self.lake_exchange
+            .as_ref()
+            .ok_or("Closed-lake frontier inspection requires a coupled lake model.")?
+            .observe_frontier(&state.0)
     }
 
     /// Actual response/routing bound, including any pinned upslope response.
