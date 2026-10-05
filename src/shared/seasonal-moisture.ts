@@ -4,6 +4,7 @@ import type { WindSettings } from '../core/seasonal-wind';
 export const MOISTURE_MODEL_VERSION = 'seasonal-moisture-3';
 export const OROGRAPHIC_MOISTURE_MODEL_VERSION = 'seasonal-moisture-4';
 export const PRECISE_MOISTURE_MODEL_VERSION = 'seasonal-moisture-7';
+export const REGIONAL_MOISTURE_MODEL_VERSION = 'seasonal-moisture-15';
 export const OROGRAPHIC_RESPONSE_MODEL_VERSION = 'orographic-response-1';
 export const MOISTURE_MAX_SECONDS = 3650 * 86400;
 export const MOISTURE_STOCK_FIELDS = ['surfaceKilograms', 'snowKilograms', 'soilKilograms',
@@ -33,6 +34,11 @@ export const DEFAULT_PRECISE_MOISTURE_SETTINGS = {
   ...DEFAULT_OROGRAPHIC_MOISTURE_SETTINGS, soilNumerics: 'compensated', surfaceNumerics: 'compensated',
   terminalNumerics: 'compensated',
 } as const;
+export const DEFAULT_REGIONAL_MOISTURE_SETTINGS = {
+  ...DEFAULT_PRECISE_MOISTURE_SETTINGS, initialActiveSurfaceDepthMeters: 10, maxCoupledStepSeconds: 900,
+  referenceWaterPool: 'fastConnectedBody',
+  closedLakeExchange: { frozenRegionalSurfaceFlow: { roughness: 0.04, maximumDiffusivitySquareMetersPerSecond: 1e6 } },
+} as const;
 export const MOISTURE_MODES = {
   baseline: { modelVersion: MOISTURE_MODEL_VERSION, schema: 3, protocol: 11,
     displayKind: 'moisture', checkpointKind: 'moistureCheckpoint', surfaceVersion: 'surface-water-1', settings: DEFAULT_MOISTURE_SETTINGS },
@@ -40,6 +46,8 @@ export const MOISTURE_MODES = {
     displayKind: 'orographicMoisture', checkpointKind: 'orographicMoistureCheckpoint', surfaceVersion: 'surface-water-1', settings: DEFAULT_OROGRAPHIC_MOISTURE_SETTINGS },
   precise: { modelVersion: PRECISE_MOISTURE_MODEL_VERSION, schema: 7, protocol: 13,
     displayKind: 'preciseMoisture', checkpointKind: 'preciseMoistureCheckpoint', surfaceVersion: 'surface-water-compensated-surface-1', settings: DEFAULT_PRECISE_MOISTURE_SETTINGS },
+  regional: { modelVersion: REGIONAL_MOISTURE_MODEL_VERSION, schema: 15, protocol: 14,
+    displayKind: 'regionalMoisture', checkpointKind: 'regionalMoistureCheckpoint', surfaceVersion: 'surface-water-compensated-surface-1', settings: DEFAULT_REGIONAL_MOISTURE_SETTINGS },
 } as const;
 export type MoistureMode = keyof typeof MOISTURE_MODES;
 
@@ -52,14 +60,41 @@ export interface MoistureBudget extends Record<MoistureStock, number> {
   cumulativeRunoffTransfers: Record<RunoffTransfer, number>;
   maximumRelativeLocalSurfaceLedgerResidual: number;
   vaporLedgerResidualKilograms: number;
+  /** Only the regional ownership mode; do not add flow capture to stocks. */
+  referenceBodyWaterKilograms?: number;
+  cumulativeLakeCaptureKilograms?: number;
+}
+
+export interface RegionalFlowDiagnostics {
+  substeps: number;
+  transferredKilograms: number;
+  deferredRequestKilograms: number;
+  deferredRequests: number;
+  maximumDeferredRequestKilograms: number;
+  deferredEvaporationRequests: number;
+  deferredEvaporationRequestKilograms: number;
+  maximumDeferredEvaporationKilograms: number;
+}
+export interface RegionalSurfaceFrame {
+  depthMeters: Float64Array;
+  /** Zero for slots without representable regional depth, not reference-body heads. */
+  levelsMeters: Float64Array;
+  cumulativeIncomingKilograms: Float64Array;
+  cumulativeOutgoingKilograms: Float64Array;
+  cumulativeTransferredKilograms: number;
+  referenceBodyIds: Uint32Array;
+  referenceBodyHighKilograms: Float64Array;
+  referenceBodyLowKilograms: Float64Array;
+  explicitStabilityBoundSeconds: number;
+  flow: RegionalFlowDiagnostics;
 }
 
 /** Read-only presentation data. No geometry, cumulative regional corrections,
  * RNG state, or resumable simulation state is transferred here. */
 export interface MoistureFrame {
   epoch: number;
-  modelVersion: typeof MOISTURE_MODEL_VERSION | typeof OROGRAPHIC_MOISTURE_MODEL_VERSION | typeof PRECISE_MOISTURE_MODEL_VERSION;
-  settings: typeof DEFAULT_MOISTURE_SETTINGS | typeof DEFAULT_OROGRAPHIC_MOISTURE_SETTINGS | typeof DEFAULT_PRECISE_MOISTURE_SETTINGS;
+  modelVersion: typeof MOISTURE_MODEL_VERSION | typeof OROGRAPHIC_MOISTURE_MODEL_VERSION | typeof PRECISE_MOISTURE_MODEL_VERSION | typeof REGIONAL_MOISTURE_MODEL_VERSION;
+  settings: typeof DEFAULT_MOISTURE_SETTINGS | typeof DEFAULT_OROGRAPHIC_MOISTURE_SETTINGS | typeof DEFAULT_PRECISE_MOISTURE_SETTINGS | typeof DEFAULT_REGIONAL_MOISTURE_SETTINGS;
   temperatureSettings: TemperatureSettings;
   windSettings: WindSettings;
   elapsedSeconds: number;
@@ -73,4 +108,5 @@ export interface MoistureFrame {
   surfaceTransfers: Record<SurfaceTransfer, Float64Array>;
   runoffTransfers: Record<RunoffTransfer, Float64Array>;
   budget: MoistureBudget;
+  regionalSurface?: RegionalSurfaceFrame;
 }

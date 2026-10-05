@@ -1930,6 +1930,19 @@ impl Model {
             .observe(&state.0)
     }
 
+    /// Read-only cumulative face transfers, distinct from owned regional liquid.
+    pub fn regional_surface_transfer_observation(
+        &self,
+        state: &State,
+    ) -> Result<surface_flow::TransferObservation, String> {
+        self.budget(state)?;
+        self.lake_exchange
+            .as_ref()
+            .and_then(|l| l.regional.as_ref())
+            .ok_or("Regional flow observation requires its pinned model.")?
+            .observe_transfers(&state.0)
+    }
+
     /// Actual response/routing bound, including any pinned upslope response.
     /// Caller intervals shorter than this bound provide temporal refinement.
     pub fn maximum_coupled_step_seconds(&self) -> Result<u64, String> {

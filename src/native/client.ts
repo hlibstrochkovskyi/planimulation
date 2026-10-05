@@ -341,6 +341,7 @@ export class NativeController {
   private moistureInitialized = false;
   private moistureMode: MoistureMode = 'baseline';
   private moistureBudget: MoistureBudget | undefined;
+  private moistureFaceTransfer: number | undefined;
   private sequence = 0;
   private revision = 0;
   private prepared: { epoch: number; count: number; waterStep: number; moistureFrame?: MoistureFrame } | null = null;
@@ -431,6 +432,7 @@ export class NativeController {
     this.moistureMode = (Object.keys(MOISTURE_MODES) as MoistureMode[]).find((key) =>
       MOISTURE_MODES[key].modelVersion === moisture?.modelVersion) ?? 'baseline';
     this.moistureBudget = moisture?.budget;
+    this.moistureFaceTransfer = moisture?.regionalSurface?.cumulativeTransferredKilograms;
   }
   cancel(): void { this.revision++; this.candidate?.close(); this.candidate = null; this.prepared = null; this.preparedWorld = null; }
   resolvedInitialWorld(epoch: number): World {
@@ -477,6 +479,9 @@ export class NativeController {
   async initializePreciseMoisture(epoch: number): Promise<MoistureFrame> {
     return this.requestMoisture(epoch, 0, 'precise');
   }
+  async initializeRegionalMoisture(epoch: number): Promise<MoistureFrame> {
+    return this.requestMoisture(epoch, 0, 'regional');
+  }
   private async requestMoisture(epoch: number, seconds: number, initialize?: Exclude<MoistureMode, 'baseline'>): Promise<MoistureFrame> {
     if (!this.active || !this.activeWorld || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
     if (!Number.isSafeInteger(seconds) || seconds < 0 || seconds > 86400
@@ -485,14 +490,15 @@ export class NativeController {
     if (this.waterStep > 0) throw new Error('Regenerate before starting seasonal water after manual water input.');
     if (initialize && this.moistureInitialized) throw new Error('Regenerate before choosing a different seasonal-water model.');
     const session = this.active, origin = this.activeWorld;
-    const packet = await session.request(initialize ? { command: initialize === 'precise' ? 'initializePreciseMoisture' : 'initializeOrographicMoisture' } : { command: 'seasonalMoisture', seconds });
+    const packet = await session.request(initialize ? { command: initialize === 'regional' ? 'initializeRegionalMoisture' : initialize === 'precise' ? 'initializePreciseMoisture' : 'initializeOrographicMoisture' } : { command: 'seasonalMoisture', seconds });
     if (this.active !== session || this.epoch !== epoch) throw new Error('Stale seasonal-water response.');
     try {
       const mode = initialize ?? this.moistureMode;
-      const frame = decodeSeasonalMoisture(packet, origin, epoch, this.moistureSeconds + seconds, seconds, this.moistureBudget, mode);
+      const frame = decodeSeasonalMoisture(packet, origin, epoch, this.moistureSeconds + seconds, seconds, this.moistureBudget, mode, this.moistureFaceTransfer);
       this.moistureSeconds = frame.elapsedSeconds; this.moistureInitialized = true;
       this.moistureBudget = frame.budget;
       this.moistureMode = mode;
+      this.moistureFaceTransfer = frame.regionalSurface?.cumulativeTransferredKilograms;
       return frame;
     } catch (error) { session.close(); throw error; }
   }

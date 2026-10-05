@@ -64,6 +64,16 @@ pub struct Observation {
     pub explicit_stability_bound_seconds: f64,
 }
 
+/// Rounded leading cumulative graph fields; these are flows, never stocks.
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransferObservation {
+    pub observation_version: String,
+    pub cumulative_incoming_kilograms: Vec<f64>,
+    pub cumulative_outgoing_kilograms: Vec<f64>,
+    pub cumulative_transferred_kilograms: f64,
+}
+
 #[derive(Clone, Debug, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FlowBudget {
@@ -110,6 +120,32 @@ pub(super) struct Layout {
     pub stable_seconds: f64,
 }
 impl Layout {
+    pub fn observe_transfers(
+        &self,
+        cp: &SeasonalCheckpoint,
+    ) -> Result<TransferObservation, String> {
+        let incoming = self.incoming(cp)?;
+        let history = &cp
+            .regional_surface_flow
+            .as_ref()
+            .unwrap()
+            .directed_transfers;
+        let mut outgoing = vec![CompensatedStock::new(0., 0., f64::MAX)?; self.areas.len()];
+        for (f, face) in self.faces.iter().enumerate() {
+            for direction in 0..2 {
+                let flow = history.stock(2 * f + direction)?;
+                let donor = &mut outgoing[face.regions[direction]];
+                donor.credit(flow.high)?;
+                donor.credit(flow.low)?;
+            }
+        }
+        Ok(TransferObservation {
+            observation_version: "regional-surface-transfers-1".into(),
+            cumulative_incoming_kilograms: incoming.into_iter().map(|v| v.high).collect(),
+            cumulative_outgoing_kilograms: outgoing.into_iter().map(|v| v.high).collect(),
+            cumulative_transferred_kilograms: history.total(),
+        })
+    }
     pub fn observe(&self, cp: &SeasonalCheckpoint) -> Result<Observation, String> {
         let depths: Vec<_> = cp
             .terminal_water_kilograms

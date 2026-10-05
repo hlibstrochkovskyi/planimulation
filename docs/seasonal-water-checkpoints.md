@@ -6,6 +6,8 @@ The October 4 [upslope-response increment](orographic-response.md) additionally 
 
 ## Use and saved scope
 
+The October 5 [regional-water desktop increment](regional-water-desktop.md) additionally supports the existing complete model-15/schema-15 checkpoint via `regionalMoistureCheckpoint`, protocol 14. It preserves finite body high/low inventories, regional liquid high/low fields, capture provenance and complete directed-face high/low histories. Its distinct display frame does not expand or reinterpret protocols 11–13. Body liquid is counted once, never per wet region. Only its pinned product settings (10 m active partition, 900 s coupling ceiling and default capped mobility) are accepted; other headless settings explicitly reject. Existing token/file/candidate rules below apply unchanged.
+
 The [surface/terminal precision increment](surface-precision.md) separately supports version 7/schema 7 via `preciseMoistureCheckpoint`, protocol 13. Its four signed low-component arrays and terminal-stock module pin are native physical state, not ledger corrections. Original decimal tokens, candidate validation, exact continuation, and file bounds remain unchanged. Headless-only schemas 5/6 reject; no file is silently upgraded. Historical version-3 validation below remains separate evidence.
 
 Pause seasonal playback and wait for its outstanding interval to finish. **Save seasonal checkpoint** exports a settled native snapshot. **Open seasonal checkpoint** can replace either an ordinary world or a paused seasonal/manual session through a separate candidate process. A canceled or failed open keeps the accepted native state and its displayed fields.

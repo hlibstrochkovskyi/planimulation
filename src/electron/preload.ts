@@ -14,6 +14,7 @@ const api: DesktopAPI = {
   seasonalMoisture: (epoch, seconds) => ipcRenderer.invoke('world:seasonalMoisture', epoch, seconds),
   initializeOrographicMoisture: (epoch) => ipcRenderer.invoke('world:initializeOrographicMoisture', epoch),
   initializePreciseMoisture: (epoch) => ipcRenderer.invoke('world:initializePreciseMoisture', epoch),
+  initializeRegionalMoisture: (epoch) => ipcRenderer.invoke('world:initializeRegionalMoisture', epoch),
   openSeasonalCheckpoint: () => ipcRenderer.invoke('seasonal:openCheckpoint'),
   saveSeasonalCheckpoint: (epoch) => ipcRenderer.invoke('seasonal:saveCheckpoint', epoch),
   prescribeWater: (epoch, region, mode) => ipcRenderer.invoke('world:prescribeWater', epoch, region, mode),

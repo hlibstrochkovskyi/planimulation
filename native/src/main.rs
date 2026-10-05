@@ -38,6 +38,7 @@ enum Command {
     ExportMoisture,
     InitializeOrographicMoisture,
     InitializePreciseMoisture,
+    InitializeRegionalMoisture,
     RestoreMoisture {
         #[serde(rename = "checkpointJson")]
         checkpoint_json: String,
@@ -53,6 +54,22 @@ const MAX_SEASONAL_COMMAND_BYTES: u64 = 2 * MAX_SEASONAL_CHECKPOINT_BYTES as u64
 enum WaterMode {
     OneCubicKilometer,
     FillToSpill,
+}
+
+fn write_moisture(
+    out: &mut impl std::io::Write,
+    model: &MoistureModel,
+    state: &MoistureState,
+    step: Option<&planimulation_core::seasonal_moisture::Step>,
+    seconds: u32,
+) -> Result<(), String> {
+    if model.model_version()
+        == planimulation_core::seasonal_moisture::REGIONAL_SURFACE_MODEL_VERSION
+    {
+        wire::regional_moisture(out, model, state, step, seconds)
+    } else {
+        wire::seasonal_moisture(out, model, state, step, seconds)
+    }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -118,7 +135,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         } else {
                             Some(model.advance(state, seconds)?)
                         };
-                        wire::seasonal_moisture(&mut output, model, state, step.as_ref(), seconds)?;
+                        write_moisture(&mut output, model, state, step.as_ref(), seconds)?;
                     } else {
                         if water_state
                             .as_ref()
@@ -145,8 +162,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
                 command @ (Command::InitializeOrographicMoisture
-                | Command::InitializePreciseMoisture) => {
+                | Command::InitializePreciseMoisture
+                | Command::InitializeRegionalMoisture) => {
                     let precise = matches!(command, Command::InitializePreciseMoisture);
+                    let regional = matches!(command, Command::InitializeRegionalMoisture);
                     let w = world.as_ref().ok_or("Generate a world first.")?;
                     if moisture_state.is_some()
                         || water_state
@@ -157,7 +176,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             "Regenerate before choosing a different seasonal-water model.".into(),
                         );
                     }
-                    let settings = planimulation_core::seasonal_moisture::Settings {
+                    let settings = if regional {
+                        wire::regional_moisture_settings()
+                    } else {
+                        planimulation_core::seasonal_moisture::Settings {
                         orography: Some(Default::default()),
                         soil_numerics: precise.then_some(
                             planimulation_core::seasonal_moisture::SoilNumerics::Compensated,
@@ -169,6 +191,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             planimulation_core::seasonal_moisture::TerminalNumerics::Compensated,
                         ),
                         ..Default::default()
+                    }
                     };
                     let model = MoistureModel::from_world(
                         w,
@@ -177,7 +200,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         Default::default(),
                     )?;
                     let state = model.initial_state();
-                    wire::seasonal_moisture(&mut output, &model, &state, None, 0)?;
+                    write_moisture(&mut output, &model, &state, None, 0)?;
                     water_state = None;
                     moisture_state = Some((model, state));
                 }
@@ -185,7 +208,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let (model, state) = moisture_state
                         .as_ref()
                         .ok_or("Initialize seasonal water before saving it.")?;
-                    wire::seasonal_checkpoint(&mut output, model, state)?;
+                    if model.model_version()
+                        == planimulation_core::seasonal_moisture::REGIONAL_SURFACE_MODEL_VERSION
+                    {
+                        wire::regional_moisture_checkpoint(&mut output, model, state)?;
+                    } else {
+                        wire::seasonal_checkpoint(&mut output, model, state)?;
+                    }
                 }
                 Command::RestoreMoisture { checkpoint_json } => {
                     let w = world.as_ref().ok_or("Generate a world first.")?;
@@ -208,14 +237,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             "Seasonal checkpoint recipe does not match the generated world.".into(),
                         );
                     }
-                    let desktop_settings = planimulation_core::seasonal_moisture::Settings {
-                        orography: checkpoint.settings.orography.map(|_| Default::default()),
-                        soil_numerics: checkpoint.settings.surface_numerics.map(|_| {
-                            planimulation_core::seasonal_moisture::SoilNumerics::Compensated
-                        }),
-                        surface_numerics: checkpoint.settings.surface_numerics,
-                        terminal_numerics: checkpoint.settings.terminal_numerics,
-                        ..Default::default()
+                    let desktop_settings = if checkpoint.model_version
+                        == planimulation_core::seasonal_moisture::REGIONAL_SURFACE_MODEL_VERSION
+                    {
+                        wire::regional_moisture_settings()
+                    } else {
+                        planimulation_core::seasonal_moisture::Settings {
+                            orography: checkpoint.settings.orography.map(|_| Default::default()),
+                            soil_numerics: checkpoint.settings.surface_numerics.map(|_| {
+                                planimulation_core::seasonal_moisture::SoilNumerics::Compensated
+                            }),
+                            surface_numerics: checkpoint.settings.surface_numerics,
+                            terminal_numerics: checkpoint.settings.terminal_numerics,
+                            ..Default::default()
+                        }
                     };
                     if checkpoint.settings != desktop_settings
                         || checkpoint.temperature_settings != Default::default()
@@ -227,7 +262,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         );
                     }
                     let (model, state) = MoistureModel::restore(checkpoint)?;
-                    wire::seasonal_moisture(&mut output, &model, &state, None, 0)?;
+                    write_moisture(&mut output, &model, &state, None, 0)?;
                     water_state = None;
                     moisture_state = Some((model, state));
                 }

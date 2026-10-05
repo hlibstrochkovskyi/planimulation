@@ -16,7 +16,7 @@ import type { TemperatureNormals } from '../core/seasonal-temperature';
 import type { WindNormals } from '../core/seasonal-wind';
 import { MOISTURE_MAX_SECONDS, MOISTURE_STOCK_FIELDS, SURFACE_TRANSFER_FIELDS, RUNOFF_TRANSFER_FIELDS } from '../shared/seasonal-moisture';
 import type { MoistureFrame } from '../shared/seasonal-moisture';
-import { MOISTURE_LAYERS, isMoistureLayer, moistureCalendar } from './seasonal-moisture';
+import { MOISTURE_LAYERS, isMoistureLayer, isRegionalLayer, moistureCalendar } from './seasonal-moisture';
 
 function element<T extends HTMLElement>(id: string): T {
   const result = document.getElementById(id);
@@ -55,6 +55,7 @@ const windLayerButton = document.querySelector<HTMLButtonElement>('[data-layer="
 const moistureStart = element<HTMLButtonElement>('moisture-start');
 const moistureStartOrographic = element<HTMLButtonElement>('moisture-start-orographic');
 const moistureStartPrecise = element<HTMLButtonElement>('moisture-start-precise');
+const moistureStartRegional = element<HTMLButtonElement>('moisture-start-regional');
 const moistureStep = element<HTMLButtonElement>('moisture-step');
 const moisturePlay = element<HTMLButtonElement>('moisture-play');
 const moistureInterval = element<HTMLSelectElement>('moisture-interval');
@@ -106,6 +107,7 @@ function updateExperimentControls(): void {
   moistureStart.disabled = !world || busy || playing || hasSeasonal || (waterFrame?.step ?? 0) > 0;
   moistureStartOrographic.disabled = moistureStart.disabled;
   moistureStartPrecise.disabled = moistureStart.disabled;
+  moistureStartRegional.disabled = moistureStart.disabled;
   moistureStep.disabled = !hasSeasonal || busy || moisturePlaying || finished;
   // Pause must remain available while the current native step is in flight.
   moisturePlay.disabled = !hasSeasonal || finished || (!moisturePlaying && busy);
@@ -118,7 +120,10 @@ function updateExperimentControls(): void {
   element<HTMLButtonElement>('generate').disabled = checkpointOpening || waterBusy;
   element<HTMLButtonElement>('open-recipe').disabled = checkpointOpening || waterBusy;
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-layer]')) {
-    if (isMoistureLayer(button.dataset.layer ?? '')) button.disabled = !hasSeasonal || generating;
+    const layer = button.dataset.layer ?? '';
+    if (isMoistureLayer(layer)) button.disabled = !hasSeasonal || generating
+      || (isRegionalLayer(layer) && !moistureFrame?.regionalSurface)
+      || (layer === 'terminalWater' && !!moistureFrame?.regionalSurface);
   }
   const manualBlocked = !world || busy || playing || moisturePlaying || hasSeasonal;
   waterAdd.disabled = manualBlocked || selected === null; waterSpill.disabled = waterAdd.disabled;
@@ -159,13 +164,20 @@ function renderMoisture(): void {
     ? `Read-only observation · no interval transfers · next forcing month ${month}. Advance to record new rates; the normals selector is independent.`
     : `Last interval ${frame.intervalSeconds / 3600} h · ${frame.coupledSubsteps} coupled / ${frame.transportSubsteps} transport substeps · next forcing month ${month}. The normals selector is independent. Pause may finish one requested interval.`;
   const budget = frame.budget;
+  const regional = frame.regionalSurface;
+  const names = regional ? stockNames.map((name, i) => i === 4 ? 'Regional pooled liquid' : name) : stockNames;
   element('moisture-budget-details').dataset.relativeMassResidual = String(budget.residualKilograms / Math.max(budget.initialMobileWaterKilograms, 1));
   element('moisture-budget-details').dataset.relativeLedgerResidual = String(budget.maximumRelativeLocalSurfaceLedgerResidual);
   const volume = (kilograms: number): string => `${budgetNumber.format(kilograms / 1e12)} km³ WE`;
-  const total = MOISTURE_STOCK_FIELDS.reduce((sum, key) => sum + budget[key], 0);
+  const total = MOISTURE_STOCK_FIELDS.reduce((sum, key) => sum + budget[key], budget.referenceBodyWaterKilograms ?? 0);
   appendDetails(element('moisture-budget-details'), [
     ['Initial mobile partition', volume(budget.initialMobileWaterKilograms)],
-    ...MOISTURE_STOCK_FIELDS.map((key, i): [string, string] => [stockNames[i], volume(budget[key])]),
+    ...MOISTURE_STOCK_FIELDS.map((key, i): [string, string] => [names[i], volume(budget[key])]),
+    ...(regional ? [['Finite reference-body liquid', volume(budget.referenceBodyWaterKilograms!)],
+      ['Cumulative surface-face transfers · flow integral', volume(regional.cumulativeTransferredKilograms)],
+      ['Last interval · accepted surface-face transfers', volume(regional.flow.transferredKilograms)],
+      ['Last interval · unapplied face requests', `${regional.flow.deferredRequests} requests · ${budgetNumber.format(regional.flow.deferredRequestKilograms)} kg · retained at donors`],
+      ['Last interval · unapplied evaporation requests', `${regional.flow.deferredEvaporationRequests} requests · ${budgetNumber.format(regional.flow.deferredEvaporationRequestKilograms)} kg · retained at donors`]] as Array<[string, string]> : []),
     ['Total current owned water', volume(total)],
     ['Mass residual / initial', (budget.residualKilograms / Math.max(budget.initialMobileWaterKilograms, 1)).toExponential(3)],
     ['Maximum regional ledger residual', budget.maximumRelativeLocalSurfaceLedgerResidual.toExponential(3)],
@@ -176,7 +188,9 @@ function renderMoisture(): void {
   ]);
   const response = 'orography' in frame.settings ? ' · experimental upslope-enhanced removal of supersaturation; not calibrated' : '';
   const precision = 'terminalNumerics' in frame.settings ? ' · checkpointed liquid/snow/soil/terminal low components; regional display values are rounded leading fields' : '';
-  element('moisture-budget-note').textContent = `${frame.modelVersion}${response}${precision} · six exclusive stocks. Flow integrals can count recirculated water and must not be added to the inventory. Fixed geography; no lake levels or deep-water replenishment. Save seasonal checkpoint preserves the complete native state, not just these display values.`;
+  element('moisture-budget-note').textContent = regional
+    ? `${frame.modelVersion} · regional columns plus finite reference-body liquid, counted once per body. Capped Manning-inspired mobility; not calibrated. Initial body heads/coasts remain prescribed. Whole-column wet/dry and soil coupling are coarse approximations. Flow integrals and deferred requests are not stocks. Save preserves complete native state.`
+    : `${frame.modelVersion}${response}${precision} · six exclusive stocks. Flow integrals can count recirculated water and must not be added to the inventory. Fixed geography; no lake levels or deep-water replenishment. Save seasonal checkpoint preserves the complete native state, not just these display values.`;
   if (selected === null) {
     element('moisture-selection-title').textContent = 'Select a region';
     element('moisture-selection-details').replaceChildren();
@@ -184,9 +198,17 @@ function renderMoisture(): void {
     const id = selected, area = world.surface.areasSquareMeters[id];
     const column = (kg: number): string => `${budgetNumber.format(kg / area)} mm WE`;
     element('moisture-selection-title').textContent = `Region ${id} · seasonal water`;
-    element('moisture-selection-note').textContent = `At ${frame.elapsedSeconds} elapsed seconds. Transfer amounts cover only the last ${frame.intervalSeconds / 3600} h, not an annual normal. Terminal columns use fixed reference area, not a lake depth. Receiver: ${world.drainage.receivers[id] === id ? 'self · terminal' : `region ${world.drainage.receivers[id]}`}.`;
+    element('moisture-selection-note').textContent = regional
+      ? `At ${frame.elapsedSeconds} elapsed seconds. Surface-face totals are cumulative, not rates. Regional depth is pooled liquid / whole computational area; reference-body heads are prescribed initial geometry. Last-interval atmospheric/runoff transfers cover ${frame.intervalSeconds / 3600} h. Visible shorelines are approximate.`
+      : `At ${frame.elapsedSeconds} elapsed seconds. Transfer amounts cover only the last ${frame.intervalSeconds / 3600} h, not an annual normal. Terminal columns use fixed reference area, not a lake depth. Receiver: ${world.drainage.receivers[id] === id ? 'self · terminal' : `region ${world.drainage.receivers[id]}`}.`;
+    const bodySlot = regional?.referenceBodyIds.indexOf(world.water.bodyIds[id]) ?? -1;
     appendDetails(element('moisture-selection-details'), [
-      ...MOISTURE_STOCK_FIELDS.map((key, i): [string, string] => [stockNames[i], column(frame.stocks[key][id])]),
+      ...MOISTURE_STOCK_FIELDS.map((key, i): [string, string] => [names[i], column(frame.stocks[key][id])]),
+      ...(regional ? [['Regional pooled liquid depth', `${budgetNumber.format(regional.depthMeters[id])} m`],
+        ['Cumulative surface-face inflow', volume(regional.cumulativeIncomingKilograms[id])],
+        ['Cumulative surface-face outflow', volume(regional.cumulativeOutgoingKilograms[id])],
+        ...(bodySlot >= 0 ? [['Reference body owner', `Body ${regional.referenceBodyIds[bodySlot]} · shared stock, not allocated to this region`],
+          ['Whole reference-body mobile liquid', volume(regional.referenceBodyHighKilograms[bodySlot] + regional.referenceBodyLowKilograms[bodySlot])]] : [])] as Array<[string, string]> : []),
       ...SURFACE_TRANSFER_FIELDS.map((key, i): [string, string] => [`Last interval · ${surfaceTransferNames[i]}`, column(frame.surfaceTransfers[key][id])]),
       ...RUNOFF_TRANSFER_FIELDS.map((key, i): [string, string] => [`Last interval · ${runoffTransferNames[i]}`, column(frame.runoffTransfers[key][id])]),
       ['Mean drainage departure', frame.intervalSeconds ? `${budgetNumber.format(frame.runoffTransfers.sent[id] / 1000 / frame.intervalSeconds)} m³/s · not hydraulic discharge` : 'No interval'],
@@ -195,7 +217,7 @@ function renderMoisture(): void {
   updateExperimentControls();
 }
 
-async function requestMoisture(seconds: number, initialize?: 'orographic' | 'precise'): Promise<void> {
+async function requestMoisture(seconds: number, initialize?: 'orographic' | 'precise' | 'regional'): Promise<void> {
   if (!world || moistureBusyEpoch === epoch || waterBusy || checkpointOpening || advancing
     || budgetBusyEpoch === epoch || document.body.dataset.state === 'generating') return;
   const activeEpoch = epoch, origin = world, request = generationId;
@@ -203,13 +225,18 @@ async function requestMoisture(seconds: number, initialize?: 'orographic' | 'pre
   const started = performance.now();
   try {
     const frame = initialize
-      ? initialize === 'precise' ? await api.initializePreciseMoisture(activeEpoch) : await api.initializeOrographicMoisture(activeEpoch)
+      ? initialize === 'regional' ? await api.initializeRegionalMoisture(activeEpoch) : initialize === 'precise' ? await api.initializePreciseMoisture(activeEpoch) : await api.initializeOrographicMoisture(activeEpoch)
       : await api.seasonalMoisture(activeEpoch, seconds);
     const requestMilliseconds = performance.now() - started;
     // An accepted old-world step may finish while a replacement is preparing.
     // Retain it until that world is actually replaced, including cancellation.
     if (frame.epoch !== epoch || world !== origin) return;
     moistureFrame = frame; map.setMoistureFrame(frame);
+    if (frame.regionalSurface) {
+      maximumWaterDepth = Math.max(world.water.depthMeters.reduce((maximum, depth) => Math.max(maximum, depth), 0),
+        frame.regionalSurface.depthMeters.reduce((maximum, depth) => Math.max(maximum, depth), 0));
+      if (currentLayer === 'terminalWater') selectLayer('regionalDepth');
+    }
     waterBudget = null; renderWaterBudget(); renderMoisture(); updateLegend();
     element('moisture-time').dataset.requestMilliseconds = String(requestMilliseconds);
     element('model-label').textContent = `${world.recipe.modelVersion.toUpperCase()} · ${frame.modelVersion.toUpperCase()} · FIXED GEOGRAPHY`;
@@ -234,6 +261,7 @@ function pauseMoisture(): void {
 moistureStart.addEventListener('click', () => { pause(); void requestMoisture(0); });
 moistureStartOrographic.addEventListener('click', () => { pause(); void requestMoisture(0, 'orographic'); });
 moistureStartPrecise.addEventListener('click', () => { pause(); void requestMoisture(0, 'precise'); });
+moistureStartRegional.addEventListener('click', () => { pause(); void requestMoisture(0, 'regional'); });
 moistureStep.addEventListener('click', () => { pause(); void requestMoisture(Number(moistureInterval.value)); });
 moisturePlay.addEventListener('click', () => {
   if (moisturePlaying) pauseMoisture();
@@ -433,7 +461,7 @@ const map = createMap();
 
 function updateLegend(): void {
   const legends: Record<Exclude<Layer, keyof typeof MOISTURE_LAYERS>, [string, string, string]> = {
-    surface: [`Land and water surface${waterFrame ? ' · prescribed-water display' : ''} · globe shoreline is a display approximation · colors are not biomes`, '', ''],
+    surface: [`Land and water surface${moistureFrame?.regionalSurface ? ' · regional seasonal liquid; initial reference heads prescribed' : waterFrame ? ' · prescribed-water display' : ''} · globe shoreline is a display approximation · colors are not biomes`, '', ''],
     signal: ['Seed field · dimensionless diagnostic', '−1', '+1'],
     area: ['Region area · true spherical area', world ? `${number.format(world.stats.minimumAreaSquareMeters / 1e6)} km²` : 'min', world ? `${number.format(world.stats.maximumAreaSquareMeters / 1e6)} km²` : 'max'],
     latitude: ['Latitude · distance from the equator', '90°', '0°'],
@@ -444,8 +472,8 @@ function updateLegend(): void {
     thickness: ['Crust thickness · initial approximation, not elevation', '7 km', '35 km'],
     elevation: ['Elevation · reference datum, not sea level · world-relative color scale', `${number.format(terrainStats.minimumMeters)} m`, `${number.format(terrainStats.maximumMeters)} m`],
     uplift: ['Convergence uplift · strongest attenuated source, not accumulated history', '0 m', '12,000 m'],
-    depth: [`${waterFrame ? 'Prescribed-water display depth' : 'Initial water depth'} · gray = dry · globe shows the bed, not a water-surface mesh`, '0 m', `${number.format(maximumWaterDepth)} m`],
-    waterBodies: [`${waterFrame ? 'Connected displayed water bodies' : 'Connected water bodies'} · gray = dry · main ocean = body ${waterFrame?.mainOceanId || world?.water.mainOceanId || 'none'}`, '', ''],
+    depth: [`${moistureFrame?.regionalSurface ? 'Regional seasonal / prescribed initial-body depth' : waterFrame ? 'Prescribed-water display depth' : 'Initial water depth'} · gray = dry · globe shows the bed, not a water-surface mesh`, '0 m', `${number.format(maximumWaterDepth)} m`],
+    waterBodies: [`${moistureFrame?.regionalSurface ? 'Initial reference-body labels · not evolving regional connectivity' : waterFrame ? 'Connected displayed water bodies' : 'Connected water bodies'} · gray = dry · main ocean = body ${waterFrame?.mainOceanId || world?.water.mainOceanId || 'none'}`, '', ''],
     catchments: ['Drainage catchments · colors identify terminal outlets, not states or rivers', '', ''],
     contributingArea: ['Contributing dry-land area · logarithmic color scale · not river discharge', '0 km²', `${number.format(maximumContributingArea / 1e6)} km²`],
     basins: ['Basin branches · exclusive ownership, not full nested footprints or current lakes', '', ''],
@@ -541,6 +569,10 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
     terrainStats = summarizeTerrain(world.surface, world.terrain);
     const waterStats = summarizeWater(world.surface, world.water);
     maximumWaterDepth = waterStats.maximumDepthMeters;
+    if (restoredMoisture?.regionalSurface) {
+      maximumWaterDepth = Math.max(maximumWaterDepth,
+        restoredMoisture.regionalSurface.depthMeters.reduce((maximum, depth) => Math.max(maximum, depth), 0));
+    }
     const drainageStats = summarizeDrainage(world.surface, world.water, world.drainage);
     maximumContributingArea = drainageStats.maximumContributingAreaSquareMeters;
     basinStats = summarizeBasins(world.basins); basinChildren = basinTree(world.basins).children;
@@ -630,7 +662,9 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
       element('wind-note').textContent = `Seasonal surface-wind normals unavailable: ${windError}`;
     }
     if ((currentLayer === 'temperature' && !temperatureNormals) || (currentLayer === 'windSpeed' && !windNormals)
-      || (isMoistureLayer(currentLayer) && !moistureFrame)) {
+      || (isMoistureLayer(currentLayer) && !moistureFrame)
+      || (isRegionalLayer(currentLayer) && !moistureFrame?.regionalSurface)
+      || (currentLayer === 'terminalWater' && !!moistureFrame?.regionalSurface)) {
       document.querySelector<HTMLButtonElement>('[data-layer="surface"]')?.click();
     }
     cancel.hidden = true; save.disabled = false; saveResolved.disabled = false; exportView.disabled = false;
@@ -889,15 +923,17 @@ exportView.addEventListener('click', async () => {
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
   finally { exportView.disabled = world === null || document.body.dataset.state === 'generating'; }
 });
+function selectLayer(layer: Layer): void {
+  currentLayer = layer;
+  for (const other of document.querySelectorAll<HTMLButtonElement>('button[data-layer]')) {
+    const active = other.dataset.layer === layer;
+    other.classList.toggle('active', active);
+    other.setAttribute('aria-pressed', String(active));
+  }
+  map.setLayer(currentLayer); updateLegend();
+}
 for (const button of document.querySelectorAll<HTMLButtonElement>('[data-layer]')) {
-  button.addEventListener('click', () => {
-    currentLayer = button.dataset.layer as Layer;
-    for (const other of document.querySelectorAll('button[data-layer]')) {
-      other.classList.toggle('active', other === button);
-      other.setAttribute('aria-pressed', String(other === button));
-    }
-    map.setLayer(currentLayer); updateLegend();
-  });
+  button.addEventListener('click', () => selectLayer(button.dataset.layer as Layer));
 }
 temperatureMonthInput.addEventListener('change', () => {
   const month = Number(temperatureMonthInput.value);

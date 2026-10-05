@@ -9,14 +9,24 @@ export const MOISTURE_LAYERS = {
   vaporWater: { title: 'Atmospheric vapor column', stock: 'vaporKilograms', maximum: 60, unit: 'mm WE' },
   precipitation: { title: 'Last-interval precipitation · mean rate', maximum: 20, unit: 'mm/day' },
   runoffFlow: { title: 'Last-interval drainage departure · mean rate, not hydraulic discharge', maximum: 1000000, unit: 'm³/s' },
+  regionalDepth: { title: 'Regional pooled liquid depth · initial land only', maximum: 1000, unit: 'm' },
+  surfaceInflow: { title: 'Cumulative neighboring surface inflow · not a stock or rate', maximum: 1000, unit: 'km³' },
+  surfaceOutflow: { title: 'Cumulative neighboring surface outflow · not a stock or rate', maximum: 1000, unit: 'km³' },
 } as const;
 export type MoistureLayer = keyof typeof MOISTURE_LAYERS;
 export function isMoistureLayer(layer: string): layer is MoistureLayer { return Object.hasOwn(MOISTURE_LAYERS, layer); }
+export function isRegionalLayer(layer: string): boolean { return ['regionalDepth', 'surfaceInflow', 'surfaceOutflow'].includes(layer); }
 
 /** 1 kg/m² = 1 mm water equivalent at 1,000 kg/m³. Pool columns
  * use a fixed reference-region footprint, never a computed lake wet area. */
 export function moistureLayerValue(frame: MoistureFrame, layer: MoistureLayer, region: number, area: number): number {
   const info = MOISTURE_LAYERS[layer];
+  if (isRegionalLayer(layer)) {
+    const regional = frame.regionalSurface;
+    if (!regional) throw new Error('Regional layer requires the regional ownership mode.');
+    return layer === 'regionalDepth' ? regional.depthMeters[region]
+      : (layer === 'surfaceInflow' ? regional.cumulativeIncomingKilograms[region] : regional.cumulativeOutgoingKilograms[region]) / 1e12;
+  }
   if ('stock' in info) return frame.stocks[info.stock as MoistureStock][region] / area;
   if (frame.intervalSeconds === 0) return 0;
   return layer === 'precipitation'

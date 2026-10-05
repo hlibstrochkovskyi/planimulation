@@ -13,8 +13,10 @@ import { summarizeBasins } from '../core/basins';
 import type { TemperatureNormals } from '../core/seasonal-temperature';
 import type { WindNormals } from '../core/seasonal-wind';
 import type { MoistureFrame } from '../shared/seasonal-moisture';
-import { isMoistureLayer, moistureLayerColor, moistureLayerValue } from './seasonal-moisture';
+import { isMoistureLayer, isRegionalLayer, moistureLayerColor, moistureLayerValue } from './seasonal-moisture';
 import type { MoistureLayer } from './seasonal-moisture';
+import { regionalWaterDisplay } from './regional-water';
+import type { RegionalWaterDisplay } from './regional-water';
 
 export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill' | 'temperature' | 'windSpeed' | MoistureLayer;
 export type ViewMode = 'flat' | 'globe';
@@ -80,6 +82,8 @@ export class SurfaceMap {
   private values = new Float32Array(0);
   private world: World | null = null;
   private waterFrame: WaterFrame | null = null;
+  private regionalWater: RegionalWaterDisplay | null = null;
+  private waterSurfaceDirty = false;
   private temperatureNormals: TemperatureNormals | null = null;
   private windNormals: WindNormals | null = null;
   private moistureFrame: MoistureFrame | null = null;
@@ -186,7 +190,8 @@ export class SurfaceMap {
     const next = { flat: this.makeView(pair.flat), globe: this.makeView(pair.globe) };
     this.releaseViews(); this.views = next;
     this.scene.add(next.flat, next.globe); this.world = world; this.waterFrame = null; this.temperatureNormals = null; this.windNormals = null;
-    this.moistureFrame = null;
+    this.moistureFrame = null; this.regionalWater = null; this.waterSurfaceDirty = false;
+    delete this.canvas.dataset.regionalSurface;
     delete this.canvas.dataset.moistureSeconds;
     this.appliedExaggeration = NaN;
     this.terrainRange = summarizeTerrain(world.surface, world.terrain);
@@ -212,6 +217,12 @@ export class SurfaceMap {
       || frame.surfaceLevelsMeters.length !== this.world.stats.regionCount || frame.bodyIds.length !== this.world.stats.regionCount) {
       throw new Error('Prescribed-water display does not match this world.');
     }
+    this.waterFrame = frame;
+    this.updateWaterSurface(frame);
+    this.refreshField();
+  }
+  private updateWaterSurface(frame: WaterFrame | RegionalWaterDisplay): void {
+    if (!this.world || !this.views) throw new Error('Water display requires a prepared world.');
     const globe = this.views.globe;
     const bed = (globe.children[0] as Mesh<BufferGeometry>).geometry;
     const base = bed.userData.base as Float32Array;
@@ -228,11 +239,10 @@ export class SurfaceMap {
     const oldLines = globe.children[4] as LineSegments<BufferGeometry>;
     oldWater.geometry.dispose(); oldLines.geometry.dispose();
     oldWater.geometry = water; oldLines.geometry = lines;
-    this.waterFrame = frame;
     this.maximumDepth = frame.depthMeters.reduce((maximum, depth) => Math.max(maximum, depth), 0);
     this.appliedExaggeration = NaN;
     this.setExaggeration(this.exaggeration);
-    this.refreshField();
+    this.waterSurfaceDirty = false;
   }
   setTemperatureNormals(normals: TemperatureNormals | null): void {
     if (normals && (!this.world || normals.annualMeanCelsius.length !== this.world.stats.regionCount)) {
@@ -268,10 +278,21 @@ export class SurfaceMap {
       throw new Error('Seasonal-water display does not match this world.');
     }
     this.moistureFrame = frame;
+    if (frame?.regionalSurface) {
+      this.regionalWater = regionalWaterDisplay(this.world!, frame);
+      this.maximumDepth = this.regionalWater.depthMeters.reduce((maximum, depth) => Math.max(maximum, depth), 0);
+      this.waterSurfaceDirty = true;
+      this.canvas.dataset.regionalSurface = 'active';
+      if (this.layer === 'surface' && this.mode === 'globe') this.updateWaterSurface(this.regionalWater);
+    } else {
+      this.regionalWater = null;
+      delete this.canvas.dataset.regionalSurface;
+    }
     if (frame) this.canvas.dataset.moistureSeconds = String(frame.elapsedSeconds);
     else delete this.canvas.dataset.moistureSeconds;
-    // Only update the scalar texture. Bed, coasts, and water geometry stay fixed.
-    if (isMoistureLayer(this.layer)) this.refreshField();
+    // Legacy modes update only textures. Regional caps rebuild lazily only for
+    // the visible physical globe; flat/analytical playback never rebuilds them.
+    if (isMoistureLayer(this.layer) || (frame?.regionalSurface && ['surface', 'depth'].includes(this.layer))) this.refreshField();
   }
   setTemperatureMonth(month: number): void {
     if (!Number.isInteger(month) || month < 0 || month >= 12) throw new Error('Invalid seasonal month.');
@@ -280,6 +301,9 @@ export class SurfaceMap {
   }
   setMode(mode: ViewMode): void {
     this.mode = mode; this.canvas.dataset.view = mode;
+    if (mode === 'globe' && this.layer === 'surface' && this.regionalWater && this.waterSurfaceDirty) {
+      this.updateWaterSurface(this.regionalWater);
+    }
     this.material.uniforms.globe.value = mode === 'globe' ? 1 : 0;
     if (this.views) { this.views.flat.visible = mode === 'flat'; this.views.globe.visible = mode === 'globe'; }
     this.controls.object = this.camera; this.controls.enableRotate = mode === 'globe';
@@ -289,6 +313,9 @@ export class SurfaceMap {
   }
   setLayer(layer: Layer): void {
     this.layer = layer;
+    if (layer === 'surface' && this.mode === 'globe' && this.regionalWater && this.waterSurfaceDirty) {
+      this.updateWaterSurface(this.regionalWater);
+    }
     this.canvas.dataset.activeLayer = layer;
     this.material.uniforms.surfaceMode.value = layer === 'surface' ? 1 : 0;
     this.material.uniforms.temperatureMode.value = layer === 'temperature' ? 1 : 0;
@@ -308,10 +335,11 @@ export class SurfaceMap {
   refreshField(): void {
     if (!this.world || !this.texture) return;
     const w = this.world;
-    const depth = this.waterFrame?.depthMeters ?? w.water.depthMeters;
+    const depth = this.regionalWater?.depthMeters ?? this.waterFrame?.depthMeters ?? w.water.depthMeters;
     const bodyIds = this.waterFrame?.bodyIds ?? w.water.bodyIds;
+    const surfaceMask = this.regionalWater?.wetMask ?? bodyIds;
     for (let id = 0; id < w.stats.regionCount; id++) {
-      this.values[id] = isMoistureLayer(this.layer) ? (this.moistureFrame
+      this.values[id] = isMoistureLayer(this.layer) ? (this.moistureFrame && (!isRegionalLayer(this.layer) || this.moistureFrame.regionalSurface)
         ? moistureLayerColor(moistureLayerValue(this.moistureFrame, this.layer, id, w.surface.areasSquareMeters[id]), this.layer) : 0)
         : this.layer === 'plates' || this.layer === 'boundaries' ? w.tectonics.owners[id]
         : this.layer === 'temperature' ? (this.temperatureNormals
@@ -325,9 +353,9 @@ export class SurfaceMap {
           : (w.basins.spillLevels[w.basins.regionNodes[id]] - this.spillRange.minimum) / Math.max(1, this.spillRange.maximum - this.spillRange.minimum))
         : this.layer === 'catchments' ? w.drainage.outlets[id]
         : this.layer === 'contributingArea' ? Math.log1p(w.drainage.contributingArea[id] / 1e6) / Math.max(1e-30, Math.log1p(this.maximumContributingArea / 1e6))
-        : this.layer === 'surface' ? (bodyIds[id] ? -Math.max(1e-6, depth[id] / Math.max(1e-30, this.maximumDepth))
+        : this.layer === 'surface' ? (surfaceMask[id] ? -Math.max(1e-6, depth[id] / Math.max(1e-30, this.maximumDepth))
           : Math.max(0, w.terrain.elevation[id] - w.water.levelMeters) / Math.max(1, this.terrainRange.maximumMeters - w.water.levelMeters))
-        : this.layer === 'depth' ? (bodyIds[id] ? depth[id] / Math.max(1e-30, this.maximumDepth) : -1)
+        : this.layer === 'depth' ? (surfaceMask[id] ? depth[id] / Math.max(1e-30, this.maximumDepth) : -1)
         : this.layer === 'waterBodies' ? bodyIds[id]
         : this.layer === 'elevation' ? (w.terrain.elevation[id] - this.terrainRange.minimumMeters) / Math.max(1, this.terrainRange.maximumMeters - this.terrainRange.minimumMeters)
         : this.layer === 'uplift' ? w.terrain.convergence[id] / 12000
@@ -354,8 +382,9 @@ export class SurfaceMap {
     this.draw();
   }
   setExaggeration(requested: number): number {
-    const waterExtent = this.waterFrame
-      ? this.waterFrame.surfaceLevelsMeters.reduce((maximum, level) => Math.max(maximum, Math.abs(level)), 0)
+    const liveWater = this.regionalWater ?? this.waterFrame;
+    const waterExtent = liveWater
+      ? liveWater.surfaceLevelsMeters.reduce((maximum, level) => Math.max(maximum, Math.abs(level)), 0)
       : this.world?.water.mainOceanId ? this.world.water.levelMeters : undefined;
     const applied = this.world ? effectiveExaggeration(requested, this.world.recipe.radiusMeters, this.world.terrain.elevation,
       waterExtent) : requested;

@@ -92,4 +92,4 @@ Required before promotion:
 2. Review wet/dry exposure and submerged-soil coupling, fixed body heads, uniform roughness, capped mobility and their physical implications. Finite reference inventories do not currently change prescribed heads or coastlines.
 3. Denser active-flow ensembles, paired spatial-resolution/cap controls and longer/extreme trajectories. Coarse directed and annual accounting success is not a validated climate, hydrodynamic forecast, ecology readiness or completion of milestones C/D.
 
-The next increment is a visible opt-in product path, alongside those explicit physical review gates, not another sequence of special-case parent transitions.
+The subsequent [desktop integration](regional-water-desktop.md) implements item 1 with separate protocol-14 frames, both projections, explicit body ownership and complete schema-15 persistence. The core evidence above predates that integration. Items 2–3 remain physical qualification gates; product availability is not calibrated hydrology or default promotion.

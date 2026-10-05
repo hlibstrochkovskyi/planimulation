@@ -61,6 +61,9 @@ void app.whenReady().then(() => {
   ipcMain.handle('world:initializePreciseMoisture', (event, epoch: number) => {
     senderWindow(event); return core.initializePreciseMoisture(epoch);
   });
+  ipcMain.handle('world:initializeRegionalMoisture', (event, epoch: number) => {
+    senderWindow(event); return core.initializeRegionalMoisture(epoch);
+  });
   ipcMain.handle('world:prescribeWater', (event, epoch: number, region: number, mode: unknown) => {
     senderWindow(event);
     if (mode !== 'oneCubicKilometer' && mode !== 'fillToSpill') throw new Error('Invalid prescribed-water mode.');

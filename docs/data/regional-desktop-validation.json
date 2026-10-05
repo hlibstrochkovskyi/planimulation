@@ -1,0 +1,48 @@
+{
+  "recordVersion": "regional-desktop-validation-1",
+  "date": "2026-10-05",
+  "scope": "Opt-in desktop adapter/display/persistence for the unchanged schema-15 regional surface-flow model",
+  "modelVersion": "seasonal-moisture-15",
+  "schemaVersion": 15,
+  "protocol": 14,
+  "pinnedSettings": {
+    "initialActiveSurfaceDepthMeters": 10,
+    "maxCoupledStepSeconds": 900,
+    "roughness": 0.04,
+    "maximumDiffusivitySquareMetersPerSecond": 1000000
+  },
+  "checks": {
+    "npmTest": "passed: typecheck, native release build, Cargo all-target regressions and all 77 Node tests",
+    "nativeRegionalDesktop": "passed: exact field-major observations, body ownership, checkpoint replay, writer/interval refusal and preserved geography",
+    "regionalNodeTests": "passed: five tests including active-flow annual display accounting and replay",
+    "electronDesktop": "passed: full GUI suite, both projections, all new layers, headless-matched selected depth, visible cumulative inflow and complete file continuation",
+    "cargoClippyAllTargetsWarningsDenied": "passed",
+    "cargoFmtCheck": "passed",
+    "gitDiffCheck": "passed",
+    "existingIgnoredQualification": "The pre-existing long annual-snow qualification remains ignored in the standard suite; no new ignored tests"
+  },
+  "largestGridCheckpoint": {
+    "recipe": "DEFAULT_RECIPE with subdivision 6",
+    "regionCount": 40962,
+    "elapsedSeconds": 3600,
+    "bytesIncludingNewline": 17294662,
+    "replay": "Complete checkpoint text is identical on restore and after an additional 3600 seconds",
+    "limit": "Short integration check, not annual fine-grid qualification or maximum file-size evidence"
+  },
+  "activeFlowFixture": {
+    "recipe": "docs/scenarios/spill-connections.json with subdivision 2 and coverage 0.3",
+    "initialClockSeconds": 900,
+    "syntheticRainKilograms": [[8, 140000000000000000], [156, 240000000000000000]],
+    "funding": "Actual finite reference-body evaporation, with matching regional precipitation/capture and compensated stock histories",
+    "annualDisplayDays": 365,
+    "yearBoundaryReplay": "Complete next-day checkpoint text matches uninterrupted state, including nonzero directed-face low components",
+    "limit": "Artificial stress fixture, not spontaneous natural flooding"
+  },
+  "remainingGates": [
+    "Coarse whole-column wet/dry and submerged-soil coupling",
+    "Prescribed initial reference-body heads/coasts despite finite mobile inventories",
+    "Uniform roughness and capped mobility calibration",
+    "Dense active-flow spatial sensitivity and long/extreme trajectories",
+    "Model-15 GUI performance profiling; historical model-3 timings do not apply"
+  ]
+}
