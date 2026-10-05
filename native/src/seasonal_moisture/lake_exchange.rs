@@ -2,6 +2,7 @@
 //! Version 9 refuses first connections; version 10 settles explicit input queues.
 //! Version 11 supports bounded common-sill parents; no implicit spill collector.
 //! Version 12 adds one-level contraction/splitting and lifetime owner provenance.
+//! Version 13 receives unique leaf spill into active one-level parents below a head ceiling.
 use super::{Checkpoint, ClosedLakeExchange, closed_lake, leaf_spill, merged_lake, reference_pool};
 use crate::{World, moisture_transport::total_mass, surface_water::CompensatedStock};
 
@@ -9,6 +10,7 @@ pub(super) const MODEL_VERSION: &str = "closed-leaf-exchange-1";
 pub(super) const SPILL_MODEL_VERSION: &str = "closed-leaf-exchange-2";
 pub(super) const MERGE_MODEL_VERSION: &str = "closed-leaf-exchange-3";
 pub(super) const FRONTIER_MODEL_VERSION: &str = "closed-leaf-exchange-4";
+pub(super) const RECEIVING_MODEL_VERSION: &str = "closed-leaf-exchange-5";
 
 pub(super) struct Layout {
     pub geometry: closed_lake::Layout,
@@ -51,9 +53,15 @@ impl Layout {
             mode,
             ClosedLakeExchange::FrozenLeafExposureWithSpillAndMerge
                 | ClosedLakeExchange::FrozenCommonSillFrontier
+                | ClosedLakeExchange::FrozenCommonSillReceiving
         ) {
             let mut merge = merged_lake::Layout::from_world(world, &geometry)?;
-            merge.split_enabled = mode == ClosedLakeExchange::FrozenCommonSillFrontier;
+            merge.split_enabled = matches!(
+                mode,
+                ClosedLakeExchange::FrozenCommonSillFrontier
+                    | ClosedLakeExchange::FrozenCommonSillReceiving
+            );
+            merge.receiving_enabled = mode == ClosedLakeExchange::FrozenCommonSillReceiving;
             Some(merge)
         } else {
             None

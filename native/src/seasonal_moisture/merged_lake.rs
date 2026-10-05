@@ -1,5 +1,5 @@
 //! Bounded one-level, all-dry common-sill parents. Model 12 adds reversible drying.
-//! Neither contract supports nested activation or next-parent spill.
+//! Model 13 adds bounded external arrivals; none supports nested activation or next-parent spill.
 use super::{Checkpoint as SeasonalCheckpoint, closed_lake, leaf_spill, reference_pool};
 use crate::{World, moisture_transport::total_mass, reservoir, surface_water::CompensatedStock};
 use serde::{Deserialize, Serialize};
@@ -8,6 +8,7 @@ pub const MODEL_VERSION: &str = "common-sill-parent-1";
 pub const FRONTIER_MODEL_VERSION: &str = "common-sill-frontier-2";
 mod depletion;
 pub mod frontier;
+pub mod receiving;
 
 #[cfg(test)]
 mod tests;
@@ -164,6 +165,7 @@ pub(super) struct Layout {
     by_terminal: Vec<Option<usize>>,
     by_region: Vec<Option<usize>>,
     pub split_enabled: bool,
+    pub receiving_enabled: bool,
 }
 impl Layout {
     pub fn from_world(world: &World, leaves: &closed_lake::Layout) -> Result<Self, String> {
@@ -300,6 +302,7 @@ impl Layout {
             by_terminal,
             by_region,
             split_enabled: false,
+            receiving_enabled: false,
         })
     }
     pub fn candidates(&self) -> Vec<Candidate> {

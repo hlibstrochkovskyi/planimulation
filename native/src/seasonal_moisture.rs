@@ -4,6 +4,7 @@
 //! Version 10 adds bounded fast leaf spill with explicit pending/input owners.
 //! Version 11 adds one-level all-dry common-sill parent owners above birth.
 //! Version 12 additionally contracts and splits those one-level parents.
+//! Version 13 receives unique-edge leaf spill into an already active parent.
 //! Fixed bed/thermal forcing; no general split/merge, hydraulic discharge or energy feedback.
 use crate::{
     Recipe, World,
@@ -32,6 +33,7 @@ pub const CLOSED_LAKE_MODEL_VERSION: &str = "seasonal-moisture-9";
 pub const LEAF_SPILL_MODEL_VERSION: &str = "seasonal-moisture-10";
 pub const MERGED_LAKE_MODEL_VERSION: &str = "seasonal-moisture-11";
 pub const COMMON_SILL_FRONTIER_MODEL_VERSION: &str = "seasonal-moisture-12";
+pub const RECEIVING_FRONTIER_MODEL_VERSION: &str = "seasonal-moisture-13";
 pub const TERMINAL_STOCK_MODEL_VERSION: &str = "terminal-stock-compensated-1";
 pub const SECONDS_PER_DAY: u64 = 86400;
 pub const MAX_ELAPSED_SECONDS: u64 = 3650 * SECONDS_PER_DAY;
@@ -69,6 +71,7 @@ pub enum ClosedLakeExchange {
     FrozenLeafExposureWithSpill,
     FrozenLeafExposureWithSpillAndMerge,
     FrozenCommonSillFrontier,
+    FrozenCommonSillReceiving,
 }
 
 // Missing means legacy; a present null is not an unrecorded/default algorithm.
@@ -794,8 +797,10 @@ impl Model {
             .closed_lake_exchange
             .map(|mode| lake_exchange::Layout::from_world(world, mode))
             .transpose()?;
-        let with_frontier =
-            settings.closed_lake_exchange == Some(ClosedLakeExchange::FrozenCommonSillFrontier);
+        let with_receiving =
+            settings.closed_lake_exchange == Some(ClosedLakeExchange::FrozenCommonSillReceiving);
+        let with_frontier = with_receiving
+            || settings.closed_lake_exchange == Some(ClosedLakeExchange::FrozenCommonSillFrontier);
         let with_merge = with_frontier
             || settings.closed_lake_exchange
                 == Some(ClosedLakeExchange::FrozenLeafExposureWithSpillAndMerge);
@@ -828,7 +833,9 @@ impl Model {
             }
         }
         let origin = Checkpoint {
-            schema_version: if with_frontier {
+            schema_version: if with_receiving {
+                13
+            } else if with_frontier {
                 12
             } else if with_merge {
                 11
@@ -849,7 +856,9 @@ impl Model {
             } else {
                 3
             },
-            model_version: if with_frontier {
+            model_version: if with_receiving {
+                RECEIVING_FRONTIER_MODEL_VERSION
+            } else if with_frontier {
                 COMMON_SILL_FRONTIER_MODEL_VERSION
             } else if with_merge {
                 MERGED_LAKE_MODEL_VERSION
@@ -907,7 +916,9 @@ impl Model {
             reference_body_high_kilograms: reference_pool.as_ref().map(|_| body_high),
             reference_body_low_kilograms: reference_pool.as_ref().map(|_| body_low),
             closed_lake_model_version: lake_exchange.as_ref().map(|_| {
-                if with_frontier {
+                if with_receiving {
+                    lake_exchange::RECEIVING_MODEL_VERSION
+                } else if with_frontier {
                     lake_exchange::FRONTIER_MODEL_VERSION
                 } else if with_merge {
                     lake_exchange::MERGE_MODEL_VERSION
@@ -1063,9 +1074,29 @@ impl Model {
                 .is_some_and(|s| s.model_version == leaf_spill::MODEL_VERSION)
             && checkpoint.merged_lake_state.as_ref().is_some_and(|s| {
                 s.model_version == merged_lake::FRONTIER_MODEL_VERSION
-                    && s.frontier
-                        .as_ref()
-                        .is_some_and(|f| f.model_version == merged_lake::frontier::MODEL_VERSION)
+                    && s.frontier.as_ref().is_some_and(|f| {
+                        f.model_version == merged_lake::frontier::MODEL_VERSION
+                            && f.spill_to_parent.is_none()
+                    })
+            })
+            && checkpoint.cumulative_lake_capture_kilograms.is_some()
+            && checkpoint.cumulative_lake_capture_low_kilograms.is_some();
+        let receiving_lake = checkpoint.schema_version == 13
+            && checkpoint.model_version == RECEIVING_FRONTIER_MODEL_VERSION
+            && checkpoint.settings.closed_lake_exchange
+                == Some(ClosedLakeExchange::FrozenCommonSillReceiving)
+            && checkpoint.closed_lake_model_version.as_deref()
+                == Some(lake_exchange::RECEIVING_MODEL_VERSION)
+            && checkpoint
+                .leaf_spill_state
+                .as_ref()
+                .is_some_and(|s| s.model_version == leaf_spill::MODEL_VERSION)
+            && checkpoint.merged_lake_state.as_ref().is_some_and(|s| {
+                s.model_version == merged_lake::receiving::PARENT_MODEL_VERSION
+                    && s.frontier.as_ref().is_some_and(|f| {
+                        f.model_version == merged_lake::receiving::LIFECYCLE_MODEL_VERSION
+                            && f.spill_to_parent.is_some()
+                    })
             })
             && checkpoint.cumulative_lake_capture_kilograms.is_some()
             && checkpoint.cumulative_lake_capture_low_kilograms.is_some();
@@ -1075,7 +1106,8 @@ impl Model {
             || coupled_lake
             || spilling_lake
             || merging_lake
-            || frontier_lake)
+            || frontier_lake
+            || receiving_lake)
             && checkpoint.settings.reference_water_pool
                 == Some(ReferenceWaterPool::FastConnectedBody)
             && checkpoint.reference_body_model_version.as_deref()
@@ -1114,7 +1146,12 @@ impl Model {
         };
         if !(((legacy || compensated || precise_surface) && legacy_terminal) || precise_terminal)
             || (!pooled && !legacy_pool)
-            || (!coupled_lake && !spilling_lake && !merging_lake && !frontier_lake && !legacy_lake)
+            || (!coupled_lake
+                && !spilling_lake
+                && !merging_lake
+                && !frontier_lake
+                && !receiving_lake
+                && !legacy_lake)
             || checkpoint.transport_model_version != crate::moisture_transport::MODEL_VERSION
             || checkpoint.temperature_model_version != seasonal_temperature::MODEL_VERSION
             || checkpoint.wind_model_version != seasonal_wind::MODEL_VERSION
@@ -2170,9 +2207,10 @@ impl Model {
                     max_local_residual = max_local_residual.max(residual);
                     // Frontier packets can decompose one owned pair. Combine each
                     // physical receiver's complete transfer before scalar vapor rounding.
-                    let mut vapor_receipts = (self.origin.schema_version == 12).then(|| {
-                        vec![surface_water::CompensatedStock::new(0., 0., f64::MAX).unwrap(); n]
-                    });
+                    let mut vapor_receipts =
+                        matches!(self.origin.schema_version, 12 | 13).then(|| {
+                            vec![surface_water::CompensatedStock::new(0., 0., f64::MAX).unwrap(); n]
+                        });
                     for (i, grant) in grants {
                         if grant == 0. {
                             continue;

@@ -16,6 +16,14 @@ pub struct Checkpoint {
     pub capture_by_parent: leaf_spill::Components,
     pub delivery_to_parent: leaf_spill::Components,
     pub evaporation_from_parent: leaf_spill::Components,
+    /// Model 13 subset of actual geographic incoming spill, owned by parents.
+    /// Historical gross flow only; never another spendable liquid inventory.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "super::super::present_option"
+    )]
+    pub spill_to_parent: Option<leaf_spill::Components>,
 }
 
 fn state(cp: &SeasonalCheckpoint) -> &Checkpoint {
@@ -26,7 +34,7 @@ fn state(cp: &SeasonalCheckpoint) -> &Checkpoint {
         .as_ref()
         .unwrap()
 }
-fn state_mut(cp: &mut SeasonalCheckpoint) -> &mut Checkpoint {
+pub(super) fn state_mut(cp: &mut SeasonalCheckpoint) -> &mut Checkpoint {
     cp.merged_lake_state
         .as_mut()
         .unwrap()
@@ -67,16 +75,29 @@ impl Layout {
     pub fn frontier_checkpoint(&self) -> ParentCheckpoint {
         let n = self.by_region.len();
         ParentCheckpoint {
-            model_version: super::FRONTIER_MODEL_VERSION.into(),
+            model_version: if self.receiving_enabled {
+                super::receiving::PARENT_MODEL_VERSION
+            } else {
+                super::FRONTIER_MODEL_VERSION
+            }
+            .into(),
             parents: Vec::new(),
             frontier: Some(Checkpoint {
-                model_version: MODEL_VERSION.into(),
+                model_version: if self.receiving_enabled {
+                    super::receiving::LIFECYCLE_MODEL_VERSION
+                } else {
+                    MODEL_VERSION
+                }
+                .into(),
                 merge_counts: vec![0; self.groups.len()],
                 split_counts: vec![0; self.groups.len()],
                 pending_to_parent: leaf_spill::Components::zero(n),
                 capture_by_parent: leaf_spill::Components::zero(n),
                 delivery_to_parent: leaf_spill::Components::zero(n),
                 evaporation_from_parent: leaf_spill::Components::zero(n),
+                spill_to_parent: self
+                    .receiving_enabled
+                    .then(|| leaf_spill::Components::zero(n)),
             }),
         }
     }
@@ -164,6 +185,10 @@ impl Layout {
             delivered.high,
             delivered.low,
         ];
+        if let Some(spill) = &history.spill_to_parent {
+            let value = spill.stock(r)?;
+            terms.extend([value.high, value.low]);
+        }
         if self.terminal_active(cp, r) {
             let queue = cp
                 .leaf_spill_state
@@ -293,8 +318,19 @@ impl Layout {
             .as_ref()
             .ok_or("Missing common-sill lifecycle accounting.")?;
         let n = self.by_region.len();
-        if parent_state.model_version != super::FRONTIER_MODEL_VERSION
-            || history.model_version != MODEL_VERSION
+        let parent_version = if self.receiving_enabled {
+            super::receiving::PARENT_MODEL_VERSION
+        } else {
+            super::FRONTIER_MODEL_VERSION
+        };
+        let lifecycle_version = if self.receiving_enabled {
+            super::receiving::LIFECYCLE_MODEL_VERSION
+        } else {
+            MODEL_VERSION
+        };
+        if parent_state.model_version != parent_version
+            || history.model_version != lifecycle_version
+            || history.spill_to_parent.is_some() != self.receiving_enabled
             || history.merge_counts.len() != self.groups.len()
             || history.split_counts.len() != self.groups.len()
             || parent_state.parents.len() > self.groups.len()
@@ -305,19 +341,22 @@ impl Layout {
         {
             return Err("Invalid common-sill lifecycle version, frontier, or shape.".into());
         }
-        let ledgers = [
+        let mut ledgers = vec![
             &history.pending_to_parent,
             &history.capture_by_parent,
             &history.delivery_to_parent,
             &history.evaporation_from_parent,
         ];
+        if let Some(spill) = &history.spill_to_parent {
+            ledgers.push(spill);
+        }
         for (kind, ledger) in ledgers.iter().enumerate() {
             if ledger.high_kilograms.len() != n || ledger.low_kilograms.len() != n {
                 return Err("Invalid common-sill lifecycle ledger shape.".into());
             }
             for r in 0..n {
                 let value = ledger.stock(r)?;
-                let group = if kind == 0 || kind == 2 {
+                let group = if kind == 0 || kind == 2 || kind == 4 {
                     self.by_terminal[r]
                 } else {
                     self.by_region[r]
@@ -343,12 +382,21 @@ impl Layout {
                         0.,
                         f64::MAX,
                     )?),
+                    4 => Some(
+                        cp.leaf_spill_state
+                            .as_ref()
+                            .unwrap()
+                            .cumulative_incoming
+                            .stock(r)?,
+                    ),
                     _ => None,
                 };
                 if let Some(actual) = actual {
                     let difference =
                         total_mass(&[value.high - actual.high, value.low - actual.low]);
-                    if difference > 1e-12 * actual.high.max(1.) {
+                    if difference > 1e-12 * actual.high.max(1.)
+                        || (kind == 4 && actual.high == 0. && value.high > 0.)
+                    {
                         return Err(
                             "Common-sill lifecycle flow exceeds the physical gross flow.".into(),
                         );
@@ -423,6 +471,10 @@ impl Layout {
                     -delivery.high,
                     -delivery.low,
                 ]);
+                if let Some(spill) = &history.spill_to_parent {
+                    let value = spill.stock(r)?;
+                    terms.extend([-value.high, -value.low]);
+                }
             }
             for &r in &group.description.regions {
                 let capture = history.capture_by_parent.stock(r)?;

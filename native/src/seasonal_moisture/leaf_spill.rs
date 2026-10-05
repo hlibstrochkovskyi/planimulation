@@ -300,24 +300,28 @@ impl Layout {
             let destination = Self::destination_region(&route.destination);
             let grants = match route.destination {
                 Destination::ClosedTerminal { terminal_region } => {
-                    if merge.is_some_and(|m| m.terminal_active(cp, terminal_region)) {
-                        return Err("Leaf spill into an active merged parent requires a receiving-frontier policy.".into());
+                    if let Some(m) = merge.filter(|m| m.terminal_active(cp, terminal_region)) {
+                        m.receive_spill(cp, terminal_region, crest, &mut donor)?
+                    } else {
+                        let receiver = self.by_terminal[terminal_region]
+                            .ok_or("Leaf spill receiver has no exclusive leaf owner.")?;
+                        let receiving_crest = self.connections[receiver]
+                            .first_connection_level_meters
+                            .ok_or(
+                                "Leaf spill recipient has no resolved capacity-bounded outlet.",
+                            )?;
+                        if receiving_crest > crest {
+                            return Err(
+                                "Leaf spill recipient capacity lies above the supplying head."
+                                    .into(),
+                            );
+                        }
+                        let cap = self.capacity(receiver)?;
+                        let mut liquid = Self::liquid(cp, terminal_region, cap)?;
+                        let grants = fill(&mut donor, &mut liquid, cap)?;
+                        Self::set_liquid(cp, terminal_region, liquid);
+                        grants
                     }
-                    let receiver = self.by_terminal[terminal_region]
-                        .ok_or("Leaf spill receiver has no exclusive leaf owner.")?;
-                    let receiving_crest = self.connections[receiver]
-                        .first_connection_level_meters
-                        .ok_or("Leaf spill recipient has no resolved capacity-bounded outlet.")?;
-                    if receiving_crest > crest {
-                        return Err(
-                            "Leaf spill recipient capacity lies above the supplying head.".into(),
-                        );
-                    }
-                    let cap = self.capacity(receiver)?;
-                    let mut liquid = Self::liquid(cp, terminal_region, cap)?;
-                    let grants = fill(&mut donor, &mut liquid, cap)?;
-                    Self::set_liquid(cp, terminal_region, liquid);
-                    grants
                 }
                 Destination::ReferenceBody {
                     body_id,
@@ -538,6 +542,13 @@ mod tests {
         heights: &[f64],
         bodies: &[u32],
     ) -> (Layout, SeasonalCheckpoint, reference_pool::Layout) {
+        let (layout, cp, pool, _) = chain_geometry(heights, bodies);
+        (layout, cp, pool)
+    }
+    fn chain_geometry(
+        heights: &[f64],
+        bodies: &[u32],
+    ) -> (Layout, SeasonalCheckpoint, reference_pool::Layout, World) {
         // A synthetic reciprocal chain tests topology, not a restorable recipe.
         let recipe = serde_json::from_str(include_str!(
             "../../../docs/scenarios/seasonal-temperature.json"
@@ -588,7 +599,158 @@ mod tests {
         cp.reference_body_high_kilograms = Some(vec![0.; pool.ids.len()]);
         cp.reference_body_low_kilograms = Some(vec![0.; pool.ids.len()]);
         cp.leaf_spill_state = Some(Checkpoint::zero(n));
-        (layout, cp, pool)
+        (layout, cp, pool, world)
+    }
+
+    fn active_receiver() -> (
+        Layout,
+        SeasonalCheckpoint,
+        reference_pool::Layout,
+        merged_lake::Layout,
+    ) {
+        let (layout, mut cp, pool, world) = chain_geometry(&[0., 4., 0., 2., 0.], &[0; 5]);
+        let leaves = closed_lake::Layout::from_world(&world).unwrap();
+        let mut merge = merged_lake::Layout::from_world(&world, &leaves).unwrap();
+        merge.split_enabled = true;
+        merge.receiving_enabled = true;
+        cp.merged_lake_state = Some(merge.frontier_checkpoint());
+        cp.cumulative_lake_capture_kilograms = Some(vec![0.; 5]);
+        cp.cumulative_lake_capture_low_kilograms = Some(vec![0.; 5]);
+        cp.cumulative_runoff_transfers = vec![Default::default(); 5];
+        for (r, amount) in [(2, 3000.), (4, 2000.)] {
+            cp.cumulative_lake_capture_kilograms.as_mut().unwrap()[r] = amount;
+            cp.leaf_spill_state
+                .as_mut()
+                .unwrap()
+                .pending_input
+                .credit(r, amount)
+                .unwrap();
+        }
+        layout.resolve(&mut cp, &pool, Some(&merge)).unwrap();
+        merge.validate(&cp).unwrap();
+        (layout, cp, pool, merge)
+    }
+
+    #[test]
+    fn unique_external_edge_credits_parent_not_deactivated_child() {
+        let (layout, mut cp, pool, merge) = active_receiver();
+        cp.leaf_spill_state
+            .as_mut()
+            .unwrap()
+            .pending_input
+            .credit(0, 4500.)
+            .unwrap();
+        let events = layout.resolve(&mut cp, &pool, Some(&merge)).unwrap();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].kilograms, 500.);
+        assert_eq!(events[0].source_terminal_region, 0);
+        assert_eq!(
+            events[0].route.destination,
+            Destination::ClosedTerminal { terminal_region: 2 }
+        );
+        assert_eq!(cp.terminal_water_kilograms, [4000., 0., 0., 0., 0.]);
+        let parent = &cp.merged_lake_state.as_ref().unwrap().parents[0];
+        assert_eq!(
+            (parent.birth_high_kilograms, parent.birth_low_kilograms),
+            (4000., 0.)
+        );
+        assert_eq!(
+            (parent.surplus_high_kilograms, parent.surplus_low_kilograms),
+            (1500., 0.)
+        );
+        assert_eq!(
+            merge.surfaces(&cp).unwrap()[0].absolute_level_meters,
+            Some(2.5)
+        );
+        let history = cp
+            .merged_lake_state
+            .as_ref()
+            .unwrap()
+            .frontier
+            .as_ref()
+            .unwrap();
+        assert_eq!(
+            history.spill_to_parent.as_ref().unwrap().high_kilograms,
+            [0., 0., 500., 0., 0.]
+        );
+        layout.validate(&cp, &pool).unwrap();
+        merge.validate(&cp).unwrap();
+    }
+
+    #[test]
+    fn receiving_head_and_next_sill_bound_all_components_without_truncating_input() {
+        let (_, cp, _, merge) = active_receiver();
+        for (head, amount, accepts) in [
+            (3., 2000., true),
+            (3., 2001., false),
+            (4., 5000., true),
+            (10., 5000., true),
+            (10., 5001., false),
+            (2., 1., false),
+            (2.1, 1., false),
+            (f64::NAN, 1., false),
+        ] {
+            let mut state = cp.clone();
+            let mut donor = CompensatedStock::new(amount, 0., f64::MAX).unwrap();
+            let before = donor;
+            let result = merge.receive_spill(&mut state, 2, head, &mut donor);
+            assert_eq!(
+                result.is_ok(),
+                accepts,
+                "head={head} amount={amount}: {result:?}"
+            );
+            if accepts {
+                assert_eq!((donor.high, donor.low), (0., 0.));
+                assert_eq!(
+                    state.merged_lake_state.unwrap().parents[0].surplus_high_kilograms,
+                    1000. + amount
+                );
+            } else {
+                assert_eq!(state, cp);
+                assert_eq!((donor.high, donor.low), (before.high, before.low));
+            }
+        }
+        for low in [-2_f64.powi(-54), 2_f64.powi(-54)] {
+            let mut state = cp.clone();
+            let mut donor = CompensatedStock::new(1., low, f64::MAX).unwrap();
+            merge.receive_spill(&mut state, 2, 3., &mut donor).unwrap();
+            let parent = &state.merged_lake_state.as_ref().unwrap().parents[0];
+            assert_eq!(
+                (parent.surplus_high_kilograms, parent.surplus_low_kilograms),
+                (1001., low)
+            );
+            let receipt = state
+                .merged_lake_state
+                .as_ref()
+                .unwrap()
+                .frontier
+                .as_ref()
+                .unwrap()
+                .spill_to_parent
+                .as_ref()
+                .unwrap()
+                .stock(2)
+                .unwrap();
+            assert_eq!((receipt.high, receipt.low), (1., low));
+            assert_eq!((donor.high, donor.low), (0., 0.));
+        }
+        for low in [-2_f64.powi(-44), 2_f64.powi(-44)] {
+            let mut state = cp.clone();
+            let mut donor = CompensatedStock::new(2000., low, f64::MAX).unwrap();
+            let result = merge.receive_spill(&mut state, 2, 3., &mut donor);
+            if low > 0. {
+                assert!(result.is_err());
+                assert_eq!(state, cp);
+                assert_eq!((donor.high, donor.low), (2000., low));
+            } else {
+                result.unwrap();
+                let parent = &state.merged_lake_state.as_ref().unwrap().parents[0];
+                assert_eq!(
+                    (parent.surplus_high_kilograms, parent.surplus_low_kilograms),
+                    (3000., low)
+                );
+            }
+        }
     }
 
     #[test]
