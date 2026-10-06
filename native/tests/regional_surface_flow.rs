@@ -108,6 +108,131 @@ fn funded() -> (Model, planimulation_core::seasonal_moisture::State) {
     .unwrap()
 }
 
+/// Retained model-15 limitation, not an expectation for a future coupling.
+/// Equal total water, with only a tiny redistribution from local to pooled liquid.
+#[test]
+fn positive_film_freezes_the_existing_soil_column_in_model_15() {
+    let (world, _) = fixture(true);
+    let region = world.water.body_ids.iter().position(|&id| id == 0).unwrap();
+    let area = world.surface.areas[region];
+    let mut configuration = settings(true);
+    configuration.closed_lake_exchange = Some(ClosedLakeExchange::FrozenRegionalSurfaceFlow(
+        surface_flow::Settings {
+            maximum_diffusivity_square_meters_per_second: 0.,
+            ..Default::default()
+        },
+    ));
+    let temperature = planimulation_core::seasonal_temperature::Settings {
+        reference_temperature_celsius: 30.,
+        sensitivity_celsius_per_watt_per_square_meter: 0.,
+        lapse_rate_celsius_per_meter: 0.,
+        ..Default::default()
+    };
+    let m = Model::from_world(&world, configuration, temperature, Default::default()).unwrap();
+    let mut cp = fund(
+        m.initial_state().checkpoint(),
+        &world,
+        &[(region, area * 130.)],
+    );
+    // The same funded rain was infiltrated or remains local, rather than captured.
+    cp.terminal_water_kilograms[region] = 0.;
+    cp.terminal_low_kilograms.as_mut().unwrap()[region] = 0.;
+    cp.cumulative_lake_capture_kilograms.as_mut().unwrap()[region] = 0.;
+    cp.cumulative_lake_capture_low_kilograms.as_mut().unwrap()[region] = 0.;
+    cp.soil_kilograms[region] = area * 120.;
+    cp.surface_kilograms[region] = area * 130. - cp.soil_kilograms[region];
+    cp.cumulative_surface_transfers[region].infiltration = cp.soil_kilograms[region];
+    let baseline = cp.clone();
+    let column = planimulation_core::surface_water::ponded_soil::State {
+        liquid: planimulation_core::surface_water::ponded_soil::Mass {
+            high: baseline.surface_kilograms[region],
+            low: 0.,
+        },
+        soil: planimulation_core::surface_water::ponded_soil::Mass {
+            high: baseline.soil_kilograms[region],
+            low: 0.,
+        },
+        ..Default::default()
+    };
+    let candidate = planimulation_core::surface_water::ponded_soil::advance(
+        column,
+        area,
+        30.,
+        0.,
+        900.,
+        Default::default(),
+    )
+    .unwrap();
+    assert!(candidate.transfers.infiltration_kilograms > 0.);
+    assert!(candidate.transfers.soil_drainage_kilograms > 0.);
+    let (dry_model, mut dry_state) = Model::restore(cp).unwrap();
+    let dry_step = dry_model.advance(&mut dry_state, 900).unwrap();
+    let dry = dry_step.surface_transfers[region];
+    assert!(dry.infiltration > 0.);
+    assert!(dry.soil_drainage > 0.);
+    println!(
+        "model15 film witness: region={region} area={area} dry_infiltration_per_area={} dry_drainage_per_area={}",
+        dry.infiltration / area,
+        dry.soil_drainage / area
+    );
+    for film in [1., 1e-6, 1e-12] {
+        let mut cp = baseline.clone();
+        credit(
+            &mut cp.surface_kilograms[region],
+            &mut cp.surface_low_kilograms.as_mut().unwrap()[region],
+            -film,
+        );
+        credit(
+            &mut cp.terminal_water_kilograms[region],
+            &mut cp.terminal_low_kilograms.as_mut().unwrap()[region],
+            film,
+        );
+        credit(
+            &mut cp.cumulative_lake_capture_kilograms.as_mut().unwrap()[region],
+            &mut cp.cumulative_lake_capture_low_kilograms.as_mut().unwrap()[region],
+            film,
+        );
+        // Compare the standalone operator only, not a new seasonal integration.
+        // Its one liquid owner recombines both provenance partitions and tails.
+        let mut combined = planimulation_core::surface_water::ponded_soil::Mass {
+            high: cp.surface_kilograms[region],
+            low: cp.surface_low_kilograms.as_ref().unwrap()[region],
+        };
+        credit(
+            &mut combined.high,
+            &mut combined.low,
+            cp.terminal_water_kilograms[region],
+        );
+        credit(
+            &mut combined.high,
+            &mut combined.low,
+            cp.terminal_low_kilograms.as_ref().unwrap()[region],
+        );
+        let result = planimulation_core::surface_water::ponded_soil::advance(
+            planimulation_core::surface_water::ponded_soil::State {
+                liquid: combined,
+                ..column
+            },
+            area,
+            30.,
+            0.,
+            900.,
+            Default::default(),
+        )
+        .unwrap();
+        assert_eq!(result, candidate);
+        let (wet_model, mut wet_state) = Model::restore(cp).unwrap();
+        let step = wet_model.advance(&mut wet_state, 900).unwrap();
+        assert_eq!(step.surface_transfers[region].infiltration, 0.);
+        assert_eq!(step.surface_transfers[region].soil_drainage, 0.);
+        assert_eq!(
+            wet_state.checkpoint().soil_kilograms[region],
+            baseline.soil_kilograms[region]
+        );
+        assert!(step.budget.maximum_relative_local_surface_ledger_residual < 1e-12);
+    }
+}
+
 #[test]
 fn concurrent_generated_columns_flow_with_complete_replay_and_no_basin_parent_state() {
     let (m, mut s) = funded();

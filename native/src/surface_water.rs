@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 pub const MODEL_VERSION: &str = "surface-water-1";
 pub const COMPENSATED_MODEL_VERSION: &str = "surface-water-compensated-soil-1";
 pub const PRECISE_SURFACE_MODEL_VERSION: &str = "surface-water-compensated-surface-1";
+pub mod ponded_soil;
 mod stock_precision;
 pub(crate) use stock_precision::Stock as CompensatedStock;
 pub(crate) use stock_precision::validate as validate_stock_precision;

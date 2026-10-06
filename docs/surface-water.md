@@ -6,6 +6,8 @@ The [headless soil-precision candidate](soil-precision.md) separately pins `surf
 
 The [surface precision continuation](surface-precision.md) separately pins `surface-water-compensated-surface-1` for liquid/snow/soil in versions 6/7. Version 7 additionally compensates caller-owned terminal water. It preserves these process laws and the legacy operator; transit/vapor remain ordinary binary64.
 
+The [ponded-soil operator](ponded-soil-exchange.md) is a separate native candidate with a capacity-response infiltration law, shared finite evaporation demand and owned drainage. It removes the thin-film switch at the component level but is not used by any seasonal model or desktop mode. The legacy laws below remain unchanged.
+
 ## Scientific basis versus implementation choices
 
 Temperature-index snowmelt is an established empirical alternative to a full energy budget; [USACE's degree-day description, equation 3-5](https://www.hec.usace.army.mil/publications/IHDVolumes/IHD-4.pdf) makes the coefficient and threshold explicit. Our constant coefficient and monthly forcing are deliberately much simpler than [HEC-HMS's temperature-index model](https://www.hec.usace.army.mil/confluence/hmsdocs/hmstrm/snow-accumulation-and-melt/temperature-index-method). Neither source validates the selected coefficient for generated planets.

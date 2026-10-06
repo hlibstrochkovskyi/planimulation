@@ -47,6 +47,7 @@ A separate [regional surface-flow candidate](docs/regional-surface-flow.md) uses
 | [Bounded parent outlets](docs/parent-outlet.md) | Opt-in headless model 14: full-parent excess through a unique geographic outlet, independent gross-flow identities, replay and atomic refusals |
 | [Regional surface flow](docs/regional-surface-flow.md) | Opt-in headless model 15: neighboring regional columns, explicit capped mobility, independent face ledgers, annual/refinement evidence and retained prototype failures |
 | [Regional-water desktop](docs/regional-water-desktop.md) | Opt-in model-15 map/globe layers, separate regional/body ownership, protocol-14 frames and exact complete checkpoint continuation |
+| [Ponded liquid and soil](docs/ponded-soil-exchange.md) | Retained model-15 thin-film discontinuity and a standalone conservative vertical-exchange operator; not yet seasonally coupled |
 | [Seasonal-water desktop](docs/seasonal-water-desktop.md) | Run/pause, eight dynamic layers, interval inspection, versioned frames, baseline timing evidence, and limits |
 | [Seasonal-water checkpoints](docs/seasonal-water-checkpoints.md) | Complete native state, candidate validation, bounded file I/O, exact continuation, and limits |
 | [Typed surface water](docs/surface-water.md) | Empirical snowmelt, soil bucket, pending-runoff ownership, defaults, and limitations |

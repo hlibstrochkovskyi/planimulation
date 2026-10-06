@@ -1,6 +1,6 @@
 # Regional surface-flow candidate
 
-October 5, 2026 opt-in native candidate, numerically screened on the recorded cohort below; not physically calibrated or promoted. A recorded seasonal year is now checked alongside genuinely active directed flow. An explicit desktop view remains the next product increment. These results do not complete general planetary hydrology.
+October 5, 2026 opt-in native candidate, numerically screened on the recorded cohort below; not physically calibrated or promoted to the default. A recorded seasonal year is now checked alongside genuinely active directed flow. A subsequent [explicit desktop view](regional-water-desktop.md) is implemented. These results do not complete general planetary hydrology.
 
 ## Implemented candidate path, not a silent migration
 
@@ -93,3 +93,5 @@ Required before promotion:
 3. Denser active-flow ensembles, paired spatial-resolution/cap controls and longer/extreme trajectories. Coarse directed and annual accounting success is not a validated climate, hydrodynamic forecast, ecology readiness or completion of milestones C/D.
 
 The subsequent [desktop integration](regional-water-desktop.md) implements item 1 with separate protocol-14 frames, both projections, explicit body ownership and complete schema-15 persistence. The core evidence above predates that integration. Items 2–3 remain physical qualification gates; product availability is not calibrated hydrology or default promotion.
+
+The October 6 [ponded-soil follow-up](ponded-soil-exchange.md) retains a generated witness of the tiny-film soil switch and implements a separate conservative vertical operator. No seasonal coupling yet applies that operator; model-15 equations, checkpoints and cohort evidence above remain unchanged.
