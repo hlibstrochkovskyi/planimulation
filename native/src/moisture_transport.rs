@@ -5,6 +5,11 @@ use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, f64::consts::PI};
 
 pub const MODEL_VERSION: &str = "moisture-transport-1";
+mod paired;
+pub use paired::{
+    MODEL_VERSION as PAIRED_MODEL_VERSION, PairedStep,
+    RETAINING_MODEL_VERSION as PAIRED_RETAINING_MODEL_VERSION,
+};
 
 #[derive(Clone, Copy, Debug)]
 pub struct BoundarySegment {
@@ -173,6 +178,7 @@ struct Transfer {
     source: usize,
     recipient: usize,
     swept_area_square_meters_per_second: f64,
+    directed_contact: usize,
 }
 
 /// Frozen prescribed velocity for one caller-defined interval.
@@ -180,6 +186,7 @@ pub struct Flow {
     areas: Vec<f64>,
     transfers: Vec<Transfer>,
     max_outgoing_rate_per_second: f64,
+    contacts: Vec<[usize; 2]>,
 }
 
 impl Flow {
@@ -227,7 +234,7 @@ impl Flow {
     ) -> Result<Self, String> {
         let mut transfers = Vec::with_capacity(geometry.boundaries.len() * 2);
         let mut outgoing = vec![0.; geometry.areas_square_meters.len()];
-        for boundary in &geometry.boundaries {
+        for (face, boundary) in geometry.boundaries.iter().enumerate() {
             for segment in boundary.segments {
                 let wind = velocity(segment.midpoint);
                 if wind.iter().any(|v| !v.is_finite())
@@ -249,6 +256,7 @@ impl Flow {
                     source,
                     recipient,
                     swept_area_square_meters_per_second: rate.abs(),
+                    directed_contact: 2 * face + usize::from(rate < 0.),
                 });
             }
         }
@@ -264,6 +272,14 @@ impl Flow {
             areas: geometry.areas_square_meters.clone(),
             transfers,
             max_outgoing_rate_per_second: max_rate,
+            contacts: geometry
+                .boundaries
+                .iter()
+                .flat_map(|b| {
+                    let [a, c] = b.regions;
+                    [[a, c], [c, a]]
+                })
+                .collect(),
         })
     }
 

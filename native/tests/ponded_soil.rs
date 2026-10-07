@@ -1,4 +1,6 @@
-use planimulation_core::surface_water::ponded_soil::{Mass, Settings, State, advance};
+use planimulation_core::surface_water::ponded_soil::{
+    Mass, RecordedState, Settings, State, advance, advance_recorded,
+};
 
 fn mass(high: f64) -> Mass {
     Mass { high, low: 0. }
@@ -287,6 +289,62 @@ fn malformed_or_unrepresentable_candidates_reject_without_mutating_input() {
     assert_eq!(unrepresentable.liquid.high, 1e-40);
     assert_eq!(unrepresentable.soil.low, 1e-15);
     assert_eq!(before.soil.high, 120.);
+}
+
+#[test]
+fn retaining_policy_keeps_an_unrepresentable_film_without_freezing_soil() {
+    let before = RecordedState {
+        stocks: State {
+            liquid: mass(1e-40),
+            soil: Mass {
+                high: 120.,
+                low: 1e-15,
+            },
+            ..Default::default()
+        },
+        transfers: [Mass::default(); 4],
+    };
+    assert!(advance(before.stocks, 1., 20., 0., 900., Settings::default()).is_err());
+    let accepted = advance_recorded(before, 1., 20., 0., 900., Settings::default()).unwrap();
+    assert_eq!(accepted.step.state.liquid, before.stocks.liquid);
+    assert_eq!(accepted.step.transfers.infiltration_kilograms, 0.);
+    assert_eq!(accepted.transfers[2], Mass::default());
+    assert!(accepted.step.transfers.soil_drainage_kilograms > 0.);
+    assert_eq!(accepted.resolution.deferred_requests, 1);
+    assert_eq!(accepted.resolution.summed_deferred_request_kilograms, 1e-40);
+    assert_eq!(
+        accepted.resolution.maximum_deferred_request_kilograms,
+        1e-40
+    );
+    for demand in [f64::NAN, -1.] {
+        assert!(advance_recorded(before, 1., 20., demand, 900., Settings::default()).is_err());
+    }
+    let mut bad = before;
+    bad.transfers[0] = Mass {
+        high: 0.,
+        low: 1e-40,
+    };
+    assert!(advance_recorded(bad, 1., 20., 0., 900., Settings::default()).is_err());
+}
+
+#[test]
+fn unrepresentable_gross_history_prevents_both_sides_of_an_otherwise_valid_transfer() {
+    let before = RecordedState {
+        stocks: State {
+            liquid: mass(1e-40),
+            ..Default::default()
+        },
+        transfers: [Mass {
+            high: 100.,
+            low: 1e-15,
+        }; 4],
+    };
+    let accepted = advance_recorded(before, 1., 20., 1e-40, 900., Settings::default()).unwrap();
+    assert_eq!(accepted.step.state, before.stocks);
+    assert_eq!(accepted.transfers, before.transfers);
+    assert_eq!(accepted.resolution.deferred_requests, 2); // Evaporation, then infiltration.
+    assert_eq!(accepted.resolution.summed_deferred_request_kilograms, 2e-40);
+    assert_eq!(accepted.step.transfers, Default::default());
 }
 
 #[test]

@@ -1,6 +1,6 @@
 # Ponded liquid and soil exchange
 
-October 6, 2026: a retained model-15 discontinuity and an implemented **standalone native operator**, `ponded-soil-exchange-1`. No seasonal schema, desktop mode, default, or existing checkpoint uses this operator yet. This work addresses vertical ownership and the thin-film limit, not reference-body dynamics or calibrated soil physics.
+October 6, 2026: a retained model-15 discontinuity and an implemented native operator, `ponded-soil-exchange-1`. The subsequent [separate regional seasonal family](regional-soil-cycle.md) now applies it headlessly, with paired vapor/drainage and complete accounting. Existing seasonal schemas, desktop modes and defaults remain unchanged. This work addresses vertical ownership and the thin-film limit, not reference-body dynamics or calibrated soil physics.
 
 ## Retained defect in the current seasonal coupling
 
@@ -54,7 +54,7 @@ The coupled reference independently solves `dB/dt = (C-B)/tau_i - (B-R)/tau_d` w
 | 450 | 0.0014795408411316657 | 0.0007346006202482158 |
 | 225 | 0.0007385013529699336 | 0.0003679582189955316 |
 
-Both errors approximately halve. This checks the selected sequential closure on one controlled column, not universal convergence or agreement with real soil. The retained generated witness separately verifies the legacy discontinuity; it does not claim that the new operator is already coupled to the seasonal world.
+Both errors approximately halve. This checks the selected sequential closure on one controlled column, not universal convergence or agreement with real soil. The retained generated witness separately verifies the legacy discontinuity; that component comparison is not itself a new seasonal run. Applied seasonal integration is described in the follow-up below.
 
 Reproduce the directed evidence:
 
@@ -65,11 +65,13 @@ cargo test --locked --manifest-path native/Cargo.toml --test regional_surface_fl
 
 `State` JSON is the component's owned input, **not** a complete seasonal checkpoint. Its caller must pin `MODEL_VERSION` and resolved settings; it omits snow, forcing, clock, graph and cumulative history. Existing seasonal replay is unchanged.
 
-Validation on October 6: full `npm test` passes native all-target regressions, TypeScript checking and all 77 Node tests, including existing regional desktop/checkpoint replay. The ten operator tests and all five regional integration tests also pass in release. Warnings-denied all-target Clippy, formatting and diff checks pass. The pre-existing ignored long annual-snow qualification remains unchanged; no new tests are ignored. No GUI interaction test was rerun for this native-only increment, and no new desktop functionality is claimed.
+Initial standalone validation on October 6: full `npm test` passes native all-target regressions, TypeScript checking and all 77 Node tests, including existing regional desktop/checkpoint replay. The original ten operator tests and all five model-15 regional integration tests also pass in release. Warnings-denied all-target Clippy, formatting and diff checks pass. The pre-existing ignored long annual-snow qualification remains unchanged; no new tests are ignored. No GUI interaction test was rerun for that native-only increment, and no new desktop functionality is claimed.
 
-## Next integration gate
+## Seasonal integration follow-up
 
-The next implementation is a new explicit seasonal coupling, not another basin-frontier experiment:
+The [unified regional soil cycle](regional-soil-cycle.md) implements the following ownership/replay gate in a separate checkpoint family. Its strict annual refusals remain recorded. The explicitly selected `ponded-soil-exchange-2` operator proposes both finite owners and cumulative history together; an unrepresentable grant stays entirely at the donor with checkpointed resolution diagnostics. The same `32 * epsilon * grant` check remains in force. Invalid inputs and other numerical failures are not converted into retention. Two additional directed tests verify retained thin liquid with active soil drainage and rollback of an otherwise valid transfer when its gross history cannot represent the credit.
+
+The original integration requirements were:
 
 1. Define one available terrestrial liquid owner for precipitation, melt and face arrivals. Avoid charging both the old liquid-runoff closure and regional face flow for the same mobile water.
 2. Add independent cumulative regional infiltration and soil exchange identities, including the opposite atmospheric and drainage receipts. Resolve how component precision maps to currently scalar vapor/transit stocks; never drop a low component at the adapter boundary or credit vapor twice.

@@ -1,0 +1,810 @@
+{
+  "summaryVersion": "regional-soil-cycle-validation-1",
+  "recordedDate": "2026-10-06",
+  "environment": {
+    "rustc": "1.98.1 (48a229cea 2026-09-01), Arch Linux",
+    "cargo": "1.98.1 (797e8a9bc 2026-08-05)",
+    "node": "v25.2.1"
+  },
+  "scope": "Separate headless seasonal family with unified terrestrial liquid and opt-in donor-retaining numerical fluxes. Fixed terrain and reference-body heads; not calibrated hydrology, spatial qualification or desktop promotion.",
+  "sourceReports": [
+    {
+      "path": "artifacts/regional-soil-annual-v1.json",
+      "sha256": "eac8737c5df32960dd671c21b626dfb0a1a2b8df503970ce88cca492aadf67df"
+    },
+    {
+      "path": "artifacts/regional-soil-annual-strict-v2.json",
+      "sha256": "e709d1fe77c8f6d5b0928dec71c443365c1ced81faa32bd95a01579b5b774933"
+    },
+    {
+      "path": "artifacts/regional-soil-annual-retaining-v1.json",
+      "sha256": "342ee9373ca5beef70929cf9203ca1b35eefc37a1b34be4ff6250da18704ff31"
+    },
+    {
+      "path": "artifacts/regional-soil-annual-retaining-repeat-v1.json",
+      "sha256": "342ee9373ca5beef70929cf9203ca1b35eefc37a1b34be4ff6250da18704ff31"
+    }
+  ],
+  "sourceFilesAtAnnualQualification": [
+    {
+      "path": "native/src/moisture_transport.rs",
+      "sha256": "d117d9da8c1cc3f73bb52ead789001cecd210e860a4d4976d0a3de094c72b707"
+    },
+    {
+      "path": "native/src/moisture_transport/paired.rs",
+      "sha256": "efe92f54ed358c3e35d17114213f00a6aad34cb9dccd7c3c8bdd8f55e25a2fe8"
+    },
+    {
+      "path": "native/src/seasonal_moisture.rs",
+      "sha256": "c4a5eb993c29b5ffdfecd1a914bd8736361262f31d55b87e7e82649d99e291b3"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil.rs",
+      "sha256": "5588a91bc2abb46c9c0dff9865d36542d29d1aaea2f1dc5fccf4cd813a787b32"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/accounting.rs",
+      "sha256": "39d0490112a363f5ac26a565638e7cc3068ff5a5850a7314ed2c565299c79e1d"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/cycle.rs",
+      "sha256": "db2553ced3442970566550572ff1226e52fce27fbb87b4c0cdfd327a571971f7"
+    },
+    {
+      "path": "native/src/surface_water/ponded_soil.rs",
+      "sha256": "1ae6c9da06c84e7e8b4092f5cec7e58caef971e75ea8be10b88fb129a30545f7"
+    },
+    {
+      "path": "native/examples/regional_soil_report.rs",
+      "sha256": "761f928c6169c40fcc2075d3064d62fec09c5bd9a82a96f3e643941bd5195462"
+    }
+  ],
+  "baseCommit": "5e19b35",
+  "automatedValidation": {
+    "recordedDate": "2026-10-07",
+    "fullNpmTestExitCode": 0,
+    "nativePassed": 499,
+    "nativeFailed": 0,
+    "nativeIgnored": 1,
+    "nodePassingTestFiles": 16,
+    "nodeFailed": 0,
+    "releasePondedSoilTestsPassed": 12,
+    "releaseRegionalSoilTestsPassed": 7,
+    "releasePairedAtmosphereTestsPassed": 3,
+    "observerMetadataAssertionsRerunAfterFullSuite": true,
+    "allTargetClippyWarningsDenied": true,
+    "formatAndDiffChecks": true,
+    "guiInteractionRerun": false,
+    "logPath": "artifacts/regional-soil-test-log.txt",
+    "logSha256": "ced42c9a546534142e1c83aee09400935cb1cae151e06970f29140030e783155"
+  },
+  "readOnlyObserverFollowup": {
+    "recordedDate": "2026-10-07",
+    "observationVersion": "regional-soil-observation-1",
+    "changesSeasonalStateOrCheckpoint": false,
+    "desktopProtocolImplemented": false,
+    "sourceFiles": [
+      {
+        "path": "native/src/seasonal_moisture/regional_soil.rs",
+        "sha256": "62f6e019499ec6d1191cfd9bdae95eb1e7d7b3d96ae73f5afe20ebb2f720f093"
+      },
+      {
+        "path": "native/src/seasonal_moisture/regional_soil/observation.rs",
+        "sha256": "b7cf1cfa39ab6fabc8e328205cb77304189129a41fddd97c4ce3627b3db7a6ed"
+      }
+    ]
+  },
+  "retainingRepeatByteExact": true,
+  "strictRefactorCheckpointsExact": true,
+  "caseCount": 12,
+  "strictCompletedAnnualCases": 0,
+  "retainingCompletedAnnualCases": 12,
+  "commonRecipeWithoutSeedSubdivisionWater": {
+    "boundaryWidthKm": 300,
+    "continentalFraction": 0.38,
+    "continentalScale": 1,
+    "detailAmplitudeMeters": 300,
+    "maxPlateSpeedCmPerYear": 8,
+    "modelVersion": "basins-1",
+    "plateCount": 12,
+    "radiusMeters": 6371000,
+    "randomVersion": "fnv1a-utf8-mulberry32-1",
+    "reliefScale": 1,
+    "schemaVersion": 1
+  },
+  "commonRetainingSettings": {
+    "effectiveVaporDepthMeters": 2000,
+    "evaporationEnabled": true,
+    "evaporationResponseSeconds": 432000,
+    "initialActiveSurfaceDepthMeters": 10,
+    "maxCoupledStepSeconds": 900,
+    "meltKilogramsPerSquareMeterDegreeDay": 3,
+    "numericalPolicy": "retainDonor",
+    "orography": {
+      "strength": 1,
+      "upliftResponseHeightMeters": 1000
+    },
+    "precipitationEnabled": true,
+    "precipitationResponseSeconds": 21600,
+    "routingEnabled": true,
+    "runoff": {
+      "effectiveSpeedMetersPerSecond": 1,
+      "minimumResponseSeconds": 3600
+    },
+    "soil": {
+      "infiltrationResponseSeconds": 21600,
+      "soilCapacityKilogramsPerSquareMeter": 150,
+      "soilDrainageResponseSeconds": 2592000,
+      "soilRetainedFraction": 0.6
+    },
+    "surfaceFlow": {
+      "maximumDiffusivitySquareMetersPerSecond": 1000000,
+      "roughness": 0.04
+    },
+    "transport": {
+      "maxOutgoingFraction": 0.8,
+      "maxSubsteps": 4096
+    }
+  },
+  "temperatureSettings": {
+    "axialTiltDegrees": 23.44,
+    "landResponseDays": 20,
+    "lapseRateCelsiusPerMeter": 0.0065,
+    "referenceTemperatureCelsius": 15,
+    "sensitivityCelsiusPerWattPerSquareMeter": 0.09,
+    "solarIrradianceWattsPerSquareMeter": 1360,
+    "waterResponseDays": 60
+  },
+  "windSettings": {
+    "itczShiftFraction": 0.5,
+    "midlatitudePolewardMetersPerSecond": 1,
+    "midlatitudeWesterlyMetersPerSecond": 10,
+    "polarEasterlyMetersPerSecond": 5,
+    "polarEquatorwardMetersPerSecond": 0.5,
+    "tradeEasterlyMetersPerSecond": 7,
+    "tropicalConvergenceMetersPerSecond": 2
+  },
+  "retainingPins": {
+    "modelVersion": "regional-seasonal-water-1",
+    "orographicModelVersion": "orographic-response-1",
+    "referenceBodyModelVersion": "reference-water-pool-1",
+    "runoffModelVersion": "runoff-transport-paired-2",
+    "schemaVersion": 1,
+    "soilModelVersion": "ponded-soil-exchange-2",
+    "surfaceFlowModelVersion": "regional-surface-flow-paired-2",
+    "temperatureModelVersion": "seasonal-temperature-1",
+    "transportModelVersion": "moisture-transport-paired-2",
+    "windModelVersion": "seasonal-wind-1"
+  },
+  "maximumRelativeGlobalResidual": 1.954305482968942e-16,
+  "maximumRelativeLocalResidual": 4.248548595842353e-16,
+  "cadenceComparisons": [
+    {
+      "ceilingsSeconds": [
+        900,
+        450
+      ],
+      "elapsedSeconds": 31536900,
+      "liquidL1Kilograms": 1077047823015.1506,
+      "relativeLiquidL1": 0.00009168448340998935,
+      "soilL1Kilograms": 1520294634195.881,
+      "relativeSoilL1": 0.00009833901590157023,
+      "relativeGrossSurfaceCrossingDifference": 9.983742239403896e-7
+    },
+    {
+      "ceilingsSeconds": [
+        450,
+        225
+      ],
+      "elapsedSeconds": 31536900,
+      "liquidL1Kilograms": 539211072276.65784,
+      "relativeLiquidL1": 0.000045902285316367255,
+      "soilL1Kilograms": 759303208702.352,
+      "relativeSoilL1": 0.00004911568198158087,
+      "relativeGrossSurfaceCrossingDifference": 4.970173032560382e-7
+    }
+  ],
+  "caseNotes": "Settings differ only in the explicit numerical policy and listed coupled ceiling; recipes differ only in the listed seed, subdivision and water setting. Funded cases start at second 900 with finite-body-funded synthetic adjacent-face history, not naturally reached climate. Deferred request sums can count the same retained mass repeatedly, and are not stocks or net physical error.",
+  "cases": [
+    {
+      "seed": "first-light",
+      "requestedCoverage": 0.71,
+      "regions": 162,
+      "recipeOverrides": {
+        "seed": "first-light",
+        "subdivision": 2,
+        "water": {
+          "fraction": 0.71,
+          "mode": "coverage"
+        }
+      },
+      "coupledCeilingSeconds": 900,
+      "fundedRegion": null,
+      "fundedKilograms": null,
+      "requestedDays": 365,
+      "strictLastAcceptedElapsedSeconds": 6048000,
+      "strictFirstRefusal": {
+        "atomicRollback": true,
+        "day": 71,
+        "message": "Ponded-soil transfer is below the represented stock precision."
+      },
+      "strictRoundTripExact": true,
+      "strictContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "retainingElapsedSeconds": 31536000,
+      "retainingFailure": null,
+      "retainingRoundTripExact": true,
+      "retainingContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "maximumRelativeGlobalResidual": 1.4226239019834377e-16,
+      "maximumRelativeLocalResidual": 3.7718089815788064e-16,
+      "activeSurfaceDirections": 78,
+      "surfaceCrossingsKilograms": 5370497925550.286,
+      "drainageCrossingsKilograms": 8528690779207810,
+      "liquidKilograms": 1506058494507219.2,
+      "soilKilograms": 9110943215535924,
+      "vaporKilograms": 13097911012530296,
+      "resolution": {
+        "deferredRequests": 1468388,
+        "maximumDeferredRequestKilograms": 1.8330537016065453,
+        "summedDeferredRequestKilograms": 820.2297906523781
+      },
+      "finalCheckpointSha256": "554fbcde51d94e99f03a779272698b018e4c46901ff4f115e05a1d6bd94df83b",
+      "ownedPairsSha256": "8dbf5c9ba821c642d1f5e8a08269681599525db41f86203de3e7ec96bf46d762"
+    },
+    {
+      "seed": "first-light",
+      "requestedCoverage": 0.3,
+      "regions": 162,
+      "recipeOverrides": {
+        "seed": "first-light",
+        "subdivision": 2,
+        "water": {
+          "fraction": 0.3,
+          "mode": "coverage"
+        }
+      },
+      "coupledCeilingSeconds": 900,
+      "fundedRegion": null,
+      "fundedKilograms": null,
+      "requestedDays": 365,
+      "strictLastAcceptedElapsedSeconds": 6048000,
+      "strictFirstRefusal": {
+        "atomicRollback": true,
+        "day": 71,
+        "message": "Ponded-soil transfer is below the represented stock precision."
+      },
+      "strictRoundTripExact": true,
+      "strictContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "retainingElapsedSeconds": 31536000,
+      "retainingFailure": null,
+      "retainingRoundTripExact": true,
+      "retainingContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "maximumRelativeGlobalResidual": 1.8055060914817136e-16,
+      "maximumRelativeLocalResidual": 3.3709895399818426e-16,
+      "activeSurfaceDirections": 109,
+      "surfaceCrossingsKilograms": 3231311340504.4087,
+      "drainageCrossingsKilograms": 13371968875898402,
+      "liquidKilograms": 1563914587402965.5,
+      "soilKilograms": 14323099696199176,
+      "vaporKilograms": 11635673014331666,
+      "resolution": {
+        "deferredRequests": 3481187,
+        "maximumDeferredRequestKilograms": 0.6582214844639886,
+        "summedDeferredRequestKilograms": 259.7163227565218
+      },
+      "finalCheckpointSha256": "4b750fe8351f72bf3068c9add2d54eaac701dba3cacd8d8828eb968fdec08420",
+      "ownedPairsSha256": "a1708ac3eb0f52daef78214b7a6e06c3aa17463f56a3729eb42b7ddc74b961a1"
+    },
+    {
+      "seed": "readiness-01",
+      "requestedCoverage": 0.71,
+      "regions": 162,
+      "recipeOverrides": {
+        "seed": "readiness-01",
+        "subdivision": 2,
+        "water": {
+          "fraction": 0.71,
+          "mode": "coverage"
+        }
+      },
+      "coupledCeilingSeconds": 900,
+      "fundedRegion": null,
+      "fundedKilograms": null,
+      "requestedDays": 365,
+      "strictLastAcceptedElapsedSeconds": 6048000,
+      "strictFirstRefusal": {
+        "atomicRollback": true,
+        "day": 71,
+        "message": "Ponded-soil transfer is below the represented stock precision."
+      },
+      "strictRoundTripExact": true,
+      "strictContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "retainingElapsedSeconds": 31536000,
+      "retainingFailure": null,
+      "retainingRoundTripExact": true,
+      "retainingContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "maximumRelativeGlobalResidual": 1.437241783614873e-16,
+      "maximumRelativeLocalResidual": 3.62865720092e-16,
+      "activeSurfaceDirections": 72,
+      "surfaceCrossingsKilograms": 6541275349342.483,
+      "drainageCrossingsKilograms": 8086235888409133,
+      "liquidKilograms": 804765424789151.9,
+      "soilKilograms": 7071347620570848,
+      "vaporKilograms": 12240388208042020,
+      "resolution": {
+        "deferredRequests": 3877828,
+        "maximumDeferredRequestKilograms": 3.6724419510754562,
+        "summedDeferredRequestKilograms": 597.0390708106293
+      },
+      "finalCheckpointSha256": "5a52c69010baa88e623488f90546583217d5bed5e6b7dd8ac2698f64b6288d30",
+      "ownedPairsSha256": "170125672362cfedbbff114df355c8e9884a82653986111304579ef7b7c7db10"
+    },
+    {
+      "seed": "readiness-01",
+      "requestedCoverage": 0.3,
+      "regions": 162,
+      "recipeOverrides": {
+        "seed": "readiness-01",
+        "subdivision": 2,
+        "water": {
+          "fraction": 0.3,
+          "mode": "coverage"
+        }
+      },
+      "coupledCeilingSeconds": 900,
+      "fundedRegion": null,
+      "fundedKilograms": null,
+      "requestedDays": 365,
+      "strictLastAcceptedElapsedSeconds": 10368000,
+      "strictFirstRefusal": {
+        "atomicRollback": true,
+        "day": 121,
+        "message": "Ponded-soil transfer is below the represented stock precision."
+      },
+      "strictRoundTripExact": true,
+      "strictContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "retainingElapsedSeconds": 31536000,
+      "retainingFailure": null,
+      "retainingRoundTripExact": true,
+      "retainingContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "maximumRelativeGlobalResidual": 0,
+      "maximumRelativeLocalResidual": 3.2364690101588586e-16,
+      "activeSurfaceDirections": 167,
+      "surfaceCrossingsKilograms": 4646232433164.191,
+      "drainageCrossingsKilograms": 12918424339093200,
+      "liquidKilograms": 2160588140737962.8,
+      "soilKilograms": 13135308373920564,
+      "vaporKilograms": 10643922788362600,
+      "resolution": {
+        "deferredRequests": 7971885,
+        "maximumDeferredRequestKilograms": 0.446060751676075,
+        "summedDeferredRequestKilograms": 41.05044317565596
+      },
+      "finalCheckpointSha256": "b1de61efaef7623042117234d8bfb249757372bc36bd51f3f2319c9a201fbab2",
+      "ownedPairsSha256": "cb0f7a5845ef29b9bbd8fb93afd37983b4a58d25fb1bcd01e24abebd3df391a9"
+    },
+    {
+      "seed": "receiver-2",
+      "requestedCoverage": 0.71,
+      "regions": 162,
+      "recipeOverrides": {
+        "seed": "receiver-2",
+        "subdivision": 2,
+        "water": {
+          "fraction": 0.71,
+          "mode": "coverage"
+        }
+      },
+      "coupledCeilingSeconds": 900,
+      "fundedRegion": null,
+      "fundedKilograms": null,
+      "requestedDays": 365,
+      "strictLastAcceptedElapsedSeconds": 6048000,
+      "strictFirstRefusal": {
+        "atomicRollback": true,
+        "day": 71,
+        "message": "Ponded-soil transfer is below the represented stock precision."
+      },
+      "strictRoundTripExact": true,
+      "strictContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "retainingElapsedSeconds": 31536000,
+      "retainingFailure": null,
+      "retainingRoundTripExact": true,
+      "retainingContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "maximumRelativeGlobalResidual": 1.421749072685043e-16,
+      "maximumRelativeLocalResidual": 3.467509990539834e-16,
+      "activeSurfaceDirections": 72,
+      "surfaceCrossingsKilograms": 5899976541600.968,
+      "drainageCrossingsKilograms": 8028143981413455,
+      "liquidKilograms": 1045012415496424.1,
+      "soilKilograms": 7613097762039301,
+      "vaporKilograms": 13019436364962806,
+      "resolution": {
+        "deferredRequests": 1418562,
+        "maximumDeferredRequestKilograms": 1.6628381604318039,
+        "summedDeferredRequestKilograms": 493.8966359878669
+      },
+      "finalCheckpointSha256": "8df85a6efb56186f1e9c0de51df47768b68265e394863d2555c962ba38a8c0b3",
+      "ownedPairsSha256": "be667392b094ebee0a352d94bb1ded84d4a3ceaf89f7e1d769847982f418e370"
+    },
+    {
+      "seed": "receiver-2",
+      "requestedCoverage": 0.3,
+      "regions": 162,
+      "recipeOverrides": {
+        "seed": "receiver-2",
+        "subdivision": 2,
+        "water": {
+          "fraction": 0.3,
+          "mode": "coverage"
+        }
+      },
+      "coupledCeilingSeconds": 900,
+      "fundedRegion": null,
+      "fundedKilograms": null,
+      "requestedDays": 365,
+      "strictLastAcceptedElapsedSeconds": 7171200,
+      "strictFirstRefusal": {
+        "atomicRollback": true,
+        "day": 84,
+        "message": "Ponded-soil transfer is below the represented stock precision."
+      },
+      "strictRoundTripExact": true,
+      "strictContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "retainingElapsedSeconds": 31536000,
+      "retainingFailure": null,
+      "retainingRoundTripExact": true,
+      "retainingContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "maximumRelativeGlobalResidual": 1.7323529949245115e-16,
+      "maximumRelativeLocalResidual": 3.4098797483607003e-16,
+      "activeSurfaceDirections": 122,
+      "surfaceCrossingsKilograms": 1107652226825.219,
+      "drainageCrossingsKilograms": 11380859462768988,
+      "liquidKilograms": 948814609353468.1,
+      "soilKilograms": 12245579178949218,
+      "vaporKilograms": 11044464038183742,
+      "resolution": {
+        "deferredRequests": 5551664,
+        "maximumDeferredRequestKilograms": 0.3233281734064919,
+        "summedDeferredRequestKilograms": 141.12197254242477
+      },
+      "finalCheckpointSha256": "02ae325baf7ea9e7580e72a9a541415b719ce9102a9ddbae1c00d348ab915daf",
+      "ownedPairsSha256": "c0e0be9af1afcb7b267eefe8d3fd56cb3d1dd7af443a68b016a896c54aae68b0"
+    },
+    {
+      "seed": "readiness-03",
+      "requestedCoverage": 0.71,
+      "regions": 162,
+      "recipeOverrides": {
+        "seed": "readiness-03",
+        "subdivision": 2,
+        "water": {
+          "fraction": 0.71,
+          "mode": "coverage"
+        }
+      },
+      "coupledCeilingSeconds": 900,
+      "fundedRegion": null,
+      "fundedKilograms": null,
+      "requestedDays": 365,
+      "strictLastAcceptedElapsedSeconds": 6048000,
+      "strictFirstRefusal": {
+        "atomicRollback": true,
+        "day": 71,
+        "message": "Ponded-soil transfer is below the represented stock precision."
+      },
+      "strictRoundTripExact": true,
+      "strictContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "retainingElapsedSeconds": 31536000,
+      "retainingFailure": null,
+      "retainingRoundTripExact": true,
+      "retainingContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "maximumRelativeGlobalResidual": 1.4193689511492672e-16,
+      "maximumRelativeLocalResidual": 3.425334095821123e-16,
+      "activeSurfaceDirections": 65,
+      "surfaceCrossingsKilograms": 5474102271164.262,
+      "drainageCrossingsKilograms": 5546822193718223,
+      "liquidKilograms": 301870337152838.2,
+      "soilKilograms": 8621582989774898,
+      "vaporKilograms": 13099947087748668,
+      "resolution": {
+        "deferredRequests": 924341,
+        "maximumDeferredRequestKilograms": 1.5621565402578161,
+        "summedDeferredRequestKilograms": 101.931298740904
+      },
+      "finalCheckpointSha256": "40f731655db34c67a35cd389e03e375b292cb803b524d98c087570255d0acd4f",
+      "ownedPairsSha256": "16b026a6bd1c43234e5568e83a635d45c55d4c900d88fe894a2e0ad57984b8e3"
+    },
+    {
+      "seed": "readiness-03",
+      "requestedCoverage": 0.3,
+      "regions": 162,
+      "recipeOverrides": {
+        "seed": "readiness-03",
+        "subdivision": 2,
+        "water": {
+          "fraction": 0.3,
+          "mode": "coverage"
+        }
+      },
+      "coupledCeilingSeconds": 900,
+      "fundedRegion": null,
+      "fundedKilograms": null,
+      "requestedDays": 365,
+      "strictLastAcceptedElapsedSeconds": 9849600,
+      "strictFirstRefusal": {
+        "atomicRollback": true,
+        "day": 115,
+        "message": "Ponded-soil transfer is below the represented stock precision."
+      },
+      "strictRoundTripExact": true,
+      "strictContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "retainingElapsedSeconds": 31536000,
+      "retainingFailure": null,
+      "retainingRoundTripExact": true,
+      "retainingContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "maximumRelativeGlobalResidual": 1.954305482968942e-16,
+      "maximumRelativeLocalResidual": 3.4529103420404e-16,
+      "activeSurfaceDirections": 158,
+      "surfaceCrossingsKilograms": 3389293339990.128,
+      "drainageCrossingsKilograms": 11960831870261928,
+      "liquidKilograms": 1469915168373693.5,
+      "soilKilograms": 11611763793131974,
+      "vaporKilograms": 11588614089240762,
+      "resolution": {
+        "deferredRequests": 4430860,
+        "maximumDeferredRequestKilograms": 0.9003989221385003,
+        "summedDeferredRequestKilograms": 343.11387177217745
+      },
+      "finalCheckpointSha256": "57b2c3f0bc717b145554e640f330288a536ab160898c2ed535bfa69ee626f668",
+      "ownedPairsSha256": "4146f59cdd8a0081f608f13fda88276750726fe0f712101c2bd40f28a205b4ce"
+    },
+    {
+      "seed": "first-light",
+      "requestedCoverage": 0.3,
+      "regions": 642,
+      "recipeOverrides": {
+        "seed": "first-light",
+        "subdivision": 3,
+        "water": {
+          "fraction": 0.3,
+          "mode": "coverage"
+        }
+      },
+      "coupledCeilingSeconds": 900,
+      "fundedRegion": null,
+      "fundedKilograms": null,
+      "requestedDays": 365,
+      "strictLastAcceptedElapsedSeconds": 0,
+      "strictFirstRefusal": {
+        "atomicRollback": true,
+        "day": 1,
+        "message": "Ponded-soil transfer is below the represented stock precision."
+      },
+      "strictRoundTripExact": true,
+      "strictContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "retainingElapsedSeconds": 31536000,
+      "retainingFailure": null,
+      "retainingRoundTripExact": true,
+      "retainingContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "maximumRelativeGlobalResidual": 0,
+      "maximumRelativeLocalResidual": 4.248548595842353e-16,
+      "activeSurfaceDirections": 741,
+      "surfaceCrossingsKilograms": 57584326987675.67,
+      "drainageCrossingsKilograms": 22789930414064252,
+      "liquidKilograms": 5064555739854454,
+      "soilKilograms": 13717018088552586,
+      "vaporKilograms": 10507501830742914,
+      "resolution": {
+        "deferredRequests": 23802958,
+        "maximumDeferredRequestKilograms": 0.450741353373427,
+        "summedDeferredRequestKilograms": 738.5335870197594
+      },
+      "finalCheckpointSha256": "74c11d5b40437961cfca180c9b0436f5b4d1d641dac109595e871d183887fc5b",
+      "ownedPairsSha256": "e0fca783983167d701d367d5b4d1ff8e7627188c5f71000794b5a5c9abf02d3b"
+    },
+    {
+      "seed": "first-light",
+      "requestedCoverage": 0.3,
+      "regions": 162,
+      "recipeOverrides": {
+        "seed": "first-light",
+        "subdivision": 2,
+        "water": {
+          "fraction": 0.3,
+          "mode": "coverage"
+        }
+      },
+      "coupledCeilingSeconds": 900,
+      "fundedRegion": 44,
+      "fundedKilograms": 152086337255055680,
+      "requestedDays": 365,
+      "strictLastAcceptedElapsedSeconds": 6048900,
+      "strictFirstRefusal": {
+        "atomicRollback": true,
+        "day": 71,
+        "message": "Ponded-soil transfer is below the represented stock precision."
+      },
+      "strictRoundTripExact": true,
+      "strictContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "retainingElapsedSeconds": 31536900,
+      "retainingFailure": null,
+      "retainingRoundTripExact": true,
+      "retainingContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "maximumRelativeGlobalResidual": 1.8055060914817136e-16,
+      "maximumRelativeLocalResidual": 3.290136758417774e-16,
+      "activeSurfaceDirections": 129,
+      "surfaceCrossingsKilograms": 183596425833505200,
+      "drainageCrossingsKilograms": 16963097873931374,
+      "liquidKilograms": 11748120792878162,
+      "soilKilograms": 15460217384991636,
+      "vaporKilograms": 11600664196477812,
+      "resolution": {
+        "deferredRequests": 3751430,
+        "maximumDeferredRequestKilograms": 0.6393202366271279,
+        "summedDeferredRequestKilograms": 262.26203049971826
+      },
+      "finalCheckpointSha256": "61b88cf8103f92cc619ce4bff085e21c3e18cfe88d86e5584b22cf262cd0aab5",
+      "ownedPairsSha256": "5ef102148083555b6c51545d0d3675689968f3f80e951ffeabe3f96a256d578d"
+    },
+    {
+      "seed": "first-light",
+      "requestedCoverage": 0.3,
+      "regions": 162,
+      "recipeOverrides": {
+        "seed": "first-light",
+        "subdivision": 2,
+        "water": {
+          "fraction": 0.3,
+          "mode": "coverage"
+        }
+      },
+      "coupledCeilingSeconds": 450,
+      "fundedRegion": 44,
+      "fundedKilograms": 152086337255055680,
+      "requestedDays": 365,
+      "strictLastAcceptedElapsedSeconds": 6048900,
+      "strictFirstRefusal": {
+        "atomicRollback": true,
+        "day": 71,
+        "message": "Ponded-soil transfer is below the represented stock precision."
+      },
+      "strictRoundTripExact": true,
+      "strictContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "retainingElapsedSeconds": 31536900,
+      "retainingFailure": null,
+      "retainingRoundTripExact": true,
+      "retainingContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "maximumRelativeGlobalResidual": 1.8055060914817136e-16,
+      "maximumRelativeLocalResidual": 3.5115220837212995e-16,
+      "activeSurfaceDirections": 136,
+      "surfaceCrossingsKilograms": 183596242535749060,
+      "drainageCrossingsKilograms": 16957143527223968,
+      "liquidKilograms": 11747329351236792,
+      "soilKilograms": 15459729998900728,
+      "vaporKilograms": 11600947201091414,
+      "resolution": {
+        "deferredRequests": 7663170,
+        "maximumDeferredRequestKilograms": 0.8994278425617998,
+        "summedDeferredRequestKilograms": 737.8491213769389
+      },
+      "finalCheckpointSha256": "0da5840131d52e6366c0945fb10b9cabb84b3f59d5db6a0a175fa1321fc9191f",
+      "ownedPairsSha256": "43c7472132de5f4291c07351bc4d816977e5c988751bea8747b6b3f8392674ec"
+    },
+    {
+      "seed": "first-light",
+      "requestedCoverage": 0.3,
+      "regions": 162,
+      "recipeOverrides": {
+        "seed": "first-light",
+        "subdivision": 2,
+        "water": {
+          "fraction": 0.3,
+          "mode": "coverage"
+        }
+      },
+      "coupledCeilingSeconds": 225,
+      "fundedRegion": 44,
+      "fundedKilograms": 152086337255055680,
+      "requestedDays": 365,
+      "strictLastAcceptedElapsedSeconds": 5962500,
+      "strictFirstRefusal": {
+        "atomicRollback": true,
+        "day": 70,
+        "message": "Ponded-soil transfer is below the represented stock precision."
+      },
+      "strictRoundTripExact": true,
+      "strictContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "retainingElapsedSeconds": 31536900,
+      "retainingFailure": null,
+      "retainingRoundTripExact": true,
+      "retainingContinuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "maximumRelativeGlobalResidual": 1.8055060914817136e-16,
+      "maximumRelativeLocalResidual": 3.4003465562478585e-16,
+      "activeSurfaceDirections": 136,
+      "surfaceCrossingsKilograms": 183596151285285060,
+      "drainageCrossingsKilograms": 16954161692979460,
+      "liquidKilograms": 11746933046150380,
+      "soilKilograms": 15459486218415992,
+      "vaporKilograms": 11601089474353782,
+      "resolution": {
+        "deferredRequests": 16621967,
+        "maximumDeferredRequestKilograms": 0.5928515392872318,
+        "summedDeferredRequestKilograms": 2496.710919621585
+      },
+      "finalCheckpointSha256": "09f2a537bde312abf9a5fdd2aa190dd5ecafe53c3e44c471c5ee3d1c2ba7bce1",
+      "ownedPairsSha256": "5b4236a577647ba5c2b9f6d155092af8fdd4b28c398de77876575a8dd0a00b60"
+    }
+  ]
+}

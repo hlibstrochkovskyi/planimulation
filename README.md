@@ -10,6 +10,8 @@ A native [moisture-transport kernel and headless report](docs/moisture-transport
 
 A separate [regional surface-flow candidate](docs/regional-surface-flow.md) uses compensated regional columns and neighboring physical faces instead of enumerating basin-parent transitions. It couples capped Manning-inspired flow to seasonal exchange and passes the recorded 25-case annual cohort, including explicitly funded active-flow/refinement controls. Its opt-in [desktop mode](docs/regional-water-desktop.md) adds regional depth, cumulative flow layers, separate body budgets, changing regional water caps and complete checkpoint replay in both projections. This is a different, uncalibrated approximation, not a migration; coarse wet/dry/soil coupling, fixed reference heads, capped mobility and spatial sensitivity remain review gates.
 
+The new headless [unified regional soil cycle](docs/regional-soil-cycle.md) applies source-independent liquid/soil exchange without the legacy whole-column wet-film switch. Vapor, delayed soil drainage and every directed transfer retain paired precision and complete replay. Strict numerical refusal and explicitly selected donor retention are separately pinned; this family is not yet connected to the desktop and does not replace old saves.
+
 ## Documentation
 
 | Document | Contents |
@@ -47,7 +49,8 @@ A separate [regional surface-flow candidate](docs/regional-surface-flow.md) uses
 | [Bounded parent outlets](docs/parent-outlet.md) | Opt-in headless model 14: full-parent excess through a unique geographic outlet, independent gross-flow identities, replay and atomic refusals |
 | [Regional surface flow](docs/regional-surface-flow.md) | Opt-in headless model 15: neighboring regional columns, explicit capped mobility, independent face ledgers, annual/refinement evidence and retained prototype failures |
 | [Regional-water desktop](docs/regional-water-desktop.md) | Opt-in model-15 map/globe layers, separate regional/body ownership, protocol-14 frames and exact complete checkpoint continuation |
-| [Ponded liquid and soil](docs/ponded-soil-exchange.md) | Retained model-15 thin-film discontinuity and a standalone conservative vertical-exchange operator; not yet seasonally coupled |
+| [Ponded liquid and soil](docs/ponded-soil-exchange.md) | Retained model-15 thin-film discontinuity, conservative vertical exchange and explicitly pinned numerical retention |
+| [Unified regional soil cycle](docs/regional-soil-cycle.md) | Separate headless seasonal family, unified terrestrial liquid, paired vapor/drainage, contact accounting/replay and read-only display preparation |
 | [Seasonal-water desktop](docs/seasonal-water-desktop.md) | Run/pause, eight dynamic layers, interval inspection, versioned frames, baseline timing evidence, and limits |
 | [Seasonal-water checkpoints](docs/seasonal-water-checkpoints.md) | Complete native state, candidate validation, bounded file I/O, exact continuation, and limits |
 | [Typed surface water](docs/surface-water.md) | Empirical snowmelt, soil bucket, pending-runoff ownership, defaults, and limitations |

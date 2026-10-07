@@ -22,6 +22,7 @@ pub mod leaf_spill;
 pub mod merged_lake;
 pub mod preparation;
 mod reference_pool;
+pub mod regional_soil;
 pub mod surface_flow;
 pub mod water_return;
 
