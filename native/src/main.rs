@@ -12,6 +12,8 @@ use planimulation_core::{
 use serde::Deserialize;
 use serde_json::json;
 use std::io::{self, BufRead, Read};
+mod seasonal_session;
+use seasonal_session::SeasonalSession;
 
 #[derive(Deserialize)]
 #[serde(tag = "command", rename_all = "camelCase", deny_unknown_fields)]
@@ -39,6 +41,11 @@ enum Command {
     InitializeOrographicMoisture,
     InitializePreciseMoisture,
     InitializeRegionalMoisture,
+    InitializeSoilMoisture,
+    RestoreSoilMoisture {
+        #[serde(rename = "checkpointJson")]
+        checkpoint_json: String,
+    },
     RestoreMoisture {
         #[serde(rename = "checkpointJson")]
         checkpoint_json: String,
@@ -77,7 +84,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut output = io::stdout().lock();
     let mut world: Option<World> = None;
     let mut water_state: Option<PrescribedWaterInventory> = None;
-    let mut moisture_state: Option<(MoistureModel, MoistureState)> = None;
+    let mut moisture_state: Option<SeasonalSession> = None;
     loop {
         let mut line = Vec::new();
         let count = input
@@ -93,7 +100,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let result = (|| -> Result<(), String> {
             let command: Command = serde_json::from_slice(&line).map_err(|e| e.to_string())?;
             if count as u64 > MAX_COMMAND_BYTES
-                && !matches!(command, Command::RestoreMoisture { .. })
+                && !matches!(
+                    command,
+                    Command::RestoreMoisture { .. } | Command::RestoreSoilMoisture { .. }
+                )
             {
                 return Err("Command exceeds 8 MiB.".into());
             }
@@ -129,13 +139,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if seconds > 86400 {
                         return Err("Seasonal water accepts 0–86400 seconds per request.".into());
                     }
-                    if let Some((model, state)) = &mut moisture_state {
-                        let step = if seconds == 0 {
-                            None
-                        } else {
-                            Some(model.advance(state, seconds)?)
-                        };
-                        write_moisture(&mut output, model, state, step.as_ref(), seconds)?;
+                    if let Some(session) = &mut moisture_state {
+                        session.advance(&mut output, seconds)?;
                     } else {
                         if water_state
                             .as_ref()
@@ -158,7 +163,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         wire::seasonal_moisture(&mut output, &model, &state, None, 0)
                             .map_err(|e| e.to_string())?;
                         water_state = None;
-                        moisture_state = Some((model, state));
+                        moisture_state = Some(SeasonalSession::Legacy(model, state));
                     }
                 }
                 command @ (Command::InitializeOrographicMoisture
@@ -202,19 +207,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let state = model.initial_state();
                     write_moisture(&mut output, &model, &state, None, 0)?;
                     water_state = None;
-                    moisture_state = Some((model, state));
+                    moisture_state = Some(SeasonalSession::Legacy(model, state));
                 }
                 Command::ExportMoisture => {
-                    let (model, state) = moisture_state
+                    let session = moisture_state
                         .as_ref()
                         .ok_or("Initialize seasonal water before saving it.")?;
-                    if model.model_version()
-                        == planimulation_core::seasonal_moisture::REGIONAL_SURFACE_MODEL_VERSION
-                    {
-                        wire::regional_moisture_checkpoint(&mut output, model, state)?;
-                    } else {
-                        wire::seasonal_checkpoint(&mut output, model, state)?;
-                    }
+                    session.export(&mut output)?;
                 }
                 Command::RestoreMoisture { checkpoint_json } => {
                     let w = world.as_ref().ok_or("Generate a world first.")?;
@@ -264,7 +263,59 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let (model, state) = MoistureModel::restore(checkpoint)?;
                     write_moisture(&mut output, &model, &state, None, 0)?;
                     water_state = None;
-                    moisture_state = Some((model, state));
+                    moisture_state = Some(SeasonalSession::Legacy(model, state));
+                }
+                Command::InitializeSoilMoisture => {
+                    let w = world.as_ref().ok_or("Generate a world first.")?;
+                    if moisture_state.is_some()
+                        || water_state
+                            .as_ref()
+                            .is_some_and(|s| s.checkpoint().step > 0)
+                    {
+                        return Err(
+                            "Regenerate before choosing a different seasonal-water model.".into(),
+                        );
+                    }
+                    let model =
+                        planimulation_core::seasonal_moisture::regional_soil::Model::from_world(
+                            w,
+                            wire::soil_moisture_settings(),
+                            Default::default(),
+                            Default::default(),
+                        )?;
+                    let state = model.initial_state();
+                    wire::soil_moisture(&mut output, &model, &state, None, None)?;
+                    water_state = None;
+                    moisture_state = Some(SeasonalSession::Soil(model, state));
+                }
+                Command::RestoreSoilMoisture { checkpoint_json } => {
+                    let w = world.as_ref().ok_or("Generate a world first.")?;
+                    if moisture_state.is_some()
+                        || water_state
+                            .as_ref()
+                            .is_some_and(|s| s.checkpoint().step > 0)
+                    {
+                        return Err(
+                            "Restore seasonal water in a separate generated session.".into()
+                        );
+                    }
+                    if checkpoint_json.len() > MAX_SEASONAL_CHECKPOINT_BYTES {
+                        return Err("Seasonal checkpoint exceeds 64 MiB.".into());
+                    }
+                    let cp: planimulation_core::seasonal_moisture::regional_soil::Checkpoint =
+                        serde_json::from_str(&checkpoint_json).map_err(|e| e.to_string())?;
+                    if cp.recipe != w.recipe
+                        || cp.settings != wire::soil_moisture_settings()
+                        || cp.temperature_settings != Default::default()
+                        || cp.wind_settings != Default::default()
+                    {
+                        return Err("Soil-water checkpoint requires matching geography and pinned product settings.".into());
+                    }
+                    let (model, state) =
+                        planimulation_core::seasonal_moisture::regional_soil::Model::restore(cp)?;
+                    wire::soil_moisture(&mut output, &model, &state, None, None)?;
+                    water_state = None;
+                    moisture_state = Some(SeasonalSession::Soil(model, state));
                 }
                 Command::PrescribeWater { region, mode } => {
                     if moisture_state.is_some() {

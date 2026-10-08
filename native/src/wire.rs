@@ -6,9 +6,11 @@ use serde_json::json;
 use std::io::{self, Write};
 
 mod regional_water;
+mod soil_water;
 pub use regional_water::{
     regional_moisture, regional_moisture_checkpoint, regional_moisture_settings,
 };
+pub use soil_water::{soil_moisture, soil_moisture_checkpoint, soil_moisture_settings};
 
 pub const MAX_SEASONAL_CHECKPOINT_BYTES: usize = 64 * 1024 * 1024;
 

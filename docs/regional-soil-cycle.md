@@ -1,6 +1,6 @@
 # Unified regional liquid and seasonal soil cycle
 
-October 6, 2026: implemented headless native family `regional-seasonal-water-1`, checkpoint schema 1. This is a separate family, **not legacy seasonal schema 1 or a model-15 migration**. It applies ponded-soil exchange to the evolving seasonal world with paired atmospheric and delayed-drainage stocks. Existing desktop modes, protocols and saved trajectories are unchanged. A desktop adapter for this family is not implemented.
+October 6, 2026: implemented headless native family `regional-seasonal-water-1`, checkpoint schema 1. This is a separate family, **not legacy seasonal schema 1 or a model-15 migration**. It applies ponded-soil exchange to the evolving seasonal world with paired atmospheric and delayed-drainage stocks. Existing desktop modes and saved trajectories are unchanged. The October 8 [protocol-15 transport and typed session](soil-water-transport.md) prepare integration; an actual Electron mode for this family is not implemented.
 
 ## Purpose and ownership
 
@@ -100,5 +100,7 @@ A generated, finite-funded active-flow test checks all copied owners and signed 
 Validation completed October 7: full `npm test` exits successfully, including TypeScript checking, native build, 499 passing native tests and all 16 Node test files. The single pre-existing ignored annual-snow test remains unchanged. The twelve vertical-operator tests, seven regional-cycle/observation tests and three paired-atmosphere tests also pass in release; the latest observer metadata assertions were separately rerun after the full suite. Warnings-denied all-target Clippy, formatting and diff checks pass. No new tests are ignored and no GUI interaction test was rerun for this native-only work.
 
 ## Remaining gates
+
+October 8 transport follow-up: [a separate binary contract, strict TypeScript decoder and native-process session](soil-water-transport.md) now carry all five regional owner pairs, counted-once body pairs, local histories, actual interval transfers and policy diagnostics. Complete original-text restore and same-build continuation are tested independently of legacy modes. This does not change the qualified equations or connect Electron controls, rendering or file dialogs.
 
 This closes an explicit seasonal ownership/coupling implementation, not a claim of general hydrology or scientific calibration. Reference heads/coasts, homogeneous soil parameters, cold gating, saturation/evaporation laws and mobility caps are still approximations. Dense active-flow spatial qualification, cadence sensitivity, longer-term drift, physical calibration and an explicit desktop adapter remain work. Dynamic reference-body levels, ocean circulation, groundwater backpressure, wet-area fractions, ecology and population readiness are not implemented by this increment. Legacy desktop model 15 deliberately retains its old soil behavior until a new mode is explicitly connected.

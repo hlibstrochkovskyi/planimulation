@@ -15,6 +15,7 @@ import { decodeSeasonalMoisture } from './seasonal-moisture';
 import type { MoistureBudget, MoistureFrame, MoistureMode } from '../shared/seasonal-moisture';
 import { MOISTURE_MAX_SECONDS, MOISTURE_MODES } from '../shared/seasonal-moisture';
 import { MAX_SEASONAL_CHECKPOINT_BYTES, MAX_SEASONAL_COMMAND_BYTES } from '../shared/seasonal-checkpoint';
+import { SOIL_MOISTURE_CONTRACT } from '../shared/soil-moisture';
 
 const MAX_BYTES = 32 * 2 ** 20;
 const MAX_COMMAND_BYTES = 8 * 2 ** 20;
@@ -53,7 +54,9 @@ export class FrameReader {
       if (this.header === null) {
         if (this.length < this.headerLength) return;
         const h = JSON.parse(this.take(this.headerLength).toString('utf8')) as Header;
-        const seasonal = Object.values(MOISTURE_MODES).find((mode) => mode.displayKind === h?.kind || mode.checkpointKind === h?.kind);
+        const seasonal = Object.values(MOISTURE_MODES).find((mode) => mode.displayKind === h?.kind || mode.checkpointKind === h?.kind)
+          ?? (([SOIL_MOISTURE_CONTRACT.displayKind, SOIL_MOISTURE_CONTRACT.checkpointKind] as readonly string[])
+            .includes(h?.kind) ? SOIL_MOISTURE_CONTRACT : undefined);
         const checkpoint = seasonal !== undefined && seasonal.checkpointKind === h?.kind;
         if (!h || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0
           || h.byteLength > (checkpoint ? MAX_SEASONAL_CHECKPOINT_BYTES : MAX_BYTES)
@@ -204,7 +207,7 @@ export class NativeSession {
     if (this.closed) return Promise.reject(new Error('Native session is closed.'));
     if (this.pending) return Promise.reject(new Error('Native session is busy.'));
     const restore = command as { command?: unknown; checkpointJson?: unknown };
-    const seasonal = restore.command === 'restoreMoisture';
+    const seasonal = restore.command === 'restoreMoisture' || restore.command === 'restoreSoilMoisture';
     if (seasonal && (typeof restore.checkpointJson !== 'string'
       || Buffer.byteLength(restore.checkpointJson) > MAX_SEASONAL_CHECKPOINT_BYTES)) {
       return Promise.reject(new Error('Seasonal checkpoint exceeds the 64 MiB limit or is not JSON text.'));

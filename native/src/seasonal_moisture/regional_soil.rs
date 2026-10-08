@@ -135,7 +135,7 @@ pub struct Transfers {
     pub soil_drainage: Mass,
 }
 impl Transfers {
-    fn values(self) -> [Mass; 7] {
+    pub fn values(self) -> [Mass; 7] {
         [
             self.rain,
             self.snowfall,
@@ -196,8 +196,14 @@ impl State {
     pub fn elapsed_seconds(&self) -> u64 {
         self.0.elapsed_seconds
     }
+    pub fn local_transfers(&self) -> &[Transfers] {
+        &self.0.local_transfers
+    }
+    pub fn drainage_sent(&self) -> &[Mass] {
+        &self.0.drainage_sent
+    }
 }
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Budget {
     pub initial_kilograms: f64,
@@ -220,6 +226,15 @@ pub struct Model {
     origin: Checkpoint,
 }
 impl Model {
+    pub fn settings(&self) -> Settings {
+        self.origin.settings
+    }
+    pub fn temperature_settings(&self) -> seasonal_temperature::Settings {
+        self.origin.temperature_settings
+    }
+    pub fn wind_settings(&self) -> seasonal_wind::Settings {
+        self.origin.wind_settings
+    }
     pub fn from_world(
         world: &World,
         settings: Settings,

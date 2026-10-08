@@ -1,0 +1,82 @@
+{
+  "summaryVersion": "soil-water-transport-validation-1",
+  "recordedDate": "2026-10-08",
+  "baseCommit": "baa054a",
+  "scope": "Protocol 15 and independent typed Node session for regional-seasonal-water-1. No new Electron mode, equations, default migration or physical calibration.",
+  "environment": {
+    "rustc": "1.98.1 (48a229cea 2026-09-01), Arch Linux",
+    "cargo": "1.98.1 (797e8a9bc 2026-08-05)",
+    "node": "v25.2.1"
+  },
+  "contract": {
+    "family": "regional-seasonal-water-1",
+    "checkpointSchema": 1,
+    "protocol": 15,
+    "numericalPolicy": "retainDonor",
+    "regionalFieldCount": 37,
+    "referenceBodyFieldCount": 2,
+    "displayBodyLimitBytes": 33554432,
+    "checkpointFileLimitBytes": 67108864,
+    "maximumIntervalSeconds": 86400,
+    "maximumElapsedSeconds": 315360000
+  },
+  "focusedValidation": {
+    "typeScriptTestsPassed": 8,
+    "typeScriptFailed": 0,
+    "nativeTransportTestsPassedDebugAndRelease": 2,
+    "nativeWriterRollbackTestsPassedDebugAndRelease": 1,
+    "dailyHourlyCompleteCheckpointEquality": true,
+    "exactRestoredContinuation": true,
+    "originalSignedZeroPreserved": true,
+    "zeroSecondObservationDoesNotChangeState": true,
+    "returnedSnapshotMutationDoesNotChangePrivateState": true,
+    "corruptPacketsAndCheckpointsReject": true,
+    "legacyAndManualSessionIsolation": true,
+    "emptyAndFullyWetOwnershipPartitions": true,
+    "denseDonorRetentionDiagnosticsPreserved": true,
+    "finestGridRegions": 40962,
+    "finestGridClockAtSaveSeconds": 3600,
+    "finestGridDisplayBodyBytes": 12125040,
+    "finestGridCheckpointBytesIncludingNewline": 32071164,
+    "finestGridReplayContinuationSeconds": 900,
+    "logPath": "artifacts/soil-transport-focused-log.txt",
+    "logSha256": "03f584a5e57438d94be1ee1012445dd9ce7414179e14ed2ca91d7194d12f14f1"
+  },
+  "regressionValidation": {
+    "fullNpmTestExitCode": 0,
+    "nativePassed": 502,
+    "nativeFailed": 0,
+    "nativeIgnored": 1,
+    "ignoredTestIsPreExistingAnnualSnowQualification": true,
+    "nodePassingTestFiles": 17,
+    "nodeFailed": 0,
+    "allTargetClippyWarningsDenied": true,
+    "formatAndDiffChecks": true,
+    "productionBuildExitCode": 0,
+    "productionLargeChunkWarningRetained": true,
+    "finalNativeFrameSubstepBoundsAlsoRetestedDebugAndRelease": true,
+    "logPath": "artifacts/soil-transport-test-log.txt",
+    "logSha256": "e6e815c9074bac2e9ace2769d136e39d71ec851cf1d87bb2ad8cb023df4feae7"
+  },
+  "sourceFiles": [
+    { "path": "native/src/main.rs", "sha256": "3a8a96581f03752241c7e26fc1acec122cd3e35859837a74441295d47a1173e2" },
+    { "path": "native/src/seasonal_session.rs", "sha256": "ae6c14f55ed4d7ff23a2761ac4bf7c92dd3d36e53b507842f5e6bee8a787477e" },
+    { "path": "native/src/wire/soil_water.rs", "sha256": "0ee86558ad639e07b6ccf8227c978cba317ab1d2277dc56546cfc824f2aabb45" },
+    { "path": "native/src/seasonal_moisture/regional_soil.rs", "sha256": "3d7c377c5021df9b2089742824d17272c8248f485fa9970bc61013908a20cb49" },
+    { "path": "src/native/client.ts", "sha256": "45320b16de2b2ad03b97346d14aa541106b1ea2c55c18c7a05bab03d7bf914a6" },
+    { "path": "src/native/soil-moisture.ts", "sha256": "a4b3710aaf10e4fcc124fa60b962a4743e03a681a9f164f9ba44ae4591992d4c" },
+    { "path": "src/native/soil-session.ts", "sha256": "d7e58ec7a3f9dc50b3840dfe50be4fb64b9424b9005ebde0877261be1d550f36" },
+    { "path": "src/shared/soil-moisture.ts", "sha256": "9c7e0bccf7c02929c2257505045fa9ebf5c5d0ec419c73b5ff9cc15023e320cc" },
+    { "path": "native/tests/soil_desktop.rs", "sha256": "4bdd9ae2a93121cc3035175eb64e115152be04df65ebd0e969d58d460488d836" },
+    { "path": "tests/soil-water.test.ts", "sha256": "a0bba6c0723c240651376a04c005a2d5184a9f9c4f09da1bc7625d989b8dc9ef" }
+  ],
+  "limits": {
+    "annualNumericalQualificationRerun": false,
+    "earlierAnnualQualification": "docs/data/regional-soil-cycle-validation.json",
+    "newElectronModeImplemented": false,
+    "guiInteractionRerun": false,
+    "longDurationFinestGridQualified": false,
+    "fundedFixtureIsNaturallyReachedRainfall": false,
+    "generalHydrologyOrEcologyReadinessClaimed": false
+  }
+}
