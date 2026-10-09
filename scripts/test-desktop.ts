@@ -8,6 +8,7 @@ import { NativeController } from '../src/native/client';
 import { basinTree } from '../src/core/basins';
 import { MAX_SEASONAL_CHECKPOINT_BYTES } from '../src/shared/seasonal-checkpoint';
 import { fundedRegionalCheckpoint, regionalFlowRecipe } from '../tests/helpers/regional-water';
+import { fundedSoilCheckpoint } from '../tests/helpers/soil-water';
 
 const temp = await mkdtemp(path.join(os.tmpdir(), 'planimulation-desktop-'));
 const recipePath = path.join(temp, 'recipe.json');
@@ -53,7 +54,7 @@ try {
   }, { ...DEFAULT_RECIPE });
   assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'initializeOrographicMoisture', 'initializePreciseMoisture', 'initializeRegionalMoisture', 'inspectWaterBudget', 'openRecipe', 'openSeasonalCheckpoint', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveSeasonalCheckpoint', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalTemperature', 'seasonalWind']);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'initializeOrographicMoisture', 'initializePreciseMoisture', 'initializeRegionalMoisture', 'initializeSoilMoisture', 'inspectWaterBudget', 'openRecipe', 'openSeasonalCheckpoint', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveSeasonalCheckpoint', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalSoilMoisture', 'seasonalTemperature', 'seasonalWind']);
   await expect(page.locator('[data-layer="temperature"]')).toBeEnabled();
   await expect(page.locator('#temperature-month')).toBeEnabled();
   await page.locator('[data-layer="temperature"]').click();
@@ -919,6 +920,83 @@ try {
   await expect(page.locator('#moisture-start')).toBeEnabled();
   await expect(page.locator('[data-layer="regionalDepth"]')).toBeDisabled();
   await expect(canvas).not.toHaveAttribute('data-regional-surface', 'active');
+  await page.locator('#moisture-start-soil').click();
+  await expect(canvas).toHaveAttribute('data-seasonal-model', 'regional-seasonal-water-1');
+  await expect(page.locator('#moisture-budget-note')).toContainText('five paired regional owners');
+  await expect(page.locator('#moisture-budget-details')).toContainText('Deferred numerical requests');
+  await expect(page.locator('[data-layer="runoffWater"]')).toContainText('Delayed soil drainage');
+  await expect(page.locator('[data-layer="liquidWater"]')).toContainText('Unified terrestrial liquid');
+  await expect(page.locator('[data-layer="terminalWater"]')).toBeDisabled();
+  await expect(page.locator('#moisture-start-regional')).toBeDisabled();
+  await page.locator('#moisture-interval').selectOption('3600');
+  await page.locator('#moisture-step').click();
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', '3600');
+  for (const view of ['2D map', 'Globe']) {
+    await page.getByRole('button', { name: view, exact: true }).click();
+    for (const layer of ['liquidWater', 'snowWater', 'soilWater', 'runoffWater', 'vaporWater', 'precipitation', 'runoffFlow', 'regionalDepth', 'surfaceInflow', 'surfaceOutflow', 'surface']) {
+      await page.locator(`[data-layer="${layer}"]`).click();
+      await expect(canvas).toHaveAttribute('data-active-layer', layer);
+    }
+  }
+  await page.locator('#save-seasonal').click();
+  await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
+  const soilSaved = await readFile(seasonalPath, 'utf8');
+  assert.equal(JSON.parse(soilSaved).modelVersion, 'regional-seasonal-water-1');
+  assert.equal(JSON.parse(soilSaved).schemaVersion, 1);
+  await page.locator('#moisture-step').click();
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', '7200');
+  await page.locator('#save-seasonal').click();
+  await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
+  const soilContinued = await readFile(seasonalPath, 'utf8');
+  await writeFile(seasonalPath, soilSaved);
+  await page.locator('#open-seasonal').click();
+  await expect(page.locator('#status')).toContainText('restored at 3600 elapsed seconds');
+  await page.locator('#moisture-step').click();
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', '7200');
+  await page.locator('#save-seasonal').click();
+  await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
+  assert.equal(await readFile(seasonalPath, 'utf8'), soilContinued);
+
+  // A real neighboring contact funds this supplied active-flow soil stress case.
+  const soilReference = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
+  try {
+    const generated = await soilReference.generate(await regionalFlowRecipe()); soilReference.accept(generated.epoch);
+    await soilReference.initializeSoilMoisture(generated.epoch);
+    const fixture = fundedSoilCheckpoint(await soilReference.exportSeasonalCheckpoint(generated.epoch), generated.world);
+    const candidate = await soilReference.loadSoilCheckpoint(fixture); soilReference.accept(candidate.epoch);
+    const expected = await soilReference.seasonalSoilMoisture(candidate.epoch, 3600);
+    const expectedText = await soilReference.exportSeasonalCheckpoint(candidate.epoch);
+    await writeFile(seasonalPath, fixture);
+    await page.locator('#open-seasonal').click();
+    await expect(page.locator('#status')).toContainText('restored at 900 elapsed seconds');
+    await page.getByRole('button', { name: '2D map', exact: true }).click();
+    await page.locator('[data-layer="surfaceInflow"]').click();
+    const before = await canvas.screenshot();
+    await page.locator('#moisture-step').click();
+    await expect(canvas).toHaveAttribute('data-moisture-seconds', '4500');
+    assert.notDeepEqual(await canvas.screenshot(), before, 'Unified actual face flow must update the map texture.');
+    const centers = generated.world.surface.centers;
+    const region = generated.world.water.bodyIds.findIndex((id, r) => id === 0 && expected.stocks.soil.high[r] > 0
+      && Math.abs(Math.atan2(centers[r * 3 + 2], centers[r * 3]) / Math.PI) < .8);
+    assert.ok(region >= 0);
+    await clickAtlas({ x: Math.atan2(centers[region * 3 + 2], centers[region * 3]) / Math.PI,
+      y: Math.asin(centers[region * 3 + 1]) / Math.PI });
+    await expect(page.locator('#moisture-selection-title')).toContainText(`Region ${region}`);
+    await expect(page.locator('#moisture-selection-details')).toContainText(`${expected.stocks.soil.high[region]} kg / ${expected.stocks.soil.low[region]} kg`);
+    const details = await page.locator('#moisture-selection-details').innerText();
+    await page.getByRole('button', { name: 'Globe', exact: true }).click();
+    await page.locator('[data-layer="surface"]').click();
+    await expect(page.locator('#moisture-selection-details')).toHaveText(details, { useInnerText: true });
+    await expect(canvas).toHaveAttribute('data-regional-surface', 'active');
+    await page.locator('#save-seasonal').click();
+    await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
+    assert.equal(await readFile(seasonalPath, 'utf8'), expectedText);
+    await canvas.screenshot({ path: 'artifacts/soil-water-globe.png' });
+  } finally { soilReference.close(); }
+  await page.locator('#generate').click();
+  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
+  await expect(page.locator('#moisture-start-soil')).toBeEnabled();
+  await expect(canvas).not.toHaveAttribute('data-seasonal-model', 'regional-seasonal-water-1');
   await page.locator('[data-layer="surface"]').click();
   await mkdir('artifacts', { recursive: true });
   const screenshot = executablePath ? 'artifacts/surface-desktop-packaged.png' : 'artifacts/surface-desktop.png';

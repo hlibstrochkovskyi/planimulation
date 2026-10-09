@@ -1,4 +1,6 @@
-import type { MoistureFrame, MoistureStock } from '../shared/seasonal-moisture';
+import type { MoistureStock } from '../shared/seasonal-moisture';
+import type { SeasonalDisplayFrame } from '../shared/seasonal-display';
+import { hasRegionalSurface, isSoilMoistureFrame } from '../shared/seasonal-display';
 
 export const MOISTURE_LAYERS = {
   liquidWater: { title: 'Local liquid', stock: 'surfaceKilograms', maximum: 1000, unit: 'mm WE' },
@@ -16,10 +18,33 @@ export const MOISTURE_LAYERS = {
 export type MoistureLayer = keyof typeof MOISTURE_LAYERS;
 export function isMoistureLayer(layer: string): layer is MoistureLayer { return Object.hasOwn(MOISTURE_LAYERS, layer); }
 export function isRegionalLayer(layer: string): boolean { return ['regionalDepth', 'surfaceInflow', 'surfaceOutflow'].includes(layer); }
+export function supportsMoistureLayer(frame: SeasonalDisplayFrame | null, layer: MoistureLayer): boolean {
+  return !!frame && (!isRegionalLayer(layer) || hasRegionalSurface(frame))
+    && (layer !== 'terminalWater' || !hasRegionalSurface(frame));
+}
+export function moistureLayerTitle(frame: SeasonalDisplayFrame | null, layer: MoistureLayer): string {
+  if (frame && isSoilMoistureFrame(frame)) {
+    if (layer === 'liquidWater') return 'Unified terrestrial liquid · initial land only';
+    if (layer === 'runoffWater') return 'Delayed soil drainage · not surface runoff';
+  }
+  return MOISTURE_LAYERS[layer].title;
+}
 
 /** 1 kg/m² = 1 mm water equivalent at 1,000 kg/m³. Pool columns
  * use a fixed reference-region footprint, never a computed lake wet area. */
-export function moistureLayerValue(frame: MoistureFrame, layer: MoistureLayer, region: number, area: number): number {
+export function moistureLayerValue(frame: SeasonalDisplayFrame, layer: MoistureLayer, region: number, area: number): number {
+  if (!supportsMoistureLayer(frame, layer)) throw new Error('Seasonal layer is not supported by this ownership family.');
+  if (isSoilMoistureFrame(frame)) {
+    const stock = { liquidWater: 'liquid', snowWater: 'snow', soilWater: 'soil', runoffWater: 'drainage', vaporWater: 'vapor' } as const;
+    if (Object.hasOwn(stock, layer)) return frame.stocks[stock[layer as keyof typeof stock]].high[region] / area;
+    if (layer === 'regionalDepth') return frame.regionalLiquidDepthMeters[region];
+    if (layer === 'surfaceInflow') return frame.cumulativeSurfaceIncomingKilograms[region] / 1e12;
+    if (layer === 'surfaceOutflow') return frame.cumulativeSurfaceOutgoingKilograms[region] / 1e12;
+    if (!frame.intervalSeconds) return 0;
+    return layer === 'precipitation'
+      ? (frame.intervalLocalTransfers.rain[region] + frame.intervalLocalTransfers.snowfall[region]) / area * 86400 / frame.intervalSeconds
+      : frame.intervalDrainageSentKilograms[region] / 1000 / frame.intervalSeconds;
+  }
   const info = MOISTURE_LAYERS[layer];
   if (isRegionalLayer(layer)) {
     const regional = frame.regionalSurface;

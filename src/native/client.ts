@@ -6,7 +6,7 @@ import type { World } from '../core/world';
 import { validateWater } from '../core/water';
 import { validateDrainage } from '../core/drainage';
 import { BASIN_ANALYSIS_VERSION, validateBasins } from '../core/basins';
-import type { DiagnosticFrame, PreparedMoistureWorld, PreparedWaterWorld, PrescribedWaterMode, WaterBudget, WaterFrame } from '../shared/desktop-api';
+import type { DiagnosticFrame, PreparedMoistureWorld, PreparedSoilWorld, PreparedWaterWorld, PrescribedWaterMode, WaterBudget, WaterFrame } from '../shared/desktop-api';
 import { DEFAULT_TEMPERATURE_SETTINGS, TEMPERATURE_DAYS_PER_YEAR, TEMPERATURE_MODEL_VERSION, TEMPERATURE_MONTHS_PER_YEAR } from '../core/seasonal-temperature';
 import type { TemperatureNormals } from '../core/seasonal-temperature';
 import { DEFAULT_WIND_SETTINGS, WIND_MODEL_VERSION } from '../core/seasonal-wind';
@@ -16,6 +16,8 @@ import type { MoistureBudget, MoistureFrame, MoistureMode } from '../shared/seas
 import { MOISTURE_MAX_SECONDS, MOISTURE_MODES } from '../shared/seasonal-moisture';
 import { MAX_SEASONAL_CHECKPOINT_BYTES, MAX_SEASONAL_COMMAND_BYTES } from '../shared/seasonal-checkpoint';
 import { SOIL_MOISTURE_CONTRACT } from '../shared/soil-moisture';
+import type { SoilMoistureFrame } from '../shared/soil-moisture';
+import { decodeSoilMoisture } from './soil-moisture';
 
 const MAX_BYTES = 32 * 2 ** 20;
 const MAX_COMMAND_BYTES = 8 * 2 ** 20;
@@ -345,9 +347,10 @@ export class NativeController {
   private moistureMode: MoistureMode = 'baseline';
   private moistureBudget: MoistureBudget | undefined;
   private moistureFaceTransfer: number | undefined;
+  private soilFrame: SoilMoistureFrame | undefined;
   private sequence = 0;
   private revision = 0;
-  private prepared: { epoch: number; count: number; waterStep: number; moistureFrame?: MoistureFrame } | null = null;
+  private prepared: { epoch: number; count: number; waterStep: number; moistureFrame?: MoistureFrame; soilMoistureFrame?: SoilMoistureFrame } | null = null;
   private preparedWorld: World | null = null;
   private activeWorld: World | null = null;
   constructor(private readonly executable: string) {}
@@ -423,6 +426,33 @@ export class NativeController {
       session.close(); if (this.candidate === session) this.candidate = null; throw error;
     }
   }
+  async loadSoilCheckpoint(contents: string): Promise<PreparedSoilWorld> {
+    if (typeof contents !== 'string' || Buffer.byteLength(contents) > MAX_SEASONAL_CHECKPOINT_BYTES) {
+      throw new Error('Soil-water checkpoint exceeds the 64 MiB limit or is not JSON text.');
+    }
+    const cp = JSON.parse(contents) as { schemaVersion?: unknown; modelVersion?: unknown; elapsedSeconds?: unknown; recipe?: unknown } | null;
+    if (!cp || cp.schemaVersion !== SOIL_MOISTURE_CONTRACT.schema || cp.modelVersion !== SOIL_MOISTURE_CONTRACT.modelVersion) {
+      throw new Error('Unsupported soil-water checkpoint version.');
+    }
+    const recipe = parseRecipe(cp.recipe), seconds = cp.elapsedSeconds;
+    if (!Number.isSafeInteger(seconds) || (seconds as number) < 0 || (seconds as number) > MOISTURE_MAX_SECONDS) {
+      throw new Error('Invalid soil-water checkpoint clock.');
+    }
+    this.cancel();
+    const session = new NativeSession(this.executable); this.candidate = session;
+    try {
+      const world = decodeWorld(await session.request({ command: 'generate', recipe }));
+      const packet = await session.request({ command: 'restoreSoilMoisture', checkpointJson: contents });
+      const frame = decodeSoilMoisture(packet, world, 0, seconds as number, 0);
+      if (this.candidate !== session) throw new Error('Native task canceled.');
+      const epoch = ++this.sequence, soilMoistureFrame = { ...frame, epoch };
+      this.prepared = { epoch, count: world.stats.regionCount, waterStep: 0, soilMoistureFrame: structuredClone(soilMoistureFrame) };
+      this.preparedWorld = world;
+      return { world, soilMoistureFrame, epoch };
+    } catch (error) {
+      session.close(); if (this.candidate === session) this.candidate = null; throw error;
+    }
+  }
   accept(epoch: number): void {
     if (!this.candidate || !this.preparedWorld || this.prepared?.epoch !== epoch) throw new Error('No matching prepared world.');
     this.revision++;
@@ -430,8 +460,9 @@ export class NativeController {
     this.activeWorld = this.preparedWorld; this.preparedWorld = null;
     this.epoch = epoch; this.count = this.prepared.count; this.tick = 0;
     this.waterStep = this.prepared.waterStep;
-    const moisture = this.prepared.moistureFrame; this.prepared = null;
-    this.moistureSeconds = moisture?.elapsedSeconds ?? 0; this.moistureInitialized = moisture !== undefined;
+    const moisture = this.prepared.moistureFrame; this.soilFrame = this.prepared.soilMoistureFrame; this.prepared = null;
+    this.moistureSeconds = this.soilFrame?.elapsedSeconds ?? moisture?.elapsedSeconds ?? 0;
+    this.moistureInitialized = moisture !== undefined || this.soilFrame !== undefined;
     this.moistureMode = (Object.keys(MOISTURE_MODES) as MoistureMode[]).find((key) =>
       MOISTURE_MODES[key].modelVersion === moisture?.modelVersion) ?? 'baseline';
     this.moistureBudget = moisture?.budget;
@@ -485,8 +516,30 @@ export class NativeController {
   async initializeRegionalMoisture(epoch: number): Promise<MoistureFrame> {
     return this.requestMoisture(epoch, 0, 'regional');
   }
+  async initializeSoilMoisture(epoch: number): Promise<SoilMoistureFrame> {
+    return this.requestSoilMoisture(epoch, 0, true);
+  }
+  async seasonalSoilMoisture(epoch: number, seconds: number): Promise<SoilMoistureFrame> {
+    return this.requestSoilMoisture(epoch, seconds, false);
+  }
+  private async requestSoilMoisture(epoch: number, seconds: number, initialize: boolean): Promise<SoilMoistureFrame> {
+    if (!this.active || !this.activeWorld || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    if (!Number.isSafeInteger(seconds) || seconds < 0 || seconds > 86400
+      || this.moistureSeconds + seconds > MOISTURE_MAX_SECONDS) throw new Error('Invalid soil-water interval or ten-year clock limit.');
+    if (initialize ? this.moistureInitialized : !this.soilFrame) throw new Error('Choose the soil-water model on a fresh world before advancing.');
+    if (this.waterStep > 0) throw new Error('Regenerate before starting seasonal water after manual water input.');
+    const session = this.active, origin = this.activeWorld, previous = this.soilFrame;
+    const packet = await session.request(initialize ? { command: 'initializeSoilMoisture' } : { command: 'seasonalMoisture', seconds });
+    if (this.active !== session || this.epoch !== epoch) throw new Error('Stale soil-water response.');
+    try {
+      const frame = decodeSoilMoisture(packet, origin, epoch, this.moistureSeconds + seconds, seconds, previous);
+      this.soilFrame = frame; this.moistureSeconds = frame.elapsedSeconds; this.moistureInitialized = true;
+      return structuredClone(frame);
+    } catch (error) { session.close(); throw error; }
+  }
   private async requestMoisture(epoch: number, seconds: number, initialize?: Exclude<MoistureMode, 'baseline'>): Promise<MoistureFrame> {
     if (!this.active || !this.activeWorld || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    if (this.soilFrame) throw new Error('The unified soil-water family uses its separate typed operations.');
     if (!Number.isSafeInteger(seconds) || seconds < 0 || seconds > 86400
       || this.moistureSeconds + seconds > MOISTURE_MAX_SECONDS) throw new Error('Invalid seasonal-water interval or ten-year clock limit.');
     if (!this.moistureInitialized && seconds !== 0) throw new Error('Initialize seasonal water before advancing its clock.');
@@ -543,7 +596,8 @@ export class NativeController {
     const session = this.active;
     const { header, bytes } = await session.request({ command: 'exportMoisture' });
     if (this.active !== session || this.epoch !== epoch) throw new Error('Stale seasonal checkpoint.');
-    const contract = MOISTURE_MODES[this.moistureMode], version = contract.modelVersion, schema = contract.schema;
+    const contract = this.soilFrame ? SOIL_MOISTURE_CONTRACT : MOISTURE_MODES[this.moistureMode];
+    const version = contract.modelVersion, schema = contract.schema;
     try {
       if (header.kind !== contract.checkpointKind
         || header.protocol !== contract.protocol || header.byteLength !== bytes.length
@@ -584,5 +638,5 @@ export class NativeController {
     return { epoch, step: saved.step as number, initialTotalUnits: saved.origin.exactTotalUnits,
       acceptedInputUnits: saved.acceptedInputUnits, storedTotalUnits: stored.toString(), stocks };
   }
-  close(): void { this.cancel(); this.active?.close(); this.active = null; this.activeWorld = null; }
+  close(): void { this.cancel(); this.active?.close(); this.active = null; this.activeWorld = null; this.soilFrame = undefined; }
 }

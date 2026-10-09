@@ -1,5 +1,6 @@
 import type { World } from '../core/world';
-import type { MoistureFrame } from '../shared/seasonal-moisture';
+import type { SeasonalDisplayFrame } from '../shared/seasonal-display';
+import { isSoilMoistureFrame } from '../shared/seasonal-display';
 
 /** Presentation only. A wet mask is not a fabricated connected-body label. */
 export interface RegionalWaterDisplay {
@@ -7,7 +8,19 @@ export interface RegionalWaterDisplay {
   depthMeters: Float64Array;
   surfaceLevelsMeters: Float64Array;
 }
-export function regionalWaterDisplay(world: World, frame: MoistureFrame): RegionalWaterDisplay {
+export function regionalWaterDisplay(world: World, frame: SeasonalDisplayFrame): RegionalWaterDisplay {
+  if (isSoilMoistureFrame(frame)) {
+    const n = world.stats.regionCount;
+    if ([frame.visibleWaterDepthMeters, frame.visibleWaterLevelMeters, frame.stocks.liquid.high, frame.stocks.liquid.low]
+      .some(f => f.length !== n)) throw new Error('Soil-water display requires matching native fields.');
+    const depthMeters = frame.visibleWaterDepthMeters.slice(), surfaceLevelsMeters = frame.visibleWaterLevelMeters.slice();
+    const wetMask = new Uint8Array(n);
+    for (let r = 0; r < n; r++) {
+      wetMask[r] = Number(world.water.bodyIds[r] > 0 || depthMeters[r] > 0);
+      if (depthMeters[r] === 0) surfaceLevelsMeters[r] = world.terrain.elevation[r];
+    }
+    return { wetMask, depthMeters, surfaceLevelsMeters };
+  }
   const regional = frame.regionalSurface;
   const n = world.stats.regionCount;
   if (!regional || [regional.depthMeters, regional.levelsMeters, frame.stocks.terminalWaterKilograms]

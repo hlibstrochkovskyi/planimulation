@@ -8,6 +8,7 @@ import { NativeController } from '../native/client';
 import { writeResolvedWorld } from '../native/resolved-export';
 import { parseCaptureRect } from '../shared/capture';
 import { MAX_SEASONAL_CHECKPOINT_BYTES } from '../shared/seasonal-checkpoint';
+import { SOIL_MOISTURE_CONTRACT } from '../shared/soil-moisture';
 import { readCheckpoint, writeCheckpoint } from './checkpoint-files';
 
 const rendererFile = path.join(__dirname, '../renderer/index.html');
@@ -69,6 +70,12 @@ void app.whenReady().then(() => {
     if (mode !== 'oneCubicKilometer' && mode !== 'fillToSpill') throw new Error('Invalid prescribed-water mode.');
     return core.prescribeWater(epoch, region, mode);
   });
+  ipcMain.handle('world:initializeSoilMoisture', (event, epoch: number) => {
+    senderWindow(event); return core.initializeSoilMoisture(epoch);
+  });
+  ipcMain.handle('world:seasonalSoilMoisture', (event, epoch: number, seconds: number) => {
+    senderWindow(event); return core.seasonalSoilMoisture(epoch, seconds);
+  });
   ipcMain.handle('water:openCheckpoint', async (event) => {
     const window = senderWindow(event);
     const revision = core.preparationRevision;
@@ -91,18 +98,20 @@ void app.whenReady().then(() => {
   ipcMain.handle('seasonal:openCheckpoint', async (event) => {
     const window = senderWindow(event), revision = core.preparationRevision;
     const result = await dialog.showOpenDialog(window, { properties: ['openFile'],
-      filters: [{ name: 'Seasonal-water checkpoint (schema 3 or 4)', extensions: ['json'] }] });
+      filters: [{ name: 'Seasonal-water checkpoint', extensions: ['json'] }] });
     if (result.canceled) return null;
     const contents = await readCheckpoint(result.filePaths[0], MAX_SEASONAL_CHECKPOINT_BYTES, 'Seasonal checkpoint');
     if (revision !== core.preparationRevision) throw new Error('Checkpoint opening was canceled or replaced.');
-    return core.loadSeasonalCheckpoint(contents);
+    const metadata = JSON.parse(contents) as { modelVersion?: unknown } | null;
+    return metadata?.modelVersion === SOIL_MOISTURE_CONTRACT.modelVersion
+      ? core.loadSoilCheckpoint(contents) : core.loadSeasonalCheckpoint(contents);
   });
   ipcMain.handle('seasonal:saveCheckpoint', async (event, epoch: number) => {
     const window = senderWindow(event), world = core.resolvedInitialWorld(epoch);
     // Snapshot before the dialog; subsequent file I/O cannot change its clock.
     const contents = await core.exportSeasonalCheckpoint(epoch);
     const result = await dialog.showSaveDialog(window, { defaultPath: 'seasonal-water-checkpoint.json',
-      filters: [{ name: 'Seasonal-water checkpoint (schema 3 or 4)', extensions: ['json'] }] });
+      filters: [{ name: 'Seasonal-water checkpoint', extensions: ['json'] }] });
     if (result.canceled || !result.filePath) return false;
     if (core.resolvedInitialWorld(epoch) !== world) throw new Error('World changed during seasonal checkpoint export.');
     await writeCheckpoint(result.filePath, contents);

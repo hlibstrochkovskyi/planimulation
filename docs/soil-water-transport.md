@@ -65,4 +65,6 @@ Validation completed October 8: full `npm test` exits successfully with 502 pass
 
 ## Next gate and limits
 
-Next is explicit Electron candidate acceptance, opt-in mode selection, named preload operations, ownership-aware layers/budgets/inspectors and GUI regression checks in both projections. The current adapter does not make those features visible. Long-duration largest-grid performance, dynamic reference-body heads/coasts, mobility/soil calibration, dense active-flow spatial qualification and long-term physical drift remain open. Short checkpoint size/replay checks do not qualify general hydrology or ecology readiness.
+At the October 8 transport increment, explicit Electron candidate acceptance, opt-in mode selection, named preload operations, ownership-aware layers/budgets/inspectors and GUI regression checks were the next product gate. The October 9 [desktop follow-up](soil-water-desktop.md) implements that gate using this unchanged protocol and equations; its evidence is recorded separately from the transport validation above.
+
+Long-duration largest-grid performance, dynamic reference-body heads/coasts, mobility/soil calibration, dense active-flow spatial qualification and long-term physical drift remain open. Short checkpoint size/replay checks and successful desktop integration do not qualify general hydrology or ecology readiness.

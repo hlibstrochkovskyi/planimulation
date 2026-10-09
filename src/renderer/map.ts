@@ -12,8 +12,9 @@ import { buildWaterSurface, pickSurface } from './water-surface';
 import { summarizeBasins } from '../core/basins';
 import type { TemperatureNormals } from '../core/seasonal-temperature';
 import type { WindNormals } from '../core/seasonal-wind';
-import type { MoistureFrame } from '../shared/seasonal-moisture';
-import { isMoistureLayer, isRegionalLayer, moistureLayerColor, moistureLayerValue } from './seasonal-moisture';
+import type { SeasonalDisplayFrame } from '../shared/seasonal-display';
+import { hasRegionalSurface, isSoilMoistureFrame } from '../shared/seasonal-display';
+import { isMoistureLayer, supportsMoistureLayer, moistureLayerColor, moistureLayerValue } from './seasonal-moisture';
 import type { MoistureLayer } from './seasonal-moisture';
 import { regionalWaterDisplay } from './regional-water';
 import type { RegionalWaterDisplay } from './regional-water';
@@ -86,7 +87,7 @@ export class SurfaceMap {
   private waterSurfaceDirty = false;
   private temperatureNormals: TemperatureNormals | null = null;
   private windNormals: WindNormals | null = null;
-  private moistureFrame: MoistureFrame | null = null;
+  private moistureFrame: SeasonalDisplayFrame | null = null;
   private temperatureMonth = 3;
   private temperatureRange = { minimum: -40, maximum: 40 };
   private windMaximum = 10;
@@ -193,6 +194,7 @@ export class SurfaceMap {
     this.moistureFrame = null; this.regionalWater = null; this.waterSurfaceDirty = false;
     delete this.canvas.dataset.regionalSurface;
     delete this.canvas.dataset.moistureSeconds;
+    delete this.canvas.dataset.seasonalModel;
     this.appliedExaggeration = NaN;
     this.terrainRange = summarizeTerrain(world.surface, world.terrain);
     this.maximumDepth = world.water.depthMeters.reduce((max, d) => Math.max(max, d), 0);
@@ -273,12 +275,14 @@ export class SurfaceMap {
     }
     this.refreshField();
   }
-  setMoistureFrame(frame: MoistureFrame | null): void {
-    if (frame && (!this.world || Object.values(frame.stocks).some((field) => field.length !== this.world!.stats.regionCount))) {
+  setMoistureFrame(frame: SeasonalDisplayFrame | null): void {
+    const stocks = frame ? isSoilMoistureFrame(frame)
+      ? Object.values(frame.stocks).flatMap(p => [p.high, p.low]) : Object.values(frame.stocks) : [];
+    if (frame && (!this.world || stocks.some(field => field.length !== this.world!.stats.regionCount))) {
       throw new Error('Seasonal-water display does not match this world.');
     }
     this.moistureFrame = frame;
-    if (frame?.regionalSurface) {
+    if (frame && hasRegionalSurface(frame)) {
       this.regionalWater = regionalWaterDisplay(this.world!, frame);
       this.maximumDepth = this.regionalWater.depthMeters.reduce((maximum, depth) => Math.max(maximum, depth), 0);
       this.waterSurfaceDirty = true;
@@ -290,9 +294,11 @@ export class SurfaceMap {
     }
     if (frame) this.canvas.dataset.moistureSeconds = String(frame.elapsedSeconds);
     else delete this.canvas.dataset.moistureSeconds;
+    if (frame) this.canvas.dataset.seasonalModel = frame.modelVersion;
+    else delete this.canvas.dataset.seasonalModel;
     // Legacy modes update only textures. Regional caps rebuild lazily only for
     // the visible physical globe; flat/analytical playback never rebuilds them.
-    if (isMoistureLayer(this.layer) || (frame?.regionalSurface && ['surface', 'depth'].includes(this.layer))) this.refreshField();
+    if (isMoistureLayer(this.layer) || (hasRegionalSurface(frame) && ['surface', 'depth'].includes(this.layer))) this.refreshField();
   }
   setTemperatureMonth(month: number): void {
     if (!Number.isInteger(month) || month < 0 || month >= 12) throw new Error('Invalid seasonal month.');
@@ -339,7 +345,7 @@ export class SurfaceMap {
     const bodyIds = this.waterFrame?.bodyIds ?? w.water.bodyIds;
     const surfaceMask = this.regionalWater?.wetMask ?? bodyIds;
     for (let id = 0; id < w.stats.regionCount; id++) {
-      this.values[id] = isMoistureLayer(this.layer) ? (this.moistureFrame && (!isRegionalLayer(this.layer) || this.moistureFrame.regionalSurface)
+      this.values[id] = isMoistureLayer(this.layer) ? (this.moistureFrame && supportsMoistureLayer(this.moistureFrame, this.layer)
         ? moistureLayerColor(moistureLayerValue(this.moistureFrame, this.layer, id, w.surface.areasSquareMeters[id]), this.layer) : 0)
         : this.layer === 'plates' || this.layer === 'boundaries' ? w.tectonics.owners[id]
         : this.layer === 'temperature' ? (this.temperatureNormals
