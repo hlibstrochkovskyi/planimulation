@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 pub const MODEL_VERSION: &str = "regional-surface-flow-1";
 const RHO: f64 = 1000.;
-const COURANT: f64 = 0.45;
+pub(super) const COURANT: f64 = 0.45;
 const MAX_SUBSTEPS: usize = 16_384;
 
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]

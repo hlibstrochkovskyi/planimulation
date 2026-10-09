@@ -1,6 +1,6 @@
 //! Fixed-input verification of the production paired surface operator.
 //! This is not a seasonal checkpoint, terrain recipe or calibrated water model.
-use super::{Mass, ResolutionBudget, surface, surface_flow};
+use super::{Mass, ResolutionBudget, surface, surface_cotan, surface_flow};
 use crate::{Surface, moisture_transport::total_mass};
 use serde_json::{Value, json};
 
@@ -22,6 +22,41 @@ fn normalize(axis: [f64; 3]) -> [f64; 3] {
 fn exact_depth(center: [f64; 3], axis: [f64; 3], seconds: f64, amplitude: f64) -> f64 {
     MEAN_DEPTH
         + amplitude * (-2. * DIFFUSIVITY * seconds / RADIUS.powi(2)).exp() * dot(axis, center)
+}
+fn harmonic(center: [f64; 3], axis: [f64; 3], degree: u32) -> f64 {
+    let p = dot(axis, center);
+    if degree == 1 {
+        p
+    } else {
+        0.5 * (3. * p * p - 1.)
+    }
+}
+fn harmonic_depth(
+    center: [f64; 3],
+    axis: [f64; 3],
+    seconds: f64,
+    amplitude: f64,
+    degree: u32,
+) -> f64 {
+    if degree == 1 {
+        return exact_depth(center, axis, seconds, amplitude);
+    }
+    MEAN_DEPTH
+        + amplitude
+            * (-6. * DIFFUSIVITY * seconds / RADIUS.powi(2)).exp()
+            * harmonic(center, axis, degree)
+}
+fn integrated_gradient_factor(
+    segment: &crate::moisture_transport::BoundarySegment,
+    axis: [f64; 3],
+    degree: u32,
+) -> f64 {
+    dot(axis, segment.outward_normal)
+        * if degree == 1 {
+            segment.arc_length_meters
+        } else {
+            3. * dot(axis, segment.midpoint) * segment.quadrature_weight_meters
+        }
 }
 fn layout(mesh: &Surface) -> Result<surface_flow::Layout, String> {
     surface_flow::Layout::from_fields(
@@ -103,6 +138,7 @@ fn initial_flux_diagnostic(
     initial: &[Mass],
     axis: [f64; 3],
     amplitude: f64,
+    degree: u32,
 ) -> Result<Value, String> {
     let geometry = crate::moisture_transport::Geometry::from_surface(mesh, RADIUS)?;
     let mut liquid = initial.to_vec();
@@ -136,7 +172,7 @@ fn initial_flux_diagnostic(
                 &boundary
                     .segments
                     .iter()
-                    .map(|s| dot(axis, s.outward_normal) * s.arc_length_meters)
+                    .map(|s| integrated_gradient_factor(s, axis, degree))
                     .collect::<Vec<_>>(),
             );
         let forward = transfers[2 * f];
@@ -161,22 +197,37 @@ fn initial_flux_diagnostic(
     }
     let reference_l1 = total_mass(&reference);
     Ok(
-        json!({"seconds":seconds,"analyticReference":"Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+        json!({"seconds":seconds,"analyticReference":if degree == 1 {"Exact integrated l=1 continuum flux over each existing great-circle dual segment"} else {"Exact integrated l=2 continuum flux over each existing great-circle dual segment"},
         "relativeFaceFluxL1Error":if reference_l1 > 0. {Some(total_mass(&differences)/reference_l1)} else {None},
         "maximumAbsoluteFaceFluxErrorKilogramsPerSecond":differences.into_iter().fold(0.,f64::max),
         "maximumSegmentNonOrthogonalityDegrees":max_angle,"resolution":resolution}),
     )
 }
 fn run(level: u32, axis: [f64; 3], steps: usize, amplitude: f64) -> Result<Run, String> {
+    run_case(level, axis, steps, amplitude, 1, false)
+}
+fn run_case(
+    level: u32,
+    axis: [f64; 3],
+    steps: usize,
+    amplitude: f64,
+    degree: u32,
+    cotan: bool,
+) -> Result<Run, String> {
     if !(1..=5).contains(&level)
         || steps == 0
         || steps > MAX_STEPS
         || ![0., AMPLITUDE].contains(&amplitude)
+        || !(1..=2).contains(&degree)
     {
         return Err("Unsupported bounded surface verification control.".into());
     }
     let mesh = Surface::build(level, RADIUS);
-    let layout = layout(&mesh)?;
+    let layout = if cotan {
+        surface_cotan::prepare(&mesh, layout(&mesh)?)?
+    } else {
+        layout(&mesh)?
+    };
     let dt = END_SECONDS / steps as f64;
     if dt > layout.stable_seconds {
         return Err("Surface verification must use one stable substep per call.".into());
@@ -190,11 +241,12 @@ fn run(level: u32, axis: [f64; 3], steps: usize, amplitude: f64) -> Result<Run, 
         .iter()
         .zip(&mesh.areas)
         .map(|(&s, &area)| Mass {
-            high: 1000. * area * exact_depth(s, axis, 0., amplitude),
+            high: 1000. * area * harmonic_depth(s, axis, 0., amplitude, degree),
             low: 0.,
         })
         .collect();
-    let flux_diagnostic = initial_flux_diagnostic(&mesh, &layout, &initial, axis, amplitude)?;
+    let flux_diagnostic =
+        initial_flux_diagnostic(&mesh, &layout, &initial, axis, amplitude, degree)?;
     let mut liquid = initial.clone();
     let mut transfers = vec![Mass::default(); 2 * layout.faces.len()];
     let by_region = vec![None; liquid.len()];
@@ -255,7 +307,7 @@ fn run(level: u32, axis: [f64; 3], steps: usize, amplitude: f64) -> Result<Run, 
         .map(|((&m, &area), &center)| {
             total_mass(&[
                 m.high / (1000. * area),
-                -exact_depth(center, axis, END_SECONDS, amplitude),
+                -harmonic_depth(center, axis, END_SECONDS, amplitude, degree),
                 m.low / (1000. * area),
             ])
         })
@@ -277,13 +329,15 @@ fn run(level: u32, axis: [f64; 3], steps: usize, amplitude: f64) -> Result<Run, 
         .sqrt();
     let max_error = errors.iter().map(|v| v.abs()).fold(0., f64::max);
     let analytic_change_rms = amplitude
-        * (1. - (-2. * DIFFUSIVITY * END_SECONDS / RADIUS.powi(2)).exp())
+        * (1.
+            - (-f64::from(degree * (degree + 1)) * DIFFUSIVITY * END_SECONDS / RADIUS.powi(2))
+                .exp())
         * (total_mass(
             &mesh
                 .centers
                 .iter()
                 .zip(&mesh.areas)
-                .map(|(&s, area)| dot(axis, s).powi(2) * area)
+                .map(|(&s, area)| harmonic(s, axis, degree).powi(2) * area)
                 .collect::<Vec<_>>(),
         ) / total_area)
             .sqrt();
@@ -367,9 +421,147 @@ pub fn report() -> Result<Value, String> {
         "uniformControl":uniform.result,"groups":groups,"spatialComparisons":spatial_comparisons}))
 }
 
+/// Separately pinned weak-form conductance candidate. Existing report/seasonal
+/// pins cannot select it; the saved old discrepancy remains reproducible.
+pub fn cotangent_report() -> Result<Value, String> {
+    let mesh = Surface::build(5, RADIUS);
+    let old = layout(&mesh)?;
+    let candidate = surface_cotan::prepare(&mesh, layout(&mesh)?)?;
+    let base_steps =
+        (END_SECONDS / (0.125 * old.stable_seconds.min(candidate.stable_seconds))).ceil() as usize;
+    let mut groups = Vec::new();
+    let mut comparisons = Vec::new();
+    let mut matched_legacy = Vec::new();
+    for degree in 1..=2 {
+        for axis in AXES {
+            let mut previous: Option<(u32, usize, f64)> = None;
+            for level in 2..=5 {
+                let mut runs = Vec::new();
+                for factor in [1, 2, 4] {
+                    runs.push(run_case(
+                        level,
+                        axis,
+                        base_steps * factor,
+                        AMPLITUDE,
+                        degree,
+                        true,
+                    )?);
+                }
+                let mesh = Surface::build(level, RADIUS);
+                let error = runs[2].error_rms;
+                if degree == 1 && level == 5 {
+                    let legacy = run_case(level, axis, 4 * base_steps, AMPLITUDE, degree, false)?;
+                    matched_legacy.push(json!({"degree":degree,"subdivision":level,"axis":normalize(axis),
+                        "candidateOverLegacyRmsError":error/legacy.error_rms,"legacyRun":legacy.result}));
+                }
+                let mut time = Vec::new();
+                for pair in runs.windows(2) {
+                    let differences: Vec<_> = pair[0]
+                        .liquid
+                        .iter()
+                        .zip(&pair[1].liquid)
+                        .zip(&mesh.areas)
+                        .map(|((a, b), area)| {
+                            total_mass(&[a.high, -b.high, a.low, -b.low]) / (1000. * area)
+                        })
+                        .collect();
+                    let rms = (total_mass(
+                        &differences
+                            .iter()
+                            .zip(&mesh.areas)
+                            .map(|(d, a)| d * d * a)
+                            .collect::<Vec<_>>(),
+                    ) / total_mass(&mesh.areas))
+                    .sqrt();
+                    time.push(json!({"coarseSteps":pair[0].result["substeps"],"fineSteps":pair[1].result["substeps"],
+                        "rmsDifferenceMeters":rms,"differenceOverFineAnalyticRmsError":rms/pair[1].error_rms}));
+                }
+                if let Some((old_level, n, e)) = previous {
+                    comparisons.push(json!({"degree":degree,"axis":normalize(axis),"coarseSubdivision":old_level,"fineSubdivision":level,
+                        "fineOverCoarseRmsError":error/e,"rmsErrorDecreases":error<e,
+                        "observedOrderUsingSqrtRegionCount":(e/error).ln()/(mesh.areas.len() as f64/n as f64).sqrt().ln()}));
+                }
+                previous = Some((level, mesh.areas.len(), error));
+                groups.push(json!({"degree":degree,"axis":normalize(axis),"subdivision":level,"timeComparisons":time,
+                    "runs":runs.into_iter().map(|r| r.result).collect::<Vec<_>>()}));
+            }
+        }
+    }
+    let uniform = run_case(5, AXES[0], base_steps, 0., 1, true)?;
+    Ok(
+        json!({"reportVersion":"regional-surface-cotan-report-1","surfaceFlowModelVersion":surface_cotan::MODEL_VERSION,
+        "scope":"Headless weak-form conductance candidate with spherical lumped areas; not a literal dual-face flux, seasonal checkpoint or calibrated hydrology.",
+        "radiusMeters":RADIUS,"diffusivitySquareMetersPerSecond":DIFFUSIVITY,"roughness":0.04,
+        "meanDepthMeters":MEAN_DEPTH,"amplitudeMeters":AMPLITUDE,"endSeconds":END_SECONDS,
+        "baseSubsteps":base_steps,"auditEverySubsteps":32,
+        "initialization":"Point-sampled l=1 and l=2 continuous fields times unchanged spherical cell areas; no mass rescaling.",
+        "analyticReference":"H + A exp(-l(l+1) D t/R^2) P_l(dot(axis,unitCenter))",
+        "conductance":"Half the sum of chordal opposite-angle cotangents; strictly positive assembled weights required, without clipping or triangulation flips.",
+        "referenceFaceFluxMeaning":"Continuum integral over the old barycentric dual. Cotangent histories are weak-form edge exchanges, not approximations promised to match these individual face integrals.",
+        "uniformControl":uniform.result,"groups":groups,"spatialComparisons":comparisons,"matchedLegacyControls":matched_legacy}),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn second_harmonic_reference_and_exact_segment_integrals_have_independent_controls() {
+        let axis = normalize(AXES[1]);
+        assert!((harmonic_depth(axis, axis, 0., 1., 2) - 101.).abs() < 1e-13);
+        assert!(
+            (harmonic_depth(axis, axis, RADIUS.powi(2) / (6. * DIFFUSIVITY), 1., 2)
+                - (100. + (-1_f64).exp()))
+            .abs()
+                < 1e-13
+        );
+        assert_eq!(harmonic_depth([1., 0., 0.], [0., 1., 0.], 0., 1., 2), 99.5);
+        assert_eq!(harmonic(axis, axis, 2), harmonic(axis.map(|v| -v), axis, 2));
+        let mesh = Surface::build(1, RADIUS);
+        let geometry = crate::moisture_transport::Geometry::from_surface(&mesh, RADIUS).unwrap();
+        for boundary in geometry.boundaries() {
+            for segment in &boundary.segments {
+                let tangent = crate::cross(segment.outward_normal, segment.midpoint);
+                let angle = segment.arc_length_meters / RADIUS;
+                // Independent composite Simpson integration of the pointwise
+                // surface gradient, not the exact sinc-weight formula.
+                let numerical: f64 = (0..=64)
+                    .map(|i| {
+                        let a = -0.5 * angle + angle * i as f64 / 64.;
+                        let s = std::array::from_fn(|k| {
+                            segment.midpoint[k] * a.cos() + tangent[k] * a.sin()
+                        });
+                        let weight = if i == 0 || i == 64 {
+                            1.
+                        } else if i % 2 == 0 {
+                            2.
+                        } else {
+                            4.
+                        };
+                        weight * 3. * dot(axis, s) * dot(axis, segment.outward_normal)
+                    })
+                    .sum::<f64>()
+                    * RADIUS
+                    * angle
+                    / (64. * 3.);
+                let exact = integrated_gradient_factor(segment, axis, 2);
+                assert!((exact - numerical).abs() < 1e-9 * exact.abs().max(1.));
+            }
+        }
+    }
+    #[test]
+    fn cotangent_candidate_refines_two_harmonics_on_the_unchanged_sphere() {
+        for degree in 1..=2 {
+            for axis in AXES {
+                let mut previous = f64::MAX;
+                for level in 2..=4 {
+                    let r = run_case(level, axis, 1600, 1., degree, true).unwrap();
+                    assert!(r.error_rms < previous);
+                    previous = r.error_rms;
+                }
+            }
+        }
+    }
     #[test]
     fn analytic_reference_has_correct_initial_state_decay_and_rotation() {
         let axis = normalize([1., 2., 3.]);

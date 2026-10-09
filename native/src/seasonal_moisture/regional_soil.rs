@@ -17,6 +17,7 @@ mod accounting;
 mod cycle;
 mod observation;
 mod surface;
+mod surface_cotan;
 pub mod surface_verification;
 pub use observation::{OBSERVATION_VERSION, Observation, ReferenceBodyStock, RegionalStocks};
 
