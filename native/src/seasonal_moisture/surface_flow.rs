@@ -1,7 +1,7 @@
 //! Regional finite-volume surface flow, not an instantaneous basin frontier.
 //! Manning-inspired face mobility is capped explicitly; no momentum solver.
 use super::{Checkpoint as SeasonalCheckpoint, leaf_spill::Components, reference_pool};
-use crate::{World, moisture_transport, surface_water::CompensatedStock};
+use crate::{Surface, World, moisture_transport, surface_water::CompensatedStock};
 use serde::{Deserialize, Serialize};
 
 pub const MODEL_VERSION: &str = "regional-surface-flow-1";
@@ -171,17 +171,41 @@ impl Layout {
         })
     }
     pub fn from_world(world: &World, settings: Settings) -> Result<Self, String> {
+        Self::from_fields(
+            &world.surface,
+            world.recipe.radius_meters,
+            world.terrain.elevation.clone(),
+            world.water.body_ids.iter().map(|&id| id == 0).collect(),
+            world.water.level_meters,
+            settings,
+        )
+    }
+    // Also used by isolated operator verification; never a generated-world recipe.
+    pub fn from_fields(
+        surface: &Surface,
+        radius_meters: f64,
+        beds: Vec<f64>,
+        land: Vec<bool>,
+        reference_level: f64,
+        settings: Settings,
+    ) -> Result<Self, String> {
         settings.validate()?;
-        let geometry =
-            moisture_transport::Geometry::from_surface(&world.surface, world.recipe.radius_meters)?;
-        let mut sums = vec![0.; world.surface.areas.len()];
+        if beds.len() != surface.areas.len()
+            || land.len() != beds.len()
+            || beds.iter().any(|v| !v.is_finite())
+            || !reference_level.is_finite()
+        {
+            return Err("Invalid surface-flow physical fields.".into());
+        }
+        let geometry = moisture_transport::Geometry::from_surface(surface, radius_meters)?;
+        let mut sums = vec![0.; surface.areas.len()];
         let mut faces = Vec::new();
         for boundary in geometry.boundaries() {
             let [a, b] = boundary.regions;
-            let slot = (world.surface.offsets[a] as usize..world.surface.offsets[a + 1] as usize)
-                .find(|&j| world.surface.neighbors[j] as usize == b)
+            let slot = (surface.offsets[a] as usize..surface.offsets[a + 1] as usize)
+                .find(|&j| surface.neighbors[j] as usize == b)
                 .ok_or("Surface face lacks neighbor distance.")?;
-            let distance = world.surface.distances[slot];
+            let distance = surface.distances[slot];
             let width = boundary
                 .segments
                 .iter()
@@ -203,8 +227,7 @@ impl Layout {
         let stable_seconds = if diffusivity == 0. {
             f64::MAX
         } else {
-            world
-                .surface
+            surface
                 .areas
                 .iter()
                 .zip(sums)
@@ -215,10 +238,10 @@ impl Layout {
             return Err("Unrepresentable surface-flow stability bound.".into());
         }
         Ok(Self {
-            areas: world.surface.areas.clone(),
-            beds: world.terrain.elevation.clone(),
-            land: world.water.body_ids.iter().map(|&id| id == 0).collect(),
-            reference_level: world.water.level_meters,
+            areas: surface.areas.clone(),
+            beds,
+            land,
+            reference_level,
             faces,
             settings,
             stable_seconds,

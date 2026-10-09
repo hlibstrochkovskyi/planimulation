@@ -1,0 +1,1030 @@
+{
+  "amplitudeMeters": 1,
+  "analyticReference": "H + A exp(-2 D t / R^2) dot(axis,unitCenter)",
+  "auditEverySubsteps": 32,
+  "baseSubsteps": 546,
+  "diffusivitySquareMetersPerSecond": 10000,
+  "endSeconds": 36000,
+  "groups": [
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "runs": [
+        {
+          "activeDirectedFaces": 479,
+          "amplitudeMeters": 1,
+          "areaWeightedMeanAbsoluteErrorMeters": 0.0025909620564046622,
+          "areaWeightedRmsErrorMeters": 0.0038161973199570217,
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "endSeconds": 36000,
+          "finalKilograms": 12566370614359174,
+          "grossTransferredKilograms": 14531299985439.564,
+          "initialFaceFluxDiagnostic": {
+            "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+            "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 248565.5098253312,
+            "maximumSegmentNonOrthogonalityDegrees": 10.680556034344239,
+            "relativeFaceFluxL1Error": 0.04212787239490617,
+            "resolution": {
+              "deferredRequests": 9,
+              "maximumDeferredRequestKilograms": 9.198291124654393e-8,
+              "summedDeferredRequestKilograms": 7.58614201396606e-7
+            },
+            "seconds": 1
+          },
+          "initialKilograms": 12566370614359174,
+          "maximumDepthMeters": 100.99986913729612,
+          "maximumErrorMeters": 0.010090566831786503,
+          "maximumGlobalRelativeResidual": 1.1742869283385943e-17,
+          "maximumLocalRelativeResidual": 1.6185999825028336e-19,
+          "minimumDepthMeters": 99.00013086270387,
+          "minimumUncappedMobilitySquareMetersPerSecond": 6230984.250783402,
+          "regions": 162,
+          "resolution": {
+            "deferredRequests": 5651,
+            "maximumDeferredRequestKilograms": 0.000009037118794876524,
+            "summedDeferredRequestKilograms": 0.032150251560163594
+          },
+          "rmsErrorOverAnalyticChange": 0.09514801906629376,
+          "stabilityBoundSeconds": 8483.451778484878,
+          "stepSeconds": 65.93406593406593,
+          "subdivision": 2,
+          "substeps": 546
+        },
+        {
+          "activeDirectedFaces": 480,
+          "amplitudeMeters": 1,
+          "areaWeightedMeanAbsoluteErrorMeters": 0.002590265614595097,
+          "areaWeightedRmsErrorMeters": 0.0038151227560957453,
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "endSeconds": 36000,
+          "finalKilograms": 12566370614359174,
+          "grossTransferredKilograms": 14530842687537.037,
+          "initialFaceFluxDiagnostic": {
+            "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+            "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 248565.5098253312,
+            "maximumSegmentNonOrthogonalityDegrees": 10.680556034344239,
+            "relativeFaceFluxL1Error": 0.04212787239490617,
+            "resolution": {
+              "deferredRequests": 9,
+              "maximumDeferredRequestKilograms": 9.198291124654393e-8,
+              "summedDeferredRequestKilograms": 7.58614201396606e-7
+            },
+            "seconds": 1
+          },
+          "initialKilograms": 12566370614359174,
+          "maximumDepthMeters": 100.99993456864804,
+          "maximumErrorMeters": 0.010088197190718382,
+          "maximumGlobalRelativeResidual": 1.2780233019152353e-17,
+          "maximumLocalRelativeResidual": 1.5669002287619568e-19,
+          "minimumDepthMeters": 99.00006543135196,
+          "minimumUncappedMobilitySquareMetersPerSecond": 6230984.250783402,
+          "regions": 162,
+          "resolution": {
+            "deferredRequests": 13353,
+            "maximumDeferredRequestKilograms": 0.000004518559397438262,
+            "summedDeferredRequestKilograms": 0.03765804578770023
+          },
+          "rmsErrorOverAnalyticChange": 0.09512122731152102,
+          "stabilityBoundSeconds": 8483.451778484878,
+          "stepSeconds": 32.967032967032964,
+          "subdivision": 2,
+          "substeps": 1092
+        }
+      ],
+      "subdivision": 2,
+      "timeDifferenceOverFineAnalyticRmsError": 0.00044867859245641177,
+      "timeRefinementRmsDifferenceMeters": 0.0000017117639082534653
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "runs": [
+        {
+          "activeDirectedFaces": 1965,
+          "amplitudeMeters": 1,
+          "areaWeightedMeanAbsoluteErrorMeters": 0.0027183334684654547,
+          "areaWeightedRmsErrorMeters": 0.0038847863170269102,
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "endSeconds": 36000,
+          "finalKilograms": 12566370614359174,
+          "grossTransferredKilograms": 29121764493970.41,
+          "initialFaceFluxDiagnostic": {
+            "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+            "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 162753.7410251977,
+            "maximumSegmentNonOrthogonalityDegrees": 11.186583415844584,
+            "relativeFaceFluxL1Error": 0.06267821323022642,
+            "resolution": {
+              "deferredRequests": 21,
+              "maximumDeferredRequestKilograms": 9.191740432231447e-8,
+              "summedDeferredRequestKilograms": 0.0000016365166157976388
+            },
+            "seconds": 1
+          },
+          "initialKilograms": 12566370614359174,
+          "maximumDepthMeters": 100.9998681287845,
+          "maximumErrorMeters": 0.012887210410805504,
+          "maximumGlobalRelativeResidual": 6.987425610519731e-18,
+          "maximumLocalRelativeResidual": 3.4656261519287593e-19,
+          "minimumDepthMeters": 99.00013187121549,
+          "minimumUncappedMobilitySquareMetersPerSecond": 4405971.21719552,
+          "regions": 642,
+          "resolution": {
+            "deferredRequests": 7627,
+            "maximumDeferredRequestKilograms": 0.0000121207817708818,
+            "summedDeferredRequestKilograms": 0.03887682325158831
+          },
+          "rmsErrorOverAnalyticChange": 0.09685812644643763,
+          "stabilityBoundSeconds": 2114.6092748828237,
+          "stepSeconds": 65.93406593406593,
+          "subdivision": 3,
+          "substeps": 546
+        },
+        {
+          "activeDirectedFaces": 1963,
+          "amplitudeMeters": 1,
+          "areaWeightedMeanAbsoluteErrorMeters": 0.0027175718678071506,
+          "areaWeightedRmsErrorMeters": 0.0038839518740002564,
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "endSeconds": 36000,
+          "finalKilograms": 12566370614359174,
+          "grossTransferredKilograms": 29120839419911.984,
+          "initialFaceFluxDiagnostic": {
+            "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+            "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 162753.7410251977,
+            "maximumSegmentNonOrthogonalityDegrees": 11.186583415844584,
+            "relativeFaceFluxL1Error": 0.06267821323022642,
+            "resolution": {
+              "deferredRequests": 21,
+              "maximumDeferredRequestKilograms": 9.191740432231447e-8,
+              "summedDeferredRequestKilograms": 0.0000016365166157976388
+            },
+            "seconds": 1
+          },
+          "initialKilograms": 12566370614359174,
+          "maximumDepthMeters": 100.99993406439225,
+          "maximumErrorMeters": 0.012885664368042199,
+          "maximumGlobalRelativeResidual": 6.023352783535699e-18,
+          "maximumLocalRelativeResidual": 3.444675951987708e-19,
+          "minimumDepthMeters": 99.00006593560774,
+          "minimumUncappedMobilitySquareMetersPerSecond": 4405971.21719552,
+          "regions": 642,
+          "resolution": {
+            "deferredRequests": 21780,
+            "maximumDeferredRequestKilograms": 0.0000060603908854409,
+            "summedDeferredRequestKilograms": 0.05648609697704757
+          },
+          "rmsErrorOverAnalyticChange": 0.09683732154712212,
+          "stabilityBoundSeconds": 2114.6092748828237,
+          "stepSeconds": 32.967032967032964,
+          "subdivision": 3,
+          "substeps": 1092
+        }
+      ],
+      "subdivision": 3,
+      "timeDifferenceOverFineAnalyticRmsError": 0.00040486315158101883,
+      "timeRefinementRmsDifferenceMeters": 0.000001572468996296748
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "runs": [
+        {
+          "activeDirectedFaces": 7834,
+          "amplitudeMeters": 1,
+          "areaWeightedMeanAbsoluteErrorMeters": 0.002584369590559704,
+          "areaWeightedRmsErrorMeters": 0.0037025756830781895,
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "endSeconds": 36000,
+          "finalKilograms": 12566370614359172,
+          "grossTransferredKilograms": 58269091444196.78,
+          "initialFaceFluxDiagnostic": {
+            "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+            "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 86406.84340346462,
+            "maximumSegmentNonOrthogonalityDegrees": 11.312646581607913,
+            "relativeFaceFluxL1Error": 0.07370059390982028,
+            "resolution": {
+              "deferredRequests": 38,
+              "maximumDeferredRequestKilograms": 1.8381296472217233e-7,
+              "summedDeferredRequestKilograms": 0.0000031119945562796295
+            },
+            "seconds": 1
+          },
+          "initialKilograms": 12566370614359172,
+          "maximumDepthMeters": 100.99986787459879,
+          "maximumErrorMeters": 0.013966523913907389,
+          "maximumGlobalRelativeResidual": 3.2953588851728876e-18,
+          "maximumLocalRelativeResidual": 7.518302155595972e-19,
+          "minimumDepthMeters": 99.00013212540121,
+          "minimumUncappedMobilitySquareMetersPerSecond": 3115492.125391699,
+          "regions": 2562,
+          "resolution": {
+            "deferredRequests": 93,
+            "maximumDeferredRequestKilograms": 0.000006061383285924332,
+            "summedDeferredRequestKilograms": 0.00047674696807280167
+          },
+          "rmsErrorOverAnalyticChange": 0.09231512737708406,
+          "stabilityBoundSeconds": 528.25984416241,
+          "stepSeconds": 65.93406593406593,
+          "subdivision": 4,
+          "substeps": 546
+        },
+        {
+          "activeDirectedFaces": 7831,
+          "amplitudeMeters": 1,
+          "areaWeightedMeanAbsoluteErrorMeters": 0.0025836395818242155,
+          "areaWeightedRmsErrorMeters": 0.003701773970708413,
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "endSeconds": 36000,
+          "finalKilograms": 12566370614359172,
+          "grossTransferredKilograms": 58267234263437.375,
+          "initialFaceFluxDiagnostic": {
+            "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+            "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 86406.84340346462,
+            "maximumSegmentNonOrthogonalityDegrees": 11.312646581607913,
+            "relativeFaceFluxL1Error": 0.07370059390982028,
+            "resolution": {
+              "deferredRequests": 38,
+              "maximumDeferredRequestKilograms": 1.8381296472217233e-7,
+              "summedDeferredRequestKilograms": 0.0000031119945562796295
+            },
+            "seconds": 1
+          },
+          "initialKilograms": 12566370614359172,
+          "maximumDepthMeters": 100.99993393729939,
+          "maximumErrorMeters": 0.013964834835747909,
+          "maximumGlobalRelativeResidual": 4.130209090793861e-18,
+          "maximumLocalRelativeResidual": 7.400125191192117e-19,
+          "minimumDepthMeters": 99.00006606270061,
+          "minimumUncappedMobilitySquareMetersPerSecond": 3115492.125391699,
+          "regions": 2562,
+          "resolution": {
+            "deferredRequests": 15651,
+            "maximumDeferredRequestKilograms": 0.0000060597738272658294,
+            "summedDeferredRequestKilograms": 0.03941572935100905
+          },
+          "rmsErrorOverAnalyticChange": 0.0922951385406981,
+          "stabilityBoundSeconds": 528.25984416241,
+          "stepSeconds": 32.967032967032964,
+          "subdivision": 4,
+          "substeps": 1092
+        }
+      ],
+      "subdivision": 4,
+      "timeDifferenceOverFineAnalyticRmsError": 0.0004183114708986914,
+      "timeRefinementRmsDifferenceMeters": 0.0000015484945146215258
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "runs": [
+        {
+          "activeDirectedFaces": 31260,
+          "amplitudeMeters": 1,
+          "areaWeightedMeanAbsoluteErrorMeters": 0.002544733728752306,
+          "areaWeightedRmsErrorMeters": 0.003635693233405838,
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "endSeconds": 36000,
+          "finalKilograms": 12566370614359172,
+          "grossTransferredKilograms": 116553775789011.86,
+          "initialFaceFluxDiagnostic": {
+            "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+            "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 43838.93650399544,
+            "maximumSegmentNonOrthogonalityDegrees": 11.344134569367698,
+            "relativeFaceFluxL1Error": 0.07932647988977269,
+            "resolution": {
+              "deferredRequests": 49,
+              "maximumDeferredRequestKilograms": 9.192972556481955e-8,
+              "summedDeferredRequestKilograms": 0.000003829099269640286
+            },
+            "seconds": 1
+          },
+          "initialKilograms": 12566370614359172,
+          "maximumDepthMeters": 100.99986781092336,
+          "maximumErrorMeters": 0.014247251637522738,
+          "maximumGlobalRelativeResidual": 1.6716644719995633e-18,
+          "maximumLocalRelativeResidual": 1.706804745198847e-18,
+          "minimumDepthMeters": 99.00013218907664,
+          "minimumUncappedMobilitySquareMetersPerSecond": 2202985.608597756,
+          "regions": 10242,
+          "resolution": {
+            "deferredRequests": 0,
+            "maximumDeferredRequestKilograms": 0,
+            "summedDeferredRequestKilograms": 0
+          },
+          "rmsErrorOverAnalyticChange": 0.09064756879374093,
+          "stabilityBoundSeconds": 132.04040657865758,
+          "stepSeconds": 65.93406593406593,
+          "subdivision": 5,
+          "substeps": 546
+        },
+        {
+          "activeDirectedFaces": 31257,
+          "amplitudeMeters": 1,
+          "areaWeightedMeanAbsoluteErrorMeters": 0.0025440062478190245,
+          "areaWeightedRmsErrorMeters": 0.003634892046510704,
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "endSeconds": 36000,
+          "finalKilograms": 12566370614359172,
+          "grossTransferredKilograms": 116550059591268.98,
+          "initialFaceFluxDiagnostic": {
+            "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+            "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 43838.93650399544,
+            "maximumSegmentNonOrthogonalityDegrees": 11.344134569367698,
+            "relativeFaceFluxL1Error": 0.07932647988977269,
+            "resolution": {
+              "deferredRequests": 49,
+              "maximumDeferredRequestKilograms": 9.192972556481955e-8,
+              "summedDeferredRequestKilograms": 0.000003829099269640286
+            },
+            "seconds": 1
+          },
+          "initialKilograms": 12566370614359172,
+          "maximumDepthMeters": 100.99993390546169,
+          "maximumErrorMeters": 0.014245780238076248,
+          "maximumGlobalRelativeResidual": 1.4227165994145595e-18,
+          "maximumLocalRelativeResidual": 1.573378344817602e-18,
+          "minimumDepthMeters": 99.00006609453831,
+          "minimumUncappedMobilitySquareMetersPerSecond": 2202985.608597756,
+          "regions": 10242,
+          "resolution": {
+            "deferredRequests": 0,
+            "maximumDeferredRequestKilograms": 0,
+            "summedDeferredRequestKilograms": 0
+          },
+          "rmsErrorOverAnalyticChange": 0.09062759305884505,
+          "stabilityBoundSeconds": 132.04040657865758,
+          "stepSeconds": 32.967032967032964,
+          "subdivision": 5,
+          "substeps": 1092
+        }
+      ],
+      "subdivision": 5,
+      "timeDifferenceOverFineAnalyticRmsError": 0.00042464988327528823,
+      "timeRefinementRmsDifferenceMeters": 0.000001543556483269044
+    },
+    {
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "runs": [
+        {
+          "activeDirectedFaces": 488,
+          "amplitudeMeters": 1,
+          "areaWeightedMeanAbsoluteErrorMeters": 0.0026313186811468513,
+          "areaWeightedRmsErrorMeters": 0.00381619731995395,
+          "axis": [
+            0.2672612419124244,
+            0.5345224838248488,
+            0.8017837257372732
+          ],
+          "endSeconds": 36000,
+          "finalKilograms": 12566370614359174,
+          "grossTransferredKilograms": 14362894684251.658,
+          "initialFaceFluxDiagnostic": {
+            "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+            "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 257016.9716834745,
+            "maximumSegmentNonOrthogonalityDegrees": 10.680556034344239,
+            "relativeFaceFluxL1Error": 0.04286188852209055,
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "seconds": 1
+          },
+          "initialKilograms": 12566370614359174,
+          "maximumDepthMeters": 100.99292629455307,
+          "maximumErrorMeters": 0.009834944711129738,
+          "maximumGlobalRelativeResidual": 7.445201310475301e-18,
+          "maximumLocalRelativeResidual": 1.8518087898499103e-19,
+          "minimumDepthMeters": 99.00707370544694,
+          "minimumUncappedMobilitySquareMetersPerSecond": 6230984.250783402,
+          "regions": 162,
+          "resolution": {
+            "deferredRequests": 0,
+            "maximumDeferredRequestKilograms": 0,
+            "summedDeferredRequestKilograms": 0
+          },
+          "rmsErrorOverAnalyticChange": 0.09514801906621716,
+          "stabilityBoundSeconds": 8483.451778484878,
+          "stepSeconds": 65.93406593406593,
+          "subdivision": 2,
+          "substeps": 546
+        },
+        {
+          "activeDirectedFaces": 488,
+          "amplitudeMeters": 1,
+          "areaWeightedMeanAbsoluteErrorMeters": 0.0026304518358298873,
+          "areaWeightedRmsErrorMeters": 0.003815122756094033,
+          "axis": [
+            0.2672612419124244,
+            0.5345224838248488,
+            0.8017837257372732
+          ],
+          "endSeconds": 36000,
+          "finalKilograms": 12566370614359174,
+          "grossTransferredKilograms": 14362438735174.094,
+          "initialFaceFluxDiagnostic": {
+            "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+            "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 257016.9716834745,
+            "maximumSegmentNonOrthogonalityDegrees": 10.680556034344239,
+            "relativeFaceFluxL1Error": 0.04286188852209055,
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "seconds": 1
+          },
+          "initialKilograms": 12566370614359174,
+          "maximumDepthMeters": 100.9929910357593,
+          "maximumErrorMeters": 0.009832352296142658,
+          "maximumGlobalRelativeResidual": 9.747466462346115e-18,
+          "maximumLocalRelativeResidual": 1.636124094268764e-19,
+          "minimumDepthMeters": 99.00700896424071,
+          "minimumUncappedMobilitySquareMetersPerSecond": 6230984.250783402,
+          "regions": 162,
+          "resolution": {
+            "deferredRequests": 0,
+            "maximumDeferredRequestKilograms": 0,
+            "summedDeferredRequestKilograms": 0
+          },
+          "rmsErrorOverAnalyticChange": 0.09512122731147832,
+          "stabilityBoundSeconds": 8483.451778484878,
+          "stepSeconds": 32.967032967032964,
+          "subdivision": 2,
+          "substeps": 1092
+        }
+      ],
+      "subdivision": 2,
+      "timeDifferenceOverFineAnalyticRmsError": 0.00044867859246506354,
+      "timeRefinementRmsDifferenceMeters": 0.0000017117639082857046
+    },
+    {
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "runs": [
+        {
+          "activeDirectedFaces": 1950,
+          "amplitudeMeters": 1,
+          "areaWeightedMeanAbsoluteErrorMeters": 0.00274094350905829,
+          "areaWeightedRmsErrorMeters": 0.0038847863170267606,
+          "axis": [
+            0.2672612419124244,
+            0.5345224838248488,
+            0.8017837257372732
+          ],
+          "endSeconds": 36000,
+          "finalKilograms": 12566370614359174,
+          "grossTransferredKilograms": 28749201176154.004,
+          "initialFaceFluxDiagnostic": {
+            "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+            "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 162468.10691865277,
+            "maximumSegmentNonOrthogonalityDegrees": 11.186583415844584,
+            "relativeFaceFluxL1Error": 0.06436857059143448,
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "seconds": 1
+          },
+          "initialKilograms": 12566370614359174,
+          "maximumDepthMeters": 100.99768097250949,
+          "maximumErrorMeters": 0.012630907457671555,
+          "maximumGlobalRelativeResidual": 3.724487114243948e-18,
+          "maximumLocalRelativeResidual": 3.576231828949932e-19,
+          "minimumDepthMeters": 99.00231902749051,
+          "minimumUncappedMobilitySquareMetersPerSecond": 4405971.21719552,
+          "regions": 642,
+          "resolution": {
+            "deferredRequests": 0,
+            "maximumDeferredRequestKilograms": 0,
+            "summedDeferredRequestKilograms": 0
+          },
+          "rmsErrorOverAnalyticChange": 0.09685812644643388,
+          "stabilityBoundSeconds": 2114.6092748828237,
+          "stepSeconds": 65.93406593406593,
+          "subdivision": 3,
+          "substeps": 546
+        },
+        {
+          "activeDirectedFaces": 1950,
+          "amplitudeMeters": 1,
+          "areaWeightedMeanAbsoluteErrorMeters": 0.002740382887364805,
+          "areaWeightedRmsErrorMeters": 0.003883951873999633,
+          "axis": [
+            0.2672612419124244,
+            0.5345224838248488,
+            0.8017837257372732
+          ],
+          "endSeconds": 36000,
+          "finalKilograms": 12566370614359174,
+          "grossTransferredKilograms": 28748278255691.15,
+          "initialFaceFluxDiagnostic": {
+            "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+            "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 162468.10691865277,
+            "maximumSegmentNonOrthogonalityDegrees": 11.186583415844584,
+            "relativeFaceFluxL1Error": 0.06436857059143448,
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "seconds": 1
+          },
+          "initialKilograms": 12566370614359174,
+          "maximumDepthMeters": 100.99774691805358,
+          "maximumErrorMeters": 0.012629174037444053,
+          "maximumGlobalRelativeResidual": 5.853381662328038e-18,
+          "maximumLocalRelativeResidual": 3.6838063141354954e-19,
+          "minimumDepthMeters": 99.00225308194642,
+          "minimumUncappedMobilitySquareMetersPerSecond": 4405971.21719552,
+          "regions": 642,
+          "resolution": {
+            "deferredRequests": 0,
+            "maximumDeferredRequestKilograms": 0,
+            "summedDeferredRequestKilograms": 0
+          },
+          "rmsErrorOverAnalyticChange": 0.09683732154710657,
+          "stabilityBoundSeconds": 2114.6092748828237,
+          "stepSeconds": 32.967032967032964,
+          "subdivision": 3,
+          "substeps": 1092
+        }
+      ],
+      "subdivision": 3,
+      "timeDifferenceOverFineAnalyticRmsError": 0.00040486315158491177,
+      "timeRefinementRmsDifferenceMeters": 0.0000015724689963116155
+    },
+    {
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "runs": [
+        {
+          "activeDirectedFaces": 7774,
+          "amplitudeMeters": 1,
+          "areaWeightedMeanAbsoluteErrorMeters": 0.0025808652553804367,
+          "areaWeightedRmsErrorMeters": 0.0037025756830783387,
+          "axis": [
+            0.2672612419124244,
+            0.5345224838248488,
+            0.8017837257372732
+          ],
+          "endSeconds": 36000,
+          "finalKilograms": 12566370614359172,
+          "grossTransferredKilograms": 57510386356899.12,
+          "initialFaceFluxDiagnostic": {
+            "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+            "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 85105.93618645098,
+            "maximumSegmentNonOrthogonalityDegrees": 11.312646581607913,
+            "relativeFaceFluxL1Error": 0.07574803910710798,
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "seconds": 1
+          },
+          "initialKilograms": 12566370614359172,
+          "maximumDepthMeters": 100.99965788430868,
+          "maximumErrorMeters": 0.013722762877900781,
+          "maximumGlobalRelativeResidual": 2.3378094551998758e-18,
+          "maximumLocalRelativeResidual": 7.437020723447451e-19,
+          "minimumDepthMeters": 99.00034211569131,
+          "minimumUncappedMobilitySquareMetersPerSecond": 3115492.125391699,
+          "regions": 2562,
+          "resolution": {
+            "deferredRequests": 0,
+            "maximumDeferredRequestKilograms": 0,
+            "summedDeferredRequestKilograms": 0
+          },
+          "rmsErrorOverAnalyticChange": 0.09231512737708776,
+          "stabilityBoundSeconds": 528.25984416241,
+          "stepSeconds": 65.93406593406593,
+          "subdivision": 4,
+          "substeps": 546
+        },
+        {
+          "activeDirectedFaces": 7774,
+          "amplitudeMeters": 1,
+          "areaWeightedMeanAbsoluteErrorMeters": 0.002580230654421427,
+          "areaWeightedRmsErrorMeters": 0.0037017739707082896,
+          "axis": [
+            0.2672612419124244,
+            0.5345224838248488,
+            0.8017837257372732
+          ],
+          "endSeconds": 36000,
+          "finalKilograms": 12566370614359172,
+          "grossTransferredKilograms": 57508540102276.25,
+          "initialFaceFluxDiagnostic": {
+            "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+            "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 85105.93618645098,
+            "maximumSegmentNonOrthogonalityDegrees": 11.312646581607913,
+            "relativeFaceFluxL1Error": 0.07574803910710798,
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "seconds": 1
+          },
+          "initialKilograms": 12566370614359172,
+          "maximumDepthMeters": 100.99972423818866,
+          "maximumErrorMeters": 0.013720859620392744,
+          "maximumGlobalRelativeResidual": 2.239276167997289e-18,
+          "maximumLocalRelativeResidual": 7.842014929515912e-19,
+          "minimumDepthMeters": 99.00027576181132,
+          "minimumUncappedMobilitySquareMetersPerSecond": 3115492.125391699,
+          "regions": 2562,
+          "resolution": {
+            "deferredRequests": 0,
+            "maximumDeferredRequestKilograms": 0,
+            "summedDeferredRequestKilograms": 0
+          },
+          "rmsErrorOverAnalyticChange": 0.09229513854069499,
+          "stabilityBoundSeconds": 528.25984416241,
+          "stepSeconds": 32.967032967032964,
+          "subdivision": 4,
+          "substeps": 1092
+        }
+      ],
+      "subdivision": 4,
+      "timeDifferenceOverFineAnalyticRmsError": 0.00041831147089874625,
+      "timeRefinementRmsDifferenceMeters": 0.000001548494514621677
+    },
+    {
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "runs": [
+        {
+          "activeDirectedFaces": 31124,
+          "amplitudeMeters": 1,
+          "areaWeightedMeanAbsoluteErrorMeters": 0.002535601885577441,
+          "areaWeightedRmsErrorMeters": 0.0036356932334059345,
+          "axis": [
+            0.2672612419124244,
+            0.5345224838248488,
+            0.8017837257372732
+          ],
+          "endSeconds": 36000,
+          "finalKilograms": 12566370614359172,
+          "grossTransferredKilograms": 115024357844416.34,
+          "initialFaceFluxDiagnostic": {
+            "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+            "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 42905.503162661116,
+            "maximumSegmentNonOrthogonalityDegrees": 11.344134569367698,
+            "relativeFaceFluxL1Error": 0.08156554153041591,
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "seconds": 1
+          },
+          "initialKilograms": 12566370614359172,
+          "maximumDepthMeters": 100.99974709075869,
+          "maximumErrorMeters": 0.013992608912194908,
+          "maximumGlobalRelativeResidual": 1.3418665904959307e-18,
+          "maximumLocalRelativeResidual": 1.6227737916682259e-18,
+          "minimumDepthMeters": 99.00025290924131,
+          "minimumUncappedMobilitySquareMetersPerSecond": 2202985.608597756,
+          "regions": 10242,
+          "resolution": {
+            "deferredRequests": 0,
+            "maximumDeferredRequestKilograms": 0,
+            "summedDeferredRequestKilograms": 0
+          },
+          "rmsErrorOverAnalyticChange": 0.09064756879374332,
+          "stabilityBoundSeconds": 132.04040657865758,
+          "stepSeconds": 65.93406593406593,
+          "subdivision": 5,
+          "substeps": 546
+        },
+        {
+          "activeDirectedFaces": 31124,
+          "amplitudeMeters": 1,
+          "areaWeightedMeanAbsoluteErrorMeters": 0.0025349536218409103,
+          "areaWeightedRmsErrorMeters": 0.003634892046510801,
+          "axis": [
+            0.2672612419124244,
+            0.5345224838248488,
+            0.8017837257372732
+          ],
+          "endSeconds": 36000,
+          "finalKilograms": 12566370614359172,
+          "grossTransferredKilograms": 115020660171157.9,
+          "initialFaceFluxDiagnostic": {
+            "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+            "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 42905.503162661116,
+            "maximumSegmentNonOrthogonalityDegrees": 11.344134569367698,
+            "relativeFaceFluxL1Error": 0.08156554153041591,
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "seconds": 1
+          },
+          "initialKilograms": 12566370614359172,
+          "maximumDepthMeters": 100.99981342366591,
+          "maximumErrorMeters": 0.01399094049773883,
+          "maximumGlobalRelativeResidual": 1.5549412470676286e-18,
+          "maximumLocalRelativeResidual": 1.5955773181164724e-18,
+          "minimumDepthMeters": 99.00018657633409,
+          "minimumUncappedMobilitySquareMetersPerSecond": 2202985.608597756,
+          "regions": 10242,
+          "resolution": {
+            "deferredRequests": 0,
+            "maximumDeferredRequestKilograms": 0,
+            "summedDeferredRequestKilograms": 0
+          },
+          "rmsErrorOverAnalyticChange": 0.09062759305884745,
+          "stabilityBoundSeconds": 132.04040657865758,
+          "stepSeconds": 32.967032967032964,
+          "subdivision": 5,
+          "substeps": 1092
+        }
+      ],
+      "subdivision": 5,
+      "timeDifferenceOverFineAnalyticRmsError": 0.0004246498832756178,
+      "timeRefinementRmsDifferenceMeters": 0.000001543556483270283
+    }
+  ],
+  "initialization": "Continuous l=1 field sampled at region centers times physical cell area; not exact cell averages and not globally rescaled.",
+  "meanDepthMeters": 100,
+  "radiusMeters": 100000,
+  "reportVersion": "paired-surface-spatial-report-1",
+  "roughness": 0.04,
+  "scope": "Isolated fully wet, flat-bed, capped linear diffusion; not seasonal dynamics, wetting-front validation or hydraulic calibration.",
+  "spatialComparisons": [
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "coarseSubdivision": 2,
+      "fineOverCoarseRmsError": 1.0180411279806232,
+      "fineSubdivision": 3,
+      "observedOrderUsingSqrtRegionCount": -0.025970112373408866,
+      "rmsErrorDecreases": false
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "coarseSubdivision": 3,
+      "fineOverCoarseRmsError": 0.9530947063192599,
+      "fineSubdivision": 4,
+      "observedOrderUsingSqrtRegionCount": 0.06942566343538634,
+      "rmsErrorDecreases": true
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "coarseSubdivision": 4,
+      "fineOverCoarseRmsError": 0.9819324667775677,
+      "fineSubdivision": 5,
+      "observedOrderUsingSqrtRegionCount": 0.026315406649205474,
+      "rmsErrorDecreases": true
+    },
+    {
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "coarseSubdivision": 2,
+      "fineOverCoarseRmsError": 1.0180411279809167,
+      "fineSubdivision": 3,
+      "observedOrderUsingSqrtRegionCount": -0.025970112373827646,
+      "rmsErrorDecreases": false
+    },
+    {
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "coarseSubdivision": 3,
+      "fineOverCoarseRmsError": 0.953094706319381,
+      "fineSubdivision": 4,
+      "observedOrderUsingSqrtRegionCount": 0.06942566343520283,
+      "rmsErrorDecreases": true
+    },
+    {
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "coarseSubdivision": 4,
+      "fineOverCoarseRmsError": 0.9819324667776268,
+      "fineSubdivision": 5,
+      "observedOrderUsingSqrtRegionCount": 0.02631540664911862,
+      "rmsErrorDecreases": true
+    }
+  ],
+  "surfaceFlowModelVersion": "regional-surface-flow-paired-2",
+  "uniformControl": {
+    "activeDirectedFaces": 29413,
+    "amplitudeMeters": 0,
+    "areaWeightedMeanAbsoluteErrorMeters": 3.022654627660098e-15,
+    "areaWeightedRmsErrorMeters": 3.795225425369343e-15,
+    "axis": [
+      1,
+      0,
+      0
+    ],
+    "endSeconds": 36000,
+    "finalKilograms": 12566370614359172,
+    "grossTransferredKilograms": 47.699277023921574,
+    "initialFaceFluxDiagnostic": {
+      "analyticReference": "Exact integrated l=1 continuum flux over each existing great-circle dual segment",
+      "maximumAbsoluteFaceFluxErrorKilogramsPerSecond": 1.838593210100059e-7,
+      "maximumSegmentNonOrthogonalityDegrees": 11.344134569367698,
+      "relativeFaceFluxL1Error": null,
+      "resolution": {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      },
+      "seconds": 1
+    },
+    "initialKilograms": 12566370614359172,
+    "maximumDepthMeters": 100.00000000000003,
+    "maximumErrorMeters": 1.0349772220143572e-14,
+    "maximumGlobalRelativeResidual": 2.7371480820874365e-19,
+    "maximumLocalRelativeResidual": 6.886960126112821e-30,
+    "minimumDepthMeters": 99.99999999999997,
+    "minimumUncappedMobilitySquareMetersPerSecond": 2202985.608597756,
+    "regions": 10242,
+    "resolution": {
+      "deferredRequests": 0,
+      "maximumDeferredRequestKilograms": 0,
+      "summedDeferredRequestKilograms": 0
+    },
+    "rmsErrorOverAnalyticChange": null,
+    "stabilityBoundSeconds": 132.04040657865758,
+    "stepSeconds": 65.93406593406593,
+    "subdivision": 5,
+    "substeps": 546
+  },
+  "summaryVersion": "paired-surface-spatial-validation-1",
+  "reviewedDate": "2026-10-09",
+  "qualification": {
+    "spatialGatePassed": false,
+    "reason": "Analytic depth RMS errors are nonmonotone and weakly decreasing; a persistent initial face-flux discrepancy remains. Successful accounting is not spatial qualification.",
+    "calibratedHydraulics": false,
+    "seasonalQualification": false
+  },
+  "sourceReport": {
+    "path": "artifacts/surface-spatial-final-v1.json",
+    "bytes": 45748412,
+    "sha256": "ab250c0f2dcced6dc012c11ee73f70a952fe0952a53710317361be2be6c7caf7",
+    "repeatPath": "artifacts/surface-spatial-final-v1-repeat.json",
+    "repeatSha256": "ab250c0f2dcced6dc012c11ee73f70a952fe0952a53710317361be2be6c7caf7",
+    "byteIdentical": true
+  },
+  "productionTrajectoryRegression": {
+    "baselinePath": "artifacts/soil-dense-main-ocean-30d-buffered-repeat.json",
+    "postRefactorPath": "artifacts/soil-dense-surface-refactor-30d.json",
+    "cases": 20,
+    "daysPerCase": 30,
+    "sha256": "d9966523fc2000cf0a83c0123f0e349f502630da7975c2379e806407ac9578b8",
+    "byteIdentical": true
+  },
+  "sourceFiles": [
+    {
+      "path": "native/src/lib.rs",
+      "sha256": "67b76120dbfeb88fa6791e5298bbe7d773511e1fd8c366c93f35117236dc4254"
+    },
+    {
+      "path": "native/src/moisture_transport.rs",
+      "sha256": "d117d9da8c1cc3f73bb52ead789001cecd210e860a4d4976d0a3de094c72b707"
+    },
+    {
+      "path": "native/src/surface_water/ponded_soil.rs",
+      "sha256": "1ae6c9da06c84e7e8b4092f5cec7e58caef971e75ea8be10b88fb129a30545f7"
+    },
+    {
+      "path": "native/src/surface_water/stock_precision.rs",
+      "sha256": "b5b20a0589d88103ba6b8a51b7de6945104e9c3c4997320da2531715218ee8b3"
+    },
+    {
+      "path": "native/src/seasonal_moisture/surface_flow.rs",
+      "sha256": "a3ccf73f81d01a000d6495ef686b8e9b96eb70955441652721d45adfddbf2fef"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil.rs",
+      "sha256": "0faee7374f0467b7eb2001d574988705e8ee39e7d8ac49321d291773042d1449"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/cycle.rs",
+      "sha256": "c45003e96f5abc121703264f6c750712b8bd9ce299177a3b8c765b008cca0498"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface.rs",
+      "sha256": "0892c5f4e45ebeb21e7a33f72326201e31add81554165f032cd70bb64ec5d3a4"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_verification.rs",
+      "sha256": "77cd9eadf7119ac060572398159d50353f5dee632904ffbb0957c0f8c1c8d2b4"
+    },
+    {
+      "path": "native/examples/surface_spatial_report.rs",
+      "sha256": "6794ed2fb3cc4816218c899b0f7d5bc30235f2635e408e5aa7bb5e2380442f7c"
+    }
+  ],
+  "validation": {
+    "release": {
+      "libraryPassed": 67,
+      "regionalSoilPassed": 7,
+      "legacyRegionalSurfacePassed": 5,
+      "failed": 0,
+      "log": "artifacts/surface-spatial-release-test-log.txt"
+    },
+    "clippyAllTargetsWarningsDenied": true,
+    "formattingCheck": true,
+    "diffCheck": true,
+    "completeReportRepeatExact": true,
+    "completeDenseReportPreserved": true,
+    "overwriteRefusedWithoutChangingOutput": true,
+    "invalidCliArgumentsRefused": true,
+    "guiRerun": false,
+    "ownerRendererEditsExcluded": true,
+    "fullSuite": {
+      "command": "npm test",
+      "exitCode": 0,
+      "nativePassed": 514,
+      "nativeFailed": 0,
+      "nativeIgnored": 1,
+      "nativeTargets": 100,
+      "nodeFilesPassed": 18,
+      "nodeFilesFailed": 0,
+      "log": "artifacts/surface-spatial-full-test-log.txt"
+    }
+  }
+}

@@ -16,6 +16,8 @@ use serde::{Deserialize, Serialize};
 mod accounting;
 mod cycle;
 mod observation;
+mod surface;
+pub mod surface_verification;
 pub use observation::{OBSERVATION_VERSION, Observation, ReferenceBodyStock, RegionalStocks};
 
 pub const MODEL_VERSION: &str = "regional-seasonal-water-1";

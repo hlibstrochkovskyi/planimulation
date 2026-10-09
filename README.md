@@ -54,6 +54,7 @@ The separate [unified regional soil cycle](docs/regional-soil-cycle.md) applies 
 | [Unified soil-water transport](docs/soil-water-transport.md) | Protocol-15 paired owners, strict decoding, separate typed session and complete checkpoint continuation |
 | [Unified soil-water desktop](docs/soil-water-desktop.md) | Opt-in five-owner mode, paired inspection, atlas/globe layers, numerical diagnostics and exact checkpoint continuation |
 | [Dense soil-water controls](docs/soil-dense-study.md) | Finite-funded 642/2,562-region cases, matched cadence/mobility controls, exact replay and explicitly non-isolated spatial inputs |
+| [Fixed-input surface verification](docs/surface-spatial-verification.md) | Shared production operator, analytic sphere reference, isolated time/grid controls and retained spatial/face-flux discrepancy |
 | [Seasonal-water desktop](docs/seasonal-water-desktop.md) | Run/pause, eight dynamic layers, interval inspection, versioned frames, baseline timing evidence, and limits |
 | [Seasonal-water checkpoints](docs/seasonal-water-checkpoints.md) | Complete native state, candidate validation, bounded file I/O, exact continuation, and limits |
 | [Typed surface water](docs/surface-water.md) | Empirical snowmelt, soil bucket, pending-runoff ownership, defaults, and limitations |
