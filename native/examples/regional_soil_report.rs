@@ -3,12 +3,13 @@ use planimulation_core::{
     Recipe, World,
     moisture_transport::{Geometry, total_mass},
     seasonal_moisture::regional_soil::{
-        Checkpoint, MODEL_VERSION, Model, NumericalPolicy, Settings,
+        COTANGENT_MODEL_VERSION, Checkpoint, MODEL_VERSION, Model, NumericalPolicy, Settings,
+        SurfaceOperator,
     },
     surface_water::ponded_soil::Mass,
 };
 use serde_json::{Value, json};
-use std::io::Write;
+use std::io::{BufWriter, Write};
 
 fn add(m: &mut Mass, amount: f64) {
     let sum = m.high + amount;
@@ -73,7 +74,7 @@ fn run(
     limit: u32,
     funded: bool,
     days: u32,
-    numerical_policy: NumericalPolicy,
+    settings: Settings,
 ) -> Result<Value, String> {
     let mut recipe: Recipe =
         serde_json::from_str(include_str!("../../docs/scenarios/spill-connections.json"))
@@ -83,9 +84,8 @@ fn run(
     recipe.water = planimulation_core::water::WaterSettings::Coverage { fraction: coverage };
     let world = World::generate(recipe)?;
     let settings = Settings {
-        numerical_policy,
         max_coupled_step_seconds: limit,
-        ..Default::default()
+        ..settings
     };
     let initial_model =
         Model::from_world(&world, settings, Default::default(), Default::default())?;
@@ -140,8 +140,16 @@ fn run(
 }
 fn main() -> Result<(), String> {
     let args: Vec<_> = std::env::args().skip(1).collect();
-    if !(args.len() == 2 || (args.len() == 3 && args[2] == "--retain-donor")) {
-        return Err("Usage: regional_soil_report DAYS NEW_OUTPUT.json [--retain-donor]".into());
+    if !(2..=4).contains(&args.len())
+        || args[2..]
+            .iter()
+            .any(|s| s != "--retain-donor" && s != "--cotangent")
+        || (args.len() == 4 && args[2] == args[3])
+    {
+        return Err(
+            "Usage: regional_soil_report DAYS NEW_OUTPUT.json [--retain-donor] [--cotangent]"
+                .into(),
+        );
     }
     let days: u32 = args[0].parse().map_err(|_| "Invalid day count.")?;
     if !(1..=3650).contains(&days) {
@@ -150,29 +158,42 @@ fn main() -> Result<(), String> {
     if std::path::Path::new(&args[1]).exists() {
         return Err("Report output already exists.".into());
     }
-    let policy = if args.len() == 3 {
+    let policy = if args[2..].iter().any(|s| s == "--retain-donor") {
         NumericalPolicy::RetainDonor
     } else {
         NumericalPolicy::RejectUnrepresentable
     };
+    let operator = if args[2..].iter().any(|s| s == "--cotangent") {
+        SurfaceOperator::CotangentWeakForm
+    } else {
+        SurfaceOperator::BarycentricTwoPoint
+    };
     let mut cases = Vec::new();
+    let settings = Settings {
+        numerical_policy: policy,
+        surface_operator: operator,
+        ..Default::default()
+    };
     for seed in ["first-light", "readiness-01", "receiver-2", "readiness-03"] {
         for coverage in [0.71, 0.3] {
-            cases.push(run(seed, coverage, 2, 900, false, days, policy)?);
+            cases.push(run(seed, coverage, 2, 900, false, days, settings)?);
         }
     }
-    cases.push(run("first-light", 0.3, 3, 900, false, days, policy)?);
+    cases.push(run("first-light", 0.3, 3, 900, false, days, settings)?);
     for limit in [900, 450, 225] {
-        cases.push(run("first-light", 0.3, 2, limit, true, days, policy)?);
+        cases.push(run("first-light", 0.3, 2, limit, true, days, settings)?);
     }
-    let report = json!({"reportVersion":"regional-soil-report-1","modelVersion":MODEL_VERSION,
+    let report = json!({"reportVersion":if operator == SurfaceOperator::CotangentWeakForm {"regional-soil-cotan-report-1"} else {"regional-soil-report-1"},
+        "modelVersion":if operator == SurfaceOperator::CotangentWeakForm {COTANGENT_MODEL_VERSION} else {MODEL_VERSION},
         "numericalPolicy":policy,"cases":cases});
-    let mut file = std::fs::OpenOptions::new()
+    let file = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
         .open(&args[1])
         .map_err(|e| e.to_string())?;
+    let mut file = BufWriter::new(file);
     serde_json::to_writer_pretty(&mut file, &report).map_err(|e| e.to_string())?;
     file.write_all(b"\n").map_err(|e| e.to_string())?;
+    file.flush().map_err(|e| e.to_string())?;
     Ok(())
 }

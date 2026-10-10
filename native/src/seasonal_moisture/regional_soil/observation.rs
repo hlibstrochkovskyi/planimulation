@@ -2,6 +2,7 @@
 use super::*;
 
 pub const OBSERVATION_VERSION: &str = "regional-soil-observation-1";
+pub const COTANGENT_OBSERVATION_VERSION: &str = "regional-soil-observation-2";
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -42,6 +43,7 @@ pub struct Observation {
     /// Zero is a placeholder where the derived depth is not representably positive.
     pub visible_water_level_meters: Vec<f64>,
     /// Rounded gross histories: neither instantaneous discharge nor extra stocks.
+    /// In observation v2 these are numerical weak-form adjacency exchanges.
     pub cumulative_surface_incoming_kilograms: Vec<f64>,
     pub cumulative_surface_outgoing_kilograms: Vec<f64>,
 }
@@ -50,14 +52,7 @@ impl Model {
     pub fn observe(&self, state: &State) -> Result<Observation, String> {
         let cp = &state.0;
         let budget = self.validate(cp)?;
-        let layout = self
-            .forcing
-            .lake_exchange
-            .as_ref()
-            .unwrap()
-            .regional
-            .as_ref()
-            .unwrap();
+        let layout = self.surface_layout();
         let pool = self.forcing.reference_pool.as_ref().unwrap();
         let n = layout.areas.len();
         let mut depth = vec![0.; n];
@@ -106,7 +101,12 @@ impl Model {
             return Err("Regional-soil observation has an unrepresentable derived field.".into());
         }
         Ok(Observation {
-            observation_model_version: OBSERVATION_VERSION.into(),
+            observation_model_version: if cp.settings.surface_operator.is_legacy() {
+                OBSERVATION_VERSION
+            } else {
+                COTANGENT_OBSERVATION_VERSION
+            }
+            .into(),
             model_version: cp.model_version.clone(),
             soil_model_version: cp.soil_model_version.clone(),
             transport_model_version: cp.transport_model_version.clone(),

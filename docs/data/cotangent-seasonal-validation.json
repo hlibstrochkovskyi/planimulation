@@ -1,0 +1,1621 @@
+{
+  "summaryVersion": "cotangent-seasonal-validation-1",
+  "recordedDate": "2026-10-09",
+  "scope": "Explicit headless seasonal family v2, unchanged five-owner laws except prepared surface conductance; weak-form exchanges, not calibrated literal dual-face discharge.",
+  "sourceReports": {
+    "annual": {
+      "path": "artifacts/cotan-seasonal-annual-v1.json",
+      "bytes": 5779398,
+      "sha256": "9777b23f8367677d9d286e79b9e2a95072807439a4f570bf6a0c213f46ec4138"
+    },
+    "repeat": {
+      "path": "artifacts/cotan-seasonal-annual-v1-repeat.json",
+      "bytes": 5779398,
+      "sha256": "9777b23f8367677d9d286e79b9e2a95072807439a4f570bf6a0c213f46ec4138"
+    },
+    "shortControl": {
+      "path": "artifacts/cotan-seasonal-30d-v1.json",
+      "bytes": 5302648,
+      "sha256": "ff0ced03f2d27ed434b433acd093d146f477de7290b003ab29963550de08b4db"
+    },
+    "repeatByteIdentical": true
+  },
+  "legacyTrajectoryRegression": {
+    "before": {
+      "path": "artifacts/cotan-seasonal-legacy-before.json",
+      "bytes": 5272305,
+      "sha256": "5618b1522ac69ec8e460c0ed031d3eda14ca43aab86310b7ee2c39cc93227514"
+    },
+    "after": {
+      "path": "artifacts/cotan-seasonal-legacy-final.json",
+      "bytes": 5272305,
+      "sha256": "5618b1522ac69ec8e460c0ed031d3eda14ca43aab86310b7ee2c39cc93227514"
+    },
+    "byteIdentical": true,
+    "cases": 12,
+    "daysPerCase": 1,
+    "activeFundedCases": 3,
+    "baselineGitRevision": "52875105a5773c884f008eb211c2393d81079336"
+  },
+  "qualification": {
+    "explicitSeasonalIntegration": true,
+    "recordedRetainingAnnualCasesCompleted": true,
+    "checkpointRoundTripAndContinuationExact": true,
+    "nonlinearSpatialConvergenceVerified": false,
+    "continuumDryFrontAccuracyVerified": false,
+    "literalFaceDischargeVerified": false,
+    "calibratedHydrology": false,
+    "desktopSelected": false
+  },
+  "maximumRelativeGlobalResidual": 1.954305482968942e-16,
+  "maximumRelativeLocalResidual": 3.8543214068392524e-16,
+  "cadenceComparisonMethod": "Equal-time funded states with identical recipe/forcing/other settings. Per-column absolute signed high+low difference and finer total stock use Neumaier compensated summation in the retained-summary analysis; no component is discarded. Cadence differs only in the listed ceiling.",
+  "cadenceComparisons": [
+    {
+      "ceilingsSeconds": [
+        900,
+        450
+      ],
+      "elapsedSeconds": 31536900,
+      "fields": {
+        "liquid": {
+          "l1Kilograms": 1069830650251.0463,
+          "relativeToFinerStock": 0.00009423719088842555
+        },
+        "soil": {
+          "l1Kilograms": 1520285818249.8147,
+          "relativeToFinerStock": 0.00009833847891951348
+        },
+        "snow": {
+          "l1Kilograms": 81782338801.08742,
+          "relativeToFinerStock": 0.00006362431501034344
+        },
+        "vapor": {
+          "l1Kilograms": 376319757917.0269,
+          "relativeToFinerStock": 0.00003243872341498388
+        },
+        "drainage": {
+          "l1Kilograms": 458676425862.92816,
+          "relativeToFinerStock": 0.00022733567401560933
+        }
+      },
+      "relativeGrossSurfaceCrossingDifference": 9.810306476043753e-7
+    },
+    {
+      "ceilingsSeconds": [
+        450,
+        225
+      ],
+      "elapsedSeconds": 31536900,
+      "fields": {
+        "liquid": {
+          "l1Kilograms": 535608418132.89185,
+          "relativeToFinerStock": 0.00004718130952968224
+        },
+        "soil": {
+          "l1Kilograms": 759298675472.4735,
+          "relativeToFinerStock": 0.000049115405349844144
+        },
+        "snow": {
+          "l1Kilograms": 41329966074.96995,
+          "relativeToFinerStock": 0.000032153382049107264
+        },
+        "vapor": {
+          "l1Kilograms": 189631156599.50705,
+          "relativeToFinerStock": 0.00001634598521320158
+        },
+        "drainage": {
+          "l1Kilograms": 229971291358.77267,
+          "relativeToFinerStock": 0.00011399075635408132
+        }
+      },
+      "relativeGrossSurfaceCrossingDifference": 4.879826962943714e-7
+    }
+  ],
+  "cases": [
+    {
+      "activeSurfaceDirections": 79,
+      "continuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "coupledCeilingSeconds": 900,
+      "coverage": 0.71,
+      "drainageCrossingsKilograms": 8528652357250608,
+      "failure": null,
+      "fundedKilograms": null,
+      "fundedRegion": null,
+      "liquidKilograms": 1506122686928566.8,
+      "maximumRelativeGlobalResidual": 1.4226239019834377e-16,
+      "maximumRelativeLocalResidual": 3.357263972483664e-16,
+      "regions": 162,
+      "requestedDays": 365,
+      "roundTripExact": true,
+      "seed": "first-light",
+      "soilKilograms": 9110941939807660,
+      "surfaceCrossingsKilograms": 5395881028605.145,
+      "vaporKilograms": 13097910594504262,
+      "checkpointMetadata": {
+        "pins": {
+          "modelVersion": "regional-seasonal-water-2",
+          "orographicModelVersion": "orographic-response-1",
+          "referenceBodyModelVersion": "reference-water-pool-1",
+          "runoffModelVersion": "runoff-transport-paired-2",
+          "schemaVersion": 2,
+          "soilModelVersion": "ponded-soil-exchange-2",
+          "surfaceFlowModelVersion": "regional-surface-cotan-paired-2",
+          "temperatureModelVersion": "seasonal-temperature-1",
+          "transportModelVersion": "moisture-transport-paired-2",
+          "windModelVersion": "seasonal-wind-1"
+        },
+        "recipe": {
+          "boundaryWidthKm": 300,
+          "continentalFraction": 0.38,
+          "continentalScale": 1,
+          "detailAmplitudeMeters": 300,
+          "maxPlateSpeedCmPerYear": 8,
+          "modelVersion": "basins-1",
+          "plateCount": 12,
+          "radiusMeters": 6371000,
+          "randomVersion": "fnv1a-utf8-mulberry32-1",
+          "reliefScale": 1,
+          "schemaVersion": 1,
+          "seed": "first-light",
+          "subdivision": 2,
+          "water": {
+            "fraction": 0.71,
+            "mode": "coverage"
+          }
+        },
+        "settings": {
+          "effectiveVaporDepthMeters": 2000,
+          "evaporationEnabled": true,
+          "evaporationResponseSeconds": 432000,
+          "initialActiveSurfaceDepthMeters": 10,
+          "maxCoupledStepSeconds": 900,
+          "meltKilogramsPerSquareMeterDegreeDay": 3,
+          "numericalPolicy": "retainDonor",
+          "orography": {
+            "strength": 1,
+            "upliftResponseHeightMeters": 1000
+          },
+          "precipitationEnabled": true,
+          "precipitationResponseSeconds": 21600,
+          "routingEnabled": true,
+          "runoff": {
+            "effectiveSpeedMetersPerSecond": 1,
+            "minimumResponseSeconds": 3600
+          },
+          "soil": {
+            "infiltrationResponseSeconds": 21600,
+            "soilCapacityKilogramsPerSquareMeter": 150,
+            "soilDrainageResponseSeconds": 2592000,
+            "soilRetainedFraction": 0.6
+          },
+          "surfaceFlow": {
+            "maximumDiffusivitySquareMetersPerSecond": 1000000,
+            "roughness": 0.04
+          },
+          "surfaceOperator": "cotangentWeakForm",
+          "transport": {
+            "maxOutgoingFraction": 0.8,
+            "maxSubsteps": 4096
+          }
+        },
+        "temperatureSettings": {
+          "axialTiltDegrees": 23.44,
+          "landResponseDays": 20,
+          "lapseRateCelsiusPerMeter": 0.0065,
+          "referenceTemperatureCelsius": 15,
+          "sensitivityCelsiusPerWattPerSquareMeter": 0.09,
+          "solarIrradianceWattsPerSquareMeter": 1360,
+          "waterResponseDays": 60
+        },
+        "windSettings": {
+          "itczShiftFraction": 0.5,
+          "midlatitudePolewardMetersPerSecond": 1,
+          "midlatitudeWesterlyMetersPerSecond": 10,
+          "polarEasterlyMetersPerSecond": 5,
+          "polarEquatorwardMetersPerSecond": 0.5,
+          "tradeEasterlyMetersPerSecond": 7,
+          "tropicalConvergenceMetersPerSecond": 2
+        },
+        "elapsedSeconds": 31536000,
+        "resolution": {
+          "deferredRequests": 1032417,
+          "maximumDeferredRequestKilograms": 1.4796550591867843,
+          "summedDeferredRequestKilograms": 770.8886140234682
+        }
+      },
+      "completeCheckpointInSourceReport": true
+    },
+    {
+      "activeSurfaceDirections": 110,
+      "continuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "coupledCeilingSeconds": 900,
+      "coverage": 0.3,
+      "drainageCrossingsKilograms": 13371968714055170,
+      "failure": null,
+      "fundedKilograms": null,
+      "fundedRegion": null,
+      "liquidKilograms": 1563940440157693.8,
+      "maximumRelativeGlobalResidual": 1.8055060914817136e-16,
+      "maximumRelativeLocalResidual": 3.599482352493948e-16,
+      "regions": 162,
+      "requestedDays": 365,
+      "roundTripExact": true,
+      "seed": "first-light",
+      "soilKilograms": 14323094529785004,
+      "surfaceCrossingsKilograms": 3209661207482.186,
+      "vaporKilograms": 11635668100918154,
+      "checkpointMetadata": {
+        "pins": {
+          "modelVersion": "regional-seasonal-water-2",
+          "orographicModelVersion": "orographic-response-1",
+          "referenceBodyModelVersion": "reference-water-pool-1",
+          "runoffModelVersion": "runoff-transport-paired-2",
+          "schemaVersion": 2,
+          "soilModelVersion": "ponded-soil-exchange-2",
+          "surfaceFlowModelVersion": "regional-surface-cotan-paired-2",
+          "temperatureModelVersion": "seasonal-temperature-1",
+          "transportModelVersion": "moisture-transport-paired-2",
+          "windModelVersion": "seasonal-wind-1"
+        },
+        "recipe": {
+          "boundaryWidthKm": 300,
+          "continentalFraction": 0.38,
+          "continentalScale": 1,
+          "detailAmplitudeMeters": 300,
+          "maxPlateSpeedCmPerYear": 8,
+          "modelVersion": "basins-1",
+          "plateCount": 12,
+          "radiusMeters": 6371000,
+          "randomVersion": "fnv1a-utf8-mulberry32-1",
+          "reliefScale": 1,
+          "schemaVersion": 1,
+          "seed": "first-light",
+          "subdivision": 2,
+          "water": {
+            "fraction": 0.3,
+            "mode": "coverage"
+          }
+        },
+        "settings": {
+          "effectiveVaporDepthMeters": 2000,
+          "evaporationEnabled": true,
+          "evaporationResponseSeconds": 432000,
+          "initialActiveSurfaceDepthMeters": 10,
+          "maxCoupledStepSeconds": 900,
+          "meltKilogramsPerSquareMeterDegreeDay": 3,
+          "numericalPolicy": "retainDonor",
+          "orography": {
+            "strength": 1,
+            "upliftResponseHeightMeters": 1000
+          },
+          "precipitationEnabled": true,
+          "precipitationResponseSeconds": 21600,
+          "routingEnabled": true,
+          "runoff": {
+            "effectiveSpeedMetersPerSecond": 1,
+            "minimumResponseSeconds": 3600
+          },
+          "soil": {
+            "infiltrationResponseSeconds": 21600,
+            "soilCapacityKilogramsPerSquareMeter": 150,
+            "soilDrainageResponseSeconds": 2592000,
+            "soilRetainedFraction": 0.6
+          },
+          "surfaceFlow": {
+            "maximumDiffusivitySquareMetersPerSecond": 1000000,
+            "roughness": 0.04
+          },
+          "surfaceOperator": "cotangentWeakForm",
+          "transport": {
+            "maxOutgoingFraction": 0.8,
+            "maxSubsteps": 4096
+          }
+        },
+        "temperatureSettings": {
+          "axialTiltDegrees": 23.44,
+          "landResponseDays": 20,
+          "lapseRateCelsiusPerMeter": 0.0065,
+          "referenceTemperatureCelsius": 15,
+          "sensitivityCelsiusPerWattPerSquareMeter": 0.09,
+          "solarIrradianceWattsPerSquareMeter": 1360,
+          "waterResponseDays": 60
+        },
+        "windSettings": {
+          "itczShiftFraction": 0.5,
+          "midlatitudePolewardMetersPerSecond": 1,
+          "midlatitudeWesterlyMetersPerSecond": 10,
+          "polarEasterlyMetersPerSecond": 5,
+          "polarEquatorwardMetersPerSecond": 0.5,
+          "tradeEasterlyMetersPerSecond": 7,
+          "tropicalConvergenceMetersPerSecond": 2
+        },
+        "elapsedSeconds": 31536000,
+        "resolution": {
+          "deferredRequests": 3883220,
+          "maximumDeferredRequestKilograms": 0.8586982134694447,
+          "summedDeferredRequestKilograms": 229.57541720269614
+        }
+      },
+      "completeCheckpointInSourceReport": true
+    },
+    {
+      "activeSurfaceDirections": 72,
+      "continuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "coupledCeilingSeconds": 900,
+      "coverage": 0.71,
+      "drainageCrossingsKilograms": 8086252598626695,
+      "failure": null,
+      "fundedKilograms": null,
+      "fundedRegion": null,
+      "liquidKilograms": 804771323280387.1,
+      "maximumRelativeGlobalResidual": 1.437241783614873e-16,
+      "maximumRelativeLocalResidual": 3.500893474920169e-16,
+      "regions": 162,
+      "requestedDays": 365,
+      "roundTripExact": true,
+      "seed": "readiness-01",
+      "soilKilograms": 7071385666386230,
+      "surfaceCrossingsKilograms": 6364959287352.136,
+      "vaporKilograms": 12240392646937014,
+      "checkpointMetadata": {
+        "pins": {
+          "modelVersion": "regional-seasonal-water-2",
+          "orographicModelVersion": "orographic-response-1",
+          "referenceBodyModelVersion": "reference-water-pool-1",
+          "runoffModelVersion": "runoff-transport-paired-2",
+          "schemaVersion": 2,
+          "soilModelVersion": "ponded-soil-exchange-2",
+          "surfaceFlowModelVersion": "regional-surface-cotan-paired-2",
+          "temperatureModelVersion": "seasonal-temperature-1",
+          "transportModelVersion": "moisture-transport-paired-2",
+          "windModelVersion": "seasonal-wind-1"
+        },
+        "recipe": {
+          "boundaryWidthKm": 300,
+          "continentalFraction": 0.38,
+          "continentalScale": 1,
+          "detailAmplitudeMeters": 300,
+          "maxPlateSpeedCmPerYear": 8,
+          "modelVersion": "basins-1",
+          "plateCount": 12,
+          "radiusMeters": 6371000,
+          "randomVersion": "fnv1a-utf8-mulberry32-1",
+          "reliefScale": 1,
+          "schemaVersion": 1,
+          "seed": "readiness-01",
+          "subdivision": 2,
+          "water": {
+            "fraction": 0.71,
+            "mode": "coverage"
+          }
+        },
+        "settings": {
+          "effectiveVaporDepthMeters": 2000,
+          "evaporationEnabled": true,
+          "evaporationResponseSeconds": 432000,
+          "initialActiveSurfaceDepthMeters": 10,
+          "maxCoupledStepSeconds": 900,
+          "meltKilogramsPerSquareMeterDegreeDay": 3,
+          "numericalPolicy": "retainDonor",
+          "orography": {
+            "strength": 1,
+            "upliftResponseHeightMeters": 1000
+          },
+          "precipitationEnabled": true,
+          "precipitationResponseSeconds": 21600,
+          "routingEnabled": true,
+          "runoff": {
+            "effectiveSpeedMetersPerSecond": 1,
+            "minimumResponseSeconds": 3600
+          },
+          "soil": {
+            "infiltrationResponseSeconds": 21600,
+            "soilCapacityKilogramsPerSquareMeter": 150,
+            "soilDrainageResponseSeconds": 2592000,
+            "soilRetainedFraction": 0.6
+          },
+          "surfaceFlow": {
+            "maximumDiffusivitySquareMetersPerSecond": 1000000,
+            "roughness": 0.04
+          },
+          "surfaceOperator": "cotangentWeakForm",
+          "transport": {
+            "maxOutgoingFraction": 0.8,
+            "maxSubsteps": 4096
+          }
+        },
+        "temperatureSettings": {
+          "axialTiltDegrees": 23.44,
+          "landResponseDays": 20,
+          "lapseRateCelsiusPerMeter": 0.0065,
+          "referenceTemperatureCelsius": 15,
+          "sensitivityCelsiusPerWattPerSquareMeter": 0.09,
+          "solarIrradianceWattsPerSquareMeter": 1360,
+          "waterResponseDays": 60
+        },
+        "windSettings": {
+          "itczShiftFraction": 0.5,
+          "midlatitudePolewardMetersPerSecond": 1,
+          "midlatitudeWesterlyMetersPerSecond": 10,
+          "polarEasterlyMetersPerSecond": 5,
+          "polarEquatorwardMetersPerSecond": 0.5,
+          "tradeEasterlyMetersPerSecond": 7,
+          "tropicalConvergenceMetersPerSecond": 2
+        },
+        "elapsedSeconds": 31536000,
+        "resolution": {
+          "deferredRequests": 4020194,
+          "maximumDeferredRequestKilograms": 3.6995717803029873,
+          "summedDeferredRequestKilograms": 576.4776119203954
+        }
+      },
+      "completeCheckpointInSourceReport": true
+    },
+    {
+      "activeSurfaceDirections": 169,
+      "continuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "coupledCeilingSeconds": 900,
+      "coverage": 0.3,
+      "drainageCrossingsKilograms": 12918451001524298,
+      "failure": null,
+      "fundedKilograms": null,
+      "fundedRegion": null,
+      "liquidKilograms": 2160704040099336.8,
+      "maximumRelativeGlobalResidual": 1.794237816534e-16,
+      "maximumRelativeLocalResidual": 3.5488776959147427e-16,
+      "regions": 162,
+      "requestedDays": 365,
+      "roundTripExact": true,
+      "seed": "readiness-01",
+      "soilKilograms": 13135295877192966,
+      "surfaceCrossingsKilograms": 4513164603190.524,
+      "vaporKilograms": 10643925290210462,
+      "checkpointMetadata": {
+        "pins": {
+          "modelVersion": "regional-seasonal-water-2",
+          "orographicModelVersion": "orographic-response-1",
+          "referenceBodyModelVersion": "reference-water-pool-1",
+          "runoffModelVersion": "runoff-transport-paired-2",
+          "schemaVersion": 2,
+          "soilModelVersion": "ponded-soil-exchange-2",
+          "surfaceFlowModelVersion": "regional-surface-cotan-paired-2",
+          "temperatureModelVersion": "seasonal-temperature-1",
+          "transportModelVersion": "moisture-transport-paired-2",
+          "windModelVersion": "seasonal-wind-1"
+        },
+        "recipe": {
+          "boundaryWidthKm": 300,
+          "continentalFraction": 0.38,
+          "continentalScale": 1,
+          "detailAmplitudeMeters": 300,
+          "maxPlateSpeedCmPerYear": 8,
+          "modelVersion": "basins-1",
+          "plateCount": 12,
+          "radiusMeters": 6371000,
+          "randomVersion": "fnv1a-utf8-mulberry32-1",
+          "reliefScale": 1,
+          "schemaVersion": 1,
+          "seed": "readiness-01",
+          "subdivision": 2,
+          "water": {
+            "fraction": 0.3,
+            "mode": "coverage"
+          }
+        },
+        "settings": {
+          "effectiveVaporDepthMeters": 2000,
+          "evaporationEnabled": true,
+          "evaporationResponseSeconds": 432000,
+          "initialActiveSurfaceDepthMeters": 10,
+          "maxCoupledStepSeconds": 900,
+          "meltKilogramsPerSquareMeterDegreeDay": 3,
+          "numericalPolicy": "retainDonor",
+          "orography": {
+            "strength": 1,
+            "upliftResponseHeightMeters": 1000
+          },
+          "precipitationEnabled": true,
+          "precipitationResponseSeconds": 21600,
+          "routingEnabled": true,
+          "runoff": {
+            "effectiveSpeedMetersPerSecond": 1,
+            "minimumResponseSeconds": 3600
+          },
+          "soil": {
+            "infiltrationResponseSeconds": 21600,
+            "soilCapacityKilogramsPerSquareMeter": 150,
+            "soilDrainageResponseSeconds": 2592000,
+            "soilRetainedFraction": 0.6
+          },
+          "surfaceFlow": {
+            "maximumDiffusivitySquareMetersPerSecond": 1000000,
+            "roughness": 0.04
+          },
+          "surfaceOperator": "cotangentWeakForm",
+          "transport": {
+            "maxOutgoingFraction": 0.8,
+            "maxSubsteps": 4096
+          }
+        },
+        "temperatureSettings": {
+          "axialTiltDegrees": 23.44,
+          "landResponseDays": 20,
+          "lapseRateCelsiusPerMeter": 0.0065,
+          "referenceTemperatureCelsius": 15,
+          "sensitivityCelsiusPerWattPerSquareMeter": 0.09,
+          "solarIrradianceWattsPerSquareMeter": 1360,
+          "waterResponseDays": 60
+        },
+        "windSettings": {
+          "itczShiftFraction": 0.5,
+          "midlatitudePolewardMetersPerSecond": 1,
+          "midlatitudeWesterlyMetersPerSecond": 10,
+          "polarEasterlyMetersPerSecond": 5,
+          "polarEquatorwardMetersPerSecond": 0.5,
+          "tradeEasterlyMetersPerSecond": 7,
+          "tropicalConvergenceMetersPerSecond": 2
+        },
+        "elapsedSeconds": 31536000,
+        "resolution": {
+          "deferredRequests": 8366375,
+          "maximumDeferredRequestKilograms": 0.3705277552473409,
+          "summedDeferredRequestKilograms": 42.72040920151336
+        }
+      },
+      "completeCheckpointInSourceReport": true
+    },
+    {
+      "activeSurfaceDirections": 76,
+      "continuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "coupledCeilingSeconds": 900,
+      "coverage": 0.71,
+      "drainageCrossingsKilograms": 8028239644888662,
+      "failure": null,
+      "fundedKilograms": null,
+      "fundedRegion": null,
+      "liquidKilograms": 1045020405047320.9,
+      "maximumRelativeGlobalResidual": 1.421749072685043e-16,
+      "maximumRelativeLocalResidual": 3.675544836819362e-16,
+      "regions": 162,
+      "requestedDays": 365,
+      "roundTripExact": true,
+      "seed": "receiver-2",
+      "soilKilograms": 7613130650513119,
+      "surfaceCrossingsKilograms": 5832282015283.215,
+      "vaporKilograms": 13019439472235450,
+      "checkpointMetadata": {
+        "pins": {
+          "modelVersion": "regional-seasonal-water-2",
+          "orographicModelVersion": "orographic-response-1",
+          "referenceBodyModelVersion": "reference-water-pool-1",
+          "runoffModelVersion": "runoff-transport-paired-2",
+          "schemaVersion": 2,
+          "soilModelVersion": "ponded-soil-exchange-2",
+          "surfaceFlowModelVersion": "regional-surface-cotan-paired-2",
+          "temperatureModelVersion": "seasonal-temperature-1",
+          "transportModelVersion": "moisture-transport-paired-2",
+          "windModelVersion": "seasonal-wind-1"
+        },
+        "recipe": {
+          "boundaryWidthKm": 300,
+          "continentalFraction": 0.38,
+          "continentalScale": 1,
+          "detailAmplitudeMeters": 300,
+          "maxPlateSpeedCmPerYear": 8,
+          "modelVersion": "basins-1",
+          "plateCount": 12,
+          "radiusMeters": 6371000,
+          "randomVersion": "fnv1a-utf8-mulberry32-1",
+          "reliefScale": 1,
+          "schemaVersion": 1,
+          "seed": "receiver-2",
+          "subdivision": 2,
+          "water": {
+            "fraction": 0.71,
+            "mode": "coverage"
+          }
+        },
+        "settings": {
+          "effectiveVaporDepthMeters": 2000,
+          "evaporationEnabled": true,
+          "evaporationResponseSeconds": 432000,
+          "initialActiveSurfaceDepthMeters": 10,
+          "maxCoupledStepSeconds": 900,
+          "meltKilogramsPerSquareMeterDegreeDay": 3,
+          "numericalPolicy": "retainDonor",
+          "orography": {
+            "strength": 1,
+            "upliftResponseHeightMeters": 1000
+          },
+          "precipitationEnabled": true,
+          "precipitationResponseSeconds": 21600,
+          "routingEnabled": true,
+          "runoff": {
+            "effectiveSpeedMetersPerSecond": 1,
+            "minimumResponseSeconds": 3600
+          },
+          "soil": {
+            "infiltrationResponseSeconds": 21600,
+            "soilCapacityKilogramsPerSquareMeter": 150,
+            "soilDrainageResponseSeconds": 2592000,
+            "soilRetainedFraction": 0.6
+          },
+          "surfaceFlow": {
+            "maximumDiffusivitySquareMetersPerSecond": 1000000,
+            "roughness": 0.04
+          },
+          "surfaceOperator": "cotangentWeakForm",
+          "transport": {
+            "maxOutgoingFraction": 0.8,
+            "maxSubsteps": 4096
+          }
+        },
+        "temperatureSettings": {
+          "axialTiltDegrees": 23.44,
+          "landResponseDays": 20,
+          "lapseRateCelsiusPerMeter": 0.0065,
+          "referenceTemperatureCelsius": 15,
+          "sensitivityCelsiusPerWattPerSquareMeter": 0.09,
+          "solarIrradianceWattsPerSquareMeter": 1360,
+          "waterResponseDays": 60
+        },
+        "windSettings": {
+          "itczShiftFraction": 0.5,
+          "midlatitudePolewardMetersPerSecond": 1,
+          "midlatitudeWesterlyMetersPerSecond": 10,
+          "polarEasterlyMetersPerSecond": 5,
+          "polarEquatorwardMetersPerSecond": 0.5,
+          "tradeEasterlyMetersPerSecond": 7,
+          "tropicalConvergenceMetersPerSecond": 2
+        },
+        "elapsedSeconds": 31536000,
+        "resolution": {
+          "deferredRequests": 1273714,
+          "maximumDeferredRequestKilograms": 1.6782505497935878,
+          "summedDeferredRequestKilograms": 311.60476248569324
+        }
+      },
+      "completeCheckpointInSourceReport": true
+    },
+    {
+      "activeSurfaceDirections": 123,
+      "continuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "coupledCeilingSeconds": 900,
+      "coverage": 0.3,
+      "drainageCrossingsKilograms": 11380865175835596,
+      "failure": null,
+      "fundedKilograms": null,
+      "fundedRegion": null,
+      "liquidKilograms": 948819114748421.4,
+      "maximumRelativeGlobalResidual": 1.7323529949245115e-16,
+      "maximumRelativeLocalResidual": 3.2814619769535905e-16,
+      "regions": 162,
+      "requestedDays": 365,
+      "roundTripExact": true,
+      "seed": "receiver-2",
+      "soilKilograms": 12245586501063016,
+      "surfaceCrossingsKilograms": 1093254679990.238,
+      "vaporKilograms": 11044464226851280,
+      "checkpointMetadata": {
+        "pins": {
+          "modelVersion": "regional-seasonal-water-2",
+          "orographicModelVersion": "orographic-response-1",
+          "referenceBodyModelVersion": "reference-water-pool-1",
+          "runoffModelVersion": "runoff-transport-paired-2",
+          "schemaVersion": 2,
+          "soilModelVersion": "ponded-soil-exchange-2",
+          "surfaceFlowModelVersion": "regional-surface-cotan-paired-2",
+          "temperatureModelVersion": "seasonal-temperature-1",
+          "transportModelVersion": "moisture-transport-paired-2",
+          "windModelVersion": "seasonal-wind-1"
+        },
+        "recipe": {
+          "boundaryWidthKm": 300,
+          "continentalFraction": 0.38,
+          "continentalScale": 1,
+          "detailAmplitudeMeters": 300,
+          "maxPlateSpeedCmPerYear": 8,
+          "modelVersion": "basins-1",
+          "plateCount": 12,
+          "radiusMeters": 6371000,
+          "randomVersion": "fnv1a-utf8-mulberry32-1",
+          "reliefScale": 1,
+          "schemaVersion": 1,
+          "seed": "receiver-2",
+          "subdivision": 2,
+          "water": {
+            "fraction": 0.3,
+            "mode": "coverage"
+          }
+        },
+        "settings": {
+          "effectiveVaporDepthMeters": 2000,
+          "evaporationEnabled": true,
+          "evaporationResponseSeconds": 432000,
+          "initialActiveSurfaceDepthMeters": 10,
+          "maxCoupledStepSeconds": 900,
+          "meltKilogramsPerSquareMeterDegreeDay": 3,
+          "numericalPolicy": "retainDonor",
+          "orography": {
+            "strength": 1,
+            "upliftResponseHeightMeters": 1000
+          },
+          "precipitationEnabled": true,
+          "precipitationResponseSeconds": 21600,
+          "routingEnabled": true,
+          "runoff": {
+            "effectiveSpeedMetersPerSecond": 1,
+            "minimumResponseSeconds": 3600
+          },
+          "soil": {
+            "infiltrationResponseSeconds": 21600,
+            "soilCapacityKilogramsPerSquareMeter": 150,
+            "soilDrainageResponseSeconds": 2592000,
+            "soilRetainedFraction": 0.6
+          },
+          "surfaceFlow": {
+            "maximumDiffusivitySquareMetersPerSecond": 1000000,
+            "roughness": 0.04
+          },
+          "surfaceOperator": "cotangentWeakForm",
+          "transport": {
+            "maxOutgoingFraction": 0.8,
+            "maxSubsteps": 4096
+          }
+        },
+        "temperatureSettings": {
+          "axialTiltDegrees": 23.44,
+          "landResponseDays": 20,
+          "lapseRateCelsiusPerMeter": 0.0065,
+          "referenceTemperatureCelsius": 15,
+          "sensitivityCelsiusPerWattPerSquareMeter": 0.09,
+          "solarIrradianceWattsPerSquareMeter": 1360,
+          "waterResponseDays": 60
+        },
+        "windSettings": {
+          "itczShiftFraction": 0.5,
+          "midlatitudePolewardMetersPerSecond": 1,
+          "midlatitudeWesterlyMetersPerSecond": 10,
+          "polarEasterlyMetersPerSecond": 5,
+          "polarEquatorwardMetersPerSecond": 0.5,
+          "tradeEasterlyMetersPerSecond": 7,
+          "tropicalConvergenceMetersPerSecond": 2
+        },
+        "elapsedSeconds": 31536000,
+        "resolution": {
+          "deferredRequests": 5763009,
+          "maximumDeferredRequestKilograms": 0.32027260367207566,
+          "summedDeferredRequestKilograms": 150.17375125687738
+        }
+      },
+      "completeCheckpointInSourceReport": true
+    },
+    {
+      "activeSurfaceDirections": 67,
+      "continuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "coupledCeilingSeconds": 900,
+      "coverage": 0.71,
+      "drainageCrossingsKilograms": 5547021399304958,
+      "failure": null,
+      "fundedKilograms": null,
+      "fundedRegion": null,
+      "liquidKilograms": 301881236324599.4,
+      "maximumRelativeGlobalResidual": 1.4193689511492672e-16,
+      "maximumRelativeLocalResidual": 3.8543214068392524e-16,
+      "regions": 162,
+      "requestedDays": 365,
+      "roundTripExact": true,
+      "seed": "readiness-03",
+      "soilKilograms": 8621608832628111,
+      "surfaceCrossingsKilograms": 5292603435787.718,
+      "vaporKilograms": 13099947597444042,
+      "checkpointMetadata": {
+        "pins": {
+          "modelVersion": "regional-seasonal-water-2",
+          "orographicModelVersion": "orographic-response-1",
+          "referenceBodyModelVersion": "reference-water-pool-1",
+          "runoffModelVersion": "runoff-transport-paired-2",
+          "schemaVersion": 2,
+          "soilModelVersion": "ponded-soil-exchange-2",
+          "surfaceFlowModelVersion": "regional-surface-cotan-paired-2",
+          "temperatureModelVersion": "seasonal-temperature-1",
+          "transportModelVersion": "moisture-transport-paired-2",
+          "windModelVersion": "seasonal-wind-1"
+        },
+        "recipe": {
+          "boundaryWidthKm": 300,
+          "continentalFraction": 0.38,
+          "continentalScale": 1,
+          "detailAmplitudeMeters": 300,
+          "maxPlateSpeedCmPerYear": 8,
+          "modelVersion": "basins-1",
+          "plateCount": 12,
+          "radiusMeters": 6371000,
+          "randomVersion": "fnv1a-utf8-mulberry32-1",
+          "reliefScale": 1,
+          "schemaVersion": 1,
+          "seed": "readiness-03",
+          "subdivision": 2,
+          "water": {
+            "fraction": 0.71,
+            "mode": "coverage"
+          }
+        },
+        "settings": {
+          "effectiveVaporDepthMeters": 2000,
+          "evaporationEnabled": true,
+          "evaporationResponseSeconds": 432000,
+          "initialActiveSurfaceDepthMeters": 10,
+          "maxCoupledStepSeconds": 900,
+          "meltKilogramsPerSquareMeterDegreeDay": 3,
+          "numericalPolicy": "retainDonor",
+          "orography": {
+            "strength": 1,
+            "upliftResponseHeightMeters": 1000
+          },
+          "precipitationEnabled": true,
+          "precipitationResponseSeconds": 21600,
+          "routingEnabled": true,
+          "runoff": {
+            "effectiveSpeedMetersPerSecond": 1,
+            "minimumResponseSeconds": 3600
+          },
+          "soil": {
+            "infiltrationResponseSeconds": 21600,
+            "soilCapacityKilogramsPerSquareMeter": 150,
+            "soilDrainageResponseSeconds": 2592000,
+            "soilRetainedFraction": 0.6
+          },
+          "surfaceFlow": {
+            "maximumDiffusivitySquareMetersPerSecond": 1000000,
+            "roughness": 0.04
+          },
+          "surfaceOperator": "cotangentWeakForm",
+          "transport": {
+            "maxOutgoingFraction": 0.8,
+            "maxSubsteps": 4096
+          }
+        },
+        "temperatureSettings": {
+          "axialTiltDegrees": 23.44,
+          "landResponseDays": 20,
+          "lapseRateCelsiusPerMeter": 0.0065,
+          "referenceTemperatureCelsius": 15,
+          "sensitivityCelsiusPerWattPerSquareMeter": 0.09,
+          "solarIrradianceWattsPerSquareMeter": 1360,
+          "waterResponseDays": 60
+        },
+        "windSettings": {
+          "itczShiftFraction": 0.5,
+          "midlatitudePolewardMetersPerSecond": 1,
+          "midlatitudeWesterlyMetersPerSecond": 10,
+          "polarEasterlyMetersPerSecond": 5,
+          "polarEquatorwardMetersPerSecond": 0.5,
+          "tradeEasterlyMetersPerSecond": 7,
+          "tropicalConvergenceMetersPerSecond": 2
+        },
+        "elapsedSeconds": 31536000,
+        "resolution": {
+          "deferredRequests": 999746,
+          "maximumDeferredRequestKilograms": 1.6547835664651547,
+          "summedDeferredRequestKilograms": 90.03151365553688
+        }
+      },
+      "completeCheckpointInSourceReport": true
+    },
+    {
+      "activeSurfaceDirections": 170,
+      "continuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "coupledCeilingSeconds": 900,
+      "coverage": 0.3,
+      "drainageCrossingsKilograms": 11960812968039050,
+      "failure": null,
+      "fundedKilograms": null,
+      "fundedRegion": null,
+      "liquidKilograms": 1469923588744757.2,
+      "maximumRelativeGlobalResidual": 1.954305482968942e-16,
+      "maximumRelativeLocalResidual": 3.4529103420404e-16,
+      "regions": 162,
+      "requestedDays": 365,
+      "roundTripExact": true,
+      "seed": "readiness-03",
+      "soilKilograms": 11611768205945712,
+      "surfaceCrossingsKilograms": 3405928633106.068,
+      "vaporKilograms": 11588614042403700,
+      "checkpointMetadata": {
+        "pins": {
+          "modelVersion": "regional-seasonal-water-2",
+          "orographicModelVersion": "orographic-response-1",
+          "referenceBodyModelVersion": "reference-water-pool-1",
+          "runoffModelVersion": "runoff-transport-paired-2",
+          "schemaVersion": 2,
+          "soilModelVersion": "ponded-soil-exchange-2",
+          "surfaceFlowModelVersion": "regional-surface-cotan-paired-2",
+          "temperatureModelVersion": "seasonal-temperature-1",
+          "transportModelVersion": "moisture-transport-paired-2",
+          "windModelVersion": "seasonal-wind-1"
+        },
+        "recipe": {
+          "boundaryWidthKm": 300,
+          "continentalFraction": 0.38,
+          "continentalScale": 1,
+          "detailAmplitudeMeters": 300,
+          "maxPlateSpeedCmPerYear": 8,
+          "modelVersion": "basins-1",
+          "plateCount": 12,
+          "radiusMeters": 6371000,
+          "randomVersion": "fnv1a-utf8-mulberry32-1",
+          "reliefScale": 1,
+          "schemaVersion": 1,
+          "seed": "readiness-03",
+          "subdivision": 2,
+          "water": {
+            "fraction": 0.3,
+            "mode": "coverage"
+          }
+        },
+        "settings": {
+          "effectiveVaporDepthMeters": 2000,
+          "evaporationEnabled": true,
+          "evaporationResponseSeconds": 432000,
+          "initialActiveSurfaceDepthMeters": 10,
+          "maxCoupledStepSeconds": 900,
+          "meltKilogramsPerSquareMeterDegreeDay": 3,
+          "numericalPolicy": "retainDonor",
+          "orography": {
+            "strength": 1,
+            "upliftResponseHeightMeters": 1000
+          },
+          "precipitationEnabled": true,
+          "precipitationResponseSeconds": 21600,
+          "routingEnabled": true,
+          "runoff": {
+            "effectiveSpeedMetersPerSecond": 1,
+            "minimumResponseSeconds": 3600
+          },
+          "soil": {
+            "infiltrationResponseSeconds": 21600,
+            "soilCapacityKilogramsPerSquareMeter": 150,
+            "soilDrainageResponseSeconds": 2592000,
+            "soilRetainedFraction": 0.6
+          },
+          "surfaceFlow": {
+            "maximumDiffusivitySquareMetersPerSecond": 1000000,
+            "roughness": 0.04
+          },
+          "surfaceOperator": "cotangentWeakForm",
+          "transport": {
+            "maxOutgoingFraction": 0.8,
+            "maxSubsteps": 4096
+          }
+        },
+        "temperatureSettings": {
+          "axialTiltDegrees": 23.44,
+          "landResponseDays": 20,
+          "lapseRateCelsiusPerMeter": 0.0065,
+          "referenceTemperatureCelsius": 15,
+          "sensitivityCelsiusPerWattPerSquareMeter": 0.09,
+          "solarIrradianceWattsPerSquareMeter": 1360,
+          "waterResponseDays": 60
+        },
+        "windSettings": {
+          "itczShiftFraction": 0.5,
+          "midlatitudePolewardMetersPerSecond": 1,
+          "midlatitudeWesterlyMetersPerSecond": 10,
+          "polarEasterlyMetersPerSecond": 5,
+          "polarEquatorwardMetersPerSecond": 0.5,
+          "tradeEasterlyMetersPerSecond": 7,
+          "tropicalConvergenceMetersPerSecond": 2
+        },
+        "elapsedSeconds": 31536000,
+        "resolution": {
+          "deferredRequests": 4790327,
+          "maximumDeferredRequestKilograms": 0.7973027528671027,
+          "summedDeferredRequestKilograms": 372.777512066175
+        }
+      },
+      "completeCheckpointInSourceReport": true
+    },
+    {
+      "activeSurfaceDirections": 736,
+      "continuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "coupledCeilingSeconds": 900,
+      "coverage": 0.3,
+      "drainageCrossingsKilograms": 22790153507072732,
+      "failure": null,
+      "fundedKilograms": null,
+      "fundedRegion": null,
+      "liquidKilograms": 5064417683040903,
+      "maximumRelativeGlobalResidual": 0,
+      "maximumRelativeLocalResidual": 3.5693555675604436e-16,
+      "regions": 642,
+      "requestedDays": 365,
+      "roundTripExact": true,
+      "seed": "first-light",
+      "soilKilograms": 13717142605525188,
+      "surfaceCrossingsKilograms": 57487220603892.45,
+      "vaporKilograms": 10507513914147938,
+      "checkpointMetadata": {
+        "pins": {
+          "modelVersion": "regional-seasonal-water-2",
+          "orographicModelVersion": "orographic-response-1",
+          "referenceBodyModelVersion": "reference-water-pool-1",
+          "runoffModelVersion": "runoff-transport-paired-2",
+          "schemaVersion": 2,
+          "soilModelVersion": "ponded-soil-exchange-2",
+          "surfaceFlowModelVersion": "regional-surface-cotan-paired-2",
+          "temperatureModelVersion": "seasonal-temperature-1",
+          "transportModelVersion": "moisture-transport-paired-2",
+          "windModelVersion": "seasonal-wind-1"
+        },
+        "recipe": {
+          "boundaryWidthKm": 300,
+          "continentalFraction": 0.38,
+          "continentalScale": 1,
+          "detailAmplitudeMeters": 300,
+          "maxPlateSpeedCmPerYear": 8,
+          "modelVersion": "basins-1",
+          "plateCount": 12,
+          "radiusMeters": 6371000,
+          "randomVersion": "fnv1a-utf8-mulberry32-1",
+          "reliefScale": 1,
+          "schemaVersion": 1,
+          "seed": "first-light",
+          "subdivision": 3,
+          "water": {
+            "fraction": 0.3,
+            "mode": "coverage"
+          }
+        },
+        "settings": {
+          "effectiveVaporDepthMeters": 2000,
+          "evaporationEnabled": true,
+          "evaporationResponseSeconds": 432000,
+          "initialActiveSurfaceDepthMeters": 10,
+          "maxCoupledStepSeconds": 900,
+          "meltKilogramsPerSquareMeterDegreeDay": 3,
+          "numericalPolicy": "retainDonor",
+          "orography": {
+            "strength": 1,
+            "upliftResponseHeightMeters": 1000
+          },
+          "precipitationEnabled": true,
+          "precipitationResponseSeconds": 21600,
+          "routingEnabled": true,
+          "runoff": {
+            "effectiveSpeedMetersPerSecond": 1,
+            "minimumResponseSeconds": 3600
+          },
+          "soil": {
+            "infiltrationResponseSeconds": 21600,
+            "soilCapacityKilogramsPerSquareMeter": 150,
+            "soilDrainageResponseSeconds": 2592000,
+            "soilRetainedFraction": 0.6
+          },
+          "surfaceFlow": {
+            "maximumDiffusivitySquareMetersPerSecond": 1000000,
+            "roughness": 0.04
+          },
+          "surfaceOperator": "cotangentWeakForm",
+          "transport": {
+            "maxOutgoingFraction": 0.8,
+            "maxSubsteps": 4096
+          }
+        },
+        "temperatureSettings": {
+          "axialTiltDegrees": 23.44,
+          "landResponseDays": 20,
+          "lapseRateCelsiusPerMeter": 0.0065,
+          "referenceTemperatureCelsius": 15,
+          "sensitivityCelsiusPerWattPerSquareMeter": 0.09,
+          "solarIrradianceWattsPerSquareMeter": 1360,
+          "waterResponseDays": 60
+        },
+        "windSettings": {
+          "itczShiftFraction": 0.5,
+          "midlatitudePolewardMetersPerSecond": 1,
+          "midlatitudeWesterlyMetersPerSecond": 10,
+          "polarEasterlyMetersPerSecond": 5,
+          "polarEquatorwardMetersPerSecond": 0.5,
+          "tradeEasterlyMetersPerSecond": 7,
+          "tropicalConvergenceMetersPerSecond": 2
+        },
+        "elapsedSeconds": 31536000,
+        "resolution": {
+          "deferredRequests": 23198352,
+          "maximumDeferredRequestKilograms": 0.451726263575679,
+          "summedDeferredRequestKilograms": 762.6674116266972
+        }
+      },
+      "completeCheckpointInSourceReport": true
+    },
+    {
+      "activeSurfaceDirections": 136,
+      "continuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "coupledCeilingSeconds": 900,
+      "coverage": 0.3,
+      "drainageCrossingsKilograms": 16963097539446460,
+      "failure": null,
+      "fundedKilograms": 152086337255055680,
+      "fundedRegion": 44,
+      "liquidKilograms": 11353329966594048,
+      "maximumRelativeGlobalResidual": 1.8055060914817136e-16,
+      "maximumRelativeLocalResidual": 3.268612644683826e-16,
+      "regions": 162,
+      "requestedDays": 365,
+      "roundTripExact": true,
+      "seed": "first-light",
+      "soilKilograms": 15460212144516096,
+      "surfaceCrossingsKilograms": 181983997043352220,
+      "vaporKilograms": 11600659265861832,
+      "checkpointMetadata": {
+        "pins": {
+          "modelVersion": "regional-seasonal-water-2",
+          "orographicModelVersion": "orographic-response-1",
+          "referenceBodyModelVersion": "reference-water-pool-1",
+          "runoffModelVersion": "runoff-transport-paired-2",
+          "schemaVersion": 2,
+          "soilModelVersion": "ponded-soil-exchange-2",
+          "surfaceFlowModelVersion": "regional-surface-cotan-paired-2",
+          "temperatureModelVersion": "seasonal-temperature-1",
+          "transportModelVersion": "moisture-transport-paired-2",
+          "windModelVersion": "seasonal-wind-1"
+        },
+        "recipe": {
+          "boundaryWidthKm": 300,
+          "continentalFraction": 0.38,
+          "continentalScale": 1,
+          "detailAmplitudeMeters": 300,
+          "maxPlateSpeedCmPerYear": 8,
+          "modelVersion": "basins-1",
+          "plateCount": 12,
+          "radiusMeters": 6371000,
+          "randomVersion": "fnv1a-utf8-mulberry32-1",
+          "reliefScale": 1,
+          "schemaVersion": 1,
+          "seed": "first-light",
+          "subdivision": 2,
+          "water": {
+            "fraction": 0.3,
+            "mode": "coverage"
+          }
+        },
+        "settings": {
+          "effectiveVaporDepthMeters": 2000,
+          "evaporationEnabled": true,
+          "evaporationResponseSeconds": 432000,
+          "initialActiveSurfaceDepthMeters": 10,
+          "maxCoupledStepSeconds": 900,
+          "meltKilogramsPerSquareMeterDegreeDay": 3,
+          "numericalPolicy": "retainDonor",
+          "orography": {
+            "strength": 1,
+            "upliftResponseHeightMeters": 1000
+          },
+          "precipitationEnabled": true,
+          "precipitationResponseSeconds": 21600,
+          "routingEnabled": true,
+          "runoff": {
+            "effectiveSpeedMetersPerSecond": 1,
+            "minimumResponseSeconds": 3600
+          },
+          "soil": {
+            "infiltrationResponseSeconds": 21600,
+            "soilCapacityKilogramsPerSquareMeter": 150,
+            "soilDrainageResponseSeconds": 2592000,
+            "soilRetainedFraction": 0.6
+          },
+          "surfaceFlow": {
+            "maximumDiffusivitySquareMetersPerSecond": 1000000,
+            "roughness": 0.04
+          },
+          "surfaceOperator": "cotangentWeakForm",
+          "transport": {
+            "maxOutgoingFraction": 0.8,
+            "maxSubsteps": 4096
+          }
+        },
+        "temperatureSettings": {
+          "axialTiltDegrees": 23.44,
+          "landResponseDays": 20,
+          "lapseRateCelsiusPerMeter": 0.0065,
+          "referenceTemperatureCelsius": 15,
+          "sensitivityCelsiusPerWattPerSquareMeter": 0.09,
+          "solarIrradianceWattsPerSquareMeter": 1360,
+          "waterResponseDays": 60
+        },
+        "windSettings": {
+          "itczShiftFraction": 0.5,
+          "midlatitudePolewardMetersPerSecond": 1,
+          "midlatitudeWesterlyMetersPerSecond": 10,
+          "polarEasterlyMetersPerSecond": 5,
+          "polarEquatorwardMetersPerSecond": 0.5,
+          "tradeEasterlyMetersPerSecond": 7,
+          "tropicalConvergenceMetersPerSecond": 2
+        },
+        "elapsedSeconds": 31536900,
+        "resolution": {
+          "deferredRequests": 3753608,
+          "maximumDeferredRequestKilograms": 0.7501537450813288,
+          "summedDeferredRequestKilograms": 258.6167938377365
+        }
+      },
+      "completeCheckpointInSourceReport": true
+    },
+    {
+      "activeSurfaceDirections": 134,
+      "continuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "coupledCeilingSeconds": 450,
+      "coverage": 0.3,
+      "drainageCrossingsKilograms": 16957143194991960,
+      "failure": null,
+      "fundedKilograms": 152086337255055680,
+      "fundedRegion": 44,
+      "liquidKilograms": 11352531205197942,
+      "maximumRelativeGlobalResidual": 1.8055060914817136e-16,
+      "maximumRelativeLocalResidual": 3.210324601936121e-16,
+      "regions": 162,
+      "requestedDays": 365,
+      "roundTripExact": true,
+      "seed": "first-light",
+      "soilKilograms": 15459724768512172,
+      "surfaceCrossingsKilograms": 181983818511648900,
+      "vaporKilograms": 11600942278240202,
+      "checkpointMetadata": {
+        "pins": {
+          "modelVersion": "regional-seasonal-water-2",
+          "orographicModelVersion": "orographic-response-1",
+          "referenceBodyModelVersion": "reference-water-pool-1",
+          "runoffModelVersion": "runoff-transport-paired-2",
+          "schemaVersion": 2,
+          "soilModelVersion": "ponded-soil-exchange-2",
+          "surfaceFlowModelVersion": "regional-surface-cotan-paired-2",
+          "temperatureModelVersion": "seasonal-temperature-1",
+          "transportModelVersion": "moisture-transport-paired-2",
+          "windModelVersion": "seasonal-wind-1"
+        },
+        "recipe": {
+          "boundaryWidthKm": 300,
+          "continentalFraction": 0.38,
+          "continentalScale": 1,
+          "detailAmplitudeMeters": 300,
+          "maxPlateSpeedCmPerYear": 8,
+          "modelVersion": "basins-1",
+          "plateCount": 12,
+          "radiusMeters": 6371000,
+          "randomVersion": "fnv1a-utf8-mulberry32-1",
+          "reliefScale": 1,
+          "schemaVersion": 1,
+          "seed": "first-light",
+          "subdivision": 2,
+          "water": {
+            "fraction": 0.3,
+            "mode": "coverage"
+          }
+        },
+        "settings": {
+          "effectiveVaporDepthMeters": 2000,
+          "evaporationEnabled": true,
+          "evaporationResponseSeconds": 432000,
+          "initialActiveSurfaceDepthMeters": 10,
+          "maxCoupledStepSeconds": 450,
+          "meltKilogramsPerSquareMeterDegreeDay": 3,
+          "numericalPolicy": "retainDonor",
+          "orography": {
+            "strength": 1,
+            "upliftResponseHeightMeters": 1000
+          },
+          "precipitationEnabled": true,
+          "precipitationResponseSeconds": 21600,
+          "routingEnabled": true,
+          "runoff": {
+            "effectiveSpeedMetersPerSecond": 1,
+            "minimumResponseSeconds": 3600
+          },
+          "soil": {
+            "infiltrationResponseSeconds": 21600,
+            "soilCapacityKilogramsPerSquareMeter": 150,
+            "soilDrainageResponseSeconds": 2592000,
+            "soilRetainedFraction": 0.6
+          },
+          "surfaceFlow": {
+            "maximumDiffusivitySquareMetersPerSecond": 1000000,
+            "roughness": 0.04
+          },
+          "surfaceOperator": "cotangentWeakForm",
+          "transport": {
+            "maxOutgoingFraction": 0.8,
+            "maxSubsteps": 4096
+          }
+        },
+        "temperatureSettings": {
+          "axialTiltDegrees": 23.44,
+          "landResponseDays": 20,
+          "lapseRateCelsiusPerMeter": 0.0065,
+          "referenceTemperatureCelsius": 15,
+          "sensitivityCelsiusPerWattPerSquareMeter": 0.09,
+          "solarIrradianceWattsPerSquareMeter": 1360,
+          "waterResponseDays": 60
+        },
+        "windSettings": {
+          "itczShiftFraction": 0.5,
+          "midlatitudePolewardMetersPerSecond": 1,
+          "midlatitudeWesterlyMetersPerSecond": 10,
+          "polarEasterlyMetersPerSecond": 5,
+          "polarEquatorwardMetersPerSecond": 0.5,
+          "tradeEasterlyMetersPerSecond": 7,
+          "tropicalConvergenceMetersPerSecond": 2
+        },
+        "elapsedSeconds": 31536900,
+        "resolution": {
+          "deferredRequests": 7597430,
+          "maximumDeferredRequestKilograms": 0.7691973572713607,
+          "summedDeferredRequestKilograms": 674.5486502084759
+        }
+      },
+      "completeCheckpointInSourceReport": true
+    },
+    {
+      "activeSurfaceDirections": 136,
+      "continuation": {
+        "accepted": true,
+        "exact": true
+      },
+      "coupledCeilingSeconds": 225,
+      "coverage": 0.3,
+      "drainageCrossingsKilograms": 16954161362641016,
+      "failure": null,
+      "fundedKilograms": 152086337255055680,
+      "fundedRegion": 44,
+      "liquidKilograms": 11352131245868348,
+      "maximumRelativeGlobalResidual": 1.8055060914817136e-16,
+      "maximumRelativeLocalResidual": 3.2703248150630047e-16,
+      "regions": 162,
+      "requestedDays": 365,
+      "roundTripExact": true,
+      "seed": "first-light",
+      "soilKilograms": 15459480993062454,
+      "surfaceCrossingsKilograms": 181983729706737800,
+      "vaporKilograms": 11601084555390056,
+      "checkpointMetadata": {
+        "pins": {
+          "modelVersion": "regional-seasonal-water-2",
+          "orographicModelVersion": "orographic-response-1",
+          "referenceBodyModelVersion": "reference-water-pool-1",
+          "runoffModelVersion": "runoff-transport-paired-2",
+          "schemaVersion": 2,
+          "soilModelVersion": "ponded-soil-exchange-2",
+          "surfaceFlowModelVersion": "regional-surface-cotan-paired-2",
+          "temperatureModelVersion": "seasonal-temperature-1",
+          "transportModelVersion": "moisture-transport-paired-2",
+          "windModelVersion": "seasonal-wind-1"
+        },
+        "recipe": {
+          "boundaryWidthKm": 300,
+          "continentalFraction": 0.38,
+          "continentalScale": 1,
+          "detailAmplitudeMeters": 300,
+          "maxPlateSpeedCmPerYear": 8,
+          "modelVersion": "basins-1",
+          "plateCount": 12,
+          "radiusMeters": 6371000,
+          "randomVersion": "fnv1a-utf8-mulberry32-1",
+          "reliefScale": 1,
+          "schemaVersion": 1,
+          "seed": "first-light",
+          "subdivision": 2,
+          "water": {
+            "fraction": 0.3,
+            "mode": "coverage"
+          }
+        },
+        "settings": {
+          "effectiveVaporDepthMeters": 2000,
+          "evaporationEnabled": true,
+          "evaporationResponseSeconds": 432000,
+          "initialActiveSurfaceDepthMeters": 10,
+          "maxCoupledStepSeconds": 225,
+          "meltKilogramsPerSquareMeterDegreeDay": 3,
+          "numericalPolicy": "retainDonor",
+          "orography": {
+            "strength": 1,
+            "upliftResponseHeightMeters": 1000
+          },
+          "precipitationEnabled": true,
+          "precipitationResponseSeconds": 21600,
+          "routingEnabled": true,
+          "runoff": {
+            "effectiveSpeedMetersPerSecond": 1,
+            "minimumResponseSeconds": 3600
+          },
+          "soil": {
+            "infiltrationResponseSeconds": 21600,
+            "soilCapacityKilogramsPerSquareMeter": 150,
+            "soilDrainageResponseSeconds": 2592000,
+            "soilRetainedFraction": 0.6
+          },
+          "surfaceFlow": {
+            "maximumDiffusivitySquareMetersPerSecond": 1000000,
+            "roughness": 0.04
+          },
+          "surfaceOperator": "cotangentWeakForm",
+          "transport": {
+            "maxOutgoingFraction": 0.8,
+            "maxSubsteps": 4096
+          }
+        },
+        "temperatureSettings": {
+          "axialTiltDegrees": 23.44,
+          "landResponseDays": 20,
+          "lapseRateCelsiusPerMeter": 0.0065,
+          "referenceTemperatureCelsius": 15,
+          "sensitivityCelsiusPerWattPerSquareMeter": 0.09,
+          "solarIrradianceWattsPerSquareMeter": 1360,
+          "waterResponseDays": 60
+        },
+        "windSettings": {
+          "itczShiftFraction": 0.5,
+          "midlatitudePolewardMetersPerSecond": 1,
+          "midlatitudeWesterlyMetersPerSecond": 10,
+          "polarEasterlyMetersPerSecond": 5,
+          "polarEquatorwardMetersPerSecond": 0.5,
+          "tradeEasterlyMetersPerSecond": 7,
+          "tropicalConvergenceMetersPerSecond": 2
+        },
+        "elapsedSeconds": 31536900,
+        "resolution": {
+          "deferredRequests": 17586884,
+          "maximumDeferredRequestKilograms": 0.7028453910739693,
+          "summedDeferredRequestKilograms": 2251.8820095759006
+        }
+      },
+      "completeCheckpointInSourceReport": true
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": "native/src/seasonal_moisture/regional_soil.rs",
+      "sha256": "e26a7cfc63a5dc1a56814812cdaafb2870d2f0281abef27b4fdd3ca711fbbf2c"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/accounting.rs",
+      "sha256": "39d0490112a363f5ac26a565638e7cc3068ff5a5850a7314ed2c565299c79e1d"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/cycle.rs",
+      "sha256": "fdddff7fbaede4043d7297cfdd9659435c90dabf18d8d6cf45667cf4964be5e1"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/observation.rs",
+      "sha256": "fb374d2d5873b6084ee04c505a98e20538363f09772d6523301a45cfb6c26e5c"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface.rs",
+      "sha256": "0892c5f4e45ebeb21e7a33f72326201e31add81554165f032cd70bb64ec5d3a4"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_cotan.rs",
+      "sha256": "96160c7770430ca850fd10d2aa2cc4da1dd42a006498847f30a3d31feb4b1f02"
+    },
+    {
+      "path": "native/src/seasonal_moisture/surface_flow.rs",
+      "sha256": "9f0e75238e06f2f3e51b3e2a0931fd722d723ffdf4536ba82dd631fe8166928c"
+    },
+    {
+      "path": "native/src/moisture_transport/paired.rs",
+      "sha256": "efe92f54ed358c3e35d17114213f00a6aad34cb9dccd7c3c8bdd8f55e25a2fe8"
+    },
+    {
+      "path": "native/src/surface_water/ponded_soil.rs",
+      "sha256": "1ae6c9da06c84e7e8b4092f5cec7e58caef971e75ea8be10b88fb129a30545f7"
+    },
+    {
+      "path": "native/src/wire/soil_water.rs",
+      "sha256": "0ee86558ad639e07b6ccf8227c978cba317ab1d2277dc56546cfc824f2aabb45"
+    },
+    {
+      "path": "native/tests/regional_soil.rs",
+      "sha256": "9bc364b924d439880628cf05fd43dff33c62fae6290821da86ef9ed411eb6c69"
+    },
+    {
+      "path": "native/examples/regional_soil_report.rs",
+      "sha256": "371de309844d29d1d40b93d89e3b39fc43d0f80fcc16ae39a4e3bc577cec6cd0"
+    },
+    {
+      "path": "native/src/lib.rs",
+      "sha256": "67b76120dbfeb88fa6791e5298bbe7d773511e1fd8c366c93f35117236dc4254"
+    },
+    {
+      "path": "native/src/seasonal_moisture.rs",
+      "sha256": "c4a5eb993c29b5ffdfecd1a914bd8736361262f31d55b87e7e82649d99e291b3"
+    },
+    {
+      "path": "native/src/moisture_transport.rs",
+      "sha256": "d117d9da8c1cc3f73bb52ead789001cecd210e860a4d4976d0a3de094c72b707"
+    },
+    {
+      "path": "native/Cargo.toml",
+      "sha256": "4fe3a9dd2d6fdad080aaeabd2e4b33ca6f397b815d7a8ddad11b46bdc7854872"
+    },
+    {
+      "path": "native/Cargo.lock",
+      "sha256": "6423d20d12d748711ebc5bf101b0891cc019a25a68d15d56c74b57158724b42d"
+    }
+  ],
+  "environment": {
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01) (Arch Linux rust 1:1.98.1-1)",
+    "cargo": "cargo 1.98.1 (797e8a9bc 2026-08-05) (Arch Linux rust 1:1.98.1-1)",
+    "node": "v25.2.1",
+    "exactReproductionScope": "Same build and supported local environment; cross-platform bitwise equality is not asserted."
+  },
+  "validation": {
+    "fullSuite": {
+      "command": "npm test",
+      "exitCode": 0,
+      "nativePassed": 527,
+      "nativeFailed": 0,
+      "nativeIgnored": 1,
+      "nativeTargets": 101,
+      "nodeFilesPassed": 18,
+      "nodeFilesFailed": 0,
+      "log": "artifacts/cotan-seasonal-full-test-log.txt"
+    },
+    "release": {
+      "libraryPassed": 75,
+      "regionalSoilPassed": 12,
+      "legacyRegionalSurfacePassed": 5,
+      "soilTransportPassed": 2,
+      "log": "artifacts/cotan-seasonal-release-log.txt",
+      "finalRegionalLog": "artifacts/cotan-seasonal-final-regional-release-log.txt",
+      "latestStrictAssertionRerun": true,
+      "failed": 0
+    },
+    "debug": {
+      "regionalSoilPassed": 12,
+      "log": "artifacts/cotan-seasonal-regional-debug-log.txt",
+      "latestStrictAssertionRerunLog": "artifacts/cotan-seasonal-strict-refusal-log.txt"
+    },
+    "clippyAllTargetsWarningsDenied": true,
+    "clippyLog": "artifacts/cotan-seasonal-final-clippy-log.txt",
+    "formattingCheck": true,
+    "diffCheck": true,
+    "invalidAndDuplicateCliArgumentsRefused": true,
+    "overwriteRefusedWithoutChangingOutput": true,
+    "guiRerun": false,
+    "ownerRendererEditsExcluded": true
+  }
+}

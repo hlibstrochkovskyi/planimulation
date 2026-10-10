@@ -1,7 +1,9 @@
 use planimulation_core::{
     Recipe, World,
     moisture_transport::Geometry,
-    seasonal_moisture::regional_soil::{Checkpoint, Model, NumericalPolicy, Settings},
+    seasonal_moisture::regional_soil::{
+        Checkpoint, Model, NumericalPolicy, Settings, SurfaceOperator,
+    },
     seasonal_temperature,
     surface_water::ponded_soil::Mass,
 };
@@ -411,4 +413,252 @@ fn observations_keep_every_owned_component_and_cannot_change_continuation_or_geo
     );
     let (_, other) = fixture(Settings::default(), Default::default());
     assert!(other.observe(&observed).is_err());
+}
+
+#[test]
+fn cotangent_selection_requires_new_complete_pins_and_never_reinterprets_old_saves() {
+    for policy in [
+        NumericalPolicy::RejectUnrepresentable,
+        NumericalPolicy::RetainDonor,
+    ] {
+        let settings = Settings {
+            numerical_policy: policy,
+            ..Default::default()
+        };
+        let (world, old) = fixture(settings, Default::default());
+        let old_cp = old.initial_state().checkpoint();
+        let old_json = serde_json::to_value(&old_cp).unwrap();
+        assert!(old_json["settings"].get("surfaceOperator").is_none());
+        let (_, saved) = Model::restore(serde_json::from_value(old_json).unwrap()).unwrap();
+        assert_eq!(saved.checkpoint(), old_cp);
+        let settings = Settings {
+            surface_operator: SurfaceOperator::CotangentWeakForm,
+            ..settings
+        };
+        let model =
+            Model::from_world(&world, settings, Default::default(), Default::default()).unwrap();
+        let cp = model.initial_state().checkpoint();
+        assert_eq!(cp.schema_version, 2);
+        assert_eq!(cp.model_version, "regional-seasonal-water-2");
+        assert_eq!(
+            cp.surface_flow_model_version,
+            if policy == NumericalPolicy::RetainDonor {
+                "regional-surface-cotan-paired-2"
+            } else {
+                "regional-surface-cotan-paired-1"
+            }
+        );
+        assert_eq!(cp.liquid, old_cp.liquid);
+        assert_eq!(cp.reference_bodies, old_cp.reference_bodies);
+        assert_eq!(
+            model
+                .observe(&model.initial_state())
+                .unwrap()
+                .observation_model_version,
+            "regional-soil-observation-2"
+        );
+        for variant in 0..7 {
+            let mut bad = cp.clone();
+            match variant {
+                0 => bad.schema_version = 1,
+                1 => bad.model_version = old_cp.model_version.clone(),
+                2 => bad.surface_flow_model_version = old_cp.surface_flow_model_version.clone(),
+                3 => bad.surface_flow_model_version = "regional-surface-cotan-candidate-1".into(),
+                4 => bad.settings.surface_operator = SurfaceOperator::BarycentricTwoPoint,
+                5 => {
+                    bad.settings.numerical_policy = if policy == NumericalPolicy::RetainDonor {
+                        NumericalPolicy::RejectUnrepresentable
+                    } else {
+                        NumericalPolicy::RetainDonor
+                    }
+                }
+                _ => {
+                    bad.surface_transfers.pop();
+                }
+            }
+            assert!(
+                Model::restore(bad).is_err(),
+                "Accepted corruption {variant}"
+            );
+        }
+        let mut missing = serde_json::to_value(&cp).unwrap();
+        missing["settings"]
+            .as_object_mut()
+            .unwrap()
+            .remove("surfaceOperator");
+        assert!(Model::restore(serde_json::from_value(missing).unwrap()).is_err());
+        for value in [serde_json::Value::Null, serde_json::json!("unknown")] {
+            let mut bad = serde_json::to_value(&cp).unwrap();
+            bad["settings"]["surfaceOperator"] = value;
+            assert!(serde_json::from_value::<Checkpoint>(bad).is_err());
+        }
+        assert!(old.budget(&model.initial_state()).is_err());
+        assert!(model.budget(&old.initial_state()).is_err());
+    }
+}
+
+#[test]
+fn cotangent_active_seasonal_soil_history_restores_and_partitions_exactly() {
+    let settings = Settings {
+        surface_operator: SurfaceOperator::CotangentWeakForm,
+        numerical_policy: NumericalPolicy::RetainDonor,
+        ..Default::default()
+    };
+    let (world, model) = fixture(settings, Default::default());
+    let mut cp = model.initial_state().checkpoint();
+    fund(&world, &mut cp, 50_000.);
+    let (model, mut direct) = Model::restore(cp).unwrap();
+    let mut partitioned = direct.clone();
+    let before = serde_json::to_vec(&direct.checkpoint()).unwrap();
+    model.observe(&direct).unwrap();
+    assert_eq!(serde_json::to_vec(&direct.checkpoint()).unwrap(), before);
+    model.advance(&mut direct, 86400).unwrap();
+    // Starts at second 900; aligned hourly callers preserve the absolute schedule.
+    for _ in 0..24 {
+        model.advance(&mut partitioned, 3600).unwrap();
+    }
+    assert_eq!(direct, partitioned);
+    let cp = direct.checkpoint();
+    assert!(cp.surface_transfers.iter().any(|v| v.high > 0.));
+    assert!(cp.local_transfers.iter().any(|f| f.infiltration.high > 0.));
+    assert!(cp.local_transfers.iter().any(|f| f.soil_drainage.high > 0.));
+    assert!(cp.vapor.iter().any(|m| m.low != 0.));
+    let old = Model::from_world(
+        &world,
+        Settings {
+            surface_operator: SurfaceOperator::BarycentricTwoPoint,
+            ..settings
+        },
+        Default::default(),
+        Default::default(),
+    )
+    .unwrap();
+    let mut old_cp = old.initial_state().checkpoint();
+    fund(&world, &mut old_cp, 50_000.);
+    let (old, mut old_state) = Model::restore(old_cp).unwrap();
+    old.advance(&mut old_state, 86400).unwrap();
+    assert_ne!(
+        cp.surface_transfers,
+        old_state.checkpoint().surface_transfers,
+        "Selecting cotangent must change the applied numerical operator, not just its label."
+    );
+    let text = serde_json::to_string(&cp).unwrap();
+    let (resumed, mut restored) = Model::restore(serde_json::from_str(&text).unwrap()).unwrap();
+    assert_eq!(text, serde_json::to_string(&restored.checkpoint()).unwrap());
+    model.advance(&mut direct, 3600).unwrap();
+    resumed.advance(&mut restored, 3600).unwrap();
+    assert_eq!(direct, restored);
+    assert_eq!(
+        world.terrain.elevation,
+        World::generate(world.recipe.clone())
+            .unwrap()
+            .terrain
+            .elevation
+    );
+}
+
+#[test]
+fn cotangent_dense_generated_cycle_is_explicit_and_cannot_enter_old_desktop_transport() {
+    let (world, _) = fixture(Settings::default(), Default::default());
+    let mut recipe = world.recipe.clone();
+    recipe.subdivision = 3;
+    recipe.seed = "first-light".into();
+    let world = World::generate(recipe).unwrap();
+    let model = Model::from_world(
+        &world,
+        Settings {
+            surface_operator: SurfaceOperator::CotangentWeakForm,
+            ..planimulation_core::wire::soil_moisture_settings()
+        },
+        Default::default(),
+        Default::default(),
+    )
+    .unwrap();
+    let mut state = model.initial_state();
+    for _ in 0..3 {
+        model.advance(&mut state, 86400).unwrap();
+    }
+    assert!(state.checkpoint().resolution.unwrap().deferred_requests > 0);
+    let (_, saved) = Model::restore(state.checkpoint()).unwrap();
+    assert_eq!(saved, state);
+    let strict = Model::from_world(
+        &world,
+        Settings {
+            numerical_policy: NumericalPolicy::RejectUnrepresentable,
+            ..model.settings()
+        },
+        Default::default(),
+        Default::default(),
+    )
+    .unwrap();
+    let mut rejected = strict.initial_state();
+    let before = rejected.clone();
+    assert!(
+        strict
+            .advance(&mut rejected, 86400)
+            .unwrap_err()
+            .contains("represented stock precision")
+    );
+    assert_eq!(rejected, before);
+    let mut out = Vec::new();
+    assert!(planimulation_core::wire::soil_moisture(&mut out, &model, &state, None, None).is_err());
+    assert!(planimulation_core::wire::soil_moisture_checkpoint(&mut out, &model, &state).is_err());
+    assert!(out.is_empty());
+}
+
+#[test]
+fn cotangent_work_refusal_rolls_back_the_entire_seasonal_caller() {
+    let (world, _) = fixture(Settings::default(), Default::default());
+    let mut recipe = world.recipe.clone();
+    recipe.subdivision = 5;
+    recipe.radius_meters = 100_000.;
+    let world = World::generate(recipe).unwrap();
+    let mut settings = quiet();
+    settings.surface_operator = SurfaceOperator::CotangentWeakForm;
+    settings.numerical_policy = NumericalPolicy::RetainDonor;
+    settings.evaporation_enabled = true;
+    settings
+        .surface_flow
+        .maximum_diffusivity_square_meters_per_second = 1e8;
+    let model = Model::from_world(&world, settings, warm(), Default::default()).unwrap();
+    let mut state = model.initial_state();
+    let before = serde_json::to_vec(&state.checkpoint()).unwrap();
+    let message = model.advance(&mut state, 86400).unwrap_err();
+    assert!(message.contains("surface flow exceeds"), "{message}");
+    assert_eq!(serde_json::to_vec(&state.checkpoint()).unwrap(), before);
+}
+
+#[test]
+fn cotangent_zero_cap_closed_dry_and_fully_wet_controls_keep_unique_ownership() {
+    let (world, _) = fixture(Settings::default(), Default::default());
+    for coverage in [0., 1.] {
+        let mut recipe = world.recipe.clone();
+        recipe.water = planimulation_core::water::WaterSettings::Coverage { fraction: coverage };
+        let world = World::generate(recipe).unwrap();
+        let model = Model::from_world(
+            &world,
+            Settings {
+                surface_operator: SurfaceOperator::CotangentWeakForm,
+                ..quiet()
+            },
+            Default::default(),
+            Default::default(),
+        )
+        .unwrap();
+        let mut state = model.initial_state();
+        let initial = state.checkpoint();
+        model.advance(&mut state, 86400).unwrap();
+        let cp = state.checkpoint();
+        assert_eq!(cp.reference_bodies, initial.reference_bodies);
+        assert!(cp.surface_transfers.iter().all(|v| *v == Mass::default()));
+        assert!(
+            cp.liquid
+                .iter()
+                .chain(&cp.soil)
+                .chain(&cp.drainage)
+                .chain(&cp.vapor)
+                .all(|v| *v == Mass::default())
+        );
+        assert_eq!(model.budget(&state).unwrap().relative_global_residual, 0.);
+    }
 }

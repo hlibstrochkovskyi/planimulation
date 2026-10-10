@@ -1,6 +1,6 @@
 # Cotangent surface-conductance candidate
 
-October 9, 2026: implemented the separately pinned headless `regional-surface-cotan-candidate-1` operator candidate. It reuses the paired surface-transfer stage with geometric weak-form edge conductances and unchanged spherical stock areas. **No seasonal session, checkpoint, protocol, default or desktop mode selects this candidate.** The [old spatial discrepancy](surface-spatial-verification.md) remains reproducible under its existing pins.
+October 9, 2026 initial increment: implemented the separately pinned headless `regional-surface-cotan-candidate-1` operator candidate. It reuses the paired surface-transfer stage with geometric weak-form edge conductances and unchanged spherical stock areas. At this increment no seasonal session, checkpoint, protocol, default or desktop mode selected it. The subsequent [explicit seasonal family v2](cotangent-seasonal-cycle.md) integrates the same preparation under new seasonal pins; this isolated report and its evidence remain separate. The [old spatial discrepancy](surface-spatial-verification.md) remains reproducible under its existing pins.
 
 ## Decision and scope
 
@@ -93,3 +93,5 @@ The CLI accepts one new output path, refuses overwrite with exclusive final crea
 ## Promotion gates
 
 This increment implements a candidate operator, not a new seasonal model. Before seasonal integration, preserve the old discrepancy and provide explicit new setting/model pins, immutable prepared conductances, complete restore validation and same-build replay. The new graph-history meaning must be explicit. Then qualify finite reference-body contacts, sharp/nonlinear heads, dry-front arrival, soil/climate coupling, generated active-flow cadence controls and longer runs. Existing prescribed reference heads, cold/soil closures and mobility calibration remain separate approximations. No milestone C/D completion, calibrated river discharge or ecology readiness is claimed.
+
+The subsequent [seasonal integration](cotangent-seasonal-cycle.md) closes the explicit selection/preparation/persistence gate with separate directed and generated-cycle evidence. It does not relabel this smooth-sphere report as a nonlinear or seasonal accuracy study.

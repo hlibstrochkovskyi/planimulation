@@ -271,14 +271,7 @@ impl Model {
     }
 
     fn surface(&self, cp: &mut Checkpoint, seconds: f64) -> Result<usize, String> {
-        let layout = self
-            .forcing
-            .lake_exchange
-            .as_ref()
-            .unwrap()
-            .regional
-            .as_ref()
-            .unwrap();
+        let layout = self.surface_layout();
         surface::advance(
             layout,
             surface::Stocks {

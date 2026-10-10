@@ -23,8 +23,8 @@ fn triangle_weights(points: [[f64; 3]; 3]) -> Result<[f64; 3], String> {
     Ok(weights)
 }
 
-// Preparation is private to the verification candidate. No seasonal checkpoint
-// can select these weights under an existing physics pin.
+// Private shared preparation for the fixed-input candidate and explicitly pinned
+// seasonal family v2. Existing seasonal v1 pins can never select these weights.
 pub(super) fn prepare(mesh: &Surface, mut layout: Layout) -> Result<Layout, String> {
     let mut weights: BTreeMap<[usize; 2], (f64, usize)> = BTreeMap::new();
     for triangle in mesh.faces.as_chunks::<3>().0 {
@@ -203,6 +203,74 @@ mod tests {
             .collect();
         let sum = total_mass(&initial.iter().map(|m| m.high).collect::<Vec<_>>());
         assert!(total_mass(&terms).abs() / sum < 1e-12);
+    }
+    #[test]
+    fn dry_front_obeys_frozen_neighbor_arrivals_in_capped_and_uncapped_regimes() {
+        let mesh = Surface::build(1, 100_000.);
+        for cap in [1., 1e8] {
+            let l = layout(&mesh, cap);
+            let source = 0;
+            let neighbors: Vec<_> = l
+                .faces
+                .iter()
+                .filter_map(|f| {
+                    if f.regions[0] == source {
+                        Some(f.regions[1])
+                    } else if f.regions[1] == source {
+                        Some(f.regions[0])
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            let second_ring: Vec<_> = (0..l.areas.len())
+                .filter(|&r| {
+                    r != source
+                        && !neighbors.contains(&r)
+                        && l.faces.iter().any(|f| {
+                            (f.regions[0] == r && neighbors.contains(&f.regions[1]))
+                                || (f.regions[1] == r && neighbors.contains(&f.regions[0]))
+                        })
+                })
+                .collect();
+            assert!(!second_ring.is_empty());
+            // A one-metre donor over a dry flat neighbor has drive=over_crest=1.
+            // Certify that the two controls really exercise different mobilities.
+            for face in l.faces.iter().filter(|f| f.regions.contains(&source)) {
+                let uncapped = face.distance_meters.sqrt() / l.settings.roughness;
+                assert_eq!(uncapped > cap, cap == 1.);
+            }
+            let mut liquid = vec![Mass::default(); l.areas.len()];
+            liquid[source].high = 1000. * l.areas[source];
+            let initial = liquid[source].high;
+            let mut transfers = vec![Mass::default(); l.faces.len() * 2];
+            let mut resolution = Some(ResolutionBudget::default());
+            let by_region = vec![None; liquid.len()];
+            for step in 0..2 {
+                surface::advance(
+                    &l,
+                    surface::Stocks {
+                        by_region: &by_region,
+                        liquid: &mut liquid,
+                        bodies: &mut [],
+                        transfers: &mut transfers,
+                        resolution: &mut resolution,
+                    },
+                    0.25 * l.stable_seconds,
+                )
+                .unwrap();
+                assert!(neighbors.iter().all(|&r| liquid[r].high > 0.));
+                if step == 0 {
+                    assert!(second_ring.iter().all(|&r| liquid[r] == Mass::default()));
+                } else {
+                    assert!(second_ring.iter().any(|&r| liquid[r].high > 0.));
+                }
+                let mut terms: Vec<_> = liquid.iter().flat_map(|m| [m.high, m.low]).collect();
+                terms.push(-initial);
+                assert!(total_mass(&terms).abs() / initial < 1e-12);
+                assert!(liquid.iter().all(|m| m.stock(f64::MAX).is_ok()));
+            }
+        }
     }
     #[test]
     fn sill_blocking_finite_body_receipts_and_zero_cap_use_the_same_paired_stage() {

@@ -19,9 +19,15 @@ mod observation;
 mod surface;
 mod surface_cotan;
 pub mod surface_verification;
-pub use observation::{OBSERVATION_VERSION, Observation, ReferenceBodyStock, RegionalStocks};
+pub use observation::{
+    COTANGENT_OBSERVATION_VERSION, OBSERVATION_VERSION, Observation, ReferenceBodyStock,
+    RegionalStocks,
+};
 
 pub const MODEL_VERSION: &str = "regional-seasonal-water-1";
+pub const COTANGENT_MODEL_VERSION: &str = "regional-seasonal-water-2";
+pub const COTANGENT_SURFACE_VERSION: &str = "regional-surface-cotan-paired-1";
+pub const COTANGENT_RETAINING_SURFACE_VERSION: &str = "regional-surface-cotan-paired-2";
 pub const SURFACE_FLOW_VERSION: &str = "regional-surface-flow-paired-1";
 pub const DRAINAGE_VERSION: &str = "runoff-transport-paired-1";
 
@@ -38,9 +44,27 @@ impl NumericalPolicy {
     }
 }
 
+/// A numerical operator selection, not a change to physical cell areas.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SurfaceOperator {
+    #[default]
+    BarycentricTwoPoint,
+    /// Conservative weak-form adjacency exchange, not literal dual-face discharge.
+    CotangentWeakForm,
+}
+impl SurfaceOperator {
+    fn is_legacy(&self) -> bool {
+        *self == Self::BarycentricTwoPoint
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Settings {
+    // Omission retains old checkpoint bytes and resolves only to the old operator.
+    #[serde(default, skip_serializing_if = "SurfaceOperator::is_legacy")]
+    pub surface_operator: SurfaceOperator,
     #[serde(default, skip_serializing_if = "NumericalPolicy::is_reject")]
     pub numerical_policy: NumericalPolicy,
     pub initial_active_surface_depth_meters: f64,
@@ -62,6 +86,7 @@ impl Default for Settings {
     fn default() -> Self {
         let old = super::Settings::default();
         Self {
+            surface_operator: SurfaceOperator::default(),
             numerical_policy: NumericalPolicy::default(),
             initial_active_surface_depth_meters: 10.,
             effective_vapor_depth_meters: old.effective_vapor_depth_meters,
@@ -183,8 +208,9 @@ pub struct Checkpoint {
     /// Sorted positive initial body IDs, reconstructed from the resolved recipe.
     pub reference_bodies: Vec<Mass>,
     pub local_transfers: Vec<Transfers>,
-    /// Two directions of each canonical physical face, including inactive directions.
+    /// Two directions of each canonical physical adjacency, including inactive directions.
     pub atmospheric_transfers: Vec<Mass>,
+    /// Weak-form edge exchanges for cotangent; not literal barycentric-face discharge.
     pub surface_transfers: Vec<Mass>,
     /// One outgoing directed receiver edge per region, including terminal self edges.
     pub drainage_sent: Vec<Mass>,
@@ -226,6 +252,9 @@ pub struct Step {
 pub struct Model {
     // Only prepared fixed geography and prescribed forcing are reused.
     forcing: super::Model,
+    // Prepared once and regenerated on restore. The old forcing layout is never
+    // mutated, and no renderer geometry or checkpoint-supplied weight is accepted.
+    cotangent_layout: Option<surface_flow::Layout>,
     origin: Checkpoint,
 }
 impl Model {
@@ -277,6 +306,21 @@ impl Model {
         {
             return Err("Regional seasonal physical-face order is inconsistent.".into());
         }
+        let cotangent_layout = if settings.surface_operator == SurfaceOperator::CotangentWeakForm {
+            Some(surface_cotan::prepare(
+                &world.surface,
+                forcing
+                    .lake_exchange
+                    .as_ref()
+                    .unwrap()
+                    .regional
+                    .as_ref()
+                    .unwrap()
+                    .clone(),
+            )?)
+        } else {
+            None
+        };
         let reference_bodies = legacy_initial
             .reference_body_high_kilograms
             .as_ref()
@@ -293,8 +337,17 @@ impl Model {
         let origin = Checkpoint {
             resolution: (settings.numerical_policy == NumericalPolicy::RetainDonor)
                 .then(ResolutionBudget::default),
-            schema_version: 1,
-            model_version: MODEL_VERSION.into(),
+            schema_version: if settings.surface_operator.is_legacy() {
+                1
+            } else {
+                2
+            },
+            model_version: if settings.surface_operator.is_legacy() {
+                MODEL_VERSION
+            } else {
+                COTANGENT_MODEL_VERSION
+            }
+            .into(),
             soil_model_version: if settings.numerical_policy.is_reject() {
                 ponded_soil::MODEL_VERSION
             } else {
@@ -307,7 +360,15 @@ impl Model {
                 moisture_transport::PAIRED_RETAINING_MODEL_VERSION
             }
             .into(),
-            surface_flow_model_version: if settings.numerical_policy.is_reject() {
+            surface_flow_model_version: if settings.surface_operator
+                == SurfaceOperator::CotangentWeakForm
+            {
+                if settings.numerical_policy.is_reject() {
+                    COTANGENT_SURFACE_VERSION
+                } else {
+                    COTANGENT_RETAINING_SURFACE_VERSION
+                }
+            } else if settings.numerical_policy.is_reject() {
                 SURFACE_FLOW_VERSION
             } else {
                 "regional-surface-flow-paired-2"
@@ -339,12 +400,27 @@ impl Model {
             surface_transfers: vec![Mass::default(); faces],
             drainage_sent: vec![Mass::default(); n],
         };
-        let model = Self { forcing, origin };
+        let model = Self {
+            forcing,
+            cotangent_layout,
+            origin,
+        };
         model.validate(&model.origin)?;
         Ok(model)
     }
     pub fn initial_state(&self) -> State {
         State(self.origin.clone())
+    }
+    fn surface_layout(&self) -> &surface_flow::Layout {
+        self.cotangent_layout.as_ref().unwrap_or_else(|| {
+            self.forcing
+                .lake_exchange
+                .as_ref()
+                .unwrap()
+                .regional
+                .as_ref()
+                .unwrap()
+        })
     }
     pub fn restore(checkpoint: Checkpoint) -> Result<(Self, State), String> {
         let world = World::generate(checkpoint.recipe.clone())?;

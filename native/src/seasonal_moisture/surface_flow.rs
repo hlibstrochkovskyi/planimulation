@@ -110,6 +110,7 @@ pub(super) struct Face {
     pub width_over_distance: f64,
     pub distance_meters: f64,
 }
+#[derive(Clone)]
 pub(super) struct Layout {
     pub areas: Vec<f64>,
     pub beds: Vec<f64>,
