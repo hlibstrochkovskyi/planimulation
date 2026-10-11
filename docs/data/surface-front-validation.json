@@ -1,0 +1,1930 @@
+{
+  "recordVersion": "surface-dry-front-validation-1",
+  "date": "2026-10-11",
+  "baseCommit": "e9726bd4f1fef89e45ebd4117ce1bf82b0e457e7",
+  "status": "Bounded reference and conservative refinement evidence; native moving-front accuracy not qualified",
+  "scope": "One flat closed sphere with h=p_+^(3/7), no film, two orientations, independent band reference. Threshold contours are not exact support. No terrain barriers, coasts, seasonal selection or calibration.",
+  "modelVersion": "regional-surface-full-gradient-candidate-1",
+  "report": {
+    "path": "artifacts/surface-front-final.json",
+    "bytes": 79883936,
+    "sha256": "931afa37c0acf1e814b06e5ff40f39ff27a2a7bf747c287b57209a630f83b4a6"
+  },
+  "parameters": {
+    "radiusMeters": 1000,
+    "capSquareMetersPerSecond": 1000,
+    "endSeconds": 300,
+    "roughness": 0.04,
+    "baseSteps": 2836,
+    "axes": [
+      [
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        2,
+        3
+      ]
+    ],
+    "thresholdsMeters": [
+      0.001,
+      0.01,
+      0.05
+    ],
+    "planar": {
+      "boundary": "Exact time-integrated left inflow, zero right flux; no volume forcing or state fitting",
+      "capSquareMetersPerSecond": 100,
+      "domainMeters": [
+        -100,
+        100
+      ],
+      "endSeconds": 100,
+      "exactDepth": "[(7/3)*(c*n)^2*(c*t-x)_+]^(3/7)",
+      "exactFrontMeters": 10,
+      "speedMetersPerSecond": 0.1
+    }
+  },
+  "referenceControls": {
+    "planar": [
+      {
+        "bands": 64,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.999070256679066e-13,
+          "maximumIterations": 34,
+          "maximumRelativeInventoryDrift": 1.094506931685336e-15
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.00025547481009095975,
+        "stepSeconds": 0.0625,
+        "steps": 1600
+      },
+      {
+        "bands": 128,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.999468158876368e-13,
+          "maximumIterations": 47,
+          "maximumRelativeInventoryDrift": 5.786846078208075e-14
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.0000976945543239255,
+        "stepSeconds": 0.0625,
+        "steps": 1600
+      },
+      {
+        "bands": 256,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.999844919131307e-13,
+          "maximumIterations": 63,
+          "maximumRelativeInventoryDrift": 3.3924206006785645e-14
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.0000937380481927127,
+        "stepSeconds": 0.0625,
+        "steps": 1600
+      },
+      {
+        "bands": 512,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.99934510192979e-13,
+          "maximumIterations": 74,
+          "maximumRelativeInventoryDrift": 4.65339396229433e-15
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.00003698841630143694,
+        "stepSeconds": 0.0625,
+        "steps": 1600
+      },
+      {
+        "bands": 1024,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 8.894378289436844e-13,
+          "maximumIterations": 88,
+          "maximumRelativeInventoryDrift": 1.0541944454019086e-14
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.000018832672568415967,
+        "stepSeconds": 0.25,
+        "steps": 400
+      },
+      {
+        "bands": 1024,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.825508462402155e-13,
+          "maximumIterations": 84,
+          "maximumRelativeInventoryDrift": 4.0930460397697225e-15
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.00001550573136597071,
+        "stepSeconds": 0.125,
+        "steps": 800
+      },
+      {
+        "bands": 1024,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.999908887059483e-13,
+          "maximumIterations": 81,
+          "maximumRelativeInventoryDrift": 4.129183036790136e-15
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.00002192393211257719,
+        "stepSeconds": 0.0625,
+        "steps": 1600
+      },
+      {
+        "bands": 1024,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.552410945579126e-13,
+          "maximumIterations": 76,
+          "maximumRelativeInventoryDrift": 3.3856589585162205e-15
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.0000262271437883841,
+        "stepSeconds": 0.03125,
+        "steps": 3200
+      }
+    ],
+    "spherical": [
+      {
+        "bands": 256,
+        "contours": [
+          {
+            "p": -0.15981848051165948,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15613754834990712,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.14963587339254492,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.998529781896082e-13,
+          "maximumIterations": 57,
+          "maximumRelativeInventoryDrift": 1.609823385706477e-14
+        },
+        "stepSeconds": 0.5,
+        "steps": 600
+      },
+      {
+        "bands": 512,
+        "contours": [
+          {
+            "p": -0.15722467569321374,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15377254252878514,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.15031210435993803,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.994990946005089e-13,
+          "maximumIterations": 65,
+          "maximumRelativeInventoryDrift": 2.220446049250313e-14
+        },
+        "stepSeconds": 1,
+        "steps": 300
+      },
+      {
+        "bands": 512,
+        "contours": [
+          {
+            "p": -0.15640153640472132,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15352332016627668,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.14985100479562852,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.998876726591277e-13,
+          "maximumIterations": 62,
+          "maximumRelativeInventoryDrift": 2.5424107263916085e-14
+        },
+        "stepSeconds": 0.5,
+        "steps": 600
+      },
+      {
+        "bands": 512,
+        "contours": [
+          {
+            "p": -0.15563058373034488,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.1533852514108106,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.14964201168536462,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.99263172207776e-13,
+          "maximumIterations": 57,
+          "maximumRelativeInventoryDrift": 2.3425705819590803e-14
+        },
+        "stepSeconds": 0.25,
+        "steps": 1200
+      },
+      {
+        "bands": 1024,
+        "contours": [
+          {
+            "p": -0.15330085201233423,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15252667421345711,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.1502820541361618,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.99859917083512e-13,
+          "maximumIterations": 61,
+          "maximumRelativeInventoryDrift": 3.930189507173054e-14
+        },
+        "stepSeconds": 0.25,
+        "steps": 1200
+      },
+      {
+        "bands": 2048,
+        "contours": [
+          {
+            "p": -0.15277735742463494,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15206479603727974,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.15072793922984618,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.996656280542027e-13,
+          "maximumIterations": 64,
+          "maximumRelativeInventoryDrift": 1.1446399383885364e-13
+        },
+        "stepSeconds": 0.25,
+        "steps": 1200
+      },
+      {
+        "bands": 4096,
+        "contours": [
+          {
+            "p": -0.15249855277023017,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15199097085851743,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.15081883172625865,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.996864447359144e-13,
+          "maximumIterations": 67,
+          "maximumRelativeInventoryDrift": 3.8746783559417963e-14
+        },
+        "stepSeconds": 0.25,
+        "steps": 1200
+      },
+      {
+        "bands": 4096,
+        "contours": [
+          {
+            "p": -0.15226420843148336,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15186945517639472,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.15075326389829835,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.99788793420997e-13,
+          "maximumIterations": 64,
+          "maximumRelativeInventoryDrift": 6.461498003318411e-14
+        },
+        "stepSeconds": 0.125,
+        "steps": 2400
+      }
+    ],
+    "selectedSphericalControl": 7,
+    "spatialControls": [
+      5,
+      6
+    ],
+    "temporalControls": [
+      6,
+      7
+    ],
+    "equalAreaRefinement": [
+      {
+        "coarseControl": 0,
+        "fineControl": 2,
+        "type": "space",
+        "rmsMeters": 0.0007971789917580681,
+        "maximumMeters": 0.01538293924026013,
+        "samples": 8192,
+        "contourDifferencesMeters": [
+          {
+            "thresholdMeters": 0.001,
+            "signedDifference": -3.460473497359562
+          },
+          {
+            "thresholdMeters": 0.01,
+            "signedDifference": -2.646138631407835
+          },
+          {
+            "thresholdMeters": 0.05,
+            "signedDifference": 0.2175846955361216
+          }
+        ]
+      },
+      {
+        "coarseControl": 3,
+        "fineControl": 4,
+        "type": "space",
+        "rmsMeters": 0.0005889899432283489,
+        "maximumMeters": 0.016878239245445167,
+        "samples": 8192,
+        "contourDifferencesMeters": [
+          {
+            "thresholdMeters": 0.001,
+            "signedDifference": -2.3580330592798404
+          },
+          {
+            "thresholdMeters": 0.01,
+            "signedDifference": -0.8688003956507373
+          },
+          {
+            "thresholdMeters": 0.05,
+            "signedDifference": 0.6473630014220966
+          }
+        ]
+      },
+      {
+        "coarseControl": 4,
+        "fineControl": 5,
+        "type": "space",
+        "rmsMeters": 0.0002942705178323059,
+        "maximumMeters": 0.011065877763483237,
+        "samples": 8192,
+        "contourDifferencesMeters": [
+          {
+            "thresholdMeters": 0.001,
+            "signedDifference": -0.529734799432191
+          },
+          {
+            "thresholdMeters": 0.01,
+            "signedDifference": -0.46732959534256935
+          },
+          {
+            "thresholdMeters": 0.05,
+            "signedDifference": 0.45102258395735007
+          }
+        ]
+      },
+      {
+        "coarseControl": 5,
+        "fineControl": 6,
+        "type": "space",
+        "rmsMeters": 0.00012852058494603553,
+        "maximumMeters": 0.005593792670640481,
+        "samples": 8192,
+        "contourDifferencesMeters": [
+          {
+            "thresholdMeters": 0.001,
+            "signedDifference": -0.28211037580372356
+          },
+          {
+            "thresholdMeters": 0.01,
+            "signedDifference": -0.07469339954302434
+          },
+          {
+            "thresholdMeters": 0.05,
+            "signedDifference": 0.0919435629098686
+          }
+        ]
+      },
+      {
+        "coarseControl": 1,
+        "fineControl": 2,
+        "type": "time",
+        "rmsMeters": 0.00029858694554735297,
+        "maximumMeters": 0.007032934856939961,
+        "samples": 8192,
+        "contourDifferencesMeters": [
+          {
+            "thresholdMeters": 0.001,
+            "signedDifference": -0.8334505177667317
+          },
+          {
+            "thresholdMeters": 0.01,
+            "signedDifference": -0.2522172777899012
+          },
+          {
+            "thresholdMeters": 0.05,
+            "signedDifference": -0.46638198838144795
+          }
+        ]
+      },
+      {
+        "coarseControl": 2,
+        "fineControl": 3,
+        "type": "time",
+        "rmsMeters": 0.00015576933663837328,
+        "maximumMeters": 0.0037619645678941133,
+        "samples": 8192,
+        "contourDifferencesMeters": [
+          {
+            "thresholdMeters": 0.001,
+            "signedDifference": -0.7805104212619263
+          },
+          {
+            "thresholdMeters": 0.01,
+            "signedDifference": -0.13972367804893082
+          },
+          {
+            "thresholdMeters": 0.05,
+            "signedDifference": -0.2113765028597392
+          }
+        ]
+      },
+      {
+        "coarseControl": 6,
+        "fineControl": 7,
+        "type": "time",
+        "rmsMeters": 0.0001275119293882263,
+        "maximumMeters": 0.00654812478796863,
+        "samples": 8192,
+        "contourDifferencesMeters": [
+          {
+            "thresholdMeters": 0.001,
+            "signedDifference": -0.23711340495902178
+          },
+          {
+            "thresholdMeters": 0.01,
+            "signedDifference": -0.12294289885983467
+          },
+          {
+            "thresholdMeters": 0.05,
+            "signedDifference": -0.0663261735498466
+          }
+        ]
+      }
+    ],
+    "planarTimeDifferences": [
+      {
+        "coarseControl": 4,
+        "fineControl": 5,
+        "rmsMeters": 0.000016353991593904275,
+        "maximumMeters": 0.00042486366707930254,
+        "samples": 8192
+      },
+      {
+        "coarseControl": 5,
+        "fineControl": 6,
+        "rmsMeters": 0.000008641994900483504,
+        "maximumMeters": 0.0002540735578630852,
+        "samples": 8192
+      },
+      {
+        "coarseControl": 6,
+        "fineControl": 7,
+        "rmsMeters": 0.000004467041597638432,
+        "maximumMeters": 0.0001379910534306415,
+        "samples": 8192
+      }
+    ]
+  },
+  "caseColumns": [
+    "subdivision",
+    "regions",
+    "steps",
+    "stepSeconds",
+    "areaWeightedRmsErrorMeters",
+    "maximumErrorMeters",
+    "relativeInitialQuadratureDiscrepancy",
+    "initiallyDryHalfInventoryKilograms",
+    "referenceSpatialDifferenceRmsMeters",
+    "referenceTemporalDifferenceRmsMeters",
+    "referenceSpatialDifferenceOverNativeRmsError",
+    "referenceTemporalDifferenceOverNativeRmsError",
+    "maximumLocalRelativeResidual",
+    "maximumGlobalRelativeResidual"
+  ],
+  "contourColumns": [
+    "thresholdMeters",
+    "minimumSignedCrossingErrorMeters",
+    "maximumSignedCrossingErrorMeters",
+    "maximumAbsoluteCrossingErrorMeters",
+    "nativeThresholdWetAreaSquareMeters",
+    "referenceThresholdWetAreaSquareMeters"
+  ],
+  "groups": [
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "lastTimeDifferenceOverFineRmsError": 0.00009214729871224939,
+      "subdivision": 3,
+      "successiveTimeDifferenceRatio": 0.4999519305940493,
+      "timeRefinementRmsDifferencesMeters": [
+        0.000005680278374053984,
+        0.000002839866139419917
+      ],
+      "cases": [
+        {
+          "values": [
+            3,
+            642,
+            2836,
+            0.10578279266572638,
+            0.03081600912031866,
+            0.16874710443654586,
+            -0.011904756896353062,
+            454673599.10685813,
+            0.000007322043259202031,
+            0.000016184238794139904,
+            0.00023760517562847593,
+            0.0005251893173755833,
+            1.411783712060297e-16,
+            1.1594573518710203e-17
+          ],
+          "contours": [
+            [
+              0.001,
+              219.67746410432886,
+              303.436729283316,
+              303.436729283316,
+              8497309.693629052,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              157.61050701055845,
+              211.335241223769,
+              211.335241223769,
+              8346125.288027399,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              94.0365391294542,
+              123.22303342987672,
+              123.22303342987672,
+              7799766.29356733,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            86,
+            86,
+            90
+          ],
+          "resolution": {
+            "deferredRequests": 614385,
+            "maximumDeferredRequestKilograms": 1.2033447488187123e-11,
+            "summedDeferredRequestKilograms": 2.422264959343555e-8
+          }
+        },
+        {
+          "values": [
+            3,
+            642,
+            5672,
+            0.05289139633286319,
+            0.030817847614525416,
+            0.1687429175040457,
+            -0.011904756896353062,
+            454666985.1597755,
+            0.000007322043259202031,
+            0.000016184238794139904,
+            0.0002375910008637632,
+            0.0005251579862609148,
+            1.8480477390590778e-16,
+            9.860205032216842e-18
+          ],
+          "contours": [
+            [
+              0.001,
+              219.71684018137827,
+              303.4458721991191,
+              303.4458721991191,
+              8497309.693629052,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              157.64457063110248,
+              211.34113305524772,
+              211.34113305524772,
+              8346125.288027399,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              94.04854637977978,
+              123.22678501115125,
+              123.22678501115125,
+              7799766.29356733,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            86,
+            86,
+            90
+          ],
+          "resolution": {
+            "deferredRequests": 1250003,
+            "maximumDeferredRequestKilograms": 6.68975808706721e-12,
+            "summedDeferredRequestKilograms": 4.1193482575267077e-8
+          }
+        },
+        {
+          "values": [
+            3,
+            642,
+            11344,
+            0.026445698166431594,
+            0.03081876711641907,
+            0.16874082444311211,
+            -0.011904756896353062,
+            454663678.25242215,
+            0.000007322043259202031,
+            0.000016184238794139904,
+            0.0002375839121514087,
+            0.0005251423177638264,
+            1.7106546817861497e-16,
+            1.2925663996493175e-17
+          ],
+          "contours": [
+            [
+              0.001,
+              219.73650552807288,
+              303.45044021499314,
+              303.45044021499314,
+              8497309.693629052,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              157.6615904708647,
+              211.34407845777181,
+              211.34407845777181,
+              8346125.288027399,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              94.05454878810993,
+              123.22866126771781,
+              123.22866126771781,
+              7799766.29356733,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            86,
+            86,
+            90
+          ],
+          "resolution": {
+            "deferredRequests": 2480657,
+            "maximumDeferredRequestKilograms": 3.344879043533605e-12,
+            "summedDeferredRequestKilograms": 4.788095920135418e-8
+          }
+        }
+      ]
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "lastTimeDifferenceOverFineRmsError": 0.00015754854801701008,
+      "subdivision": 4,
+      "successiveTimeDifferenceRatio": 0.49991474230015975,
+      "timeRefinementRmsDifferencesMeters": [
+        0.000006653262879497454,
+        0.0000033260641978591886
+      ],
+      "cases": [
+        {
+          "values": [
+            4,
+            2562,
+            2836,
+            0.10578279266572638,
+            0.02110646446823425,
+            0.15401927796679607,
+            -0.004519957218717051,
+            378072985.2664203,
+            0.000218734648856948,
+            0.0002625083241046609,
+            0.010363395972174737,
+            0.012437342336502755,
+            3.0890339353875767e-16,
+            4.839720900299321e-18
+          ],
+          "contours": [
+            [
+              0.001,
+              123.3844678720395,
+              164.5610062056304,
+              164.5610062056304,
+              8070360.463035592,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              89.93277705523627,
+              122.08399313298668,
+              122.08399313298668,
+              7806669.528580046,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              54.97433972200927,
+              73.07901790477311,
+              73.07901790477311,
+              7643891.03813097,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            174,
+            178,
+            178
+          ],
+          "resolution": {
+            "deferredRequests": 1405613,
+            "maximumDeferredRequestKilograms": 4.6380863556806895e-12,
+            "summedDeferredRequestKilograms": 6.743002223199308e-10
+          }
+        },
+        {
+          "values": [
+            4,
+            2562,
+            5672,
+            0.05289139633286319,
+            0.021109728386742025,
+            0.15401879434998555,
+            -0.004519957218717051,
+            378071247.10540605,
+            0.000218734648856948,
+            0.0002625083241046609,
+            0.010361793617123203,
+            0.012435419314515169,
+            2.856526519744102e-16,
+            6.324368665615299e-18
+          ],
+          "contours": [
+            [
+              0.001,
+              123.39614910034614,
+              164.63271964742177,
+              164.63271964742177,
+              8070360.463035592,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              89.98112770616129,
+              122.1231010182442,
+              122.1231010182442,
+              7806669.528580046,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              54.988375349400485,
+              73.09648440136107,
+              73.09648440136107,
+              7643891.03813097,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            174,
+            178,
+            178
+          ],
+          "resolution": {
+            "deferredRequests": 2915359,
+            "maximumDeferredRequestKilograms": 4.473341291977651e-12,
+            "summedDeferredRequestKilograms": 5.055677011542137e-9
+          }
+        },
+        {
+          "values": [
+            4,
+            2562,
+            11344,
+            0.026445698166431594,
+            0.0211113605280582,
+            0.154018553617015,
+            -0.004519957218717051,
+            378070377.9532463,
+            0.000218734648856948,
+            0.0002625083241046609,
+            0.010360992536044146,
+            0.012434457919269221,
+            3.44183682232516e-16,
+            5.639601441738996e-18
+          ],
+          "contours": [
+            [
+              0.001,
+              123.40198489487308,
+              164.6684900548858,
+              164.6684900548858,
+              8070360.463035592,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              90.00526826808652,
+              122.14262795846497,
+              122.14262795846497,
+              7806669.528580046,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              54.99539186350266,
+              73.10521074776987,
+              73.10521074776987,
+              7643891.03813097,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            174,
+            178,
+            178
+          ],
+          "resolution": {
+            "deferredRequests": 5872753,
+            "maximumDeferredRequestKilograms": 3.3787420836624516e-12,
+            "summedDeferredRequestKilograms": 5.2443711962890154e-8
+          }
+        }
+      ]
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "lastTimeDifferenceOverFineRmsError": 0.0002670633810998507,
+      "subdivision": 5,
+      "successiveTimeDifferenceRatio": 0.4999027442396916,
+      "timeRefinementRmsDifferencesMeters": [
+        0.00000818973218194577,
+        0.000004094069592342808
+      ],
+      "cases": [
+        {
+          "values": [
+            5,
+            10242,
+            2836,
+            0.10578279266572638,
+            0.015323188384958192,
+            0.13802785805689785,
+            -0.0017039169293772947,
+            332713657.86674565,
+            0.00010952012427300184,
+            0.00016026618591895327,
+            0.007147345677777533,
+            0.010459062558825975,
+            3.7621461554899366e-16,
+            3.2725789662289167e-18
+          ],
+          "contours": [
+            [
+              0.001,
+              69.62642488170401,
+              95.85073928139099,
+              95.85073928139099,
+              7669931.686071284,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              51.91958312682776,
+              70.41234200669355,
+              70.41234200669355,
+              7590744.601150744,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              32.6502096031045,
+              41.25725848969064,
+              41.25725848969064,
+              7442551.702713249,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            358,
+            358,
+            362
+          ],
+          "resolution": {
+            "deferredRequests": 2952399,
+            "maximumDeferredRequestKilograms": 5.758315223831927e-13,
+            "summedDeferredRequestKilograms": 6.223698197577104e-11
+          }
+        },
+        {
+          "values": [
+            5,
+            10242,
+            5672,
+            0.05289139633286319,
+            0.01532769929363251,
+            0.13803261638170952,
+            -0.0017039169293772947,
+            332715022.32502824,
+            0.00010952012427300184,
+            0.00016026618591895327,
+            0.007145242229438771,
+            0.010455984479388348,
+            4.1641531936699856e-16,
+            3.309984231113201e-18
+          ],
+          "contours": [
+            [
+              0.001,
+              69.64361544903053,
+              95.89556342903282,
+              95.89556342903282,
+              7669931.686071284,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              51.962624362047016,
+              70.44901651459834,
+              70.44901651459834,
+              7590744.601150744,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              32.67089538859103,
+              41.276770100501906,
+              41.276770100501906,
+              7442551.702713249,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            358,
+            358,
+            362
+          ],
+          "resolution": {
+            "deferredRequests": 6039438,
+            "maximumDeferredRequestKilograms": 5.226332658633009e-13,
+            "summedDeferredRequestKilograms": 4.2285266433652683e-10
+          }
+        },
+        {
+          "values": [
+            5,
+            10242,
+            11344,
+            0.026445698166431594,
+            0.015329954917376341,
+            0.13803499662134508,
+            -0.0017039169293772947,
+            332715704.3736891,
+            0.00010952012427300184,
+            0.00016026618591895327,
+            0.0071441908905330136,
+            0.010454446003444749,
+            4.469083523862772e-16,
+            2.8140833968668924e-18
+          ],
+          "contours": [
+            [
+              0.001,
+              69.65219099031827,
+              95.91787741896619,
+              95.91787741896619,
+              7669931.686071284,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              51.984083361334086,
+              70.46730699695925,
+              70.46730699695925,
+              7590744.601150744,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              32.68122937123685,
+              41.28651357420332,
+              41.28651357420332,
+              7442551.702713249,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            358,
+            358,
+            362
+          ],
+          "resolution": {
+            "deferredRequests": 12124529,
+            "maximumDeferredRequestKilograms": 1.1637760342451174e-12,
+            "summedDeferredRequestKilograms": 1.052614706102868e-9
+          }
+        }
+      ]
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "lastTimeDifferenceOverFineRmsError": 0.00008767305812275167,
+      "subdivision": 3,
+      "successiveTimeDifferenceRatio": 0.4999478390415271,
+      "timeRefinementRmsDifferencesMeters": [
+        0.0000056310951282164375,
+        0.000002815253840789079
+      ],
+      "cases": [
+        {
+          "values": [
+            3,
+            642,
+            2836,
+            0.10578279266572638,
+            0.03210902840728518,
+            0.18308714943179924,
+            0.00007335150987598763,
+            372263803.23724234,
+            0.00007914328433827746,
+            0.00006836411770032976,
+            0.002464829621575243,
+            0.0021291244578680152,
+            1.631435868266179e-16,
+            9.423572176740782e-18
+          ],
+          "contours": [
+            [
+              0.001,
+              231.2872980311842,
+              319.68646905710773,
+              319.68646905710773,
+              8654348.050120264,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              163.7801426396399,
+              237.4991472505523,
+              237.4991472505523,
+              8351609.797936123,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              98.82151176087194,
+              148.5201947701238,
+              148.5201947701238,
+              7904664.040084339,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            86,
+            87,
+            89
+          ],
+          "resolution": {
+            "deferredRequests": 586517,
+            "maximumDeferredRequestKilograms": 1.2258852868210786e-20,
+            "summedDeferredRequestKilograms": 1.3734676082491435e-19
+          }
+        },
+        {
+          "values": [
+            3,
+            642,
+            5672,
+            0.05289139633286319,
+            0.03211022306151353,
+            0.18308102820575897,
+            0.00007335150987598763,
+            372260656.1495397,
+            0.00007914328433827746,
+            0.00006836411770032976,
+            0.002464737918097384,
+            0.0021290452442315542,
+            1.894355410168298e-16,
+            7.726652428687516e-18
+          ],
+          "contours": [
+            [
+              0.001,
+              231.34519758331606,
+              319.71391359789436,
+              319.71391359789436,
+              8654348.050120264,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              163.80027845667166,
+              237.5280300483431,
+              237.5280300483431,
+              8351609.797936123,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              98.8298153876308,
+              148.52958004693906,
+              148.52958004693906,
+              7904664.040084339,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            86,
+            87,
+            89
+          ],
+          "resolution": {
+            "deferredRequests": 1226636,
+            "maximumDeferredRequestKilograms": 1.4746671662489125e-21,
+            "summedDeferredRequestKilograms": 4.044753446310245e-19
+          }
+        },
+        {
+          "values": [
+            3,
+            642,
+            11344,
+            0.026445698166431594,
+            0.03211082059949845,
+            0.18307796819819697,
+            0.00007335150987598763,
+            372259082.51973134,
+            0.00007914328433827746,
+            0.00006836411770032976,
+            0.0024646920527317084,
+            0.002129005625642515,
+            2.137561580238908e-16,
+            9.519155474388093e-18
+          ],
+          "contours": [
+            [
+              0.001,
+              231.37410823707637,
+              319.72762140927904,
+              319.72762140927904,
+              8654348.050120264,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              163.81034209899514,
+              237.5424619856472,
+              237.5424619856472,
+              8351609.797936123,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              98.83396719172555,
+              148.53427120164176,
+              148.53427120164176,
+              7904664.040084339,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            86,
+            87,
+            89
+          ],
+          "resolution": {
+            "deferredRequests": 2387922,
+            "maximumDeferredRequestKilograms": 1.1089736640233786e-20,
+            "summedDeferredRequestKilograms": 1.360203857684287e-18
+          }
+        }
+      ]
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "lastTimeDifferenceOverFineRmsError": 0.0001430063758924476,
+      "subdivision": 4,
+      "successiveTimeDifferenceRatio": 0.49992315762822037,
+      "timeRefinementRmsDifferencesMeters": [
+        0.000006589916886172583,
+        0.0000032944520582429273
+      ],
+      "cases": [
+        {
+          "values": [
+            4,
+            2562,
+            2836,
+            0.10578279266572638,
+            0.023033416864272137,
+            0.17287656144009672,
+            0.0000790916046663624,
+            331422181.24350244,
+            0.00012778046219542692,
+            0.00008238831058893857,
+            0.005547612104117789,
+            0.0035769035516712107,
+            3.0051833728668215e-16,
+            3.777212729261633e-18
+          ],
+          "contours": [
+            [
+              0.001,
+              123.75109554023899,
+              178.68248872575987,
+              178.68248872575987,
+              8078896.178517706,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              93.65983954842916,
+              133.39655406668592,
+              133.39655406668592,
+              7854594.154881853,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              59.44714101324111,
+              80.9047850154696,
+              80.9047850154696,
+              7633297.07791828,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            175,
+            177,
+            179
+          ],
+          "resolution": {
+            "deferredRequests": 1400762,
+            "maximumDeferredRequestKilograms": 1.3436699713297058e-21,
+            "summedDeferredRequestKilograms": 3.42478519831527e-20
+          }
+        },
+        {
+          "values": [
+            4,
+            2562,
+            5672,
+            0.05289139633286319,
+            0.023035871543606444,
+            0.17287232711816886,
+            0.0000790916046663624,
+            331422329.72192293,
+            0.00012778046219542692,
+            0.00008238831058893857,
+            0.005547020956144033,
+            0.00357652240042141,
+            3.172396378871285e-16,
+            3.809251607966318e-18
+          ],
+          "contours": [
+            [
+              0.001,
+              123.87007450697341,
+              178.71216190443806,
+              178.71216190443806,
+              8078896.178517706,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              93.67287130141034,
+              133.411375783391,
+              133.411375783391,
+              7854594.154881853,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              59.459656720998396,
+              80.91469262703588,
+              80.91469262703588,
+              7633297.07791828,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            175,
+            177,
+            179
+          ],
+          "resolution": {
+            "deferredRequests": 2855009,
+            "maximumDeferredRequestKilograms": 5.528432498050064e-22,
+            "summedDeferredRequestKilograms": 1.0359291006188949e-19
+          }
+        },
+        {
+          "values": [
+            4,
+            2562,
+            11344,
+            0.026445698166431594,
+            0.0230370991341017,
+            0.17287021163500957,
+            0.0000790916046663624,
+            331422403.78493494,
+            0.00012778046219542692,
+            0.00008238831058893857,
+            0.0055467253690059505,
+            0.00357633181631708,
+            3.260157251200723e-16,
+            4.6498234988156615e-18
+          ],
+          "contours": [
+            [
+              0.001,
+              123.92937307889862,
+              178.7269678956267,
+              178.7269678956267,
+              8078896.178517706,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              93.67938352397954,
+              133.41878026550535,
+              133.41878026550535,
+              7854594.154881853,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              59.46591489814224,
+              80.91964635994353,
+              80.91964635994353,
+              7633297.07791828,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            175,
+            177,
+            179
+          ],
+          "resolution": {
+            "deferredRequests": 5743057,
+            "maximumDeferredRequestKilograms": 9.016154271586386e-22,
+            "summedDeferredRequestKilograms": 3.4048986435970927e-19
+          }
+        }
+      ]
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "lastTimeDifferenceOverFineRmsError": 0.00025073989871638315,
+      "subdivision": 5,
+      "successiveTimeDifferenceRatio": 0.49988151252067237,
+      "timeRefinementRmsDifferencesMeters": [
+        0.000008196061356673642,
+        0.000004097059547686254
+      ],
+      "cases": [
+        {
+          "values": [
+            5,
+            10242,
+            2836,
+            0.10578279266572638,
+            0.016333919059857205,
+            0.15305426552854617,
+            -0.00002864386122835593,
+            306985382.7075219,
+            0.00012358658900997214,
+            0.00010562355036165482,
+            0.007566254525755716,
+            0.006466516086836677,
+            3.6272280692309e-16,
+            1.6516166643118227e-18
+          ],
+          "contours": [
+            [
+              0.001,
+              69.79521971923508,
+              97.90433502248064,
+              97.90433502248064,
+              7708124.472668011,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              52.7723897380441,
+              73.03927864014193,
+              73.03927864014193,
+              7591595.134355129,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              33.827829139899904,
+              43.99610279551336,
+              43.99610279551336,
+              7459770.347643137,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            355,
+            357,
+            356
+          ],
+          "resolution": {
+            "deferredRequests": 2910926,
+            "maximumDeferredRequestKilograms": 1.0344978573306276e-22,
+            "summedDeferredRequestKilograms": 7.222404306322414e-21
+          }
+        },
+        {
+          "values": [
+            5,
+            10242,
+            5672,
+            0.05289139633286319,
+            0.01633789199411657,
+            0.15305597658226064,
+            -0.00002864386122835593,
+            306987756.04210186,
+            0.00012358658900997214,
+            0.00010562355036165482,
+            0.00756441461692101,
+            0.006464943604700709,
+            4.250062646264815e-16,
+            1.9640837103614637e-18
+          ],
+          "contours": [
+            [
+              0.001,
+              69.80436267737433,
+              97.93751361529779,
+              97.93751361529779,
+              7708124.472668011,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              52.801663818061286,
+              73.0706814924651,
+              73.0706814924651,
+              7593931.542218655,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              33.84837012420272,
+              44.00953450222423,
+              44.00953450222423,
+              7459770.347643137,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            355,
+            357,
+            356
+          ],
+          "resolution": {
+            "deferredRequests": 5933719,
+            "maximumDeferredRequestKilograms": 3.063868751706705e-22,
+            "summedDeferredRequestKilograms": 2.5819627078025525e-20
+          }
+        },
+        {
+          "values": [
+            5,
+            10242,
+            11344,
+            0.026445698166431594,
+            0.01633987876943557,
+            0.15305683445386467,
+            -0.00002864386122835593,
+            306988942.47652787,
+            0.00012358658900997214,
+            0.00010562355036165482,
+            0.007563494855368575,
+            0.006464157528465151,
+            3.999086709531566e-16,
+            2.5936833554529506e-18
+          ],
+          "contours": [
+            [
+              0.001,
+              69.80893290633094,
+              97.95403318201679,
+              97.95403318201679,
+              7708124.472668011,
+              7239889.544405612
+            ],
+            [
+              0.01,
+              52.81627192113469,
+              73.08634491324906,
+              73.08634491324906,
+              7593931.542218655,
+              7237409.236553279
+            ],
+            [
+              0.05,
+              33.85863502611453,
+              44.016249600222324,
+              44.016249600222324,
+              7459770.347643137,
+              7230395.99991474
+            ]
+          ],
+          "crossingCounts": [
+            355,
+            357,
+            356
+          ],
+          "resolution": {
+            "deferredRequests": 12047188,
+            "maximumDeferredRequestKilograms": 3.621631866185158e-22,
+            "summedDeferredRequestKilograms": 8.129442170424863e-20
+          }
+        }
+      ]
+    }
+  ],
+  "matchedLegacyControls": [
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "values": [
+        5,
+        10242,
+        11344,
+        0.026445698166431594,
+        0.02407966127344331,
+        0.18858156099973766,
+        -0.0017039169293772947,
+        371691333.7957503,
+        0.00010952012427300184,
+        0.00016026618591895327,
+        0.004548241897147785,
+        0.006655666128314926,
+        4.253336427955877e-16,
+        4.164090228537676e-18
+      ],
+      "contours": [
+        [
+          0.001,
+          85.24159031170898,
+          115.63404170824332,
+          115.63404170824332,
+          7811545.162553299,
+          7239889.544405612
+        ],
+        [
+          0.01,
+          65.94899517433683,
+          90.50461730593229,
+          90.50461730593229,
+          7670172.540691519,
+          7237409.236553279
+        ],
+        [
+          0.05,
+          44.90178269786438,
+          61.62300660121556,
+          61.62300660121556,
+          7528947.214870455,
+          7230395.99991474
+        ]
+      ],
+      "resolution": {
+        "deferredRequests": 11161683,
+        "maximumDeferredRequestKilograms": 1.1637760342451174e-12,
+        "summedDeferredRequestKilograms": 4.3861817884985176e-11
+      }
+    },
+    {
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "values": [
+        5,
+        10242,
+        11344,
+        0.026445698166431594,
+        0.024701996055633616,
+        0.20667923600401308,
+        -0.00002864386122835593,
+        342458615.38004696,
+        0.00012358658900997214,
+        0.00010562355036165482,
+        0.0050031013174656625,
+        0.004275911554830241,
+        3.8012754282944747e-16,
+        2.65179748998612e-18
+      ],
+      "contours": [
+        [
+          0.001,
+          83.02047138346569,
+          117.52711773296576,
+          117.52711773296576,
+          7800972.301316069,
+          7239889.544405612
+        ],
+        [
+          0.01,
+          64.88311865786112,
+          91.63268136338031,
+          91.63268136338031,
+          7684742.231448526,
+          7237409.236553279
+        ],
+        [
+          0.05,
+          44.15198998193248,
+          62.48834019621552,
+          62.48834019621552,
+          7553867.9825686095,
+          7230395.99991474
+        ]
+      ],
+      "resolution": {
+        "deferredRequests": 11085726,
+        "maximumDeferredRequestKilograms": 1.3453757763519577e-24,
+        "summedDeferredRequestKilograms": 1.0193678617315935e-21
+      }
+    }
+  ],
+  "spatialComparisons": [
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "coarseSubdivision": 3,
+      "fineOverCoarseRmsError": 0.6850163878493007,
+      "fineSubdivision": 4
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "coarseSubdivision": 4,
+      "fineOverCoarseRmsError": 0.7261471801877457,
+      "fineSubdivision": 5
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "coarseSubdivision": 3,
+      "fineOverCoarseRmsError": 0.7174248027302524,
+      "fineSubdivision": 4
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "coarseSubdivision": 4,
+      "fineOverCoarseRmsError": 0.7092854301802144,
+      "fineSubdivision": 5
+    }
+  ],
+  "maximumCandidateAudit": {
+    "local": 4.469083523862772e-16,
+    "global": 1.2925663996493175e-17
+  },
+  "numericalRetention": {
+    "totalAttemptCount": 92994281,
+    "maximumSingleAttemptKilograms": 1.2033447488187123e-11,
+    "maximumPerRunSummedAttemptKilograms": 5.2443711962890154e-8,
+    "interpretation": "Retained requests leave donor inventory unchanged; not completed transfers or lost water."
+  },
+  "legacyWetRegression": {
+    "path": "artifacts/surface-front-wet-regression.json",
+    "bytes": 43215413,
+    "sha256": "0af89317143631d471bf5d6f23aa9536971654e51325705d1df661fb2ee00052"
+  },
+  "prototypeBoundaryInputFailure": {
+    "unitLog": {
+      "path": "artifacts/surface-front-unit-log.txt",
+      "bytes": 1888,
+      "sha256": "f7777aa901125f6e3a828558bee929a3c0d668279b45e934f0491bf815f20ad5"
+    },
+    "observedCoarseRelativeInventoryDrift": 2.3710455e-10,
+    "change": "Initialize Picard iterate from rhs with already accounted boundary inflow; no tolerance widening or inventory fitting."
+  },
+  "sources": [
+    {
+      "path": "native/src/seasonal_moisture/regional_soil.rs",
+      "bytes": 17023,
+      "sha256": "8fa7b34b6152b1a33cc0fcd23b60fb2aad150f1c86bfaf6e1aa3e401e2adb67b"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front.rs",
+      "bytes": 4046,
+      "sha256": "e4011c95d2b3c0e302d61b2ee41b3260eb0a2c33033b5b0df5db679fc0e8d68c"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/reference.rs",
+      "bytes": 11933,
+      "sha256": "b4abd46b67f010efc783b17ba00389cf387f18026fd51bc8dc76f6675a04bf39"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/native.rs",
+      "bytes": 12937,
+      "sha256": "940547f1b45f7199f180babebaacadcec30855e683fb1e8a369ed6874c331e3e"
+    },
+    {
+      "path": "native/examples/surface_front_report.rs",
+      "bytes": 1112,
+      "sha256": "efda2664b45314fd0e3139212899b49eeae2a9965d9e19f045dcdc1f78a1977e"
+    }
+  ],
+  "validation": {
+    "newDirectedTests": 6,
+    "fullNpmTest": {
+      "nativePassed": 560,
+      "nativeTargets": 105,
+      "nodeFilesPassed": 18,
+      "preExistingIgnored": 1,
+      "log": "artifacts/surface-front-npm-test-log.txt",
+      "scopeNote": "Final physics and six tests; report-metadata-only additions subsequently covered by final release tests and actual CLI reports."
+    },
+    "release": {
+      "libraryPassed": 105,
+      "regionalSoilPassed": 12,
+      "regionalSurfacePassed": 5,
+      "log": "artifacts/surface-front-final-release-log.txt"
+    },
+    "allTargetClippyWarningsDenied": true,
+    "formatting": true,
+    "whitespace": true,
+    "cliRefusals": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "guiRerun": false,
+    "logs": [
+      {
+        "path": "artifacts/surface-front-npm-test-log.txt",
+        "bytes": 74798,
+        "sha256": "58fccf6d59eda3a20a87df4ea65840cbbace2207be274442ed3f94ddb214211e"
+      },
+      {
+        "path": "artifacts/surface-front-final-release-log.txt",
+        "bytes": 15603,
+        "sha256": "b857c7f115c7a90206640d0e35f16041aed554ca8038c3a2a39657583608393f"
+      },
+      {
+        "path": "artifacts/surface-front-final-clippy-log.txt",
+        "bytes": 167,
+        "sha256": "68dc5384a36f3b61acf2233136f703b0dffbb22f494f9f4784f7c81467ff17cc"
+      },
+      {
+        "path": "artifacts/surface-front-unit-native-log.txt",
+        "bytes": 1237,
+        "sha256": "ed61dc04f7ee82efb2d4741bbbb1d9a996864ddc5b616e05e4146ac578d2ade8"
+      }
+    ],
+    "invalidOutputAbsent": true,
+    "existingReportUnchanged": true,
+    "legacyWetReportByteIdentical": true
+  },
+  "environment": {
+    "rustc": "1.98.1 (48a229cea 2026-09-01) (Arch Linux rust 1:1.98.1-1)",
+    "cargo": "1.98.1 (797e8a9bc 2026-08-05) (Arch Linux rust 1:1.98.1-1)",
+    "node": "v25.2.1",
+    "platform": "Linux x86_64"
+  },
+  "referenceInterpretation": "Refinement differences are empirical indicators, not rigorous bounds. Numerical contour proxies are not exact support or flooded-surface geometry. Point initial inventories are not rescaled.",
+  "nextGate": "Separately pinned flat-only interface-depth comparison against this unchanged witness and smooth-wet controls, then gradient isolation and disconnected wet/terrain-barrier verification before seasonal selection.",
+  "repeat": {
+    "path": "artifacts/surface-front-repeat.json",
+    "bytes": 79883936,
+    "sha256": "931afa37c0acf1e814b06e5ff40f39ff27a2a7bf747c287b57209a630f83b4a6"
+  },
+  "byteIdenticalRepeat": true,
+  "referenceOnly": {
+    "path": "artifacts/surface-front-reference-final.json",
+    "bytes": 515958,
+    "sha256": "8d25a9ed12c03a964f088b4ba4c75c438ab4e71391c4016701fc86147c499e4e",
+    "pin": "surface-dry-reference-report-1",
+    "controlsIdenticalToNativeReport": true,
+    "containsNativeAccuracyQualification": false
+  },
+  "preservedSources": [
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface.rs",
+      "bytes": 3855,
+      "sha256": "ed73e05fe90a4ddd1b738206d94d73e7122758404360663a486b40150960d644"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_gradient.rs",
+      "bytes": 16794,
+      "sha256": "121fdcc182f8e0d31cdb8fe33c28478f4d1279394211dcefeb6e325e2e6c14ca"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_cotan.rs",
+      "bytes": 13048,
+      "sha256": "96160c7770430ca850fd10d2aa2cc4da1dd42a006498847f30a3d31feb4b1f02"
+    },
+    {
+      "path": "native/Cargo.lock",
+      "bytes": 2675,
+      "sha256": "6423d20d12d748711ebc5bf101b0891cc019a25a68d15d56c74b57158724b42d"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 81221,
+      "sha256": "a08876e9e441f3ba1bebe19ab9ef34e8986bde8c677c4af4d8796f04d5a26090"
+    }
+  ]
+}

@@ -20,6 +20,7 @@ mod surface;
 pub mod surface_constitutive;
 mod surface_cotan;
 pub mod surface_evolution;
+pub mod surface_front;
 mod surface_gradient;
 pub mod surface_verification;
 pub use observation::{
