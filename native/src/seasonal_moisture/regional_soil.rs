@@ -19,6 +19,7 @@ mod observation;
 mod surface;
 pub mod surface_constitutive;
 mod surface_cotan;
+mod surface_gradient;
 pub mod surface_verification;
 pub use observation::{
     COTANGENT_OBSERVATION_VERSION, OBSERVATION_VERSION, Observation, ReferenceBodyStock,

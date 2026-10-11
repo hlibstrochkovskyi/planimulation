@@ -1,0 +1,4344 @@
+{
+  "summaryVersion": "surface-full-gradient-validation-1",
+  "recordedDate": "2026-10-11",
+  "baselineGitRevision": "36b624f46059efd6f0f30478119cba1f161bca3d",
+  "scope": "Explicit standalone bounded smooth weak-work candidate; no default/seasonal law promotion or evolving wet/dry-front qualification.",
+  "sourceReports": {
+    "primary": {
+      "path": "artifacts/full-gradient-work-v1-validated.json",
+      "bytes": 266129916,
+      "sha256": "09b750d5619a8e6f46eb764da50d45cbcd66bd1dd5c959a36039d3ee049fa99b"
+    },
+    "repeat": {
+      "path": "artifacts/full-gradient-work-v1-validated-repeat.json",
+      "bytes": 266129916,
+      "sha256": "09b750d5619a8e6f46eb764da50d45cbcd66bd1dd5c959a36039d3ee049fa99b"
+    },
+    "repeatByteIdentical": true
+  },
+  "oldWitnessRegression": {
+    "historic": {
+      "path": "artifacts/constitutive-work-v1-final.json",
+      "bytes": 66531115,
+      "sha256": "fa9a6b548d25490f6416017422846f6f5770e0c12b0c34cd5ca21a49c203c593"
+    },
+    "after": {
+      "path": "artifacts/full-gradient-old-witness-regression.json",
+      "bytes": 66531115,
+      "sha256": "fa9a6b548d25490f6416017422846f6f5770e0c12b0c34cd5ca21a49c203c593"
+    },
+    "byteIdentical": true
+  },
+  "legacyTrajectoryRegression": {
+    "historic": {
+      "path": "artifacts/cotan-seasonal-legacy-final.json",
+      "bytes": 5272305,
+      "sha256": "5618b1522ac69ec8e460c0ed031d3eda14ca43aab86310b7ee2c39cc93227514"
+    },
+    "after": {
+      "path": "artifacts/full-gradient-legacy-seasonal-regression.json",
+      "bytes": 5272305,
+      "sha256": "5618b1522ac69ec8e460c0ed031d3eda14ca43aab86310b7ee2c39cc93227514"
+    },
+    "byteIdentical": true,
+    "cases": 12,
+    "daysPerCase": 1,
+    "activeFundedCases": 3
+  },
+  "qualification": {
+    "completedBoundedCases": 128,
+    "finestNonlinearWeakWorkBelowOnePercent": true,
+    "everyNonlinearGroupImprovesOnFinalRefinement": true,
+    "everyCoarseNonlinearRefinementImproves": false,
+    "continuumEvolutionVerified": false,
+    "continuumFrontAccuracyVerified": false,
+    "physicalCalibration": false,
+    "generalPDEConvergenceProven": false,
+    "existingProductionLawChanged": false,
+    "defaultOrDesktopPromoted": false
+  },
+  "aggregate": {
+    "maximumLocalRelativeResidual": 1.3934330391572178e-23,
+    "maximumGlobalRelativeResidual": 2.5323258853455027e-17,
+    "maximumRelativeStockWorkIdentityDifference": 6.613504099337233e-16,
+    "maximumRelativeReferenceQuadratureDifference": 2.6210252584532056e-8,
+    "maximumDeferredRequests": 61,
+    "maximumDeferredRequestKilograms": 2.1784876101910697e-10,
+    "maximumSummedDeferredRequestKilograms": 5.323286264046181e-9,
+    "maximumHalfStepRelativeWorkDifference": 0,
+    "matchedFinestFirstProfile": [
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "oldSignedDiscrepancy": 0.11744704704774978,
+        "candidateSignedDiscrepancy": 0.001994638506898294,
+        "absoluteErrorReductionFactor": 58.881369552211474
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "oldSignedDiscrepancy": 0.10861772827864202,
+        "candidateSignedDiscrepancy": 0.0020153893149448265,
+        "absoluteErrorReductionFactor": 53.89416698461337
+      }
+    ],
+    "nonlinearMeshTrends": [
+      {
+        "degree": 1,
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "signedDiscrepancies": [
+          -0.0012205784118839436,
+          0.004276103489215144,
+          0.0033727022970884146,
+          0.001994638506898294
+        ],
+        "finalRefinementImproves": true,
+        "everyRefinementImproves": false
+      },
+      {
+        "degree": 1,
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "signedDiscrepancies": [
+          -0.0011823073685967023,
+          0.004351278435750228,
+          0.0034146823199971976,
+          0.0020153893149448265
+        ],
+        "finalRefinementImproves": true,
+        "everyRefinementImproves": false
+      },
+      {
+        "degree": 1,
+        "axis": [
+          0,
+          1,
+          0
+        ],
+        "signedDiscrepancies": [
+          -0.0012205784118839436,
+          0.004276103489215144,
+          0.0033727022970881926,
+          0.001994638506898294
+        ],
+        "finalRefinementImproves": true,
+        "everyRefinementImproves": false
+      },
+      {
+        "degree": 1,
+        "axis": [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        "signedDiscrepancies": [
+          -0.0012423885896234443,
+          0.004269608466964225,
+          0.0033717287953436426,
+          0.001994760572819443
+        ],
+        "finalRefinementImproves": true,
+        "everyRefinementImproves": false
+      },
+      {
+        "degree": 2,
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "signedDiscrepancies": [
+          -0.010176865653189093,
+          0.0038503169901391576,
+          0.004229399251817423,
+          0.0026951837466646644
+        ],
+        "finalRefinementImproves": true,
+        "everyRefinementImproves": false
+      },
+      {
+        "degree": 2,
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "signedDiscrepancies": [
+          -0.010579348012849876,
+          0.003885882590983547,
+          0.004293368868766967,
+          0.0027352004423417675
+        ],
+        "finalRefinementImproves": true,
+        "everyRefinementImproves": false
+      },
+      {
+        "degree": 2,
+        "axis": [
+          0,
+          1,
+          0
+        ],
+        "signedDiscrepancies": [
+          -0.01017686565318876,
+          0.0038503169901393797,
+          0.004229399251817423,
+          0.0026951837466646644
+        ],
+        "finalRefinementImproves": true,
+        "everyRefinementImproves": false
+      },
+      {
+        "degree": 2,
+        "axis": [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        "signedDiscrepancies": [
+          -0.010352204134843612,
+          0.0037361360433254553,
+          0.004177955190661331,
+          0.0026928518191933204
+        ],
+        "finalRefinementImproves": true,
+        "everyRefinementImproves": false
+      }
+    ]
+  },
+  "report": {
+    "amplitudeMeters": 0.1,
+    "cases": [
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        100,
+        8.377580409572783,
+        8.21989906348978,
+        8.377580409572783,
+        1,
+        true,
+        3.530789103933919e-19,
+        4.818230564281053e-27,
+        20973.819415188493,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        0,
+        2.1610445890878048e-16,
+        {
+          "deferredRequests": 1,
+          "maximumDeferredRequestKilograms": 4.0781187632555215e-14,
+          "summedDeferredRequestKilograms": 4.0781187632555215e-14
+        },
+        -0.01882182424687029,
+        766739.3628931793,
+        0.01,
+        8.219899063489782,
+        2,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        100,
+        8.377580409572783,
+        8.21989906348978,
+        8.377580409572783,
+        1,
+        true,
+        3.0916288578198853e-19,
+        2.4091152821442793e-27,
+        20973.819415188493,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        0,
+        2.1610445890878048e-16,
+        {
+          "deferredRequests": 1,
+          "maximumDeferredRequestKilograms": 2.0390593816277608e-14,
+          "summedDeferredRequestKilograms": 2.0390593816277608e-14
+        },
+        -0.01882182424687029,
+        766739.3628931793,
+        0.005,
+        8.219899063489782,
+        2,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        100,
+        8.377580409572783,
+        8.33766182264662,
+        8.377580409572783,
+        1,
+        true,
+        1.0229046358811023e-19,
+        9.547241458631243e-27,
+        20973.81941518852,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        0,
+        0,
+        {
+          "deferredRequests": 4,
+          "maximumDeferredRequestKilograms": 8.641938385204372e-14,
+          "summedDeferredRequestKilograms": 3.2190853626040584e-13
+        },
+        -0.004764930322906702,
+        188941.5713739531,
+        0.01,
+        8.33766182264662,
+        3,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        100,
+        8.377580409572783,
+        8.33766182264662,
+        8.377580409572783,
+        1,
+        true,
+        5.1145231794055117e-20,
+        4.773620729322016e-27,
+        20973.81941518852,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        0,
+        0,
+        {
+          "deferredRequests": 4,
+          "maximumDeferredRequestKilograms": 4.320969192602186e-14,
+          "summedDeferredRequestKilograms": 1.6095426813020292e-13
+        },
+        -0.004764930322906702,
+        188941.5713739531,
+        0.005,
+        8.33766182264662,
+        3,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        100,
+        8.377580409572783,
+        8.36756925339741,
+        8.377580409572783,
+        1,
+        true,
+        2.150957827401533e-20,
+        2.004758244625906e-26,
+        20973.819415188413,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        0,
+        0,
+        {
+          "deferredRequests": 12,
+          "maximumDeferredRequestKilograms": 7.274573402987259e-14,
+          "summedDeferredRequestKilograms": 6.482571037811945e-13
+        },
+        -0.0011949937435317137,
+        47065.30444451891,
+        0.01,
+        8.36756925339741,
+        4,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        100,
+        8.377580409572783,
+        8.36756925339741,
+        8.377580409572783,
+        1,
+        true,
+        1.0754789137007665e-20,
+        1.0023791223171859e-26,
+        20973.819415188413,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        0,
+        0,
+        {
+          "deferredRequests": 12,
+          "maximumDeferredRequestKilograms": 3.6372867014936294e-14,
+          "summedDeferredRequestKilograms": 3.2412855189059725e-13
+        },
+        -0.0011949937435317137,
+        47065.30444451891,
+        0.005,
+        8.36756925339741,
+        4,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        100,
+        8.377580409572783,
+        8.375075645372247,
+        8.377580409572783,
+        1,
+        true,
+        1.0480694792080678e-21,
+        5.180926794494907e-26,
+        20973.819415188023,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        0,
+        0,
+        {
+          "deferredRequests": 20,
+          "maximumDeferredRequestKilograms": 6.190240902189365e-14,
+          "summedDeferredRequestKilograms": 8.897575427583155e-13
+        },
+        -0.0002989842028461309,
+        11755.71674038546,
+        0.01,
+        8.375075645372247,
+        5,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        100,
+        8.377580409572783,
+        8.375075645372247,
+        8.377580409572783,
+        1,
+        true,
+        7.065064338187911e-21,
+        2.590463397252713e-26,
+        20973.819415188023,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        0,
+        0,
+        {
+          "deferredRequests": 20,
+          "maximumDeferredRequestKilograms": 3.0951204510946825e-14,
+          "summedDeferredRequestKilograms": 4.4487877137915775e-13
+        },
+        -0.0002989842028461309,
+        11755.71674038546,
+        0.005,
+        8.375075645372247,
+        5,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        100,
+        8.377580409572783,
+        8.21989906348978,
+        8.377580409572783,
+        1,
+        true,
+        3.063415713141468e-19,
+        5.497023645852769e-27,
+        20979.82261900313,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        0,
+        2.1610445890878048e-16,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.01882182424687029,
+        766739.3628931793,
+        0.01,
+        8.219899063489779,
+        2,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        100,
+        8.377580409572783,
+        8.21989906348978,
+        8.377580409572783,
+        1,
+        true,
+        1.531707856570734e-19,
+        2.7485118229263843e-27,
+        20979.82261900313,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        0,
+        2.1610445890878048e-16,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.01882182424687029,
+        766739.3628931793,
+        0.005,
+        8.219899063489779,
+        2,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        100,
+        8.377580409572783,
+        8.33766182264662,
+        8.377580409572783,
+        1,
+        true,
+        5.753164828591257e-20,
+        9.819802740352931e-27,
+        20975.26877543631,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        0,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.004764930322906702,
+        188941.5713739531,
+        0.01,
+        8.33766182264662,
+        3,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        100,
+        8.377580409572783,
+        8.33766182264662,
+        8.377580409572783,
+        1,
+        true,
+        2.8765824142956285e-20,
+        4.90990137019702e-27,
+        20975.26877543631,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        0,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.004764930322906702,
+        188941.5713739531,
+        0.005,
+        8.33766182264662,
+        3,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        100,
+        8.377580409572783,
+        8.36756925339741,
+        8.377580409572783,
+        1,
+        true,
+        2.1039744779489705e-20,
+        2.5184809381381085e-26,
+        20973.988829196376,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        0,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.0011949937435317137,
+        47065.30444451891,
+        0.01,
+        8.36756925339741,
+        4,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        100,
+        8.377580409572783,
+        8.36756925339741,
+        8.377580409572783,
+        1,
+        true,
+        1.9836523921422926e-20,
+        1.259240469075073e-26,
+        20973.988829196376,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        0,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.0011949937435317137,
+        47065.30444451891,
+        0.005,
+        8.36756925339741,
+        4,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        100,
+        8.377580409572783,
+        8.375075645372249,
+        8.377580409572783,
+        1,
+        true,
+        4.003138927252074e-21,
+        4.5284153635329705e-26,
+        20973.848971682484,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        0,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.0002989842028459089,
+        11755.71674038546,
+        0.01,
+        8.375075645372249,
+        5,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        100,
+        8.377580409572783,
+        8.375075645372249,
+        8.377580409572783,
+        1,
+        true,
+        2.001569463626037e-21,
+        2.2642076817674292e-26,
+        20973.848971682484,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        0,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.0002989842028459089,
+        11755.71674038546,
+        0.005,
+        8.375075645372249,
+        5,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        100,
+        8.377580409572783,
+        8.219899063489782,
+        8.377580409572783,
+        1,
+        true,
+        3.238128433968967e-19,
+        5.824206236479654e-27,
+        20973.819415188493,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        0,
+        0,
+        {
+          "deferredRequests": 2,
+          "maximumDeferredRequestKilograms": 6.086659752618308e-14,
+          "summedDeferredRequestKilograms": 1.2173319505236617e-13
+        },
+        -0.018821824246870067,
+        766739.3628931793,
+        0.01,
+        8.219899063489782,
+        2,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        100,
+        8.377580409572783,
+        8.219899063489782,
+        8.377580409572783,
+        1,
+        true,
+        1.6190642169844834e-19,
+        2.912103118239827e-27,
+        20973.819415188493,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        0,
+        0,
+        {
+          "deferredRequests": 2,
+          "maximumDeferredRequestKilograms": 3.043329876309154e-14,
+          "summedDeferredRequestKilograms": 6.086659752618308e-14
+        },
+        -0.018821824246870067,
+        766739.3628931793,
+        0.005,
+        8.219899063489782,
+        2,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        100,
+        8.377580409572783,
+        8.337661822646622,
+        8.377580409572783,
+        1,
+        true,
+        6.937862994451516e-20,
+        9.761382793687841e-27,
+        20973.81941518852,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        0,
+        0,
+        {
+          "deferredRequests": 5,
+          "maximumDeferredRequestKilograms": 8.641938385204372e-14,
+          "summedDeferredRequestKilograms": 3.106141650986553e-13
+        },
+        -0.004764930322906591,
+        188941.5713739531,
+        0.01,
+        8.337661822646622,
+        3,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        100,
+        8.377580409572783,
+        8.337661822646622,
+        8.377580409572783,
+        1,
+        true,
+        3.468931497225758e-20,
+        4.880691396856708e-27,
+        20973.81941518852,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        0,
+        0,
+        {
+          "deferredRequests": 5,
+          "maximumDeferredRequestKilograms": 4.320969192602186e-14,
+          "summedDeferredRequestKilograms": 1.5530708254932765e-13
+        },
+        -0.004764930322906591,
+        188941.5713739531,
+        0.005,
+        8.337661822646622,
+        3,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        100,
+        8.377580409572783,
+        8.367569253397408,
+        8.377580409572783,
+        1,
+        true,
+        1.4208953885405778e-20,
+        2.339795566946784e-26,
+        20973.819415188413,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        0,
+        0,
+        {
+          "deferredRequests": 4,
+          "maximumDeferredRequestKilograms": 6.217144760615264e-14,
+          "summedDeferredRequestKilograms": 2.1203364791037486e-13
+        },
+        -0.0011949937435319358,
+        47065.30444451891,
+        0.01,
+        8.367569253397408,
+        4,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        100,
+        8.377580409572783,
+        8.367569253397408,
+        8.377580409572783,
+        1,
+        true,
+        2.325191936846489e-20,
+        1.169897783473392e-26,
+        20973.819415188413,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        0,
+        0,
+        {
+          "deferredRequests": 4,
+          "maximumDeferredRequestKilograms": 3.108572380307632e-14,
+          "summedDeferredRequestKilograms": 1.0601682395518743e-13
+        },
+        -0.0011949937435319358,
+        47065.30444451891,
+        0.005,
+        8.367569253397408,
+        4,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        100,
+        8.377580409572783,
+        8.375075645372247,
+        8.377580409572783,
+        1,
+        true,
+        1.577423523022009e-21,
+        4.400794270676399e-26,
+        20973.819415188023,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        0,
+        0,
+        {
+          "deferredRequests": 28,
+          "maximumDeferredRequestKilograms": 1.2808806814440063e-13,
+          "summedDeferredRequestKilograms": 1.5062789639353495e-12
+        },
+        -0.0002989842028461309,
+        11755.71674038546,
+        0.01,
+        8.375075645372247,
+        5,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        100,
+        8.377580409572783,
+        8.375075645372247,
+        8.377580409572783,
+        1,
+        true,
+        6.800387316280941e-21,
+        2.200397135346564e-26,
+        20973.819415188023,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        0,
+        0,
+        {
+          "deferredRequests": 28,
+          "maximumDeferredRequestKilograms": 6.404403407220031e-14,
+          "summedDeferredRequestKilograms": 7.531394819676748e-13
+        },
+        -0.0002989842028461309,
+        11755.71674038546,
+        0.005,
+        8.375075645372247,
+        5,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        100,
+        8.377580409572783,
+        8.21989906348978,
+        8.377580409572783,
+        1,
+        true,
+        2.789031929186309e-19,
+        4.48264424371413e-27,
+        20973.971241702486,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        0,
+        2.1610445890878048e-16,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.01882182424687029,
+        766739.3628931793,
+        0.01,
+        8.219899063489779,
+        2,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        100,
+        8.377580409572783,
+        8.21989906348978,
+        8.377580409572783,
+        1,
+        true,
+        1.3945159645931545e-19,
+        2.241322121857065e-27,
+        20973.971241702486,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        0,
+        2.1610445890878048e-16,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.01882182424687029,
+        766739.3628931793,
+        0.005,
+        8.219899063489779,
+        2,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        100,
+        8.377580409572783,
+        8.337661822646618,
+        8.377580409572783,
+        1,
+        true,
+        6.012720661714197e-20,
+        1.1672215642868956e-26,
+        20973.828922269706,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        0,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.004764930322906924,
+        188941.5713739531,
+        0.01,
+        8.337661822646618,
+        3,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        100,
+        8.377580409572783,
+        8.337661822646618,
+        8.377580409572783,
+        1,
+        true,
+        3.0063603308570985e-20,
+        5.836107821434478e-27,
+        20973.828922269706,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        0,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.004764930322906924,
+        188941.5713739531,
+        0.005,
+        8.337661822646618,
+        3,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        100,
+        8.377580409572783,
+        8.367569253397406,
+        8.377580409572783,
+        1,
+        true,
+        8.95322587325241e-21,
+        2.002341964366423e-26,
+        20973.82190131615,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        0,
+        2.1229066478045735e-16,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.0011949937435321578,
+        47065.30444451891,
+        0.01,
+        8.367569253397408,
+        4,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        100,
+        8.377580409572783,
+        8.367569253397406,
+        8.377580409572783,
+        1,
+        true,
+        2.5879783374541575e-20,
+        1.001170982188077e-26,
+        20973.82190131615,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        0,
+        2.1229066478045735e-16,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.0011949937435321578,
+        47065.30444451891,
+        0.005,
+        8.367569253397408,
+        4,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        100,
+        8.377580409572783,
+        8.375075645372245,
+        8.377580409572783,
+        1,
+        true,
+        4.369683014242256e-21,
+        4.958307798538175e-26,
+        20973.820157661765,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        0,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.00029898420284635296,
+        11755.71674038546,
+        0.01,
+        8.375075645372245,
+        5,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        100,
+        8.377580409572783,
+        8.375075645372245,
+        8.377580409572783,
+        1,
+        true,
+        2.184841507121128e-21,
+        2.479153899278712e-26,
+        20973.820157661765,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        0,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.00029898420284635296,
+        11755.71674038546,
+        0.005,
+        8.375075645372245,
+        5,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        1000000,
+        2261.229790572958,
+        2258.4697972930244,
+        2261.2298055780216,
+        1,
+        false,
+        6.786487847038222e-18,
+        9.515267763751559e-25,
+        20973.819415188493,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 1,
+          "maximumDeferredRequestKilograms": 1.07565349612593e-11,
+          "summedDeferredRequestKilograms": 1.07565349612593e-11
+        },
+        -0.0012205784118839436,
+        76.67393628931792,
+        0.01,
+        2258.4697972930244,
+        2,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        1000000,
+        2261.229790572958,
+        2258.4697972930244,
+        2261.2298055780216,
+        1,
+        false,
+        2.283468248932985e-17,
+        4.757633886725993e-25,
+        20973.819415188493,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 1,
+          "maximumDeferredRequestKilograms": 5.37826748062965e-12,
+          "summedDeferredRequestKilograms": 5.37826748062965e-12
+        },
+        -0.0012205784118839436,
+        76.67393628931792,
+        0.005,
+        2258.4697972930244,
+        2,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        1000000,
+        2261.229790572958,
+        2270.899058239571,
+        2261.2298055780216,
+        1,
+        false,
+        6.320737893093678e-19,
+        2.464413648389486e-24,
+        20973.81941518852,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 4,
+          "maximumDeferredRequestKilograms": 2.195789282793463e-11,
+          "summedDeferredRequestKilograms": 8.17324631467606e-11
+        },
+        0.004276103489215144,
+        18.89415713739531,
+        0.01,
+        2270.899058239571,
+        3,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        1000000,
+        2261.229790572958,
+        2270.899058239571,
+        2261.2298055780216,
+        1,
+        false,
+        4.8239861079329476e-20,
+        1.2322068249397826e-24,
+        20973.81941518852,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 4,
+          "maximumDeferredRequestKilograms": 1.0978946413967314e-11,
+          "summedDeferredRequestKilograms": 4.08662315733803e-11
+        },
+        0.004276103489215144,
+        18.89415713739531,
+        0.005,
+        2270.899058239571,
+        3,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        1000000,
+        2261.229790572958,
+        2268.856260537539,
+        2261.2298055780216,
+        1,
+        false,
+        7.726234644054448e-20,
+        5.224571541467661e-24,
+        20973.819415188413,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 12,
+          "maximumDeferredRequestKilograms": 2.0843944078184273e-11,
+          "summedDeferredRequestKilograms": 1.7130522834264384e-10
+        },
+        0.0033727022970884146,
+        4.706530444451891,
+        0.01,
+        2268.856260537539,
+        4,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        1000000,
+        2261.229790572958,
+        2268.856260537539,
+        2261.2298055780216,
+        1,
+        false,
+        1.5399014349604524e-18,
+        2.6122857707338306e-24,
+        20973.819415188413,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 12,
+          "maximumDeferredRequestKilograms": 1.0421972039092136e-11,
+          "summedDeferredRequestKilograms": 8.565261417132192e-11
+        },
+        0.0033727022970884146,
+        4.706530444451891,
+        0.005,
+        2268.856260537539,
+        4,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        1000000,
+        2261.229790572958,
+        2265.7401416211737,
+        2261.2298055780216,
+        1,
+        false,
+        1.9975944065419625e-19,
+        1.1430261120326405e-23,
+        20973.819415188023,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 20,
+          "maximumDeferredRequestKilograms": 2.497800020617968e-11,
+          "summedDeferredRequestKilograms": 2.5431825886712e-10
+        },
+        0.001994638506898294,
+        1.175571674038546,
+        0.01,
+        2265.7401416211737,
+        5,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        1000000,
+        2261.229790572958,
+        2265.7401416211737,
+        2261.2298055780216,
+        1,
+        false,
+        9.550050514859823e-19,
+        5.715130560992102e-24,
+        20973.819415188023,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 20,
+          "maximumDeferredRequestKilograms": 1.248900010308984e-11,
+          "summedDeferredRequestKilograms": 1.2715912943356e-10
+        },
+        0.001994638506898294,
+        1.175571674038546,
+        0.005,
+        2265.7401416211737,
+        5,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        1000000,
+        2261.229790572958,
+        2258.556336916796,
+        2261.2298055780216,
+        1,
+        false,
+        1.1827590984202989e-18,
+        1.4625965848055407e-24,
+        20979.82261900313,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.0011823073685967023,
+        76.67393628931792,
+        0.01,
+        2258.556336916796,
+        2,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        1000000,
+        2261.229790572958,
+        2258.556336916796,
+        2261.2298055780216,
+        1,
+        false,
+        1.3514298147045885e-18,
+        7.312982924027704e-25,
+        20979.82261900313,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.0011823073685967023,
+        76.67393628931792,
+        0.005,
+        2258.556336916796,
+        2,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        1000000,
+        2261.229790572958,
+        2271.069046069309,
+        2261.2298055780216,
+        1,
+        false,
+        3.2403185501402193e-18,
+        2.4981195684578638e-24,
+        20975.26877543631,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.004351278435750228,
+        18.89415713739531,
+        0.01,
+        2271.069046069309,
+        3,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        1000000,
+        2261.229790572958,
+        2271.069046069309,
+        2261.2298055780216,
+        1,
+        false,
+        4.086843231429433e-18,
+        1.2490597846795569e-24,
+        20975.26877543631,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.004351278435750228,
+        18.89415713739531,
+        0.005,
+        2271.069046069309,
+        3,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        1000000,
+        2261.229790572958,
+        2268.9511870165793,
+        2261.2298055780216,
+        1,
+        false,
+        7.704715792789328e-20,
+        4.921839286948718e-24,
+        20973.988829196376,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.0034146823199971976,
+        4.706530444451891,
+        0.01,
+        2268.9511870165793,
+        4,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        1000000,
+        2261.229790572958,
+        2268.9511870165793,
+        2261.2298055780216,
+        1,
+        false,
+        5.242259199426311e-19,
+        2.4609196448658155e-24,
+        20973.988829196376,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.0034146823199971976,
+        4.706530444451891,
+        0.005,
+        2268.9511870165793,
+        4,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        1000000,
+        2261.229790572958,
+        2265.787063966818,
+        2261.2298055780216,
+        1,
+        false,
+        4.582930104477164e-19,
+        1.2161375872578477e-23,
+        20973.848971682484,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.0020153893149448265,
+        1.175571674038546,
+        0.01,
+        2265.787063966818,
+        5,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        1000000,
+        2261.229790572958,
+        2265.787063966818,
+        2261.2298055780216,
+        1,
+        false,
+        5.92392597322357e-20,
+        6.0806879362892385e-24,
+        20973.848971682484,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.0020153893149448265,
+        1.175571674038546,
+        0.005,
+        2265.787063966818,
+        5,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        1000000,
+        2261.229790572958,
+        2258.4697972930244,
+        2261.2298055780216,
+        1,
+        false,
+        6.523570371714935e-18,
+        1.0958050243519685e-24,
+        20973.819415188493,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        6.63579776392164e-9,
+        4.0270394709862313e-16,
+        {
+          "deferredRequests": 2,
+          "maximumDeferredRequestKilograms": 2.479437900409093e-11,
+          "summedDeferredRequestKilograms": 4.958875800818186e-11
+        },
+        -0.0012205784118839436,
+        76.67393628931792,
+        0.01,
+        2258.4697972930235,
+        2,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        1000000,
+        2261.229790572958,
+        2258.4697972930244,
+        2261.2298055780216,
+        1,
+        false,
+        2.2966141226991493e-17,
+        5.479025121759842e-25,
+        20973.819415188493,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        6.63579776392164e-9,
+        4.0270394709862313e-16,
+        {
+          "deferredRequests": 2,
+          "maximumDeferredRequestKilograms": 1.2397189502045464e-11,
+          "summedDeferredRequestKilograms": 2.479437900409093e-11
+        },
+        -0.0012205784118839436,
+        76.67393628931792,
+        0.005,
+        2258.4697972930235,
+        2,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        1000000,
+        2261.229790572958,
+        2270.899058239571,
+        2261.2298055780216,
+        1,
+        false,
+        8.293225413180054e-19,
+        2.5167485208420967e-24,
+        20973.81941518852,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 5,
+          "maximumDeferredRequestKilograms": 2.195789282793463e-11,
+          "summedDeferredRequestKilograms": 8.591864070144384e-11
+        },
+        0.004276103489215144,
+        18.89415713739531,
+        0.01,
+        2270.899058239571,
+        3,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        1000000,
+        2261.229790572958,
+        2270.899058239571,
+        2261.2298055780216,
+        1,
+        false,
+        5.038451492498934e-20,
+        1.2583742604210484e-24,
+        20973.81941518852,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 5,
+          "maximumDeferredRequestKilograms": 1.0978946413967314e-11,
+          "summedDeferredRequestKilograms": 4.295932035072192e-11
+        },
+        0.004276103489215144,
+        18.89415713739531,
+        0.005,
+        2270.899058239571,
+        3,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        1000000,
+        2261.229790572958,
+        2268.8562605375387,
+        2261.2298055780216,
+        1,
+        false,
+        3.495151979152848e-20,
+        5.419040339777139e-24,
+        20973.819415188413,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        6.63579776392164e-9,
+        2.0043021622653395e-16,
+        {
+          "deferredRequests": 4,
+          "maximumDeferredRequestKilograms": 1.954452953791615e-11,
+          "summedDeferredRequestKilograms": 6.173994594588697e-11
+        },
+        0.0033727022970881926,
+        4.706530444451891,
+        0.01,
+        2268.856260537538,
+        4,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        1000000,
+        2261.229790572958,
+        2268.8562605375387,
+        2261.2298055780216,
+        1,
+        false,
+        1.5307004519737926e-18,
+        2.7095201717348627e-24,
+        20973.819415188413,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        6.63579776392164e-9,
+        2.0043021622653395e-16,
+        {
+          "deferredRequests": 4,
+          "maximumDeferredRequestKilograms": 9.772264768958074e-12,
+          "summedDeferredRequestKilograms": 3.086997297294349e-11
+        },
+        0.0033727022970881926,
+        4.706530444451891,
+        0.005,
+        2268.856260537538,
+        4,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        1000000,
+        2261.229790572958,
+        2265.7401416211737,
+        2261.2298055780216,
+        1,
+        false,
+        2.0338239126716527e-19,
+        1.1430261120326404e-23,
+        20973.819415188023,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 28,
+          "maximumDeferredRequestKilograms": 3.7150520248898826e-11,
+          "summedDeferredRequestKilograms": 4.670636580839009e-10
+        },
+        0.001994638506898294,
+        1.175571674038546,
+        0.01,
+        2265.7401416211737,
+        5,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        1000000,
+        2261.229790572958,
+        2265.7401416211737,
+        2261.2298055780216,
+        1,
+        false,
+        9.531935761794977e-19,
+        5.715130560992101e-24,
+        20973.819415188023,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 28,
+          "maximumDeferredRequestKilograms": 1.8575260124449413e-11,
+          "summedDeferredRequestKilograms": 2.3353182904195047e-10
+        },
+        0.001994638506898294,
+        1.175571674038546,
+        0.005,
+        2265.7401416211737,
+        5,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        1000000,
+        2261.229790572958,
+        2258.420479469055,
+        2261.2298055780216,
+        1,
+        false,
+        1.646880441226251e-18,
+        9.021626441414063e-25,
+        20973.971241702486,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        6.63579776392164e-9,
+        2.0135637053440699e-16,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.0012423885896234443,
+        76.67393628931792,
+        0.01,
+        2258.4204794690554,
+        2,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        1000000,
+        2261.229790572958,
+        2258.420479469055,
+        2261.2298055780216,
+        1,
+        false,
+        2.7662495845278635e-18,
+        4.510813220707032e-25,
+        20973.971241702486,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        6.63579776392164e-9,
+        2.0135637053440699e-16,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.0012423885896234443,
+        76.67393628931792,
+        0.005,
+        2258.4204794690554,
+        2,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        1000000,
+        2261.229790572958,
+        2270.884371501669,
+        2261.2298055780216,
+        1,
+        false,
+        9.904869280355833e-19,
+        2.4031062538431246e-24,
+        20973.828922269706,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.004269608466964225,
+        18.89415713739531,
+        0.01,
+        2270.884371501669,
+        3,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        1000000,
+        2261.229790572958,
+        2270.884371501669,
+        2261.2298055780216,
+        1,
+        false,
+        1.1188446220556398e-19,
+        1.2015531269215623e-24,
+        20973.828922269706,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.004269608466964225,
+        18.89415713739531,
+        0.005,
+        2270.884371501669,
+        3,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        1000000,
+        2261.229790572958,
+        2268.8540592263785,
+        2261.2298055780216,
+        1,
+        false,
+        8.891134910183767e-19,
+        5.090777472064198e-24,
+        20973.82190131615,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.0033717287953436426,
+        4.706530444451891,
+        0.01,
+        2268.8540592263785,
+        4,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        1000000,
+        2261.229790572958,
+        2268.8540592263785,
+        2261.2298055780216,
+        1,
+        false,
+        2.105380544628905e-18,
+        2.545388736032099e-24,
+        20973.82190131615,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.0033717287953436426,
+        4.706530444451891,
+        0.005,
+        2268.8540592263785,
+        4,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        1000000,
+        2261.229790572958,
+        2265.740417640273,
+        2261.2298055780216,
+        1,
+        false,
+        9.601357938602532e-20,
+        1.1827370040882749e-23,
+        20973.820157661765,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.001994760572819443,
+        1.175571674038546,
+        0.01,
+        2265.740417640273,
+        5,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        1000000,
+        2261.229790572958,
+        2265.740417640273,
+        2261.2298055780216,
+        1,
+        false,
+        7.341879555165846e-20,
+        5.9136850204413744e-24,
+        20973.820157661765,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        6.63579776392164e-9,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.001994760572819443,
+        1.175571674038546,
+        0.005,
+        2265.740417640273,
+        5,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        100,
+        15.079644737231007,
+        14.464975772018366,
+        15.079644737231009,
+        2,
+        true,
+        2.0762836090416077e-18,
+        4.630040527537047e-27,
+        17159.72961370175,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        1.177983215356858e-16,
+        2.456079937356697e-16,
+        {
+          "deferredRequests": 3,
+          "maximumDeferredRequestKilograms": 7.864828866076278e-14,
+          "summedDeferredRequestKilograms": 2.3594486598228834e-13
+        },
+        -0.040761501741155115,
+        766739.3628931793,
+        0.01,
+        14.464975772018363,
+        2,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        100,
+        15.079644737231007,
+        14.464975772018366,
+        15.079644737231009,
+        2,
+        true,
+        2.5323258853455027e-17,
+        2.3150202637685236e-27,
+        17159.72961370175,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        1.177983215356858e-16,
+        2.456079937356697e-16,
+        {
+          "deferredRequests": 3,
+          "maximumDeferredRequestKilograms": 3.932414433038139e-14,
+          "summedDeferredRequestKilograms": 1.1797243299114417e-13
+        },
+        -0.040761501741155115,
+        766739.3628931793,
+        0.005,
+        14.464975772018363,
+        2,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        100,
+        15.079644737231007,
+        14.922672263613425,
+        15.079644737231009,
+        2,
+        true,
+        1.4402947614360923e-18,
+        9.301208290554997e-27,
+        17133.874560953245,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 8,
+          "maximumDeferredRequestKilograms": 1.1375619025499567e-13,
+          "summedDeferredRequestKilograms": 7.738171842876778e-13
+        },
+        -0.010409560460666878,
+        188941.5713739531,
+        0.01,
+        14.922672263613425,
+        3,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        100,
+        15.079644737231007,
+        14.922672263613425,
+        15.079644737231009,
+        2,
+        true,
+        5.820021960994233e-18,
+        4.650604145277499e-27,
+        17133.874560953245,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 8,
+          "maximumDeferredRequestKilograms": 5.687809512749783e-14,
+          "summedDeferredRequestKilograms": 3.869085921438389e-13
+        },
+        -0.010409560460666878,
+        188941.5713739531,
+        0.005,
+        14.922672263613425,
+        3,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        100,
+        15.079644737231007,
+        15.04019067223573,
+        15.079644737231009,
+        2,
+        true,
+        8.401828724862603e-19,
+        2.2103966908082598e-26,
+        17121.189619742974,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 22,
+          "maximumDeferredRequestKilograms": 8.051629212788476e-14,
+          "summedDeferredRequestKilograms": 1.5982506372381662e-12
+        },
+        -0.002616378945444864,
+        47065.30444451891,
+        0.01,
+        15.04019067223573,
+        4,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        100,
+        15.079644737231007,
+        15.04019067223573,
+        15.079644737231009,
+        2,
+        true,
+        1.1652747313145236e-19,
+        1.1051983454041299e-26,
+        17121.189619742974,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 22,
+          "maximumDeferredRequestKilograms": 4.025814606394238e-14,
+          "summedDeferredRequestKilograms": 7.991253186190831e-13
+        },
+        -0.002616378945444864,
+        47065.30444451891,
+        0.005,
+        15.04019067223573,
+        4,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        100,
+        15.079644737231007,
+        15.069767967377487,
+        15.079644737231009,
+        2,
+        true,
+        1.5176054815772911e-18,
+        4.9474175488425674e-26,
+        17119.263822075573,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 61,
+          "maximumDeferredRequestKilograms": 1.2721697148081957e-13,
+          "summedDeferredRequestKilograms": 4.43087454341537e-12
+        },
+        -0.0006549736433204556,
+        11755.71674038546,
+        0.01,
+        15.069767967377487,
+        5,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        100,
+        15.079644737231007,
+        15.069767967377487,
+        15.079644737231009,
+        2,
+        true,
+        1.4192686945376427e-18,
+        2.473708774447534e-26,
+        17119.263822075573,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 61,
+          "maximumDeferredRequestKilograms": 6.360848574040978e-14,
+          "summedDeferredRequestKilograms": 2.215437271707685e-12
+        },
+        -0.0006549736433204556,
+        11755.71674038546,
+        0.005,
+        15.069767967377487,
+        5,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        100,
+        15.079644737231007,
+        14.464975772018354,
+        15.079644737231009,
+        2,
+        true,
+        4.034789390256663e-18,
+        4.1225812185210454e-27,
+        17210.71081371323,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.04076150174115589,
+        766739.3628931793,
+        0.01,
+        14.464975772018354,
+        2,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        100,
+        15.079644737231007,
+        14.464975772018354,
+        15.079644737231009,
+        2,
+        true,
+        5.417311081979123e-18,
+        2.0612906092605227e-27,
+        17210.71081371323,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.04076150174115589,
+        766739.3628931793,
+        0.005,
+        14.464975772018354,
+        2,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        100,
+        15.079644737231007,
+        14.922672263613425,
+        15.079644737231009,
+        2,
+        true,
+        2.0594393643853695e-18,
+        9.891202495888105e-27,
+        17128.71742640766,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        1.177983215356858e-16,
+        1.1903744905874638e-16,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.010409560460666878,
+        188941.5713739531,
+        0.01,
+        14.922672263613427,
+        3,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        100,
+        15.079644737231007,
+        14.922672263613425,
+        15.079644737231009,
+        2,
+        true,
+        4.434431653817516e-18,
+        4.9456012479765015e-27,
+        17128.71742640766,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        1.177983215356858e-16,
+        1.1903744905874638e-16,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.010409560460666878,
+        188941.5713739531,
+        0.005,
+        14.922672263613427,
+        3,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        100,
+        15.079644737231007,
+        15.04019067223573,
+        15.079644737231009,
+        2,
+        true,
+        7.087270645487188e-19,
+        1.9693291383177395e-26,
+        17115.944396633447,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.002616378945444864,
+        47065.30444451891,
+        0.01,
+        15.04019067223573,
+        4,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        100,
+        15.079644737231007,
+        15.04019067223573,
+        15.079644737231009,
+        2,
+        true,
+        4.757891175190305e-19,
+        9.846645691643374e-27,
+        17115.944396633447,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.002616378945444864,
+        47065.30444451891,
+        0.005,
+        15.04019067223573,
+        4,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        100,
+        15.079644737231007,
+        15.06976796737749,
+        15.079644737231009,
+        2,
+        true,
+        3.9171181132630662e-19,
+        4.5021281411336337e-26,
+        17121.55213767794,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.0006549736433201225,
+        11755.71674038546,
+        0.01,
+        15.06976796737749,
+        5,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        100,
+        15.079644737231007,
+        15.06976796737749,
+        15.079644737231009,
+        2,
+        true,
+        5.92521222628983e-20,
+        2.2510640705668169e-26,
+        17121.55213767794,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.0006549736433201225,
+        11755.71674038546,
+        0.005,
+        15.06976796737749,
+        5,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        100,
+        15.079644737231007,
+        14.464975772018374,
+        15.079644737231009,
+        2,
+        true,
+        1.6179880251081479e-18,
+        5.5021072667893705e-27,
+        17159.72961370175,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 2,
+          "maximumDeferredRequestKilograms": 7.864828866076276e-14,
+          "summedDeferredRequestKilograms": 1.5729657732152552e-13
+        },
+        -0.04076150174115467,
+        766739.3628931793,
+        0.01,
+        14.464975772018374,
+        2,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        100,
+        15.079644737231007,
+        14.464975772018374,
+        15.079644737231009,
+        2,
+        true,
+        2.5094111061488298e-17,
+        2.7510536333946852e-27,
+        17159.72961370175,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 2,
+          "maximumDeferredRequestKilograms": 3.932414433038138e-14,
+          "summedDeferredRequestKilograms": 7.864828866076276e-14
+        },
+        -0.04076150174115467,
+        766739.3628931793,
+        0.005,
+        14.464975772018374,
+        2,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        100,
+        15.079644737231007,
+        14.92267226361343,
+        15.079644737231009,
+        2,
+        true,
+        1.5420656535915493e-18,
+        8.601001097629124e-27,
+        17133.874560953238,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        1.177983215356858e-16,
+        1.1903744905874633e-16,
+        {
+          "deferredRequests": 18,
+          "maximumDeferredRequestKilograms": 8.009449300036673e-14,
+          "summedDeferredRequestKilograms": 1.081490390110958e-12
+        },
+        -0.010409560460666545,
+        188941.5713739531,
+        0.01,
+        14.922672263613432,
+        3,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        100,
+        15.079644737231007,
+        14.92267226361343,
+        15.079644737231009,
+        2,
+        true,
+        5.749481821827291e-18,
+        4.300500548814562e-27,
+        17133.874560953238,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        1.177983215356858e-16,
+        1.1903744905874633e-16,
+        {
+          "deferredRequests": 18,
+          "maximumDeferredRequestKilograms": 4.0047246500183367e-14,
+          "summedDeferredRequestKilograms": 5.40745195055479e-13
+        },
+        -0.010409560460666545,
+        188941.5713739531,
+        0.005,
+        14.922672263613432,
+        3,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        100,
+        15.079644737231007,
+        15.040190672235733,
+        15.079644737231009,
+        2,
+        true,
+        8.7307402321788e-19,
+        1.9814485802319547e-26,
+        17121.189619743032,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 24,
+          "maximumDeferredRequestKilograms": 8.058870368378876e-14,
+          "summedDeferredRequestKilograms": 1.423674305080774e-12
+        },
+        -0.0026163789454446418,
+        47065.30444451891,
+        0.01,
+        15.040190672235733,
+        4,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        100,
+        15.079644737231007,
+        15.040190672235733,
+        15.079644737231009,
+        2,
+        true,
+        1.0261665218609437e-19,
+        9.907242901211988e-27,
+        17121.189619743032,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 24,
+          "maximumDeferredRequestKilograms": 4.029435184189438e-14,
+          "summedDeferredRequestKilograms": 7.11837152540387e-13
+        },
+        -0.0026163789454446418,
+        47065.30444451891,
+        0.005,
+        15.040190672235733,
+        4,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        100,
+        15.079644737231007,
+        15.069767967377487,
+        15.079644737231009,
+        2,
+        true,
+        1.5116142341491512e-18,
+        3.9723141419621646e-26,
+        17119.263822075583,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 61,
+          "maximumDeferredRequestKilograms": 1.594462605782236e-13,
+          "summedDeferredRequestKilograms": 4.3569868606167894e-12
+        },
+        -0.0006549736433204556,
+        11755.71674038546,
+        0.01,
+        15.069767967377487,
+        5,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        100,
+        15.079644737231007,
+        15.069767967377487,
+        15.079644737231009,
+        2,
+        true,
+        1.4222643182517127e-18,
+        1.9861570710008947e-26,
+        17119.263822075583,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 61,
+          "maximumDeferredRequestKilograms": 7.97231302891118e-14,
+          "summedDeferredRequestKilograms": 2.1784934303083947e-12
+        },
+        -0.0006549736433204556,
+        11755.71674038546,
+        0.005,
+        15.069767967377487,
+        5,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        100,
+        15.079644737231007,
+        14.464975772018349,
+        15.079644737231009,
+        2,
+        true,
+        1.752082476305805e-18,
+        5.853417461207491e-27,
+        17155.852037544304,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.040761501741156336,
+        766739.3628931793,
+        0.01,
+        14.464975772018349,
+        2,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        100,
+        15.079644737231007,
+        14.464975772018349,
+        15.079644737231009,
+        2,
+        true,
+        2.333148261088956e-18,
+        2.9267087306085706e-27,
+        17155.852037544304,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.040761501741156336,
+        766739.3628931793,
+        0.005,
+        14.464975772018349,
+        2,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        100,
+        15.079644737231007,
+        14.922672263613418,
+        15.079644737231009,
+        2,
+        true,
+        2.0042006527324583e-18,
+        9.584220664999267e-27,
+        17120.185411107213,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.010409560460667433,
+        188941.5713739531,
+        0.01,
+        14.922672263613418,
+        3,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        100,
+        15.079644737231007,
+        14.922672263613418,
+        15.079644737231009,
+        2,
+        true,
+        5.163979853875448e-19,
+        4.7921103324996336e-27,
+        17120.185411107213,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.010409560460667433,
+        188941.5713739531,
+        0.005,
+        14.922672263613418,
+        3,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        100,
+        15.079644737231007,
+        15.040190672235724,
+        15.079644737231009,
+        2,
+        true,
+        2.5488966936091052e-18,
+        1.9808877895845274e-26,
+        17111.705684349567,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        1.177983215356858e-16,
+        2.362146701609861e-16,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.002616378945445197,
+        47065.30444451891,
+        0.01,
+        15.040190672235727,
+        4,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        100,
+        15.079644737231007,
+        15.040190672235724,
+        15.079644737231009,
+        2,
+        true,
+        1.4576273212005479e-18,
+        9.904438948033758e-27,
+        17111.705684349567,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        1.177983215356858e-16,
+        2.362146701609861e-16,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.002616378945445197,
+        47065.30444451891,
+        0.005,
+        15.040190672235727,
+        4,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        100,
+        15.079644737231007,
+        15.069767967377482,
+        15.079644737231009,
+        2,
+        true,
+        3.6120192589545407e-19,
+        4.7378774304273066e-26,
+        17118.225729590788,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.0006549736433207887,
+        11755.71674038546,
+        0.01,
+        15.069767967377482,
+        5,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        100,
+        15.079644737231007,
+        15.069767967377482,
+        15.079644737231009,
+        2,
+        true,
+        6.966597002375794e-19,
+        2.3689387152236117e-26,
+        17118.225729590788,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        1.177983215356858e-16,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.0006549736433207887,
+        11755.71674038546,
+        0.005,
+        15.069767967377482,
+        5,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        1000000,
+        3473.3691581470503,
+        3438.021236972062,
+        3473.3692491849356,
+        2,
+        false,
+        1.1866708575680693e-17,
+        1.0977116191956058e-24,
+        17159.72961370175,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        2.6210252584532056e-8,
+        1.3227008198674472e-16,
+        {
+          "deferredRequests": 3,
+          "maximumDeferredRequestKilograms": 2.8817194148799413e-11,
+          "summedDeferredRequestKilograms": 8.645158244639825e-11
+        },
+        -0.010176865653189093,
+        76.67393628931792,
+        0.01,
+        3438.0212369720625,
+        2,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        1000000,
+        3473.3691581470503,
+        3438.021236972062,
+        3473.3692491849356,
+        2,
+        false,
+        6.209204236626765e-18,
+        5.488558095978029e-25,
+        17159.72961370175,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        2.6210252584532056e-8,
+        1.3227008198674472e-16,
+        {
+          "deferredRequests": 3,
+          "maximumDeferredRequestKilograms": 1.4408597074399707e-11,
+          "summedDeferredRequestKilograms": 4.322579122319912e-11
+        },
+        -0.010176865653189093,
+        76.67393628931792,
+        0.005,
+        3438.0212369720625,
+        2,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        1000000,
+        3473.3691581470503,
+        3486.742821818099,
+        3473.3692491849356,
+        2,
+        false,
+        6.035535911661617e-20,
+        3.018125012222854e-24,
+        17133.874560953245,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        2.6210252584532056e-8,
+        1.3042182177615967e-16,
+        {
+          "deferredRequests": 8,
+          "maximumDeferredRequestKilograms": 9.524424963506646e-11,
+          "summedDeferredRequestKilograms": 5.452896128724885e-10
+        },
+        0.0038503169901391576,
+        18.89415713739531,
+        0.01,
+        3486.7428218180985,
+        3,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        1000000,
+        3473.3691581470503,
+        3486.742821818099,
+        3473.3692491849356,
+        2,
+        false,
+        1.9126316843564297e-18,
+        1.5090625066352033e-24,
+        17133.874560953245,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        2.6210252584532056e-8,
+        1.3042182177615967e-16,
+        {
+          "deferredRequests": 8,
+          "maximumDeferredRequestKilograms": 4.762212481753323e-11,
+          "summedDeferredRequestKilograms": 2.7264480643624425e-10
+        },
+        0.0038503169901391576,
+        18.89415713739531,
+        0.005,
+        3486.7428218180985,
+        3,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        1000000,
+        3473.3691581470503,
+        3488.0595144887243,
+        3473.3692491849356,
+        2,
+        false,
+        4.632817248614892e-18,
+        6.041477021378151e-24,
+        17121.189619742974,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 22,
+          "maximumDeferredRequestKilograms": 7.491784109741983e-11,
+          "summedDeferredRequestKilograms": 1.3868949533146892e-9
+        },
+        0.004229399251817423,
+        4.706530444451891,
+        0.01,
+        3488.0595144887243,
+        4,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        1000000,
+        3473.3691581470503,
+        3488.0595144887243,
+        3473.3692491849356,
+        2,
+        false,
+        2.783465955968741e-18,
+        3.0207385117067008e-24,
+        17121.189619742974,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 22,
+          "maximumDeferredRequestKilograms": 3.745892054870991e-11,
+          "summedDeferredRequestKilograms": 6.934474766573446e-10
+        },
+        0.004229399251817423,
+        4.706530444451891,
+        0.005,
+        3488.0595144887243,
+        4,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        1000000,
+        3473.3691581470503,
+        3482.7306175315034,
+        3473.3692491849356,
+        2,
+        false,
+        8.984470681915594e-20,
+        1.2085568238607681e-23,
+        17119.263822075573,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 61,
+          "maximumDeferredRequestKilograms": 2.1784876101910697e-10,
+          "summedDeferredRequestKilograms": 5.323286264046181e-9
+        },
+        0.0026951837466646644,
+        1.175571674038546,
+        0.01,
+        3482.7306175315034,
+        5,
+        1
+      ],
+      [
+        [
+          1,
+          0,
+          0
+        ],
+        1000000,
+        3473.3691581470503,
+        3482.7306175315034,
+        3473.3692491849356,
+        2,
+        false,
+        5.09081879269234e-19,
+        6.04278412129884e-24,
+        17119.263822075573,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 61,
+          "maximumDeferredRequestKilograms": 1.0892438050955349e-10,
+          "summedDeferredRequestKilograms": 2.6616431320230906e-9
+        },
+        0.0026951837466646644,
+        1.175571674038546,
+        0.005,
+        3482.7306175315034,
+        5,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        1000000,
+        3473.3691581470503,
+        3436.623267120677,
+        3473.3692491849356,
+        2,
+        false,
+        4.227810377255718e-18,
+        1.1286970510391614e-24,
+        17210.71081371323,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.010579348012849876,
+        76.67393628931792,
+        0.01,
+        3436.623267120677,
+        2,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        1000000,
+        3473.3691581470503,
+        3436.623267120677,
+        3473.3692491849356,
+        2,
+        false,
+        1.771713539201617e-18,
+        5.643485255195807e-25,
+        17210.71081371323,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.010579348012849876,
+        76.67393628931792,
+        0.005,
+        3436.623267120677,
+        2,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        1000000,
+        3473.3691581470503,
+        3486.866354282401,
+        3473.3692491849356,
+        2,
+        false,
+        4.2145276682920474e-19,
+        2.95349516946383e-24,
+        17128.71742640766,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.003885882590983547,
+        18.89415713739531,
+        0.01,
+        3486.866354282401,
+        3,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        1000000,
+        3473.3691581470503,
+        3486.866354282401,
+        3473.3692491849356,
+        2,
+        false,
+        1.5464078211059847e-18,
+        1.476747584731915e-24,
+        17128.71742640766,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.003885882590983547,
+        18.89415713739531,
+        0.005,
+        3486.866354282401,
+        3,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        1000000,
+        3473.3691581470503,
+        3488.2817045891184,
+        3473.3692491849356,
+        2,
+        false,
+        2.6558556202910702e-18,
+        5.0414825885430764e-24,
+        17115.944396633447,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.004293368868766967,
+        4.706530444451891,
+        0.01,
+        3488.2817045891184,
+        4,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        1000000,
+        3473.3691581470503,
+        3488.2817045891184,
+        3473.3692491849356,
+        2,
+        false,
+        2.0416321803940885e-18,
+        2.5207412956731194e-24,
+        17115.944396633447,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.004293368868766967,
+        4.706530444451891,
+        0.005,
+        3488.2817045891184,
+        4,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        1000000,
+        3473.3691581470503,
+        3482.869610291723,
+        3473.3692491849356,
+        2,
+        false,
+        6.341835334433871e-20,
+        1.3934330391572178e-23,
+        17121.55213767794,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.0027352004423417675,
+        1.175571674038546,
+        0.01,
+        3482.869610291723,
+        5,
+        1
+      ],
+      [
+        [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        1000000,
+        3473.3691581470503,
+        3482.869610291723,
+        3473.3692491849356,
+        2,
+        false,
+        2.90036159501662e-20,
+        6.967165203906513e-24,
+        17121.55213767794,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.0027352004423417675,
+        1.175571674038546,
+        0.005,
+        3482.869610291723,
+        5,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        1000000,
+        3473.3691581470503,
+        3438.0212369720634,
+        3473.3692491849356,
+        2,
+        false,
+        1.1415379362736936e-17,
+        1.4085394602980788e-24,
+        17159.72961370175,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        2.6210252584532056e-8,
+        6.613504099337233e-16,
+        {
+          "deferredRequests": 2,
+          "maximumDeferredRequestKilograms": 2.8817194148799407e-11,
+          "summedDeferredRequestKilograms": 5.763438829759881e-11
+        },
+        -0.01017686565318876,
+        76.67393628931792,
+        0.01,
+        3438.021236972061,
+        2,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        1000000,
+        3473.3691581470503,
+        3438.0212369720634,
+        3473.3692491849356,
+        2,
+        false,
+        5.463464161141274e-18,
+        7.042697301490394e-25,
+        17159.72961370175,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        2.6210252584532056e-8,
+        6.613504099337233e-16,
+        {
+          "deferredRequests": 2,
+          "maximumDeferredRequestKilograms": 1.4408597074399703e-11,
+          "summedDeferredRequestKilograms": 2.8817194148799407e-11
+        },
+        -0.01017686565318876,
+        76.67393628931792,
+        0.005,
+        3438.021236972061,
+        2,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        1000000,
+        3473.3691581470503,
+        3486.7428218181003,
+        3473.3692491849356,
+        2,
+        false,
+        6.162736047074365e-20,
+        2.5207672810653196e-24,
+        17133.874560953238,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        2.6210252584532056e-8,
+        1.304218217761596e-16,
+        {
+          "deferredRequests": 18,
+          "maximumDeferredRequestKilograms": 4.762212481753192e-11,
+          "summedDeferredRequestKilograms": 6.357548698573588e-10
+        },
+        0.0038503169901393797,
+        18.89415713739531,
+        0.01,
+        3486.7428218181,
+        3,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        1000000,
+        3473.3691581470503,
+        3486.7428218181003,
+        3473.3692491849356,
+        2,
+        false,
+        1.9736230441501097e-18,
+        1.2603836418005302e-24,
+        17133.874560953238,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        2.6210252584532056e-8,
+        1.304218217761596e-16,
+        {
+          "deferredRequests": 18,
+          "maximumDeferredRequestKilograms": 2.381106240876596e-11,
+          "summedDeferredRequestKilograms": 3.178774349286794e-10
+        },
+        0.0038503169901393797,
+        18.89415713739531,
+        0.005,
+        3486.7428218181,
+        3,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        1000000,
+        3473.3691581470503,
+        3488.0595144887243,
+        3473.3692491849356,
+        2,
+        false,
+        4.596779184651478e-18,
+        5.824425894030986e-24,
+        17121.189619743032,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 24,
+          "maximumDeferredRequestKilograms": 7.749201587134525e-11,
+          "summedDeferredRequestKilograms": 1.3750131469775962e-9
+        },
+        0.004229399251817423,
+        4.706530444451891,
+        0.01,
+        3488.0595144887243,
+        4,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        1000000,
+        3473.3691581470503,
+        3488.0595144887243,
+        3473.3692491849356,
+        2,
+        false,
+        2.7711285916392802e-18,
+        2.912212947015493e-24,
+        17121.189619743032,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 24,
+          "maximumDeferredRequestKilograms": 3.8746007935672624e-11,
+          "summedDeferredRequestKilograms": 6.875065734887981e-10
+        },
+        0.004229399251817423,
+        4.706530444451891,
+        0.005,
+        3488.0595144887243,
+        4,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        1000000,
+        3473.3691581470503,
+        3482.7306175315034,
+        3473.3692491849356,
+        2,
+        false,
+        8.671063578886822e-20,
+        1.0817765927796953e-23,
+        17119.263822075583,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 57,
+          "maximumDeferredRequestKilograms": 1.3444549529829027e-10,
+          "summedDeferredRequestKilograms": 4.243857298741055e-9
+        },
+        0.0026951837466646644,
+        1.175571674038546,
+        0.01,
+        3482.7306175315034,
+        5,
+        1
+      ],
+      [
+        [
+          0,
+          1,
+          0
+        ],
+        1000000,
+        3473.3691581470503,
+        3482.7306175315034,
+        3473.3692491849356,
+        2,
+        false,
+        5.182380138621699e-19,
+        5.4088829638984764e-24,
+        17119.263822075583,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 59,
+          "maximumDeferredRequestKilograms": 8.18681353377978e-11,
+          "summedDeferredRequestKilograms": 2.2856649200461233e-9
+        },
+        0.0026951837466646644,
+        1.175571674038546,
+        0.005,
+        3482.7306175315034,
+        5,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        1000000,
+        3473.3691581470503,
+        3437.4122216816845,
+        3473.3692491849356,
+        2,
+        false,
+        2.188493485048728e-19,
+        1.0166585544736993e-24,
+        17155.852037544304,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        2.6210252584532056e-8,
+        2.645870332444377e-16,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.010352204134843612,
+        76.67393628931792,
+        0.01,
+        3437.4122216816854,
+        2,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        1000000,
+        3473.3691581470503,
+        3437.4122216816845,
+        3473.3692491849356,
+        2,
+        false,
+        8.1475151223852e-18,
+        5.083292774003097e-25,
+        17155.852037544304,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        162,
+        2.6210252584532056e-8,
+        2.645870332444377e-16,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        -0.010352204134843612,
+        76.67393628931792,
+        0.005,
+        3437.4122216816854,
+        2,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        1000000,
+        3473.3691581470503,
+        3486.3462292285935,
+        3473.3692491849356,
+        2,
+        false,
+        1.1435641848028571e-19,
+        2.6463103652668017e-24,
+        17120.185411107213,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        2.6210252584532056e-8,
+        2.6087331606596273e-16,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.0037361360433254553,
+        18.89415713739531,
+        0.01,
+        3486.3462292285926,
+        3,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        1000000,
+        3473.3691581470503,
+        3486.3462292285935,
+        3473.3692491849356,
+        2,
+        false,
+        3.942796937069618e-18,
+        1.3231551826334008e-24,
+        17120.185411107213,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        642,
+        2.6210252584532056e-8,
+        2.6087331606596273e-16,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.0037361360433254553,
+        18.89415713739531,
+        0.005,
+        3486.3462292285926,
+        3,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        1000000,
+        3473.3691581470503,
+        3487.880830268651,
+        3473.3692491849356,
+        2,
+        false,
+        1.8275909227241964e-18,
+        6.01991879170114e-24,
+        17111.705684349567,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.004177955190661331,
+        4.706530444451891,
+        0.01,
+        3487.880830268651,
+        4,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        1000000,
+        3473.3691581470503,
+        3487.880830268651,
+        3473.3692491849356,
+        2,
+        false,
+        1.486784095287743e-19,
+        3.009959396368991e-24,
+        17111.705684349567,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        2562,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.004177955190661331,
+        4.706530444451891,
+        0.005,
+        3487.880830268651,
+        4,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        1000000,
+        3473.3691581470503,
+        3482.7225178863337,
+        3473.3692491849356,
+        2,
+        false,
+        6.313467677728744e-19,
+        1.1440886850245439e-23,
+        17118.225729590788,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.0026928518191933204,
+        1.175571674038546,
+        0.01,
+        3482.7225178863337,
+        5,
+        1
+      ],
+      [
+        [
+          0.34672058111832393,
+          0.8052865109844943,
+          -0.48093499961573966
+        ],
+        1000000,
+        3473.3691581470503,
+        3482.7225178863337,
+        3473.3692491849356,
+        2,
+        false,
+        9.441170630270258e-19,
+        5.7204434251227196e-24,
+        17118.225729590788,
+        "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope",
+        10242,
+        2.6210252584532056e-8,
+        0,
+        {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        0.0026928518191933204,
+        1.175571674038546,
+        0.005,
+        3482.7225178863337,
+        5,
+        1
+      ]
+    ],
+    "continuumReference": "beta=min(cap,h^(5/3)/(n*sqrt(|grad h|))); work=integral beta |grad h|^2 dArea",
+    "implementedSlopeMeaning": "Mean of full chordal P1 gradient magnitudes of the two incident triangles; relative bed plus depth differences",
+    "initialization": "Continuous depth point samples times unchanged spherical areas; no mass rescaling",
+    "meanDepthMeters": 1,
+    "profiles": "h=H+A*P_l(axis.s), l=1,2",
+    "quadratureIntervals": [
+      16384,
+      32768
+    ],
+    "radiusMeters": 100000,
+    "reportVersion": "surface-full-gradient-work-report-1",
+    "roughness": 0.04,
+    "scope": "Standalone frozen fully wet flat sphere. Not an evolving PDE solution, seasonal checkpoint, dry-front accuracy or default promotion.",
+    "surfaceModelVersion": "regional-surface-full-gradient-candidate-1",
+    "caseColumns": [
+      "axis",
+      "capSquareMetersPerSecond",
+      "coarseQuadratureWorkMetersFourthPerSecond",
+      "completedAdjacencyWorkMetersFourthPerSecond",
+      "continuumWorkMetersFourthPerSecond",
+      "degree",
+      "fullyCappedEdgeRegimeCertified",
+      "globalRelativeResidual",
+      "maximumLocalRelativeResidual",
+      "minimumInitialUncappedEdgeMobilityBound",
+      "mobilityBoundMeaning",
+      "regions",
+      "relativeReferenceQuadratureDifference",
+      "relativeStockWorkIdentityDifference",
+      "resolution",
+      "signedRelativeWorkDiscrepancy",
+      "stabilityBoundSeconds",
+      "stepSeconds",
+      "stockReconstructedWorkMetersFourthPerSecond",
+      "subdivision",
+      "substeps"
+    ]
+  },
+  "sources": [
+    {
+      "path": "native/src/lib.rs",
+      "bytes": 14371,
+      "sha256": "67b76120dbfeb88fa6791e5298bbe7d773511e1fd8c366c93f35117236dc4254"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil.rs",
+      "bytes": 16973,
+      "sha256": "a78c664eba40a2049c7717d02f97c69876d23074fc3c283330d0df11bfa40a55"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface.rs",
+      "bytes": 3855,
+      "sha256": "ed73e05fe90a4ddd1b738206d94d73e7122758404360663a486b40150960d644"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_gradient.rs",
+      "bytes": 16794,
+      "sha256": "121fdcc182f8e0d31cdb8fe33c28478f4d1279394211dcefeb6e325e2e6c14ca"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_cotan.rs",
+      "bytes": 13048,
+      "sha256": "96160c7770430ca850fd10d2aa2cc4da1dd42a006498847f30a3d31feb4b1f02"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_constitutive.rs",
+      "bytes": 17550,
+      "sha256": "45271a39c56cbfcac4d5a9469fd342578b1c34679dd1655b37e0dfc899f783f6"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_verification.rs",
+      "bytes": 28946,
+      "sha256": "dea06becf25ca97a0d72621de514d1213d1205f9f37924e4292089a82392a9e5"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/cycle.rs",
+      "bytes": 11269,
+      "sha256": "fdddff7fbaede4043d7297cfdd9659435c90dabf18d8d6cf45667cf4964be5e1"
+    },
+    {
+      "path": "native/src/seasonal_moisture/surface_flow.rs",
+      "bytes": 32301,
+      "sha256": "9f0e75238e06f2f3e51b3e2a0931fd722d723ffdf4536ba82dd631fe8166928c"
+    },
+    {
+      "path": "native/src/surface_water/ponded_soil.rs",
+      "bytes": 15083,
+      "sha256": "1ae6c9da06c84e7e8b4092f5cec7e58caef971e75ea8be10b88fb129a30545f7"
+    },
+    {
+      "path": "native/examples/surface_full_gradient_report.rs",
+      "bytes": 960,
+      "sha256": "dec4e8f2d095202fb5d672d85a093c8577ea02826b912342b160c64cbea76289"
+    },
+    {
+      "path": "native/examples/surface_constitutive_report.rs",
+      "bytes": 946,
+      "sha256": "5544a9200d7d0807b6c6dc54aba8e3a9a83c8eac5f6aadcbc9aba0d1469f9899"
+    },
+    {
+      "path": "native/Cargo.toml",
+      "bytes": 280,
+      "sha256": "4fe3a9dd2d6fdad080aaeabd2e4b33ca6f397b815d7a8ddad11b46bdc7854872"
+    },
+    {
+      "path": "native/Cargo.lock",
+      "bytes": 2675,
+      "sha256": "6423d20d12d748711ebc5bf101b0891cc019a25a68d15d56c74b57158724b42d"
+    }
+  ],
+  "validation": {
+    "fullTestExitCode": 0,
+    "nativePassed": 545,
+    "nativeTargets": 103,
+    "nativeIgnored": 1,
+    "ignoredReason": "Pre-existing annual-snow test; unchanged",
+    "nodeTestFilesPassed": 18,
+    "releaseLibraryPassed": 90,
+    "releaseRegionalSoilPassed": 12,
+    "releaseLegacyRegionalSurfacePassed": 5,
+    "finalReleaseConstitutivePassed": 9,
+    "finalReleaseGradientPassed": 6,
+    "allTargetsWarningsDeniedClippyPassed": true,
+    "formatAndWhitespacePassed": true,
+    "cliMissingExtraAndOverwriteRefuse": true,
+    "guiRerun": false,
+    "ownerRendererEditsExcluded": true,
+    "logs": [
+      "artifacts/full-gradient-full-test-log.txt",
+      "artifacts/full-gradient-release-log.txt",
+      "artifacts/full-gradient-final-constitutive-log.txt",
+      "artifacts/full-gradient-final-gradient-log.txt",
+      "artifacts/full-gradient-clippy-log.txt"
+    ]
+  },
+  "environment": {
+    "rustc": "1.98.1 (48a229cea 2026-09-01)",
+    "cargo": "1.98.1 (797e8a9bc 2026-08-05)",
+    "node": "v25.2.1",
+    "os": "Linux 7.2.3-arch1-3 x86_64 GNU/Linux"
+  },
+  "commands": [
+    "cargo run --release --locked --manifest-path native/Cargo.toml --example surface_full_gradient_report -- artifacts/NEW.json",
+    "cargo run --release --locked --manifest-path native/Cargo.toml --example surface_constitutive_report -- artifacts/OLD_WITNESS_NEW.json",
+    "cargo run --release --locked --manifest-path native/Cargo.toml --example regional_soil_report -- 1 artifacts/LEGACY_NEW.json --retain-donor",
+    "cargo test --release --locked --manifest-path native/Cargo.toml --lib --test regional_soil --test regional_surface_flow",
+    "cargo clippy --locked --manifest-path native/Cargo.toml --all-targets -- -D warnings",
+    "cargo fmt --manifest-path native/Cargo.toml --check",
+    "npm test"
+  ]
+}
