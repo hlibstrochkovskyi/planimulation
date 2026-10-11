@@ -62,6 +62,7 @@ The separate [unified regional soil cycle](docs/regional-soil-cycle.md) applies 
 | [Full-gradient mobility candidate](docs/surface-full-gradient-candidate.md) | Standalone full tangent-gradient law, established model comparison, two smooth weak-work profiles and isolated old pins |
 | [Nonlinear wet evolution](docs/surface-nonlinear-evolution.md) | Independent latitude-band reference, exact capped certificates, separate mesh/time controls and evolving full-gradient comparison |
 | [Moving wet/dry fronts](docs/surface-dry-front-verification.md) | Exact planar wave certificate, independent dry-cap reference, threshold-contour refinement and retained native front discrepancy |
+| [Flat centered-depth comparison](docs/surface-centered-depth.md) | Separately pinned interface-depth ablation with unchanged dry/wet problems, conservative transfers and explicit flat-only scope |
 | [Seasonal-water desktop](docs/seasonal-water-desktop.md) | Run/pause, eight dynamic layers, interval inspection, versioned frames, baseline timing evidence, and limits |
 | [Seasonal-water checkpoints](docs/seasonal-water-checkpoints.md) | Complete native state, candidate validation, bounded file I/O, exact continuation, and limits |
 | [Typed surface water](docs/surface-water.md) | Empirical snowmelt, soil bucket, pending-runoff ownership, defaults, and limitations |

@@ -1,6 +1,7 @@
 //! Existing paired stages on fixed continuous dry-cap inputs, not new physics.
 use super::super::{
-    Mass, ResolutionBudget, surface, surface_flow, surface_gradient, surface_verification,
+    Mass, ResolutionBudget, surface, surface_centered, surface_flow, surface_gradient,
+    surface_verification,
 };
 use super::{AXES, CAP, END_SECONDS, RADIUS, THRESHOLDS, reference, reference_front};
 use crate::{Surface, dot, moisture_transport::total_mass, norm};
@@ -28,7 +29,7 @@ fn run(
     axis: [f64; 3],
     steps: usize,
     references: &[Vec<f64>],
-    legacy: bool,
+    stage: surface::VerificationStage,
 ) -> Result<NativeRun, String> {
     let length = norm(axis);
     if !(3..=5).contains(&level)
@@ -54,6 +55,11 @@ fn run(
         },
     )?;
     let prepared = surface_gradient::Prepared::new(&mesh, layout, RADIUS)?;
+    let centered = if stage == surface::VerificationStage::FlatCenteredDepth {
+        Some(surface_centered::Prepared::new(&prepared)?)
+    } else {
+        None
+    };
     let layout = prepared.layout();
     let dt = END_SECONDS / steps as f64;
     if dt > layout.stable_seconds {
@@ -81,10 +87,14 @@ fn run(
             transfers: &mut transfers,
             resolution: &mut resolution,
         };
-        let count = if legacy {
-            surface::advance(layout, stocks, dt)?
-        } else {
-            surface::advance_full_gradient(&prepared, stocks, dt)?
+        let count = match stage {
+            surface::VerificationStage::LegacyDirectional => surface::advance(layout, stocks, dt)?,
+            surface::VerificationStage::FullGradient => {
+                surface::advance_full_gradient(&prepared, stocks, dt)?
+            }
+            surface::VerificationStage::FlatCenteredDepth => {
+                centered.as_ref().unwrap().advance(stocks, dt)?
+            }
         };
         if count != 1 {
             return Err("Unexpected native dry-front substep split.".into());
@@ -181,7 +191,7 @@ fn run(
     let resolution = resolution.unwrap();
     resolution.validate()?;
     let result = json!({"subdivision":level,"regions":liquid.len(),"axis":axis,"steps":steps,"stepSeconds":dt,
-        "legacyDirectionalMobility":legacy,"stabilityBoundSeconds":layout.stable_seconds,
+        "legacyDirectionalMobility":stage == surface::VerificationStage::LegacyDirectional,"stabilityBoundSeconds":layout.stable_seconds,
         "areaWeightedRmsErrorMeters":error,"maximumErrorMeters":errors.iter().map(|e|e.abs()).fold(0.,f64::max),
         "referenceSpatialDifferenceRmsMeters":rms(&spatial,&mesh.areas),"referenceTemporalDifferenceRmsMeters":rms(&temporal,&mesh.areas),
         "referenceSpatialDifferenceOverNativeRmsError":rms(&spatial,&mesh.areas)/error,
@@ -199,7 +209,15 @@ fn run(
     })
 }
 
-pub(super) fn report(mut result: Value) -> Result<Value, String> {
+pub(super) fn report(result: Value) -> Result<Value, String> {
+    report_for(result, surface::VerificationStage::FullGradient)
+}
+
+pub(super) fn centered_report(result: Value) -> Result<Value, String> {
+    report_for(result, surface::VerificationStage::FlatCenteredDepth)
+}
+
+fn report_for(mut result: Value, stage: surface::VerificationStage) -> Result<Value, String> {
     let controls = result["spherical"].as_array().unwrap();
     let depths: Vec<Vec<f64>> = controls
         .iter()
@@ -235,7 +253,7 @@ pub(super) fn report(mut result: Value) -> Result<Value, String> {
         for level in 3..=5 {
             let mut runs = Vec::new();
             for factor in [1, 2, 4] {
-                runs.push(run(level, axis, base_steps * factor, &depths, false)?);
+                runs.push(run(level, axis, base_steps * factor, &depths, stage)?);
             }
             let mesh = Surface::build(level, RADIUS);
             let time_differences: Vec<_> = runs
@@ -259,7 +277,12 @@ pub(super) fn report(mut result: Value) -> Result<Value, String> {
             }
             previous = Some((level, runs[2].error));
             if level == 5 {
-                legacy.push(run(level, axis, base_steps * 4, &depths, true)?.result);
+                let control = if stage == surface::VerificationStage::FlatCenteredDepth {
+                    surface::VerificationStage::FullGradient
+                } else {
+                    surface::VerificationStage::LegacyDirectional
+                };
+                legacy.push(run(level, axis, base_steps * 4, &depths, control)?.result);
             }
             groups.push(json!({"axis":axis,"subdivision":level,"timeRefinementRmsDifferencesMeters":time_differences,
                 "successiveTimeDifferenceRatio":time_differences[1]/time_differences[0],
@@ -275,7 +298,16 @@ pub(super) fn report(mut result: Value) -> Result<Value, String> {
     result["baseSteps"] = json!(base_steps);
     result["groups"] = json!(groups);
     result["spatialComparisons"] = json!(spatial);
-    result["matchedLegacyControls"] = json!(legacy);
+    if stage == surface::VerificationStage::FlatCenteredDepth {
+        result["reportVersion"] = json!("surface-flat-centered-front-report-1");
+        result["surfaceModelVersion"] = json!(surface_centered::MODEL_VERSION);
+        result["interfaceDepth"] = json!(
+            "Arithmetic mean of frozen neighboring depths; flat closed terrestrial cells only"
+        );
+        result["matchedSourceDepthControls"] = json!(legacy);
+    } else {
+        result["matchedLegacyControls"] = json!(legacy);
+    }
     Ok(result)
 }
 
@@ -288,8 +320,22 @@ mod tests {
         let fine = reference::spherical(256, 600).unwrap().depth;
         let finest = reference::spherical(256, 1200).unwrap().depth;
         let references = [coarse, fine, finest];
-        let a = run(3, AXES[1], 1200, &references, false).unwrap();
-        let b = run(3, AXES[1], 1200, &references, false).unwrap();
+        let a = run(
+            3,
+            AXES[1],
+            1200,
+            &references,
+            surface::VerificationStage::FullGradient,
+        )
+        .unwrap();
+        let b = run(
+            3,
+            AXES[1],
+            1200,
+            &references,
+            surface::VerificationStage::FullGradient,
+        )
+        .unwrap();
         assert_eq!(a.result, b.result);
         assert!(
             a.result["initiallyDryHalfInventoryKilograms"]
@@ -312,7 +358,16 @@ mod tests {
             (3, AXES[0], 0),
             (5, AXES[0], 1),
         ] {
-            assert!(run(level, axis, steps, &references, false).is_err());
+            assert!(
+                run(
+                    level,
+                    axis,
+                    steps,
+                    &references,
+                    surface::VerificationStage::FullGradient
+                )
+                .is_err()
+            );
         }
     }
 }

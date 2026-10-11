@@ -1,6 +1,14 @@
 //! The production paired face stage, shared with isolated verification.
 use super::{Mass, ResolutionBudget, cycle::move_water, surface_flow::Layout, surface_gradient};
 
+// Standalone verification selections, not seasonal or persistence selectors.
+#[derive(Clone, Copy, PartialEq)]
+pub(super) enum VerificationStage {
+    LegacyDirectional,
+    FullGradient,
+    FlatCenteredDepth,
+}
+
 pub(super) struct Stocks<'a> {
     pub by_region: &'a [Option<usize>],
     pub liquid: &'a mut [Mass],
@@ -12,7 +20,7 @@ pub(super) struct Stocks<'a> {
 // Callers own validation/atomic publication. Keep canonical face order, frozen
 // leading depths and transfer arithmetic identical to the seasonal stage.
 pub(super) fn advance(layout: &Layout, stocks: Stocks<'_>, seconds: f64) -> Result<usize, String> {
-    advance_with_gradient(layout, None, stocks, seconds)
+    advance_with_gradient(layout, None, false, stocks, seconds)
 }
 
 // Standalone explicit candidate only: no existing seasonal/save selector reaches it.
@@ -21,12 +29,22 @@ pub(super) fn advance_full_gradient(
     stocks: Stocks<'_>,
     seconds: f64,
 ) -> Result<usize, String> {
-    advance_with_gradient(prepared.layout(), Some(prepared), stocks, seconds)
+    advance_with_gradient(prepared.layout(), Some(prepared), false, stocks, seconds)
+}
+
+// Only the validated flat/closed wrapper may call this coefficient experiment.
+pub(super) fn advance_flat_centered(
+    prepared: &surface_gradient::Prepared,
+    stocks: Stocks<'_>,
+    seconds: f64,
+) -> Result<usize, String> {
+    advance_with_gradient(prepared.layout(), Some(prepared), true, stocks, seconds)
 }
 
 fn advance_with_gradient(
     layout: &Layout,
     gradient: Option<&surface_gradient::Prepared>,
+    centered_flat: bool,
     stocks: Stocks<'_>,
     seconds: f64,
 ) -> Result<usize, String> {
@@ -67,7 +85,12 @@ fn advance_with_gradient(
             let slope = slopes
                 .as_ref()
                 .map_or_else(|| drive / face.distance_meters, |s| s[face_id]);
-            let beta = (over_crest.powf(5. / 3.) / (layout.settings.roughness * slope.sqrt()))
+            let interface_depth = if centered_flat {
+                0.5 * depth[source] + 0.5 * depth[target]
+            } else {
+                over_crest
+            };
+            let beta = (interface_depth.powf(5. / 3.) / (layout.settings.roughness * slope.sqrt()))
                 .min(layout.settings.maximum_diffusivity_square_meters_per_second);
             let request = 1000. * dt * beta * face.width_over_distance * drive;
             if !request.is_finite() || request < 0. {

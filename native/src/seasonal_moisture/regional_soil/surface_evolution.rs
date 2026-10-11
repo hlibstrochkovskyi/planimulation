@@ -2,8 +2,8 @@
 //! No seasonal selection, checkpoint migration or desktop promotion.
 mod zonal;
 use super::{
-    Mass, ResolutionBudget, surface, surface_cotan, surface_flow, surface_gradient,
-    surface_verification,
+    Mass, ResolutionBudget, surface, surface_centered, surface_cotan, surface_flow,
+    surface_gradient, surface_verification,
 };
 use crate::{Surface, dot, moisture_transport::total_mass, norm};
 use serde_json::{Value, json};
@@ -93,7 +93,7 @@ fn run(
     degree: u32,
     steps: usize,
     reference: &Reference,
-    legacy: bool,
+    stage: surface::VerificationStage,
 ) -> Result<NativeRun, String> {
     if !(2..=4).contains(&level) || !(1..=2).contains(&degree) || steps == 0 || steps > 65536 {
         return Err("Unsupported bounded surface evolution controls.".into());
@@ -105,6 +105,11 @@ fn run(
     let axis = axis.map(|v| v / length);
     let mesh = Surface::build(level, RADIUS);
     let prepared = surface_gradient::Prepared::new(&mesh, physical_layout(&mesh)?, RADIUS)?;
+    let centered = if stage == surface::VerificationStage::FlatCenteredDepth {
+        Some(surface_centered::Prepared::new(&prepared)?)
+    } else {
+        None
+    };
     let layout = prepared.layout();
     let dt = END_SECONDS / steps as f64;
     if dt > layout.stable_seconds {
@@ -142,10 +147,14 @@ fn run(
             transfers: &mut transfers,
             resolution: &mut resolution,
         };
-        let count = if legacy {
-            surface::advance(layout, stocks, dt)?
-        } else {
-            surface::advance_full_gradient(&prepared, stocks, dt)?
+        let count = match stage {
+            surface::VerificationStage::LegacyDirectional => surface::advance(layout, stocks, dt)?,
+            surface::VerificationStage::FullGradient => {
+                surface::advance_full_gradient(&prepared, stocks, dt)?
+            }
+            surface::VerificationStage::FlatCenteredDepth => {
+                centered.as_ref().unwrap().advance(stocks, dt)?
+            }
         };
         if count != 1 {
             return Err("Unexpected surface evolution substep split.".into());
@@ -206,7 +215,11 @@ fn run(
     let resolution = resolution.unwrap();
     resolution.validate()?;
     let result = json!({"subdivision":level,"regions":liquid.len(),"degree":degree,"axis":axis,
-        "operator":if legacy {surface_cotan::MODEL_VERSION} else {surface_gradient::MODEL_VERSION},
+        "operator":match stage {
+            surface::VerificationStage::LegacyDirectional => surface_cotan::MODEL_VERSION,
+            surface::VerificationStage::FullGradient => surface_gradient::MODEL_VERSION,
+            surface::VerificationStage::FlatCenteredDepth => surface_centered::MODEL_VERSION,
+        },
         "endSeconds":END_SECONDS,"steps":steps,"stepSeconds":dt,"stabilityBoundSeconds":layout.stable_seconds,
         "minimumDepthMeters":minimum_depth,"maximumDepthMeters":maximum_depth,
         "maximumLocalRelativeResidual":maximum_audit[0],"maximumGlobalRelativeResidual":maximum_audit[1],
@@ -259,6 +272,15 @@ pub fn reference_report() -> Result<Value, String> {
 
 /// Fixed unforced evolution, cross-method reference and independent time controls.
 pub fn report() -> Result<Value, String> {
+    report_for(surface::VerificationStage::FullGradient)
+}
+
+/// Same fixed wet problems and references, with only interface depth changed.
+pub fn centered_report() -> Result<Value, String> {
+    report_for(surface::VerificationStage::FlatCenteredDepth)
+}
+
+fn report_for(stage: surface::VerificationStage) -> Result<Value, String> {
     let mesh = Surface::build(4, RADIUS);
     let prepared = surface_gradient::Prepared::new(&mesh, physical_layout(&mesh)?, RADIUS)?;
     let base_steps = (END_SECONDS / (0.9 * prepared.layout().stable_seconds)).ceil() as usize;
@@ -282,7 +304,7 @@ pub fn report() -> Result<Value, String> {
                         degree,
                         base_steps * factor,
                         &reference,
-                        false,
+                        stage,
                     )?);
                 }
                 let mesh = Surface::build(level, RADIUS);
@@ -306,8 +328,14 @@ pub fn report() -> Result<Value, String> {
                 }
                 previous = Some((level, error));
                 if level == 4 {
-                    controls
-                        .push(run(level, axis, degree, base_steps * 4, &reference, true)?.result);
+                    let control = if stage == surface::VerificationStage::FlatCenteredDepth {
+                        surface::VerificationStage::FullGradient
+                    } else {
+                        surface::VerificationStage::LegacyDirectional
+                    };
+                    controls.push(
+                        run(level, axis, degree, base_steps * 4, &reference, control)?.result,
+                    );
                 }
                 groups.push(json!({"degree":degree,"axis":axis,"subdivision":level,"timeRefinementRmsDifferencesMeters":differences,
                     "successiveTimeDifferenceRatio":differences[1]/differences[0],
@@ -322,7 +350,16 @@ pub fn report() -> Result<Value, String> {
     result["references"] = json!(references_json);
     result["groups"] = json!(groups);
     result["spatialComparisons"] = json!(spatial);
-    result["matchedLegacyControls"] = json!(controls);
+    if stage == surface::VerificationStage::FlatCenteredDepth {
+        result["reportVersion"] = json!("surface-flat-centered-wet-report-1");
+        result["surfaceModelVersion"] = json!(surface_centered::MODEL_VERSION);
+        result["interfaceDepth"] = json!(
+            "Arithmetic mean of frozen neighboring depths; flat closed terrestrial cells only"
+        );
+        result["matchedSourceDepthControls"] = json!(controls);
+    } else {
+        result["matchedLegacyControls"] = json!(controls);
+    }
     Ok(result)
 }
 
@@ -347,8 +384,24 @@ mod tests {
     #[test]
     fn evolving_native_state_repeats_without_front_or_seasonal_promotion() {
         let reference = test_reference(2);
-        let a = run(2, AXES[1], 2, 512, &reference, false).unwrap();
-        let b = run(2, AXES[1], 2, 512, &reference, false).unwrap();
+        let a = run(
+            2,
+            AXES[1],
+            2,
+            512,
+            &reference,
+            surface::VerificationStage::FullGradient,
+        )
+        .unwrap();
+        let b = run(
+            2,
+            AXES[1],
+            2,
+            512,
+            &reference,
+            surface::VerificationStage::FullGradient,
+        )
+        .unwrap();
         assert_eq!(a.result, b.result);
         assert!(a.result["maximumGlobalRelativeResidual"].as_f64().unwrap() < 1e-12);
         assert!(a.result["referenceChangeRmsMeters"].as_f64().unwrap() > 1e-4);
@@ -382,7 +435,17 @@ mod tests {
             (2, AXES[0], 1, 65537),
             (4, AXES[0], 1, 1),
         ] {
-            assert!(run(level, axis, degree, steps, &reference, false).is_err());
+            assert!(
+                run(
+                    level,
+                    axis,
+                    degree,
+                    steps,
+                    &reference,
+                    surface::VerificationStage::FullGradient
+                )
+                .is_err()
+            );
         }
     }
 }

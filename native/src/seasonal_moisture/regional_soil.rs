@@ -17,6 +17,7 @@ mod accounting;
 mod cycle;
 mod observation;
 mod surface;
+mod surface_centered;
 pub mod surface_constitutive;
 mod surface_cotan;
 pub mod surface_evolution;

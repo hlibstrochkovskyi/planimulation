@@ -1,0 +1,1923 @@
+{
+  "recordVersion": "surface-flat-centered-validation-1",
+  "date": "2026-10-11",
+  "baseCommit": "963c1a7f3408fed629ad0a96f018b66f6ba16f8e",
+  "status": "Controlled flat-only interface-depth improvement; moving-front accuracy remains limited, no seasonal or terrain qualification",
+  "wet": {
+    "report": {
+      "path": "artifacts/centered-wet-final.json",
+      "bytes": 43185212,
+      "sha256": "b25b8c7aa61ad3450e7b0ae4f676ec475d07ecba3cb275b3fba388e39b308bfd"
+    },
+    "baseline": {
+      "path": "artifacts/surface-evolution-refined.json",
+      "bytes": 43215413,
+      "sha256": "0af89317143631d471bf5d6f23aa9536971654e51325705d1df661fb2ee00052"
+    },
+    "reportVersion": "surface-flat-centered-wet-report-1",
+    "modelVersion": "regional-surface-flat-centered-depth-candidate-1",
+    "parameters": {
+      "radiusMeters": 100000,
+      "roughness": 0.04,
+      "capSquareMetersPerSecond": 1000000,
+      "endSeconds": 1800,
+      "meanDepthMeters": 1,
+      "amplitudeMeters": 0.1,
+      "baseSteps": 425
+    },
+    "scope": "Unforced positive fully wet axisymmetric profiles on a closed flat sphere. Independent latitude-band reference. Not moving dry fronts, terrain/coastal hydraulics, seasonal integration or physical calibration.",
+    "referenceControlsUnchanged": true,
+    "sourceControlsUnchanged": true,
+    "initialPairedOwnersUnchanged": true,
+    "caseColumns": [
+      "degree",
+      "subdivision",
+      "regions",
+      "steps",
+      "stepSeconds",
+      "minimumDepthMeters",
+      "maximumDepthMeters",
+      "areaWeightedRmsErrorMeters",
+      "maximumErrorMeters",
+      "referenceChangeRmsMeters",
+      "rmsErrorOverReferenceChange",
+      "referenceLastSpatialDifferenceRmsMeters",
+      "referenceLastTemporalDifferenceRmsMeters",
+      "referenceSpatialDifferenceOverNativeRmsError",
+      "referenceTemporalDifferenceOverNativeRmsError",
+      "maximumLocalRelativeResidual",
+      "maximumGlobalRelativeResidual"
+    ],
+    "groups": [
+      {
+        "axis": [1, 0, 0],
+        "degree": 1,
+        "lastTimeDifferenceOverFineReferenceError": 0.00012920047166556326,
+        "subdivision": 2,
+        "successiveTimeDifferenceRatio": 0.4998640120613416,
+        "timeRefinementRmsDifferencesMeters": [1.3062480372460326e-8, 6.529463846450546e-9],
+        "cases": [
+          {
+            "values": [1, 2, 162, 425, 4.235294117647059, 0.900004158446388, 1.0999942338375892, 0.00005052121587221025, 0.0004294024147841746, 0.0006034390543739617, 0.08372215140205588, 4.056603964310831e-7, 2.8865297915406194e-9, 0.008029505811126393, 0.00005713500242832411, 2.675145765030494e-19, 1.0295988608513363e-17],
+            "resolution": {
+              "deferredRequests": 650,
+              "maximumDeferredRequestKilograms": 1.3796502846332268e-8,
+              "summedDeferredRequestKilograms": 0.000006176253549951349
+            }
+          },
+          {
+            "values": [1, 2, 162, 850, 2.1176470588235294, 0.900002079223194, 1.0999971169187945, 0.00005053204680746118, 0.0004295464651467018, 0.0006034390543739617, 0.08374010008332274, 4.056603964310831e-7, 2.8865297915406194e-9, 0.008027784783322616, 0.00005712275622911075, 2.382901083913014e-19, 1.9405973434895673e-17],
+            "resolution": {
+              "deferredRequests": 1418,
+              "maximumDeferredRequestKilograms": 1.5112222967985197e-8,
+              "summedDeferredRequestKilograms": 0.0000068803222853177
+            }
+          },
+          {
+            "values": [1, 2, 162, 1700, 1.0588235294117647, 0.900001039611597, 1.0999985584593974, 0.00005053746137515759, 0.00042961846968792017, 0.0006034390543739617, 0.08374907293262236, 4.056603964310831e-7, 2.8865297915406194e-9, 0.008026924688989053, 0.00005711663611499754, 2.0287935987276758e-19, 1.721600790251619e-17],
+            "resolution": {
+              "deferredRequests": 2776,
+              "maximumDeferredRequestKilograms": 7.441585141502685e-9,
+              "summedDeferredRequestKilograms": 0.000006652753377918007
+            }
+          }
+        ]
+      },
+      {
+        "axis": [1, 0, 0],
+        "degree": 1,
+        "lastTimeDifferenceOverFineReferenceError": 0.0009529582683553562,
+        "subdivision": 3,
+        "successiveTimeDifferenceRatio": 0.49979530728547106,
+        "timeRefinementRmsDifferencesMeters": [1.8618273402955714e-8, 9.305325676555165e-9],
+        "cases": [
+          {
+            "values": [1, 3, 642, 425, 4.235294117647059, 0.9000059653727347, 1.0999916812309771, 0.000009751355483194737, 0.00007152088819029068, 0.0005932045390151397, 0.016438437068240074, 2.0465954155770733e-7, 2.2251496502055418e-9, 0.020987804404260815, 0.0002281887532497727, 4.948898904871669e-19, 3.1492849266769996e-18],
+            "resolution": {
+              "deferredRequests": 3531,
+              "maximumDeferredRequestKilograms": 4.683022613134611e-8,
+              "summedDeferredRequestKilograms": 0.000029688098022305507
+            }
+          },
+          {
+            "values": [1, 3, 642, 850, 2.1176470588235294, 0.9000029826863674, 1.0999958406154886, 0.000009760227665378345, 0.00007150135779676603, 0.0005932045390151397, 0.016453393430843666, 2.0465954155770733e-7, 2.2251496502055418e-9, 0.020968726199254484, 0.00022798132651133052, 4.798299915145313e-19, 8.623412541438239e-18],
+            "resolution": {
+              "deferredRequests": 7433,
+              "maximumDeferredRequestKilograms": 2.3602841245632393e-8,
+              "summedDeferredRequestKilograms": 0.00003196733958873448
+            }
+          },
+          {
+            "values": [1, 3, 642, 1700, 1.0588235294117647, 0.9000014913431836, 1.0999979203077441, 0.000009764672793714852, 0.00007149160078068206, 0.0005932045390151397, 0.016460886846763726, 2.0465954155770733e-7, 2.2251496502055418e-9, 0.020959180699781244, 0.00022787754359140285, 5.032307496694619e-19, 4.8975463487163254e-18],
+            "resolution": {
+              "deferredRequests": 15373,
+              "maximumDeferredRequestKilograms": 1.1796181035713991e-8,
+              "summedDeferredRequestKilograms": 0.00003315948855051774
+            }
+          }
+        ]
+      },
+      {
+        "axis": [1, 0, 0],
+        "degree": 1,
+        "lastTimeDifferenceOverFineReferenceError": 0.0038329274733293066,
+        "subdivision": 4,
+        "successiveTimeDifferenceRatio": 0.49978677726714366,
+        "timeRefinementRmsDifferencesMeters": [1.9362566892644007e-8, 9.67715490689404e-9],
+        "cases": [
+          {
+            "values": [1, 4, 2562, 425, 4.235294117647059, 0.9000084663364789, 1.0999881767114243, 0.0000025064848736779793, 0.0000314655687269072, 0.0005928379320942074, 0.004227942811998871, 1.0897564512235607e-7, 2.2624387396183824e-9, 0.04347747966356039, 0.0009026341085787256, 1.0070132304065613e-18, 2.07650639867009e-18],
+            "resolution": {
+              "deferredRequests": 3140,
+              "maximumDeferredRequestKilograms": 3.629175599202061e-8,
+              "summedDeferredRequestKilograms": 0.000020695630869708166
+            }
+          },
+          {
+            "values": [1, 4, 2562, 850, 2.1176470588235294, 0.9000042331682394, 1.0999940883557122, 0.0000025186356269121285, 0.000031460598966304154, 0.0005928379320942074, 0.004248438722561184, 1.0897564512235607e-7, 2.2624387396183824e-9, 0.04326772954290385, 0.0008982794952329624, 9.588019445325717e-19, 3.3316970354707848e-18],
+            "resolution": {
+              "deferredRequests": 7759,
+              "maximumDeferredRequestKilograms": 2.4395946759967967e-8,
+              "summedDeferredRequestKilograms": 0.000027927477501442516
+            }
+          },
+          {
+            "values": [1, 4, 2562, 1700, 1.0588235294117647, 0.9000021165841198, 1.0999970441778562, 0.000002524742504060062, 0.00003145811224125605, 0.0005928379320942074, 0.004258739812989661, 1.0897564512235607e-7, 2.2624387396183824e-9, 0.04316307304491897, 0.000896106726123608, 1.0899700801541185e-18, 4.29252148887601e-18],
+            "resolution": {
+              "deferredRequests": 17291,
+              "maximumDeferredRequestKilograms": 2.088610282485129e-8,
+              "summedDeferredRequestKilograms": 0.000032900489054894746
+            }
+          }
+        ]
+      },
+      {
+        "axis": [1, 2, 3],
+        "degree": 1,
+        "lastTimeDifferenceOverFineReferenceError": 0.00019464001766844445,
+        "subdivision": 2,
+        "successiveTimeDifferenceRatio": 0.499872975944405,
+        "timeRefinementRmsDifferencesMeters": [1.1082751920846817e-8, 5.539968184327269e-9],
+        "cases": [
+          {
+            "values": [1, 2, 162, 425, 4.235294117647059, 0.9006981822695369, 1.0993003821064167, 0.000028454639272515524, 0.00018140732654736702, 0.0005907777552796299, 0.04816471002542611, 4.8371626294584643e-8, 2.0275356433886656e-9, 0.0016999557025242993, 0.00007125501131715531, 2.385360266355886e-19, 5.559756429040339e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          },
+          {
+            "values": [1, 2, 162, 850, 2.1176470588235294, 0.9006963022864908, 1.0993029799014862, 0.000028459970699048055, 0.00018152139668936584, 0.0005907777552796299, 0.048173734445328326, 4.8371626294584643e-8, 2.0275356433886656e-9, 0.001699637248614687, 0.00007124166306525691, 2.3474327185495787e-19, 5.811195419692013e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          },
+          {
+            "values": [1, 2, 162, 1700, 1.0588235294117647, 0.9006953622949676, 1.0993042787990208, 0.000028462637080953282, 0.00018157841385790796, 0.0005907777552796299, 0.048178247787073844, 4.8371626294584643e-8, 2.0275356433886656e-9, 0.0016994780264740165, 0.00007123498914109607, 2.5740072681221677e-19, 7.370166550629438e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          }
+        ]
+      },
+      {
+        "axis": [1, 2, 3],
+        "degree": 1,
+        "lastTimeDifferenceOverFineReferenceError": 0.0009316403280525659,
+        "subdivision": 3,
+        "successiveTimeDifferenceRatio": 0.4997833139380339,
+        "timeRefinementRmsDifferencesMeters": [1.8007395669830816e-8, 8.999795883261447e-9],
+        "cases": [
+          {
+            "values": [1, 3, 642, 425, 4.235294117647059, 0.9002239132219666, 1.0997740442817694, 0.000009645937938292888, 0.00010152662340079388, 0.0005928462543818394, 0.01627055559008415, 4.845809435789071e-8, 2.261569280903069e-9, 0.005023678844699958, 0.00023445820358484654, 5.378535413650134e-19, 3.2928777931050725e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          },
+          {
+            "values": [1, 3, 642, 850, 2.1176470588235294, 0.9002213134310982, 1.0997776653207696, 0.000009655415340449521, 0.00010150263752550792, 0.0005928462543818394, 0.016286541863231, 4.845809435789071e-8, 2.261569280903069e-9, 0.005018747785492434, 0.00023422806799710164, 4.637208152559333e-19, 3.2509786672925408e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          },
+          {
+            "values": [1, 3, 642, 1700, 1.0588235294117647, 0.9002200135356642, 1.09977947584027, 0.000009660161343674307, 0.00010149063568754002, 0.0005928462543818394, 0.0162945473169042, 4.845809435789071e-8, 2.261569280903069e-9, 0.005016282092391983, 0.00023411299257273749, 5.165243099821215e-19, 3.3637557095076174e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          }
+        ]
+      },
+      {
+        "axis": [1, 2, 3],
+        "degree": 1,
+        "lastTimeDifferenceOverFineReferenceError": 0.003837996765386202,
+        "subdivision": 4,
+        "successiveTimeDifferenceRatio": 0.49978766937031627,
+        "timeRefinementRmsDifferencesMeters": [1.9325659200934414e-8, 9.65872617108002e-9],
+        "cases": [
+          {
+            "values": [1, 4, 2562, 425, 4.235294117647059, 0.9000289593219049, 1.0999678625674405, 0.0000024993300280237186, 0.000041556872149239865, 0.0005928043660723731, 0.004216112719585783, 7.677160177425494e-8, 2.2601997811097045e-9, 0.03071687248720815, 0.0009043222606727531, 1.064752182308858e-18, 1.4900196782582808e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          },
+          {
+            "values": [1, 4, 2562, 850, 2.1176470588235294, 0.9000249500575188, 1.099973460887154, 0.000002510825176714764, 0.00004156633564389445, 0.0005928043660723731, 0.004235503853236174, 7.677160177425494e-8, 2.2601997811097045e-9, 0.030576243414408132, 0.0009001820604917683, 1.0664052134776066e-18, 1.8894987539494645e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          },
+          {
+            "values": [1, 4, 2562, 1700, 1.0588235294117647, 0.9000229454253257, 1.0999762600470107, 0.000002516606125932496, 0.00004157104264779221, 0.0005928043660723731, 0.004245255720038427, 7.677160177425494e-8, 2.2601997811097045e-9, 0.030506006078248823, 0.0008981142332204317, 1.1457465849722065e-18, 2.686613148469652e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          }
+        ]
+      },
+      {
+        "axis": [1, 0, 0],
+        "degree": 2,
+        "lastTimeDifferenceOverFineReferenceError": 0.00009061440951594116,
+        "subdivision": 2,
+        "successiveTimeDifferenceRatio": 0.4998856301519979,
+        "timeRefinementRmsDifferencesMeters": [3.767155263954805e-8, 1.8831467830024636e-8],
+        "cases": [
+          {
+            "values": [2, 2, 162, 425, 4.235294117647059, 0.9500041907417192, 1.0999901880086844, 0.00020777539162935104, 0.0012418595945702382, 0.0012527183456405983, 0.16585962227854312, 0.0000013617490721754296, 1.077798459656025e-8, 0.006553947806315021, 0.000051873248858012095, 2.7244070186427825e-19, 1.9555523246745954e-17],
+            "resolution": {
+              "deferredRequests": 385,
+              "maximumDeferredRequestKilograms": 1.7486078200783502e-8,
+              "summedDeferredRequestKilograms": 0.000004026590270302237
+            }
+          },
+          {
+            "values": [2, 2, 162, 850, 2.1176470588235294, 0.9500020953708594, 1.0999950940043421, 0.000207804993845971, 0.0012420391965581867, 0.0012527183456405983, 0.16588325266339615, 0.0000013617490721754296, 1.077798459656025e-8, 0.006553014183984355, 0.00005186585941504897, 2.1077128774513362e-19, 2.144077468582515e-17],
+            "resolution": {
+              "deferredRequests": 798,
+              "maximumDeferredRequestKilograms": 1.1093906477605284e-8,
+              "summedDeferredRequestKilograms": 0.000004156647012448291
+            }
+          },
+          {
+            "values": [2, 2, 162, 1700, 1.0588235294117647, 0.9500010476854297, 1.099997547002171, 0.00020781979301770704, 0.0012421289822208692, 0.0012527183456405983, 0.16589506630992534, 0.0000013617490721754296, 1.077798459656025e-8, 0.006552547533619203, 0.000051862165966270226, 2.624388778762761e-19, 2.1712495837895396e-17],
+            "resolution": {
+              "deferredRequests": 1765,
+              "maximumDeferredRequestKilograms": 8.070353792193102e-9,
+              "summedDeferredRequestKilograms": 0.000004833735050870181
+            }
+          }
+        ]
+      },
+      {
+        "axis": [1, 0, 0],
+        "degree": 2,
+        "lastTimeDifferenceOverFineReferenceError": 0.0011426944349641427,
+        "subdivision": 3,
+        "successiveTimeDifferenceRatio": 0.49973358920705685,
+        "timeRefinementRmsDifferencesMeters": [7.533253595497337e-8, 3.7646198576848504e-8],
+        "cases": [
+          {
+            "values": [2, 3, 642, 425, 4.235294117647059, 0.950006071037857, 1.0999856557423848, 0.00003290567480618119, 0.00016131081181880447, 0.0011833996536290713, 0.027806054113055586, 6.869485521171381e-7, 8.195970281262926e-9, 0.020876294321978094, 0.00024907467570679776, 4.823911298982428e-19, 1.0857168110496181e-17],
+            "resolution": {
+              "deferredRequests": 1997,
+              "maximumDeferredRequestKilograms": 6.212628991695254e-8,
+              "summedDeferredRequestKilograms": 0.00003625317948394909
+            }
+          },
+          {
+            "values": [2, 3, 642, 850, 2.1176470588235294, 0.9500030355189284, 1.0999928278711926, 0.0000329319323771752, 0.00016191576931490204, 0.0011833996536290713, 0.02782824236612249, 6.869485521171381e-7, 8.195970281262926e-9, 0.02085964905579775, 0.00024887608134843226, 5.562203768219752e-19, 9.721038388267548e-18],
+            "resolution": {
+              "deferredRequests": 4594,
+              "maximumDeferredRequestKilograms": 3.4401114530998325e-8,
+              "summedDeferredRequestKilograms": 0.00004391701000761914
+            }
+          },
+          {
+            "values": [2, 3, 642, 1700, 1.0588235294117647, 0.9500015177594643, 1.0999964139355962, 0.000032945114131084246, 0.0001622180777385296, 0.0011833996536290713, 0.027839381252185724, 6.869485521171381e-7, 8.195970281262926e-9, 0.020851302848242104, 0.00024877650290274444, 7.246711862362839e-19, 1.4033515220708246e-17],
+            "resolution": {
+              "deferredRequests": 10120,
+              "maximumDeferredRequestKilograms": 1.7252922355807384e-8,
+              "summedDeferredRequestKilograms": 0.000051948524081594804
+            }
+          }
+        ]
+      },
+      {
+        "axis": [1, 0, 0],
+        "degree": 2,
+        "lastTimeDifferenceOverFineReferenceError": 0.003850058874499293,
+        "subdivision": 4,
+        "successiveTimeDifferenceRatio": 0.49977901268069197,
+        "timeRefinementRmsDifferencesMeters": [7.251920340727727e-8, 3.624357587927931e-8],
+        "cases": [
+          {
+            "values": [2, 4, 2562, 425, 4.235294117647059, 0.9500086369015336, 1.099979544395852, 0.000009353010779298532, 0.000052731658811699944, 0.0011818184385562632, 0.007914084324766828, 3.6418391728436213e-7, 8.620805041634178e-9, 0.03893761333948507, 0.0009217144345342806, 9.955008820445022e-19, 1.9023417609746232e-18],
+            "resolution": {
+              "deferredRequests": 1699,
+              "maximumDeferredRequestKilograms": 3.391024117694641e-8,
+              "summedDeferredRequestKilograms": 0.000015207156170231256
+            }
+          },
+          {
+            "values": [2, 4, 2562, 850, 2.1176470588235294, 0.9500043184507668, 1.0999897721979262, 0.000009393428715547237, 0.00005315263335892162, 0.0011818184385562632, 0.007948284109547713, 3.6418391728436213e-7, 8.620805041634178e-9, 0.03877007302792372, 0.0009177484923439856, 1.17477718266849e-18, 3.780883856568119e-18],
+            "resolution": {
+              "deferredRequests": 5546,
+              "maximumDeferredRequestKilograms": 3.441556569557839e-8,
+              "summedDeferredRequestKilograms": 0.00003634665199155206
+            }
+          },
+          {
+            "values": [2, 4, 2562, 1700, 1.0588235294117647, 0.9500021592253833, 1.0999948860989632, 0.000009413771856668777, 0.000053363044032250784, 0.0011818184385562632, 0.007965497532911113, 3.6418391728436213e-7, 8.620805041634178e-9, 0.03868629098190561, 0.0009157652397882517, 1.247249400323055e-18, 4.592005853619299e-18],
+            "resolution": {
+              "deferredRequests": 15611,
+              "maximumDeferredRequestKilograms": 3.59034143296681e-8,
+              "summedDeferredRequestKilograms": 0.00007809077794334048
+            }
+          }
+        ]
+      },
+      {
+        "axis": [1, 2, 3],
+        "degree": 2,
+        "lastTimeDifferenceOverFineReferenceError": 0.00012377141391015727,
+        "subdivision": 2,
+        "successiveTimeDifferenceRatio": 0.49990422761806996,
+        "timeRefinementRmsDifferencesMeters": [3.1778347433420085e-8, 1.5886130228682543e-8],
+        "cases": [
+          {
+            "values": [2, 2, 162, 425, 4.235294117647059, 0.9500457323545112, 1.097915175078625, 0.00012831770710397335, 0.0004657517017953028, 0.0011894127698151482, 0.10788324319396349, 1.519477400784349e-7, 8.543894433588924e-9, 0.001184152550008664, 0.00006658390822605622, 2.2985689705002315e-19, 7.563701373064183e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          },
+          {
+            "values": [2, 2, 162, 850, 2.1176470588235294, 0.9500434950146447, 1.097919570751662, 0.00012833960896259483, 0.00046581446182869524, 0.0011894127698151482, 0.10790165720395002, 1.519477400784349e-7, 8.543894433588924e-9, 0.0011839504678771522, 0.00006657254531669238, 2.59761770329144e-19, 8.786482223922591e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          },
+          {
+            "values": [2, 2, 162, 1700, 1.0588235294117647, 0.9500423763447117, 1.0979217685881806, 0.00012835055952591692, 0.00046584583799935686, 0.0011894127698151482, 0.10791086390123796, 1.519477400784349e-7, 8.543894433588924e-9, 0.0011838494560497273, 0.00006656686550605738, 3.130703859949509e-19, 9.57693817510922e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          }
+        ]
+      },
+      {
+        "axis": [1, 2, 3],
+        "degree": 2,
+        "lastTimeDifferenceOverFineReferenceError": 0.000998002494401464,
+        "subdivision": 3,
+        "successiveTimeDifferenceRatio": 0.499742065318765,
+        "timeRefinementRmsDifferencesMeters": [7.122981156989932e-8, 3.559653314620795e-8],
+        "cases": [
+          {
+            "values": [2, 3, 642, 425, 4.235294117647059, 0.9500084338134769, 1.099332116518438, 0.000035635677188061086, 0.00020970731943181775, 0.0011829225784993254, 0.030125113710543154, 1.5573928453962162e-7, 8.63297104025194e-9, 0.004370319208969557, 0.000242256404857776, 6.188189646799923e-19, 4.122057563535895e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          },
+          {
+            "values": [2, 3, 642, 850, 2.1176470588235294, 0.9500050303874431, 1.0993383465662971, 0.0000356570483262583, 0.00020966608411088217, 0.0011829225784993254, 0.030143180098475594, 1.5573928453962162e-7, 8.63297104025194e-9, 0.004367699847576369, 0.00024211120789531282, 6.302178606544993e-19, 2.517919316422826e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          },
+          {
+            "values": [2, 3, 642, 1700, 1.0588235294117647, 0.9500033286744263, 1.0993414615902268, 0.000035667779735917797, 0.00020964546972024323, 0.0011829225784993254, 0.03015225204439543, 1.5573928453962162e-7, 8.63297104025194e-9, 0.004366385732240873, 0.00024203836359229432, 6.593148448102647e-19, 3.606821845460845e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          }
+        ]
+      },
+      {
+        "axis": [1, 2, 3],
+        "degree": 2,
+        "lastTimeDifferenceOverFineReferenceError": 0.0038660506573677256,
+        "subdivision": 4,
+        "successiveTimeDifferenceRatio": 0.49978156263002044,
+        "timeRefinementRmsDifferencesMeters": [7.273155779370813e-8, 3.6349891606655095e-8],
+        "cases": [
+          {
+            "values": [2, 4, 2562, 425, 4.235294117647059, 0.9500091923781087, 1.099917816440809, 0.000009344673395900652, 0.00009882288130813599, 0.0011824028330893307, 0.007903121621829419, 2.5414171149684283e-7, 8.629244286281346e-9, 0.027196425249953676, 0.0009234399021443434, 1.2417313512616949e-18, 1.0676807301018789e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          },
+          {
+            "values": [2, 4, 2562, 850, 2.1176470588235294, 0.9500047433049612, 1.0999275003195816, 0.000009383018424009375, 0.00009883685659883845, 0.0011824028330893307, 0.007935551371687628, 2.5414171149684283e-7, 8.629244286281346e-9, 0.027085283222565364, 0.0009196661347483596, 1.3731477306453258e-18, 1.108707505702795e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          },
+          {
+            "values": [2, 4, 2562, 1700, 1.0588235294117647, 0.9500024632147246, 1.0999323422589677, 0.000009402331947560308, 0.0000988438119045032, 0.0011824028330893307, 0.007951885503347708, 2.5414171149684283e-7, 8.629244286281346e-9, 0.027029646784890088, 0.0009177770296144925, 1.261739110038572e-18, 2.0701812341267102e-18],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            }
+          }
+        ]
+      }
+    ],
+    "matchedSourceDepthControls": [
+      {
+        "axis": [1, 0, 0],
+        "values": [1, 4, 2562, 1700, 1.0588235294117647, 0.9000021171403464, 1.0999970435421396, 0.000003246837932165035, 0.00003550184108136456, 0.0005928379320942074, 0.005476771570090901, 1.0897564512235607e-7, 2.2624387396183824e-9, 0.0335636232541147, 0.0006968129567556696, 1.0594524338192833e-18, 3.759983333616435e-18],
+        "resolution": {
+          "deferredRequests": 17523,
+          "maximumDeferredRequestKilograms": 1.8510398847021072e-8,
+          "summedDeferredRequestKilograms": 0.00003266583483710235
+        }
+      },
+      {
+        "axis": [0.2672612419124244, 0.5345224838248488, 0.8017837257372732],
+        "values": [1, 4, 2562, 1700, 1.0588235294117647, 0.9000229460007205, 1.0999762593894318, 0.0000032689062957011093, 0.00004447429313025886, 0.0005928043660723731, 0.00551430873790498, 7.677160177425494e-8, 2.2601997811097045e-9, 0.023485409133695925, 0.0006914238514826993, 1.0518764851200616e-18, 2.0403045647513563e-18],
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        }
+      },
+      {
+        "axis": [1, 0, 0],
+        "values": [2, 4, 2562, 1700, 1.0588235294117647, 0.9500021604906201, 1.0999948828030575, 0.000011345847283555996, 0.00006460117933326792, 0.0011818184385562632, 0.00960033023128015, 3.6418391728436213e-7, 8.620805041634178e-9, 0.03209843286117458, 0.0007598202960239617, 1.2206103787068911e-18, 3.640100846400911e-18],
+        "resolution": {
+          "deferredRequests": 15831,
+          "maximumDeferredRequestKilograms": 3.3813981991846555e-8,
+          "summedDeferredRequestKilograms": 0.00007991404190847384
+        }
+      },
+      {
+        "axis": [0.2672612419124244, 0.5345224838248488, 0.8017837257372732],
+        "values": [2, 4, 2562, 1700, 1.0588235294117647, 0.9500024644583231, 1.0999323388522315, 0.000011097353643126528, 0.00011216613799169828, 0.0011824028330893307, 0.009385425451097613, 2.5414171149684283e-7, 8.629244286281346e-9, 0.02290110955004601, 0.0007775947819439027, 1.6321881066215247e-18, 1.614848658984408e-18],
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        }
+      }
+    ],
+    "comparison": [
+      {
+        "axis": [1, 0, 0],
+        "subdivision": 2,
+        "degree": 1,
+        "centeredFineRms": 0.00005053746137515759,
+        "sourceFineRms": 0.000049622965683876777,
+        "centeredOverSourceFineRms": 1.0184288802307102
+      },
+      {
+        "axis": [1, 0, 0],
+        "subdivision": 3,
+        "degree": 1,
+        "centeredFineRms": 0.000009764672793714852,
+        "sourceFineRms": 0.00000993330709857298,
+        "centeredOverSourceFineRms": 0.9830233472916232
+      },
+      {
+        "axis": [1, 0, 0],
+        "subdivision": 4,
+        "degree": 1,
+        "centeredFineRms": 0.000002524742504060062,
+        "sourceFineRms": 0.000003246837932165035,
+        "centeredOverSourceFineRms": 0.7776004090159591
+      },
+      {
+        "axis": [1, 2, 3],
+        "subdivision": 2,
+        "degree": 1,
+        "centeredFineRms": 0.000028462637080953282,
+        "sourceFineRms": 0.00002741488112442907,
+        "centeredOverSourceFineRms": 1.0382185117553024
+      },
+      {
+        "axis": [1, 2, 3],
+        "subdivision": 3,
+        "degree": 1,
+        "centeredFineRms": 0.000009660161343674307,
+        "sourceFineRms": 0.000009912400049460516,
+        "centeredOverSourceFineRms": 0.9745532157169204
+      },
+      {
+        "axis": [1, 2, 3],
+        "subdivision": 4,
+        "degree": 1,
+        "centeredFineRms": 0.000002516606125932496,
+        "sourceFineRms": 0.0000032689062957011093,
+        "centeredOverSourceFineRms": 0.7698618125707818
+      },
+      {
+        "axis": [1, 0, 0],
+        "subdivision": 2,
+        "degree": 2,
+        "centeredFineRms": 0.00020781979301770704,
+        "sourceFineRms": 0.00020464802311896183,
+        "centeredOverSourceFineRms": 1.015498658870022
+      },
+      {
+        "axis": [1, 0, 0],
+        "subdivision": 3,
+        "degree": 2,
+        "centeredFineRms": 0.000032945114131084246,
+        "sourceFineRms": 0.000033759903069988635,
+        "centeredOverSourceFineRms": 0.9758651872543821
+      },
+      {
+        "axis": [1, 0, 0],
+        "subdivision": 4,
+        "degree": 2,
+        "centeredFineRms": 0.000009413771856668777,
+        "sourceFineRms": 0.000011345847283555996,
+        "centeredOverSourceFineRms": 0.8297107850475429
+      },
+      {
+        "axis": [1, 2, 3],
+        "subdivision": 2,
+        "degree": 2,
+        "centeredFineRms": 0.00012835055952591692,
+        "sourceFineRms": 0.00012556735377782373,
+        "centeredOverSourceFineRms": 1.0221650426194195
+      },
+      {
+        "axis": [1, 2, 3],
+        "subdivision": 3,
+        "degree": 2,
+        "centeredFineRms": 0.000035667779735917797,
+        "sourceFineRms": 0.000036122956647589464,
+        "centeredOverSourceFineRms": 0.9873992343397494
+      },
+      {
+        "axis": [1, 2, 3],
+        "subdivision": 4,
+        "degree": 2,
+        "centeredFineRms": 0.000009402331947560308,
+        "sourceFineRms": 0.000011097353643126528,
+        "centeredOverSourceFineRms": 0.8472589276619042
+      }
+    ],
+    "spatialComparisons": [
+      {
+        "axis": [1, 0, 0],
+        "coarseSubdivision": 2,
+        "degree": 1,
+        "fineOverCoarseRmsError": 0.19321652746322585,
+        "fineSubdivision": 3,
+        "rmsErrorDecreases": true
+      },
+      {
+        "axis": [1, 0, 0],
+        "coarseSubdivision": 3,
+        "degree": 1,
+        "fineOverCoarseRmsError": 0.2585588434345842,
+        "fineSubdivision": 4,
+        "rmsErrorDecreases": true
+      },
+      {
+        "axis": [1, 2, 3],
+        "coarseSubdivision": 2,
+        "degree": 1,
+        "fineOverCoarseRmsError": 0.3393979734273717,
+        "fineSubdivision": 3,
+        "rmsErrorDecreases": true
+      },
+      {
+        "axis": [1, 2, 3],
+        "coarseSubdivision": 3,
+        "degree": 1,
+        "fineOverCoarseRmsError": 0.26051388133185027,
+        "fineSubdivision": 4,
+        "rmsErrorDecreases": true
+      },
+      {
+        "axis": [1, 0, 0],
+        "coarseSubdivision": 2,
+        "degree": 2,
+        "fineOverCoarseRmsError": 0.1585273166366651,
+        "fineSubdivision": 3,
+        "rmsErrorDecreases": true
+      },
+      {
+        "axis": [1, 0, 0],
+        "coarseSubdivision": 3,
+        "degree": 2,
+        "fineOverCoarseRmsError": 0.28574106069909566,
+        "fineSubdivision": 4,
+        "rmsErrorDecreases": true
+      },
+      {
+        "axis": [1, 2, 3],
+        "coarseSubdivision": 2,
+        "degree": 2,
+        "fineOverCoarseRmsError": 0.27789344953120876,
+        "fineSubdivision": 3,
+        "rmsErrorDecreases": true
+      },
+      {
+        "axis": [1, 2, 3],
+        "coarseSubdivision": 3,
+        "degree": 2,
+        "fineOverCoarseRmsError": 0.2636085569994723,
+        "fineSubdivision": 4,
+        "rmsErrorDecreases": true
+      }
+    ],
+    "referenceControls": [
+      {
+        "comparisonSamples": 4097,
+        "comparisons": [
+          {
+            "firstControl": 0,
+            "maximumSampledDifferenceMeters": 0.000028393757434796996,
+            "sampledRmsDifferenceMeters": 0.0000010458933032038143,
+            "secondControl": 3
+          },
+          {
+            "firstControl": 3,
+            "maximumSampledDifferenceMeters": 0.000010632743065563943,
+            "sampledRmsDifferenceMeters": 3.124975785270448e-7,
+            "secondControl": 4
+          },
+          {
+            "firstControl": 1,
+            "maximumSampledDifferenceMeters": 2.350337486856091e-7,
+            "sampledRmsDifferenceMeters": 1.894432898225011e-8,
+            "secondControl": 2
+          },
+          {
+            "firstControl": 2,
+            "maximumSampledDifferenceMeters": 1.1715599090855733e-7,
+            "sampledRmsDifferenceMeters": 9.449492564306897e-9,
+            "secondControl": 3
+          },
+          {
+            "firstControl": 4,
+            "maximumSampledDifferenceMeters": 5.727746232864206e-8,
+            "sampledRmsDifferenceMeters": 4.681775994670892e-9,
+            "secondControl": 5
+          },
+          {
+            "firstControl": 5,
+            "maximumSampledDifferenceMeters": 0.0000038617660385042996,
+            "sampledRmsDifferenceMeters": 9.074179939029381e-8,
+            "secondControl": 6
+          },
+          {
+            "firstControl": 6,
+            "maximumSampledDifferenceMeters": 2.703380075352868e-8,
+            "sampledRmsDifferenceMeters": 2.290963632181771e-9,
+            "secondControl": 7
+          }
+        ],
+        "controls": [
+          {
+            "bands": 512,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.545950409297016e-13,
+              "maximumIterations": 21,
+              "maximumRelativeInventoryDrift": 4.440892098500626e-16,
+              "summedIterations": 37800
+            },
+            "stepSeconds": 1,
+            "steps": 1800
+          },
+          {
+            "bands": 1024,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.947947430681602e-13,
+              "maximumIterations": 24,
+              "maximumRelativeInventoryDrift": 2.220446049250313e-16,
+              "summedIterations": 10391
+            },
+            "stepSeconds": 4,
+            "steps": 450
+          },
+          {
+            "bands": 1024,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.982875732116557e-13,
+              "maximumIterations": 23,
+              "maximumRelativeInventoryDrift": 2.220446049250313e-16,
+              "summedIterations": 19857
+            },
+            "stepSeconds": 2,
+            "steps": 900
+          },
+          {
+            "bands": 1024,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.992899088027561e-13,
+              "maximumIterations": 22,
+              "maximumRelativeInventoryDrift": 2.220446049250313e-16,
+              "summedIterations": 37890
+            },
+            "stepSeconds": 1,
+            "steps": 1800
+          },
+          {
+            "bands": 2048,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.985273665449575e-13,
+              "maximumIterations": 22,
+              "maximumRelativeInventoryDrift": 2.220446049250313e-16,
+              "summedIterations": 37929
+            },
+            "stepSeconds": 1,
+            "steps": 1800
+          },
+          {
+            "bands": 2048,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.999527969990356e-13,
+              "maximumIterations": 21,
+              "maximumRelativeInventoryDrift": 5.551115123125783e-16,
+              "summedIterations": 72234
+            },
+            "stepSeconds": 0.5,
+            "steps": 3600
+          },
+          {
+            "bands": 4096,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.997541328327954e-13,
+              "maximumIterations": 21,
+              "maximumRelativeInventoryDrift": 4.440892098500626e-16,
+              "summedIterations": 72255
+            },
+            "stepSeconds": 0.5,
+            "steps": 3600
+          },
+          {
+            "bands": 4096,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.994308819784753e-13,
+              "maximumIterations": 20,
+              "maximumRelativeInventoryDrift": 2.220446049250313e-16,
+              "summedIterations": 137289
+            },
+            "stepSeconds": 0.25,
+            "steps": 7200
+          }
+        ],
+        "degree": 1,
+        "sampling": "Linear interpolation/extrapolation of band-center averages; uncertainty retained by reference refinement, not fitted to the native output",
+        "selectedControl": 7
+      },
+      {
+        "comparisonSamples": 4097,
+        "comparisons": [
+          {
+            "firstControl": 0,
+            "maximumSampledDifferenceMeters": 0.00008764475273848049,
+            "sampledRmsDifferenceMeters": 0.0000033790112597543185,
+            "secondControl": 3
+          },
+          {
+            "firstControl": 3,
+            "maximumSampledDifferenceMeters": 0.00003326824279081819,
+            "sampledRmsDifferenceMeters": 0.000001030833964968658,
+            "secondControl": 4
+          },
+          {
+            "firstControl": 1,
+            "maximumSampledDifferenceMeters": 4.7672580905100403e-7,
+            "sampledRmsDifferenceMeters": 7.064335034843536e-8,
+            "secondControl": 2
+          },
+          {
+            "firstControl": 2,
+            "maximumSampledDifferenceMeters": 2.3803338633499038e-7,
+            "sampledRmsDifferenceMeters": 3.530047045059871e-8,
+            "secondControl": 3
+          },
+          {
+            "firstControl": 4,
+            "maximumSampledDifferenceMeters": 1.1646587294578126e-7,
+            "sampledRmsDifferenceMeters": 1.7590424389965588e-8,
+            "secondControl": 5
+          },
+          {
+            "firstControl": 5,
+            "maximumSampledDifferenceMeters": 0.000012137852326787879,
+            "sampledRmsDifferenceMeters": 3.0274986064961e-7,
+            "secondControl": 6
+          },
+          {
+            "firstControl": 6,
+            "maximumSampledDifferenceMeters": 5.6410930593386865e-8,
+            "sampledRmsDifferenceMeters": 8.67403853325972e-9,
+            "secondControl": 7
+          }
+        ],
+        "controls": [
+          {
+            "bands": 512,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.976599239153226e-13,
+              "maximumIterations": 41,
+              "maximumRelativeInventoryDrift": 4.6629367034256575e-15,
+              "summedIterations": 39702
+            },
+            "stepSeconds": 1,
+            "steps": 1800
+          },
+          {
+            "bands": 1024,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.964509889415739e-13,
+              "maximumIterations": 56,
+              "maximumRelativeInventoryDrift": 1.1879386363489175e-14,
+              "summedIterations": 10967
+            },
+            "stepSeconds": 4,
+            "steps": 450
+          },
+          {
+            "bands": 1024,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.867441472201019e-13,
+              "maximumIterations": 53,
+              "maximumRelativeInventoryDrift": 1.176836406102666e-14,
+              "summedIterations": 20856
+            },
+            "stepSeconds": 2,
+            "steps": 900
+          },
+          {
+            "bands": 1024,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.9157712324659e-13,
+              "maximumIterations": 49,
+              "maximumRelativeInventoryDrift": 1.1657341758564144e-14,
+              "summedIterations": 39740
+            },
+            "stepSeconds": 1,
+            "steps": 1800
+          },
+          {
+            "bands": 2048,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.98780397309159e-13,
+              "maximumIterations": 53,
+              "maximumRelativeInventoryDrift": 1.887379141862766e-14,
+              "summedIterations": 39835
+            },
+            "stepSeconds": 1,
+            "steps": 1800
+          },
+          {
+            "bands": 2048,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.99353424415339e-13,
+              "maximumIterations": 50,
+              "maximumRelativeInventoryDrift": 1.84297022087776e-14,
+              "summedIterations": 75883
+            },
+            "stepSeconds": 0.5,
+            "steps": 3600
+          },
+          {
+            "bands": 4096,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.999792386147918e-13,
+              "maximumIterations": 52,
+              "maximumRelativeInventoryDrift": 9.237055564881302e-14,
+              "summedIterations": 76006
+            },
+            "stepSeconds": 0.5,
+            "steps": 3600
+          },
+          {
+            "bands": 4096,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.997966763331206e-13,
+              "maximumIterations": 49,
+              "maximumRelativeInventoryDrift": 9.192646643896296e-14,
+              "summedIterations": 144568
+            },
+            "stepSeconds": 0.25,
+            "steps": 7200
+          }
+        ],
+        "degree": 2,
+        "sampling": "Linear interpolation/extrapolation of band-center averages; uncertainty retained by reference refinement, not fitted to the native output",
+        "selectedControl": 7
+      }
+    ],
+    "maximumNativeAudit": {
+      "local": 1.6321881066215247e-18,
+      "global": 2.1712495837895396e-17
+    },
+    "numericalRetention": {
+      "totalAttemptCount": 135240,
+      "maximumSingleAttemptKilograms": 6.212628991695254e-8,
+      "maximumPerRunSummedAttemptKilograms": 0.00007991404190847384,
+      "interpretation": "Deferred requests leave donors unchanged; not completed transfers or lost stocks."
+    },
+    "sourceDepthModelVersion": "regional-surface-full-gradient-candidate-1",
+    "maximumCandidateAudit": {
+      "local": 1.3731477306453258e-18,
+      "global": 2.1712495837895396e-17
+    }
+  },
+  "dry": {
+    "report": {
+      "path": "artifacts/centered-dry-final.json",
+      "bytes": 79548379,
+      "sha256": "d6ff42acd709344daa2bd89e9260d09b9ab666cb9f52b9484a7224d2a29e8e8c"
+    },
+    "baseline": {
+      "path": "artifacts/surface-front-final.json",
+      "bytes": 79883936,
+      "sha256": "931afa37c0acf1e814b06e5ff40f39ff27a2a7bf747c287b57209a630f83b4a6"
+    },
+    "reportVersion": "surface-flat-centered-front-report-1",
+    "modelVersion": "regional-surface-flat-centered-depth-candidate-1",
+    "parameters": {
+      "radiusMeters": 1000,
+      "roughness": 0.04,
+      "capSquareMetersPerSecond": 1000,
+      "endSeconds": 300,
+      "baseSteps": 2836,
+      "planarCertificateParameters": {
+        "boundary": "Exact time-integrated left inflow, zero right flux; no volume forcing or state fitting",
+        "capSquareMetersPerSecond": 100,
+        "domainMeters": [-100, 100],
+        "endSeconds": 100,
+        "exactDepth": "[(7/3)*(c*n)^2*(c*t-x)_+]^(3/7)",
+        "exactFrontMeters": 10,
+        "speedMetersPerSecond": 0.1
+      }
+    },
+    "scope": "One flat closed sphere with h=p_+^(3/7), no film, two orientations, independent band reference. Threshold contours are not exact support. No terrain barriers, coasts, seasonal selection or calibration.",
+    "referenceControlsUnchanged": true,
+    "sourceControlsUnchanged": true,
+    "initialPairedOwnersUnchanged": true,
+    "caseColumns": [
+      "subdivision",
+      "regions",
+      "steps",
+      "stepSeconds",
+      "areaWeightedRmsErrorMeters",
+      "maximumErrorMeters",
+      "relativeInitialQuadratureDiscrepancy",
+      "initiallyDryHalfInventoryKilograms",
+      "referenceSpatialDifferenceRmsMeters",
+      "referenceTemporalDifferenceRmsMeters",
+      "referenceSpatialDifferenceOverNativeRmsError",
+      "referenceTemporalDifferenceOverNativeRmsError",
+      "maximumLocalRelativeResidual",
+      "maximumGlobalRelativeResidual"
+    ],
+    "contourColumns": [
+      "thresholdMeters",
+      "minimumSignedCrossingErrorMeters",
+      "maximumSignedCrossingErrorMeters",
+      "maximumAbsoluteCrossingErrorMeters",
+      "nativeThresholdWetAreaSquareMeters",
+      "referenceThresholdWetAreaSquareMeters"
+    ],
+    "groups": [
+      {
+        "axis": [1, 0, 0],
+        "lastTimeDifferenceOverFineRmsError": 0.00015538194818533728,
+        "subdivision": 3,
+        "successiveTimeDifferenceRatio": 0.4999304253532625,
+        "timeRefinementRmsDifferencesMeters": [0.000007685872019894843, 0.0000038424012681167675],
+        "cases": [
+          {
+            "values": [3, 642, 2836, 0.10578279266572638, 0.024732279882963715, 0.11468891193486674, -0.011904756896353062, 338468106.1706598, 0.000007322043259202031, 0.000016184238794139904, 0.0002960520944227895, 0.0006543771488405344, 1.2677333439212233e-16, 9.324187439039725e-18],
+            "resolution": {
+              "deferredRequests": 647687,
+              "maximumDeferredRequestKilograms": 1.337951617413442e-11,
+              "summedDeferredRequestKilograms": 2.4468549048942825e-8
+            },
+            "contours": [
+              [0.001, 108.60012999686064, 206.57103705664338, 206.57103705664338, 7799766.29356733, 7239889.544405612],
+              [0.01, 57.62919860678784, 128.7176284761262, 128.7176284761262, 7492785.134555554, 7237409.236553279],
+              [0.05, 0.9641590324078742, 54.09676910097572, 54.09676910097572, 7253959.79328575, 7230395.99991474]
+            ],
+            "crossingCounts": [90, 90, 90]
+          },
+          {
+            "values": [3, 642, 5672, 0.05289139633286319, 0.024729925338330832, 0.11466921518254666, -0.011904756896353062, 338474306.515354, 0.000007322043259202031, 0.000016184238794139904, 0.0002960802816437552, 0.0006544394523122436, 1.2273192930790375e-16, 1.2056392723556797e-17],
+            "resolution": {
+              "deferredRequests": 1326717,
+              "maximumDeferredRequestKilograms": 6.68975808706721e-12,
+              "summedDeferredRequestKilograms": 3.824552156808479e-8
+            },
+            "contours": [
+              [0.001, 108.61101156554875, 206.58950839621193, 206.58950839621193, 7799766.29356733, 7239889.544405612],
+              [0.01, 57.640136490852086, 128.73042983926243, 128.73042983926243, 7492785.134555554, 7237409.236553279],
+              [0.05, 1.0026231260911178, 54.101758447457236, 54.101758447457236, 7253959.79328575, 7230395.99991474]
+            ],
+            "crossingCounts": [90, 90, 90]
+          },
+          {
+            "values": [3, 642, 11344, 0.026445698166431594, 0.024728749465372957, 0.1146593675704255, -0.011904756896353062, 338477405.8914786, 0.000007322043259202031, 0.000016184238794139904, 0.00029609436051163454, 0.000654470571461864, 1.4851719833603142e-16, 1.3730047888485995e-17],
+            "resolution": {
+              "deferredRequests": 2720851,
+              "maximumDeferredRequestKilograms": 3.344879043533605e-12,
+              "summedDeferredRequestKilograms": 4.4458556035129406e-8
+            },
+            "contours": [
+              [0.001, 108.61644944954718, 206.59873643101557, 206.59873643101557, 7799766.29356733, 7239889.544405612],
+              [0.01, 57.64560430209431, 128.7368276054377, 128.7368276054377, 7492785.134555554, 7237409.236553279],
+              [0.05, 1.0218444055900555, 54.10425260073603, 54.10425260073603, 7253959.79328575, 7230395.99991474]
+            ],
+            "crossingCounts": [90, 90, 90]
+          }
+        ]
+      },
+      {
+        "axis": [1, 0, 0],
+        "lastTimeDifferenceOverFineRmsError": 0.0004352768598508985,
+        "subdivision": 4,
+        "successiveTimeDifferenceRatio": 0.49985077910725406,
+        "timeRefinementRmsDifferencesMeters": [0.000011893927094826586, 0.000005945188724993948],
+        "cases": [
+          {
+            "values": [4, 2562, 2836, 0.10578279266572638, 0.013668741415382098, 0.09853443542615925, -0.004519957218717051, 317901371.2903843, 0.000218734648856948, 0.0002625083241046609, 0.016002544946149562, 0.019205010624405227, 2.4381617659341796e-16, 4.744668604901722e-18],
+            "resolution": {
+              "deferredRequests": 1428220,
+              "maximumDeferredRequestKilograms": 4.6380863556806895e-12,
+              "summedDeferredRequestKilograms": 6.250933357953219e-10
+            },
+            "contours": [
+              [0.001, 53.305210366132, 100.88487157433246, 100.88487157433246, 7643891.03813097, 7239889.544405612],
+              [0.01, 24.840628386313178, 62.225966021223876, 62.225966021223876, 7370668.376033049, 7237409.236553279],
+              [0.05, -3.360215096025687, 22.006057532093948, 22.006057532093948, 7233136.154902228, 7230395.99991474]
+            ],
+            "crossingCounts": [178, 182, 182]
+          },
+          {
+            "values": [4, 2562, 5672, 0.05289139633286319, 0.01366184890905908, 0.09848123471631108, -0.004519957218717051, 317909453.01703405, 0.000218734648856948, 0.0002625083241046609, 0.016010618351364327, 0.019214699697827384, 2.5477669048031544e-16, 7.630365798620154e-18],
+            "resolution": {
+              "deferredRequests": 2848374,
+              "maximumDeferredRequestKilograms": 3.3787420836624516e-12,
+              "summedDeferredRequestKilograms": 4.8039388955557926e-9
+            },
+            "contours": [
+              [0.001, 53.511316456735344, 100.94026203554441, 100.94026203554441, 7643891.03813097, 7239889.544405612],
+              [0.01, 24.891105050554696, 62.255559093229884, 62.255559093229884, 7370668.376033049, 7237409.236553279],
+              [0.05, -3.3249986090009287, 22.0208355883631, 22.0208355883631, 7233136.154902228, 7230395.99991474]
+            ],
+            "crossingCounts": [178, 182, 182]
+          },
+          {
+            "values": [4, 2562, 11344, 0.026445698166431594, 0.013658407495014638, 0.09845464012888741, -0.004519957218717051, 317913492.0836236, 0.000218734648856948, 0.0002625083241046609, 0.01601465243563621, 0.019219541092215714, 2.7685558950428383e-16, 6.50585254850818e-18],
+            "resolution": {
+              "deferredRequests": 5997817,
+              "maximumDeferredRequestKilograms": 3.3787420836624516e-12,
+              "summedDeferredRequestKilograms": 5.251076895917914e-8
+            },
+            "contours": [
+              [0.001, 53.61403310012247, 100.96789174093357, 100.96789174093357, 7643891.03813097, 7239889.544405612],
+              [0.01, 24.916295966222357, 62.270336496464964, 62.270336496464964, 7370668.376033049, 7237409.236553279],
+              [0.05, -3.307409440924003, 22.028218037537293, 22.028218037537293, 7233136.154902228, 7230395.99991474]
+            ],
+            "crossingCounts": [178, 182, 182]
+          }
+        ]
+      },
+      {
+        "axis": [1, 0, 0],
+        "lastTimeDifferenceOverFineRmsError": 0.0012466579895567043,
+        "subdivision": 5,
+        "successiveTimeDifferenceRatio": 0.49964272462479764,
+        "timeRefinementRmsDifferencesMeters": [0.000017027852927118946, 0.000008507842831016045],
+        "cases": [
+          {
+            "values": [5, 10242, 2836, 0.10578279266572638, 0.006843044624200215, 0.06694314826222214, -0.0017039169293772947, 301504946.4845463, 0.00010952012427300184, 0.00016026618591895327, 0.01600459010389722, 0.02342030407812582, 3.464421884553969e-16, 3.1251692825514514e-18],
+            "resolution": {
+              "deferredRequests": 3002516,
+              "maximumDeferredRequestKilograms": 6.860374939242142e-13,
+              "summedDeferredRequestKilograms": 4.825815402129739e-11
+            },
+            "contours": [
+              [0.001, 25.044346644915283, 46.61371603776554, 46.61371603776554, 7413464.197287465, 7239889.544405612],
+              [0.01, 10.015119650280013, 25.2745947061066, 25.2745947061066, 7294696.558135992, 7237409.236553279],
+              [0.05, -4.266056556523123, 5.801145545735631, 5.801145545735631, 7216802.987138698, 7230395.99991474]
+            ],
+            "crossingCounts": [362, 366, 366]
+          },
+          {
+            "values": [5, 10242, 5672, 0.05289139633286319, 0.0068306843082129925, 0.06682490529700003, -0.0017039169293772947, 301513409.98174953, 0.00010952012427300184, 0.00016026618591895327, 0.016033550861268526, 0.02346268377917194, 3.8570541768689505e-16, 3.1647822821715967e-18],
+            "resolution": {
+              "deferredRequests": 6072513,
+              "maximumDeferredRequestKilograms": 4.247610353225983e-13,
+              "summedDeferredRequestKilograms": 4.059336808392419e-10
+            },
+            "contours": [
+              [0.001, 25.134169695910202, 46.625322579377794, 46.625322579377794, 7413464.197287465, 7239889.544405612],
+              [0.01, 10.076644793102663, 25.286915079985263, 25.286915079985263, 7294696.558135992, 7237409.236553279],
+              [0.05, -4.243699593720951, 5.834837319091513, 5.834837319091513, 7216802.987138698, 7230395.99991474]
+            ],
+            "crossingCounts": [362, 366, 366]
+          },
+          {
+            "values": [5, 10242, 11344, 0.026445698166431594, 0.006824520359462282, 0.06676584891421294, -0.0017039169293772947, 301517638.8198004, 0.00010952012427300184, 0.00016026618591895327, 0.01604803246299219, 0.02348387541942669, 4.363501119861716e-16, 3.532297495501006e-18],
+            "resolution": {
+              "deferredRequests": 12265501,
+              "maximumDeferredRequestKilograms": 1.1637760342451174e-12,
+              "summedDeferredRequestKilograms": 1.022202069672251e-9
+            },
+            "contours": [
+              [0.001, 25.178760241083566, 46.63110396147596, 46.63110396147596, 7413464.197287465, 7239889.544405612],
+              [0.01, 10.107269376979477, 25.293064525581997, 25.293064525581997, 7294696.558135992, 7237409.236553279],
+              [0.05, -4.232504808953541, 5.851628920208185, 5.851628920208185, 7216802.987138698, 7230395.99991474]
+            ],
+            "crossingCounts": [362, 366, 366]
+          }
+        ]
+      },
+      {
+        "axis": [1, 2, 3],
+        "lastTimeDifferenceOverFineRmsError": 0.00024564446907228833,
+        "subdivision": 3,
+        "successiveTimeDifferenceRatio": 0.4999408854359255,
+        "timeRefinementRmsDifferencesMeters": [0.000007379176920128733, 0.0000036891522432375045],
+        "cases": [
+          {
+            "values": [3, 642, 2836, 0.10578279266572638, 0.015020384967323445, 0.08155353419400962, 0.00007335150987598763, 256369350.15550274, 0.00007914328433827746, 0.00006836411770032976, 0.005269058317110523, 0.004551422473462203, 1.4543931802176062e-16, 6.8893507375337346e-18],
+            "resolution": {
+              "deferredRequests": 661189,
+              "maximumDeferredRequestKilograms": 1.8897356322817625e-21,
+              "summedDeferredRequestKilograms": 3.163985019524182e-19
+            },
+            "contours": [
+              [0.001, 110.10240404567418, 226.9098208641629, 226.9098208641629, 7963700.496324959, 7239889.544405612],
+              [0.01, 70.1949533300763, 145.9585028584569, 145.9585028584569, 7708118.486767017, 7237409.236553279],
+              [0.05, 10.376456441873128, 72.53229674477856, 72.53229674477856, 7335180.305078721, 7230395.99991474]
+            ],
+            "crossingCounts": [89, 89, 88]
+          },
+          {
+            "values": [3, 642, 5672, 0.05289139633286319, 0.015018966369422987, 0.08153515190860805, 0.00007335150987598763, 256379794.63564962, 0.00007914328433827746, 0.00006836411770032976, 0.005269555999499722, 0.004551852372445005, 1.5919220903404586e-16, 6.963197598518585e-18],
+            "resolution": {
+              "deferredRequests": 1320512,
+              "maximumDeferredRequestKilograms": 4.5204785045313454e-21,
+              "summedDeferredRequestKilograms": 1.0671118947330411e-18
+            },
+            "contours": [
+              [0.001, 110.11661143026564, 226.93381407389057, 226.93381407389057, 7963700.496324959, 7239889.544405612],
+              [0.01, 70.20795563072934, 145.98151860254595, 145.98151860254595, 7708118.486767017, 7237409.236553279],
+              [0.05, 10.402340572342794, 72.54929528746578, 72.54929528746578, 7335180.305078721, 7230395.99991474]
+            ],
+            "crossingCounts": [89, 89, 88]
+          },
+          {
+            "values": [3, 642, 11344, 0.026445698166431594, 0.015018258938090969, 0.08152596505742446, 0.00007335150987598763, 256385015.69847488, 0.00007914328433827746, 0.00006836411770032976, 0.005269804220617446, 0.004552066786312835, 1.4554205959701935e-16, 6.886976299480171e-18],
+            "resolution": {
+              "deferredRequests": 2682031,
+              "maximumDeferredRequestKilograms": 8.867102441564068e-21,
+              "summedDeferredRequestKilograms": 3.3312524949787014e-18
+            },
+            "contours": [
+              [0.001, 110.123709857745, 226.94580039240543, 226.94580039240543, 7963700.496324959, 7239889.544405612],
+              [0.01, 70.21445443082052, 145.99301905630546, 145.99301905630546, 7708118.486767017, 7237409.236553279],
+              [0.05, 10.41527660295305, 72.55779131771622, 72.55779131771622, 7335180.305078721, 7230395.99991474]
+            ],
+            "crossingCounts": [89, 89, 88]
+          }
+        ]
+      },
+      {
+        "axis": [1, 2, 3],
+        "lastTimeDifferenceOverFineRmsError": 0.0006526758486285135,
+        "subdivision": 4,
+        "successiveTimeDifferenceRatio": 0.4998643430891868,
+        "timeRefinementRmsDifferencesMeters": [0.000011375388295127433, 0.0000056861509975282986],
+        "cases": [
+          {
+            "values": [4, 2562, 2836, 0.10578279266572638, 0.008719521718100934, 0.08148067168718527, 0.0000790916046663624, 271450923.859711, 0.00012778046219542692, 0.00008238831058893857, 0.014654526512637305, 0.009448719006904695, 3.2949113890675297e-16, 4.2768288630987604e-18],
+            "resolution": {
+              "deferredRequests": 1455063,
+              "maximumDeferredRequestKilograms": 3.0914265593563527e-21,
+              "summedDeferredRequestKilograms": 8.316431115089993e-20
+            },
+            "contours": [
+              [0.001, 55.95720495752787, 112.28126854681663, 112.28126854681663, 7609627.8859700775, 7239889.544405612],
+              [0.01, 26.947807200235594, 69.32650697980903, 69.32650697980903, 7433569.925406258, 7237409.236553279],
+              [0.05, 0.9765331228677177, 27.216474044741368, 27.216474044741368, 7286657.9998523025, 7230395.99991474]
+            ],
+            "crossingCounts": [179, 178, 178]
+          },
+          {
+            "values": [4, 2562, 5672, 0.05289139633286319, 0.008714542576420351, 0.08142215356479846, 0.0000790916046663624, 271460646.5892945, 0.00012778046219542692, 0.00008238831058893857, 0.014662899523971911, 0.00945411762768402, 2.911318183781313e-16, 5.5570573705451585e-18],
+            "resolution": {
+              "deferredRequests": 2899829,
+              "maximumDeferredRequestKilograms": 3.856196577973143e-21,
+              "summedDeferredRequestKilograms": 2.7644716553747117e-19
+            },
+            "contours": [
+              [0.001, 56.00921540738768, 112.31677608127688, 112.31677608127688, 7609627.8859700775, 7239889.544405612],
+              [0.01, 26.966426786954933, 69.35748085302707, 69.35748085302707, 7433569.925406258, 7237409.236553279],
+              [0.05, 1.0054052441508254, 27.233558125908885, 27.233558125908885, 7286657.9998523025, 7230395.99991474]
+            ],
+            "crossingCounts": [179, 178, 178]
+          },
+          {
+            "values": [4, 2562, 11344, 0.026445698166431594, 0.008712059760563794, 0.08139290305782056, 0.0000790916046663624, 271465506.0666205, 0.00012778046219542692, 0.00008238831058893857, 0.014667078246391381, 0.009456811919711497, 3.3798603517211103e-16, 4.4931280445250696e-18],
+            "resolution": {
+              "deferredRequests": 5974097,
+              "maximumDeferredRequestKilograms": 4.961282816540155e-21,
+              "summedDeferredRequestKilograms": 9.424715837888701e-19
+            },
+            "contours": [
+              [0.001, 56.03514743403415, 112.33449177889287, 112.33449177889287, 7609627.8859700775, 7239889.544405612],
+              [0.01, 26.97572806748405, 69.37294557293616, 69.37294557293616, 7433569.925406258, 7237409.236553279],
+              [0.05, 1.0198311256754966, 27.24209136330691, 27.24209136330691, 7286657.9998523025, 7230395.99991474]
+            ],
+            "crossingCounts": [179, 178, 178]
+          }
+        ]
+      },
+      {
+        "axis": [1, 2, 3],
+        "lastTimeDifferenceOverFineRmsError": 0.001671796869339024,
+        "subdivision": 5,
+        "successiveTimeDifferenceRatio": 0.4996923343115486,
+        "timeRefinementRmsDifferencesMeters": [0.00001617446427080314, 0.00000808225580771636],
+        "cases": [
+          {
+            "values": [5, 10242, 2836, 0.10578279266572638, 0.004847466512310008, 0.054349892657788876, -0.00002864386122835593, 275813456.58989984, 0.00012358658900997214, 0.00010562355036165482, 0.02549508876361031, 0.021789433736865788, 4.24420768157192e-16, 1.9209048787172917e-18],
+            "resolution": {
+              "deferredRequests": 2965602,
+              "maximumDeferredRequestKilograms": 1.8789208148810512e-22,
+              "summedDeferredRequestKilograms": 1.7622588676896362e-20
+            },
+            "contours": [
+              [0.001, 24.409185027370217, 52.14812361300214, 52.14812361300214, 7409751.648443686, 7239889.544405612],
+              [0.01, 11.554439032228636, 30.714097292737108, 30.714097292737108, 7319408.064518483, 7237409.236553279],
+              [0.05, -3.1119727112007833, 8.954361257969223, 8.954361257969223, 7215958.746790641, 7230395.99991474]
+            ],
+            "crossingCounts": [358, 356, 358]
+          },
+          {
+            "values": [5, 10242, 5672, 0.05289139633286319, 0.004838788746489005, 0.05421733681646193, -0.00002864386122835593, 275822714.2002522, 0.00012358658900997214, 0.00010562355036165482, 0.025540811034506474, 0.021828510376340485, 4.0310118097678894e-16, 3.036091393800965e-18],
+            "resolution": {
+              "deferredRequests": 5961975,
+              "maximumDeferredRequestKilograms": 3.017952510535383e-21,
+              "summedDeferredRequestKilograms": 5.926454724481583e-20
+            },
+            "contours": [
+              [0.001, 24.443219986520546, 52.18275814225848, 52.18275814225848, 7409751.648443686, 7239889.544405612],
+              [0.01, 11.584106789533477, 30.738548048804716, 30.738548048804716, 7320565.725322578, 7237409.236553279],
+              [0.05, -3.088390414306641, 8.97579987936692, 8.97579987936692, 7215958.746790641, 7230395.99991474]
+            ],
+            "crossingCounts": [358, 356, 358]
+          },
+          {
+            "values": [5, 10242, 11344, 0.026445698166431594, 0.0048344723907228215, 0.05415111768585407, -0.00002864386122835593, 275827340.11638355, 0.00012358658900997214, 0.00010562355036165482, 0.025563614603970095, 0.021847999497182486, 4.300947891284041e-16, 2.22268333935502e-18],
+            "resolution": {
+              "deferredRequests": 12100348,
+              "maximumDeferredRequestKilograms": 1.958678885833198e-21,
+              "summedDeferredRequestKilograms": 1.832465514348543e-19
+            },
+            "contours": [
+              [0.001, 24.460140386469043, 52.19998888595101, 52.19998888595101, 7409751.648443686, 7239889.544405612],
+              [0.01, 11.59890218621773, 30.7507378417351, 30.7507378417351, 7321834.03704306, 7237409.236553279],
+              [0.05, -3.0766067906713435, 8.986489915311369, 8.986489915311369, 7215958.746790641, 7230395.99991474]
+            ],
+            "crossingCounts": [358, 356, 358]
+          }
+        ]
+      }
+    ],
+    "matchedSourceDepthControls": [
+      {
+        "axis": [1, 0, 0],
+        "values": [5, 10242, 11344, 0.026445698166431594, 0.015329954917376341, 0.13803499662134508, -0.0017039169293772947, 332715704.3736891, 0.00010952012427300184, 0.00016026618591895327, 0.0071441908905330136, 0.010454446003444749, 4.469083523862772e-16, 2.8140833968668924e-18],
+        "resolution": {
+          "deferredRequests": 12124529,
+          "maximumDeferredRequestKilograms": 1.1637760342451174e-12,
+          "summedDeferredRequestKilograms": 1.052614706102868e-9
+        },
+        "contours": [
+          [0.001, 69.65219099031827, 95.91787741896619, 95.91787741896619, 7669931.686071284, 7239889.544405612],
+          [0.01, 51.984083361334086, 70.46730699695925, 70.46730699695925, 7590744.601150744, 7237409.236553279],
+          [0.05, 32.68122937123685, 41.28651357420332, 41.28651357420332, 7442551.702713249, 7230395.99991474]
+        ],
+        "crossingCounts": [358, 358, 362]
+      },
+      {
+        "axis": [0.2672612419124244, 0.5345224838248488, 0.8017837257372732],
+        "values": [5, 10242, 11344, 0.026445698166431594, 0.01633987876943557, 0.15305683445386467, -0.00002864386122835593, 306988942.47652787, 0.00012358658900997214, 0.00010562355036165482, 0.007563494855368575, 0.006464157528465151, 3.999086709531566e-16, 2.5936833554529506e-18],
+        "resolution": {
+          "deferredRequests": 12047188,
+          "maximumDeferredRequestKilograms": 3.621631866185158e-22,
+          "summedDeferredRequestKilograms": 8.129442170424863e-20
+        },
+        "contours": [
+          [0.001, 69.80893290633094, 97.95403318201679, 97.95403318201679, 7708124.472668011, 7239889.544405612],
+          [0.01, 52.81627192113469, 73.08634491324906, 73.08634491324906, 7593931.542218655, 7237409.236553279],
+          [0.05, 33.85863502611453, 44.016249600222324, 44.016249600222324, 7459770.347643137, 7230395.99991474]
+        ],
+        "crossingCounts": [355, 357, 356]
+      }
+    ],
+    "comparison": [
+      {
+        "axis": [1, 0, 0],
+        "subdivision": 3,
+        "centeredFineRms": 0.024728749465372957,
+        "sourceFineRms": 0.03081876711641907,
+        "centeredOverSourceFineRms": 0.8023925607393431,
+        "sourceFineContourErrors": [
+          [0.001, 303.45044021499314],
+          [0.01, 211.34407845777181],
+          [0.05, 123.22866126771781]
+        ]
+      },
+      {
+        "axis": [1, 0, 0],
+        "subdivision": 4,
+        "centeredFineRms": 0.013658407495014638,
+        "sourceFineRms": 0.0211113605280582,
+        "centeredOverSourceFineRms": 0.6469695535189139,
+        "sourceFineContourErrors": [
+          [0.001, 164.6684900548858],
+          [0.01, 122.14262795846497],
+          [0.05, 73.10521074776987]
+        ]
+      },
+      {
+        "axis": [1, 0, 0],
+        "subdivision": 5,
+        "centeredFineRms": 0.006824520359462282,
+        "sourceFineRms": 0.015329954917376341,
+        "centeredOverSourceFineRms": 0.44517550092249525,
+        "sourceFineContourErrors": [
+          [0.001, 95.91787741896619],
+          [0.01, 70.46730699695925],
+          [0.05, 41.28651357420332]
+        ]
+      },
+      {
+        "axis": [1, 2, 3],
+        "subdivision": 3,
+        "centeredFineRms": 0.015018258938090969,
+        "sourceFineRms": 0.03211082059949845,
+        "centeredOverSourceFineRms": 0.46770087645550684,
+        "sourceFineContourErrors": [
+          [0.001, 319.72762140927904],
+          [0.01, 237.5424619856472],
+          [0.05, 148.53427120164176]
+        ]
+      },
+      {
+        "axis": [1, 2, 3],
+        "subdivision": 4,
+        "centeredFineRms": 0.008712059760563794,
+        "sourceFineRms": 0.0230370991341017,
+        "centeredOverSourceFineRms": 0.37817520816531003,
+        "sourceFineContourErrors": [
+          [0.001, 178.7269678956267],
+          [0.01, 133.41878026550535],
+          [0.05, 80.91964635994353]
+        ]
+      },
+      {
+        "axis": [1, 2, 3],
+        "subdivision": 5,
+        "centeredFineRms": 0.0048344723907228215,
+        "sourceFineRms": 0.01633987876943557,
+        "centeredOverSourceFineRms": 0.29586953850391506,
+        "sourceFineContourErrors": [
+          [0.001, 97.95403318201679],
+          [0.01, 73.08634491324906],
+          [0.05, 44.016249600222324]
+        ]
+      }
+    ],
+    "spatialComparisons": [
+      {
+        "axis": [1, 0, 0],
+        "coarseSubdivision": 3,
+        "fineOverCoarseRmsError": 0.5523290821535541,
+        "fineSubdivision": 4
+      },
+      {
+        "axis": [1, 0, 0],
+        "coarseSubdivision": 4,
+        "fineOverCoarseRmsError": 0.49965710584877876,
+        "fineSubdivision": 5
+      },
+      {
+        "axis": [1, 2, 3],
+        "coarseSubdivision": 3,
+        "fineOverCoarseRmsError": 0.5800978526523674,
+        "fineSubdivision": 4
+      },
+      {
+        "axis": [1, 2, 3],
+        "coarseSubdivision": 4,
+        "fineOverCoarseRmsError": 0.5549172668220956,
+        "fineSubdivision": 5
+      }
+    ],
+    "referenceControls": {
+      "planar": [
+        {
+          "bands": 64,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.999070256679066e-13,
+            "maximumIterations": 34,
+            "maximumRelativeInventoryDrift": 1.094506931685336e-15
+          },
+          "endSeconds": 100,
+          "rmsBandAverageErrorMeters": 0.00025547481009095975,
+          "stepSeconds": 0.0625,
+          "steps": 1600
+        },
+        {
+          "bands": 128,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.999468158876368e-13,
+            "maximumIterations": 47,
+            "maximumRelativeInventoryDrift": 5.786846078208075e-14
+          },
+          "endSeconds": 100,
+          "rmsBandAverageErrorMeters": 0.0000976945543239255,
+          "stepSeconds": 0.0625,
+          "steps": 1600
+        },
+        {
+          "bands": 256,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.999844919131307e-13,
+            "maximumIterations": 63,
+            "maximumRelativeInventoryDrift": 3.3924206006785645e-14
+          },
+          "endSeconds": 100,
+          "rmsBandAverageErrorMeters": 0.0000937380481927127,
+          "stepSeconds": 0.0625,
+          "steps": 1600
+        },
+        {
+          "bands": 512,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.99934510192979e-13,
+            "maximumIterations": 74,
+            "maximumRelativeInventoryDrift": 4.65339396229433e-15
+          },
+          "endSeconds": 100,
+          "rmsBandAverageErrorMeters": 0.00003698841630143694,
+          "stepSeconds": 0.0625,
+          "steps": 1600
+        },
+        {
+          "bands": 1024,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 8.894378289436844e-13,
+            "maximumIterations": 88,
+            "maximumRelativeInventoryDrift": 1.0541944454019086e-14
+          },
+          "endSeconds": 100,
+          "rmsBandAverageErrorMeters": 0.000018832672568415967,
+          "stepSeconds": 0.25,
+          "steps": 400
+        },
+        {
+          "bands": 1024,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.825508462402155e-13,
+            "maximumIterations": 84,
+            "maximumRelativeInventoryDrift": 4.0930460397697225e-15
+          },
+          "endSeconds": 100,
+          "rmsBandAverageErrorMeters": 0.00001550573136597071,
+          "stepSeconds": 0.125,
+          "steps": 800
+        },
+        {
+          "bands": 1024,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.999908887059483e-13,
+            "maximumIterations": 81,
+            "maximumRelativeInventoryDrift": 4.129183036790136e-15
+          },
+          "endSeconds": 100,
+          "rmsBandAverageErrorMeters": 0.00002192393211257719,
+          "stepSeconds": 0.0625,
+          "steps": 1600
+        },
+        {
+          "bands": 1024,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.552410945579126e-13,
+            "maximumIterations": 76,
+            "maximumRelativeInventoryDrift": 3.3856589585162205e-15
+          },
+          "endSeconds": 100,
+          "rmsBandAverageErrorMeters": 0.0000262271437883841,
+          "stepSeconds": 0.03125,
+          "steps": 3200
+        }
+      ],
+      "spherical": [
+        {
+          "bands": 256,
+          "contours": [
+            {
+              "p": -0.15981848051165948,
+              "thresholdMeters": 0.001
+            },
+            {
+              "p": -0.15613754834990712,
+              "thresholdMeters": 0.01
+            },
+            {
+              "p": -0.14963587339254492,
+              "thresholdMeters": 0.05
+            }
+          ],
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.998529781896082e-13,
+            "maximumIterations": 57,
+            "maximumRelativeInventoryDrift": 1.609823385706477e-14
+          },
+          "stepSeconds": 0.5,
+          "steps": 600
+        },
+        {
+          "bands": 512,
+          "contours": [
+            {
+              "p": -0.15722467569321374,
+              "thresholdMeters": 0.001
+            },
+            {
+              "p": -0.15377254252878514,
+              "thresholdMeters": 0.01
+            },
+            {
+              "p": -0.15031210435993803,
+              "thresholdMeters": 0.05
+            }
+          ],
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.994990946005089e-13,
+            "maximumIterations": 65,
+            "maximumRelativeInventoryDrift": 2.220446049250313e-14
+          },
+          "stepSeconds": 1,
+          "steps": 300
+        },
+        {
+          "bands": 512,
+          "contours": [
+            {
+              "p": -0.15640153640472132,
+              "thresholdMeters": 0.001
+            },
+            {
+              "p": -0.15352332016627668,
+              "thresholdMeters": 0.01
+            },
+            {
+              "p": -0.14985100479562852,
+              "thresholdMeters": 0.05
+            }
+          ],
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.998876726591277e-13,
+            "maximumIterations": 62,
+            "maximumRelativeInventoryDrift": 2.5424107263916085e-14
+          },
+          "stepSeconds": 0.5,
+          "steps": 600
+        },
+        {
+          "bands": 512,
+          "contours": [
+            {
+              "p": -0.15563058373034488,
+              "thresholdMeters": 0.001
+            },
+            {
+              "p": -0.1533852514108106,
+              "thresholdMeters": 0.01
+            },
+            {
+              "p": -0.14964201168536462,
+              "thresholdMeters": 0.05
+            }
+          ],
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.99263172207776e-13,
+            "maximumIterations": 57,
+            "maximumRelativeInventoryDrift": 2.3425705819590803e-14
+          },
+          "stepSeconds": 0.25,
+          "steps": 1200
+        },
+        {
+          "bands": 1024,
+          "contours": [
+            {
+              "p": -0.15330085201233423,
+              "thresholdMeters": 0.001
+            },
+            {
+              "p": -0.15252667421345711,
+              "thresholdMeters": 0.01
+            },
+            {
+              "p": -0.1502820541361618,
+              "thresholdMeters": 0.05
+            }
+          ],
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.99859917083512e-13,
+            "maximumIterations": 61,
+            "maximumRelativeInventoryDrift": 3.930189507173054e-14
+          },
+          "stepSeconds": 0.25,
+          "steps": 1200
+        },
+        {
+          "bands": 2048,
+          "contours": [
+            {
+              "p": -0.15277735742463494,
+              "thresholdMeters": 0.001
+            },
+            {
+              "p": -0.15206479603727974,
+              "thresholdMeters": 0.01
+            },
+            {
+              "p": -0.15072793922984618,
+              "thresholdMeters": 0.05
+            }
+          ],
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.996656280542027e-13,
+            "maximumIterations": 64,
+            "maximumRelativeInventoryDrift": 1.1446399383885364e-13
+          },
+          "stepSeconds": 0.25,
+          "steps": 1200
+        },
+        {
+          "bands": 4096,
+          "contours": [
+            {
+              "p": -0.15249855277023017,
+              "thresholdMeters": 0.001
+            },
+            {
+              "p": -0.15199097085851743,
+              "thresholdMeters": 0.01
+            },
+            {
+              "p": -0.15081883172625865,
+              "thresholdMeters": 0.05
+            }
+          ],
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.996864447359144e-13,
+            "maximumIterations": 67,
+            "maximumRelativeInventoryDrift": 3.8746783559417963e-14
+          },
+          "stepSeconds": 0.25,
+          "steps": 1200
+        },
+        {
+          "bands": 4096,
+          "contours": [
+            {
+              "p": -0.15226420843148336,
+              "thresholdMeters": 0.001
+            },
+            {
+              "p": -0.15186945517639472,
+              "thresholdMeters": 0.01
+            },
+            {
+              "p": -0.15075326389829835,
+              "thresholdMeters": 0.05
+            }
+          ],
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.99788793420997e-13,
+            "maximumIterations": 64,
+            "maximumRelativeInventoryDrift": 6.461498003318411e-14
+          },
+          "stepSeconds": 0.125,
+          "steps": 2400
+        }
+      ],
+      "selected": 7
+    },
+    "maximumNativeAudit": {
+      "local": 4.469083523862772e-16,
+      "global": 1.3730047888485995e-17
+    },
+    "numericalRetention": {
+      "totalAttemptCount": 96502559,
+      "maximumSingleAttemptKilograms": 1.337951617413442e-11,
+      "maximumPerRunSummedAttemptKilograms": 5.251076895917914e-8,
+      "interpretation": "Deferred requests leave donors unchanged; not completed transfers or lost stocks."
+    },
+    "sourceDepthModelVersion": "regional-surface-full-gradient-candidate-1",
+    "maximumCandidateAudit": {
+      "local": 4.363501119861716e-16,
+      "global": 1.3730047888485995e-17
+    }
+  },
+  "legacyRegressions": [
+    {
+      "path": "artifacts/centered-old-dry-regression.json",
+      "bytes": 79883936,
+      "sha256": "931afa37c0acf1e814b06e5ff40f39ff27a2a7bf747c287b57209a630f83b4a6"
+    },
+    {
+      "path": "artifacts/centered-old-wet-regression.json",
+      "bytes": 43215413,
+      "sha256": "0af89317143631d471bf5d6f23aa9536971654e51325705d1df661fb2ee00052"
+    },
+    {
+      "path": "artifacts/centered-seasonal-legacy-regression.json",
+      "bytes": 5272305,
+      "sha256": "5618b1522ac69ec8e460c0ed031d3eda14ca43aab86310b7ee2c39cc93227514"
+    }
+  ],
+  "sources": [
+    {
+      "path": "native/src/seasonal_moisture/regional_soil.rs",
+      "bytes": 17045,
+      "sha256": "388ecc31db189b7ecae901e52b436432de59ef126d32f3a0da3b9d841114c29d"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface.rs",
+      "bytes": 4606,
+      "sha256": "9859f58fe75c745536b2bd6af4527062ab426a2769edbfc2a0c2603ab2381970"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_centered.rs",
+      "bytes": 8114,
+      "sha256": "a978fd434c843b1a12997336b067dd812b63d1444d5b210c9b4c7f1492654ec0"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_evolution.rs",
+      "bytes": 17901,
+      "sha256": "70200ec75ef13675380f63226150a7a6701389bd17c648c74ea55116d139bfe6"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front.rs",
+      "bytes": 4231,
+      "sha256": "b35fd93be03b5a8c6970c88109a50db4f6e3e7f78a478b3a5cb3a5b68d99ef08"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/native.rs",
+      "bytes": 14906,
+      "sha256": "e4bbe877d89d7cb9086d11e4862b2510c18d66a3e4f698111be36b1594b84888"
+    },
+    {
+      "path": "native/examples/surface_centered_report.rs",
+      "bytes": 1114,
+      "sha256": "52e0e170d02bc27ecbcccc25bda2e42886e1f05a068a191df44b4eb3fe4f5042"
+    }
+  ],
+  "unchangedSources": [
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_gradient.rs",
+      "bytes": 16794,
+      "sha256": "121fdcc182f8e0d31cdb8fe33c28478f4d1279394211dcefeb6e325e2e6c14ca"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_cotan.rs",
+      "bytes": 13048,
+      "sha256": "96160c7770430ca850fd10d2aa2cc4da1dd42a006498847f30a3d31feb4b1f02"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/reference.rs",
+      "bytes": 11933,
+      "sha256": "b4abd46b67f010efc783b17ba00389cf387f18026fd51bc8dc76f6675a04bf39"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_evolution/zonal.rs",
+      "bytes": 11321,
+      "sha256": "c37fbc763062d95946def1509d952eee7ec53622e22e64673d48efb08f728912"
+    },
+    {
+      "path": "native/Cargo.lock",
+      "bytes": 2675,
+      "sha256": "6423d20d12d748711ebc5bf101b0891cc019a25a68d15d56c74b57158724b42d"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 81221,
+      "sha256": "a08876e9e441f3ba1bebe19ab9ef34e8986bde8c677c4af4d8796f04d5a26090"
+    }
+  ],
+  "interpretation": "All reference controls and initial owners unchanged. Graph-edge threshold contours are not exact support or flooded-surface geometry. No clipping, film, cutoff, mass rescaling, calibration or changed reference. Refinement differences are empirical uncertainty indicators, not rigorous bounds.",
+  "nextGate": "Isolate sharp-front full-gradient reconstruction on the same witness; independently reviewed variable-bed lake-at-rest, disconnected-wet and barrier controls before any seasonal extension.",
+  "environment": {
+    "rustc": "1.98.1 (48a229cea 2026-09-01) (Arch Linux rust 1:1.98.1-1)",
+    "cargo": "1.98.1 (797e8a9bc 2026-08-05) (Arch Linux rust 1:1.98.1-1)",
+    "node": "v25.2.1",
+    "platform": "Linux x86_64"
+  },
+  "validation": {
+    "newDirectedTests": 6,
+    "release": {
+      "libraryPassed": 111,
+      "regionalSoilPassed": 12,
+      "regionalSurfacePassed": 5,
+      "log": "artifacts/centered-release-log.txt"
+    },
+    "allTargetClippyWarningsDenied": true,
+    "formatting": true,
+    "whitespace": true,
+    "cliRefusalExitCodes": [1, 1, 1, 1, 1, 1],
+    "invalidOutputAbsent": true,
+    "guiRerun": false,
+    "fullNpmTest": {
+      "nativeTargets": 106,
+      "nativePassed": 566,
+      "ignored": 1,
+      "nodePassed": 18,
+      "failed": 0
+    },
+    "logs": [
+      {
+        "path": "artifacts/centered-npm-test-log.txt",
+        "bytes": 76168,
+        "sha256": "332e14d6ef1c5fe129ced7e1f59894481319413b659d9d0771b6be3e3b4b32b2"
+      },
+      {
+        "path": "artifacts/centered-release-log.txt",
+        "bytes": 16384,
+        "sha256": "cd86a86996cb95e8709f953afbabfb52d26ce9b03cf0a498c1a35cce88a19f27"
+      },
+      {
+        "path": "artifacts/centered-final-clippy-log.txt",
+        "bytes": 167,
+        "sha256": "336be22db06950f8e20399a652ca328fc7974dc0a92ad9e0a0ddb016c3bbe661"
+      },
+      {
+        "path": "artifacts/centered-stage-unit-log.txt",
+        "bytes": 1153,
+        "sha256": "7ff3ffb497ebefbcb5f4255631c5eb833b2647f553add1329b6697d57f33be89"
+      }
+    ]
+  },
+  "repeats": [
+    {
+      "cohort": "dry",
+      "path": "artifacts/centered-dry-repeat.json",
+      "bytes": 79548379,
+      "sha256": "d6ff42acd709344daa2bd89e9260d09b9ab666cb9f52b9484a7224d2a29e8e8c",
+      "byteIdentical": true
+    },
+    {
+      "cohort": "wet",
+      "path": "artifacts/centered-wet-repeat.json",
+      "bytes": 43185212,
+      "sha256": "b25b8c7aa61ad3450e7b0ae4f676ec475d07ecba3cb275b3fba388e39b308bfd",
+      "byteIdentical": true
+    }
+  ]
+}

@@ -94,3 +94,8 @@ pub fn reference_report() -> Result<Value, String> {
 pub fn report() -> Result<Value, String> {
     native::report(reference_report()?)
 }
+
+/// Flat-only interface-depth ablation with the unchanged independent reference.
+pub fn centered_report() -> Result<Value, String> {
+    native::centered_report(reference_report()?)
+}
