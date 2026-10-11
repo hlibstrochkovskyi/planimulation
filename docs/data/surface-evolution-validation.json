@@ -1,0 +1,1987 @@
+{
+  "recordVersion": "surface-evolution-validation-record-1",
+  "date": "2026-10-11",
+  "baseCommit": "6f0b4b1fb98a04046883ba278e31b3f8aab67211",
+  "scope": "Independent cross-method numerical verification of 1,800-second unforced fully wet smooth evolution. No exact nonlinear solution, pointwise error bound, moving front, seasonal/desktop promotion or calibration.",
+  "resolvedParameters": {
+    "radiusMeters": 100000,
+    "roughness": 0.04,
+    "meanDepthMeters": 1,
+    "amplitudeMeters": 0.1,
+    "capSquareMetersPerSecond": 1000000,
+    "endSeconds": 1800,
+    "nativeBaseSteps": 425,
+    "referenceMaximumIterationsPerStep": 256,
+    "referenceAbsoluteEquationResidualMeters": 1e-12,
+    "referenceSeparateRelativeInventoryDriftGuard": 1e-9
+  },
+  "environment": {
+    "rustc": "1.98.1 (48a229cea 2026-09-01)",
+    "cargo": "1.98.1 (797e8a9bc 2026-08-05)",
+    "node": "v25.2.1",
+    "npm": "11.6.2",
+    "platform": "Linux x86_64"
+  },
+  "reportVersion": "surface-nonlinear-evolution-report-1",
+  "surfaceModelVersion": "regional-surface-full-gradient-candidate-1",
+  "caseCount": 36,
+  "legacyCaseCount": 4,
+  "referenceProfiles": [
+    {
+      "comparisonSamples": 4097,
+      "comparisons": [
+        {
+          "firstControl": 0,
+          "maximumSampledDifferenceMeters": 0.000028393757434796996,
+          "sampledRmsDifferenceMeters": 0.0000010458933032038143,
+          "secondControl": 3
+        },
+        {
+          "firstControl": 3,
+          "maximumSampledDifferenceMeters": 0.000010632743065563943,
+          "sampledRmsDifferenceMeters": 3.124975785270448e-7,
+          "secondControl": 4
+        },
+        {
+          "firstControl": 1,
+          "maximumSampledDifferenceMeters": 2.350337486856091e-7,
+          "sampledRmsDifferenceMeters": 1.894432898225011e-8,
+          "secondControl": 2
+        },
+        {
+          "firstControl": 2,
+          "maximumSampledDifferenceMeters": 1.1715599090855733e-7,
+          "sampledRmsDifferenceMeters": 9.449492564306897e-9,
+          "secondControl": 3
+        },
+        {
+          "firstControl": 4,
+          "maximumSampledDifferenceMeters": 5.727746232864206e-8,
+          "sampledRmsDifferenceMeters": 4.681775994670892e-9,
+          "secondControl": 5
+        },
+        {
+          "firstControl": 5,
+          "maximumSampledDifferenceMeters": 0.0000038617660385042996,
+          "sampledRmsDifferenceMeters": 9.074179939029381e-8,
+          "secondControl": 6
+        },
+        {
+          "firstControl": 6,
+          "maximumSampledDifferenceMeters": 2.703380075352868e-8,
+          "sampledRmsDifferenceMeters": 2.290963632181771e-9,
+          "secondControl": 7
+        }
+      ],
+      "controls": [
+        {
+          "bands": 512,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.545950409297016e-13,
+            "maximumIterations": 21,
+            "maximumRelativeInventoryDrift": 4.440892098500626e-16,
+            "summedIterations": 37800
+          },
+          "stepSeconds": 1,
+          "steps": 1800
+        },
+        {
+          "bands": 1024,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.947947430681602e-13,
+            "maximumIterations": 24,
+            "maximumRelativeInventoryDrift": 2.220446049250313e-16,
+            "summedIterations": 10391
+          },
+          "stepSeconds": 4,
+          "steps": 450
+        },
+        {
+          "bands": 1024,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.982875732116557e-13,
+            "maximumIterations": 23,
+            "maximumRelativeInventoryDrift": 2.220446049250313e-16,
+            "summedIterations": 19857
+          },
+          "stepSeconds": 2,
+          "steps": 900
+        },
+        {
+          "bands": 1024,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.992899088027561e-13,
+            "maximumIterations": 22,
+            "maximumRelativeInventoryDrift": 2.220446049250313e-16,
+            "summedIterations": 37890
+          },
+          "stepSeconds": 1,
+          "steps": 1800
+        },
+        {
+          "bands": 2048,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.985273665449575e-13,
+            "maximumIterations": 22,
+            "maximumRelativeInventoryDrift": 2.220446049250313e-16,
+            "summedIterations": 37929
+          },
+          "stepSeconds": 1,
+          "steps": 1800
+        },
+        {
+          "bands": 2048,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.999527969990356e-13,
+            "maximumIterations": 21,
+            "maximumRelativeInventoryDrift": 5.551115123125783e-16,
+            "summedIterations": 72234
+          },
+          "stepSeconds": 0.5,
+          "steps": 3600
+        },
+        {
+          "bands": 4096,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.997541328327954e-13,
+            "maximumIterations": 21,
+            "maximumRelativeInventoryDrift": 4.440892098500626e-16,
+            "summedIterations": 72255
+          },
+          "stepSeconds": 0.5,
+          "steps": 3600
+        },
+        {
+          "bands": 4096,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.994308819784753e-13,
+            "maximumIterations": 20,
+            "maximumRelativeInventoryDrift": 2.220446049250313e-16,
+            "summedIterations": 137289
+          },
+          "stepSeconds": 0.25,
+          "steps": 7200
+        }
+      ],
+      "degree": 1,
+      "sampling": "Linear interpolation/extrapolation of band-center averages; uncertainty retained by reference refinement, not fitted to the native output",
+      "selectedControl": 7
+    },
+    {
+      "comparisonSamples": 4097,
+      "comparisons": [
+        {
+          "firstControl": 0,
+          "maximumSampledDifferenceMeters": 0.00008764475273848049,
+          "sampledRmsDifferenceMeters": 0.0000033790112597543185,
+          "secondControl": 3
+        },
+        {
+          "firstControl": 3,
+          "maximumSampledDifferenceMeters": 0.00003326824279081819,
+          "sampledRmsDifferenceMeters": 0.000001030833964968658,
+          "secondControl": 4
+        },
+        {
+          "firstControl": 1,
+          "maximumSampledDifferenceMeters": 4.7672580905100403e-7,
+          "sampledRmsDifferenceMeters": 7.064335034843536e-8,
+          "secondControl": 2
+        },
+        {
+          "firstControl": 2,
+          "maximumSampledDifferenceMeters": 2.3803338633499038e-7,
+          "sampledRmsDifferenceMeters": 3.530047045059871e-8,
+          "secondControl": 3
+        },
+        {
+          "firstControl": 4,
+          "maximumSampledDifferenceMeters": 1.1646587294578126e-7,
+          "sampledRmsDifferenceMeters": 1.7590424389965588e-8,
+          "secondControl": 5
+        },
+        {
+          "firstControl": 5,
+          "maximumSampledDifferenceMeters": 0.000012137852326787879,
+          "sampledRmsDifferenceMeters": 3.0274986064961e-7,
+          "secondControl": 6
+        },
+        {
+          "firstControl": 6,
+          "maximumSampledDifferenceMeters": 5.6410930593386865e-8,
+          "sampledRmsDifferenceMeters": 8.67403853325972e-9,
+          "secondControl": 7
+        }
+      ],
+      "controls": [
+        {
+          "bands": 512,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.976599239153226e-13,
+            "maximumIterations": 41,
+            "maximumRelativeInventoryDrift": 4.6629367034256575e-15,
+            "summedIterations": 39702
+          },
+          "stepSeconds": 1,
+          "steps": 1800
+        },
+        {
+          "bands": 1024,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.964509889415739e-13,
+            "maximumIterations": 56,
+            "maximumRelativeInventoryDrift": 1.1879386363489175e-14,
+            "summedIterations": 10967
+          },
+          "stepSeconds": 4,
+          "steps": 450
+        },
+        {
+          "bands": 1024,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.867441472201019e-13,
+            "maximumIterations": 53,
+            "maximumRelativeInventoryDrift": 1.176836406102666e-14,
+            "summedIterations": 20856
+          },
+          "stepSeconds": 2,
+          "steps": 900
+        },
+        {
+          "bands": 1024,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.9157712324659e-13,
+            "maximumIterations": 49,
+            "maximumRelativeInventoryDrift": 1.1657341758564144e-14,
+            "summedIterations": 39740
+          },
+          "stepSeconds": 1,
+          "steps": 1800
+        },
+        {
+          "bands": 2048,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.98780397309159e-13,
+            "maximumIterations": 53,
+            "maximumRelativeInventoryDrift": 1.887379141862766e-14,
+            "summedIterations": 39835
+          },
+          "stepSeconds": 1,
+          "steps": 1800
+        },
+        {
+          "bands": 2048,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.99353424415339e-13,
+            "maximumIterations": 50,
+            "maximumRelativeInventoryDrift": 1.84297022087776e-14,
+            "summedIterations": 75883
+          },
+          "stepSeconds": 0.5,
+          "steps": 3600
+        },
+        {
+          "bands": 4096,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.999792386147918e-13,
+            "maximumIterations": 52,
+            "maximumRelativeInventoryDrift": 9.237055564881302e-14,
+            "summedIterations": 76006
+          },
+          "stepSeconds": 0.5,
+          "steps": 3600
+        },
+        {
+          "bands": 4096,
+          "diagnostics": {
+            "maximumEquationResidualMeters": 9.997966763331206e-13,
+            "maximumIterations": 49,
+            "maximumRelativeInventoryDrift": 9.192646643896296e-14,
+            "summedIterations": 144568
+          },
+          "stepSeconds": 0.25,
+          "steps": 7200
+        }
+      ],
+      "degree": 2,
+      "sampling": "Linear interpolation/extrapolation of band-center averages; uncertainty retained by reference refinement, not fitted to the native output",
+      "selectedControl": 7
+    }
+  ],
+  "caseColumns": [
+    "degree",
+    "axis",
+    "subdivision",
+    "regions",
+    "steps",
+    "stepSeconds",
+    "areaWeightedRmsErrorMeters",
+    "rmsErrorOverReferenceChange",
+    "referenceChangeRmsMeters",
+    "referenceLastSpatialDifferenceRmsMeters",
+    "referenceLastTemporalDifferenceRmsMeters",
+    "referenceSpatialDifferenceOverNativeRmsError",
+    "referenceTemporalDifferenceOverNativeRmsError",
+    "maximumErrorMeters",
+    "minimumDepthMeters",
+    "maximumDepthMeters",
+    "maximumLocalRelativeResidual",
+    "maximumGlobalRelativeResidual",
+    "resolution"
+  ],
+  "caseRows": [
+    [
+      1,
+      [
+        1,
+        0,
+        0
+      ],
+      2,
+      162,
+      425,
+      4.235294117647059,
+      0.00004960648853553966,
+      0.08220629436555767,
+      0.0006034390543739617,
+      4.056603964310831e-7,
+      2.8865297915406194e-9,
+      0.008177567257969795,
+      0.00005818855308560327,
+      0.00042161547162566926,
+      0.9000041757720465,
+      1.0999942140956727,
+      1.9873002605104706e-19,
+      8.35022679601941e-18,
+      {
+        "deferredRequests": 718,
+        "maximumDeferredRequestKilograms": 1.3794175178501307e-8,
+        "summedDeferredRequestKilograms": 0.000006927378544153656
+      }
+    ],
+    [
+      1,
+      [
+        1,
+        0,
+        0
+      ],
+      2,
+      162,
+      850,
+      2.1176470588235294,
+      0.00004961747394396575,
+      0.0822244990348552,
+      0.0006034390543739617,
+      4.056603964310831e-7,
+      2.8865297915406194e-9,
+      0.00817575672814794,
+      0.00005817567002303361,
+      0.0004217598676692358,
+      0.9000020878860233,
+      1.0999971070478363,
+      1.8133830746278994e-19,
+      1.1542511796495206e-17,
+      {
+        "deferredRequests": 1372,
+        "maximumDeferredRequestKilograms": 1.5129149661967025e-8,
+        "summedDeferredRequestKilograms": 0.0000065136686440730136
+      }
+    ],
+    [
+      1,
+      [
+        1,
+        0,
+        0
+      ],
+      2,
+      162,
+      1700,
+      1.0588235294117647,
+      0.000049622965683876777,
+      0.08223359977149335,
+      0.0006034390543739617,
+      4.056603964310831e-7,
+      2.8865297915406194e-9,
+      0.008174851922703364,
+      0.0000581692317611419,
+      0.00042183204486900827,
+      0.9000010439430117,
+      1.0999985535239183,
+      2.2519357962093083e-19,
+      1.4223903686690153e-17,
+      {
+        "deferredRequests": 2687,
+        "maximumDeferredRequestKilograms": 7.571130067872795e-9,
+        "summedDeferredRequestKilograms": 0.000006444471911464788
+      }
+    ],
+    [
+      1,
+      [
+        1,
+        0,
+        0
+      ],
+      3,
+      642,
+      425,
+      4.235294117647059,
+      0.000009920113308337361,
+      0.016722922121949882,
+      0.0005932045390151397,
+      2.0465954155770733e-7,
+      2.2251496502055418e-9,
+      0.02063076652417883,
+      0.00022430687846432303,
+      0.00007973341059264172,
+      0.9000059716319204,
+      1.0999916740816484,
+      4.143133202661452e-19,
+      7.372413666807821e-18,
+      {
+        "deferredRequests": 3519,
+        "maximumDeferredRequestKilograms": 4.716047940689598e-8,
+        "summedDeferredRequestKilograms": 0.00002920950444822718
+      }
+    ],
+    [
+      1,
+      [
+        1,
+        0,
+        0
+      ],
+      3,
+      642,
+      850,
+      2.1176470588235294,
+      0.000009928903294023234,
+      0.016737739921052475,
+      0.0005932045390151397,
+      2.0465954155770733e-7,
+      2.2251496502055418e-9,
+      0.020612502257011955,
+      0.00022410830122043636,
+      0.00007971339807033573,
+      0.90000298581596,
+      1.099995837040824,
+      4.748772836482611e-19,
+      6.9111373752912794e-18,
+      {
+        "deferredRequests": 7599,
+        "maximumDeferredRequestKilograms": 2.3536018849670124e-8,
+        "summedDeferredRequestKilograms": 0.000032503409231860805
+      }
+    ],
+    [
+      1,
+      [
+        1,
+        0,
+        0
+      ],
+      3,
+      642,
+      1700,
+      1.0588235294117647,
+      0.00000993330709857298,
+      0.016745163675019457,
+      0.0005932045390151397,
+      2.0465954155770733e-7,
+      2.2251496502055418e-9,
+      0.020603363967988945,
+      0.00022400894567381363,
+      0.0000797034001303043,
+      0.90000149290798,
+      1.099997918520412,
+      5.130843717550775e-19,
+      7.574750539083748e-18,
+      {
+        "deferredRequests": 15635,
+        "maximumDeferredRequestKilograms": 1.1788999842990832e-8,
+        "summedDeferredRequestKilograms": 0.00003423590130883647
+      }
+    ],
+    [
+      1,
+      [
+        1,
+        0,
+        0
+      ],
+      4,
+      2562,
+      425,
+      4.235294117647059,
+      0.0000032324568955551424,
+      0.005452513613858088,
+      0.0005928379320942074,
+      1.0897564512235607e-7,
+      2.2624387396183824e-9,
+      0.03371294610987862,
+      0.00069991304222166,
+      0.00003550585473721668,
+      0.9000084685613852,
+      1.099988174168558,
+      9.847611603300873e-19,
+      2.0250388540335733e-18,
+      {
+        "deferredRequests": 3190,
+        "maximumDeferredRequestKilograms": 2.572933048162307e-8,
+        "summedDeferredRequestKilograms": 0.00002084305610806608
+      }
+    ],
+    [
+      1,
+      [
+        1,
+        0,
+        0
+      ],
+      4,
+      2562,
+      850,
+      2.1176470588235294,
+      0.0000032420237407224155,
+      0.005468650984038633,
+      0.0005928379320942074,
+      1.0897564512235607e-7,
+      2.2624387396183824e-9,
+      0.033613463021116924,
+      0.0006978476780414466,
+      0.000035503180053853,
+      0.9000042342806926,
+      1.099994087084279,
+      9.881743619542542e-19,
+      3.3538537680759724e-18,
+      {
+        "deferredRequests": 7802,
+        "maximumDeferredRequestKilograms": 1.6956549965759556e-8,
+        "summedDeferredRequestKilograms": 0.000028460723745303873
+      }
+    ],
+    [
+      1,
+      [
+        1,
+        0,
+        0
+      ],
+      4,
+      2562,
+      1700,
+      1.0588235294117647,
+      0.000003246837932165035,
+      0.005476771570090901,
+      0.0005928379320942074,
+      1.0897564512235607e-7,
+      2.2624387396183824e-9,
+      0.0335636232541147,
+      0.0006968129567556696,
+      0.00003550184108136456,
+      0.9000021171403464,
+      1.0999970435421396,
+      1.0594524338192833e-18,
+      3.759983333616435e-18,
+      {
+        "deferredRequests": 17523,
+        "maximumDeferredRequestKilograms": 1.8510398847021072e-8,
+        "summedDeferredRequestKilograms": 0.00003266583483710235
+      }
+    ],
+    [
+      1,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      2,
+      162,
+      425,
+      4.235294117647059,
+      0.000027406820705240894,
+      0.046391084397327316,
+      0.0005907777552796299,
+      4.8371626294584643e-8,
+      2.0275356433886656e-9,
+      0.0017649484708503506,
+      0.00007397923550472048,
+      0.00017297002087945934,
+      0.9006982002560309,
+      1.099300361654157,
+      2.9937019451497847e-19,
+      5.77463356612329e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      1,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      2,
+      162,
+      850,
+      2.1176470588235294,
+      0.0000274121938659753,
+      0.04640017946004149,
+      0.0005907777552796299,
+      4.8371626294584643e-8,
+      2.0275356433886656e-9,
+      0.0017646025170799887,
+      0.00007396473457402815,
+      0.0001730842611418204,
+      0.9006963112797377,
+      1.0993029696753562,
+      2.223558328070762e-19,
+      4.6083730679608825e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      1,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      2,
+      162,
+      1700,
+      1.0588235294117647,
+      0.00002741488112442907,
+      0.0464047281391848,
+      0.0005907777552796299,
+      4.8371626294584643e-8,
+      2.0275356433886656e-9,
+      0.0017644295474066919,
+      0.0000739574844109739,
+      0.0001731413633165868,
+      0.9006953667915911,
+      1.0993042736859557,
+      2.814333930218887e-19,
+      8.637773586628297e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      1,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      3,
+      642,
+      425,
+      4.235294117647059,
+      0.000009898440821326508,
+      0.016696471889912856,
+      0.0005928462543818394,
+      4.845809435789071e-8,
+      2.261569280903069e-9,
+      0.004895528016239305,
+      0.0002284773250379439,
+      0.00010740303053635714,
+      0.90022392003828,
+      1.0997740365011817,
+      5.341643931988459e-19,
+      2.354786095904602e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      1,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      3,
+      642,
+      850,
+      2.1176470588235294,
+      0.000009907742226452449,
+      0.016712161295145987,
+      0.0005928462543818394,
+      4.845809435789071e-8,
+      2.261569280903069e-9,
+      0.004890932086274265,
+      0.00022826283013954057,
+      0.00010737872180155428,
+      0.9002213168392549,
+      1.099777661430476,
+      4.58013180225004e-19,
+      3.7520931523101696e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      1,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      3,
+      642,
+      1700,
+      1.0588235294117647,
+      0.000009912400049460516,
+      0.01672001800837246,
+      0.0005928462543818394,
+      4.845809435789071e-8,
+      2.261569280903069e-9,
+      0.0048886338440838105,
+      0.00022815556975287285,
+      0.00010736655856047328,
+      0.9002200152397425,
+      1.099779473895123,
+      4.755239812073719e-19,
+      4.0333660041632836e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      1,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      4,
+      2562,
+      425,
+      4.235294117647059,
+      0.0000032553926609308526,
+      0.0054915126258253885,
+      0.0005928043660723731,
+      7.677160177425494e-8,
+      2.2601997811097045e-9,
+      0.023582900672972192,
+      0.0006942940580517925,
+      0.00004446039278560576,
+      0.9000289616234838,
+      1.0999678599371252,
+      9.78219777052096e-19,
+      1.5532375026622974e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      1,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      4,
+      2562,
+      850,
+      2.1176470588235294,
+      0.000003264380820497558,
+      0.005506674726648391,
+      0.0005928043660723731,
+      7.677160177425494e-8,
+      2.2601997811097045e-9,
+      0.02351796741734115,
+      0.0006923823859390291,
+      0.00004446967612437014,
+      0.9000249512083084,
+      1.099973459571996,
+      1.1532232696984461e-18,
+      1.467676840380846e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      1,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      4,
+      2562,
+      1700,
+      1.0588235294117647,
+      0.0000032689062957011093,
+      0.00551430873790498,
+      0.0005928043660723731,
+      7.677160177425494e-8,
+      2.2601997811097045e-9,
+      0.023485409133695925,
+      0.0006914238514826993,
+      0.00004447429313025886,
+      0.9000229460007205,
+      1.0999762593894318,
+      1.0518764851200616e-18,
+      2.0403045647513563e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      2,
+      [
+        1,
+        0,
+        0
+      ],
+      2,
+      162,
+      425,
+      4.235294117647059,
+      0.00020460296156210462,
+      0.1633271854556241,
+      0.0012527183456405983,
+      0.0000013617490721754296,
+      1.077798459656025e-8,
+      0.006655568725783512,
+      0.000052677559084543016,
+      0.0012030667934896933,
+      0.950004228705217,
+      1.099990089034243,
+      2.6608477911596157e-19,
+      1.3224399791026969e-17,
+      {
+        "deferredRequests": 408,
+        "maximumDeferredRequestKilograms": 3.433617176715337e-8,
+        "summedDeferredRequestKilograms": 0.000004634088102388348
+      }
+    ],
+    [
+      2,
+      [
+        1,
+        0,
+        0
+      ],
+      2,
+      162,
+      850,
+      2.1176470588235294,
+      0.00020463300400456972,
+      0.16335116725693616,
+      0.0012527183456405983,
+      0.0000013617490721754296,
+      1.077798459656025e-8,
+      0.006654591612919976,
+      0.00005266982542229387,
+      0.0012032493827207613,
+      0.9500021143526085,
+      1.0999950445171214,
+      2.6690517729138586e-19,
+      1.726012139371325e-17,
+      {
+        "deferredRequests": 701,
+        "maximumDeferredRequestKilograms": 1.683081976281383e-8,
+        "summedDeferredRequestKilograms": 0.0000038272997958296
+      }
+    ],
+    [
+      2,
+      [
+        1,
+        0,
+        0
+      ],
+      2,
+      162,
+      1700,
+      1.0588235294117647,
+      0.00020464802311896183,
+      0.16336315647577723,
+      0.0012527183456405983,
+      0.0000013617490721754296,
+      1.077798459656025e-8,
+      0.006654103232572373,
+      0.00005266595998484193,
+      0.0012033406614224695,
+      0.9500010571763041,
+      1.0999975222585607,
+      2.6076388251088653e-19,
+      2.0230862971909998e-17,
+      {
+        "deferredRequests": 1517,
+        "maximumDeferredRequestKilograms": 5.244388097279568e-9,
+        "summedDeferredRequestKilograms": 0.0000040755334131497946
+      }
+    ],
+    [
+      2,
+      [
+        1,
+        0,
+        0
+      ],
+      3,
+      642,
+      425,
+      4.235294117647059,
+      0.00003371913565401467,
+      0.02849344729027925,
+      0.0011833996536290713,
+      6.869485521171381e-7,
+      8.195970281262926e-9,
+      0.02037266195568535,
+      0.00024306584739775493,
+      0.00014760153685622335,
+      0.9500060851701351,
+      1.0999856189240835,
+      6.015752413143223e-19,
+      7.533729390512096e-18,
+      {
+        "deferredRequests": 1934,
+        "maximumDeferredRequestKilograms": 6.904204717732597e-8,
+        "summedDeferredRequestKilograms": 0.000037743143672026005
+      }
+    ],
+    [
+      2,
+      [
+        1,
+        0,
+        0
+      ],
+      3,
+      642,
+      850,
+      2.1176470588235294,
+      0.00003374628058131427,
+      0.028516385379889434,
+      0.0011833996536290713,
+      6.869485521171381e-7,
+      8.195970281262926e-9,
+      0.020356274537037717,
+      0.0002428703294134624,
+      0.0001473578250021923,
+      0.9500030425850674,
+      1.0999928094620417,
+      5.70551891391904e-19,
+      1.1546333948087217e-17,
+      {
+        "deferredRequests": 4606,
+        "maximumDeferredRequestKilograms": 3.379493485149972e-8,
+        "summedDeferredRequestKilograms": 0.00004549210750360913
+      }
+    ],
+    [
+      2,
+      [
+        1,
+        0,
+        0
+      ],
+      3,
+      642,
+      1700,
+      1.0588235294117647,
+      0.000033759903069988635,
+      0.028527896696994005,
+      0.0011833996536290713,
+      6.869485521171381e-7,
+      8.195970281262926e-9,
+      0.020348060558497607,
+      0.000242772328589677,
+      0.00014765983897691015,
+      0.9500015212925337,
+      1.099996404731021,
+      6.844892687748848e-19,
+      1.2366906535362269e-17,
+      {
+        "deferredRequests": 10024,
+        "maximumDeferredRequestKilograms": 1.7193423850233262e-8,
+        "summedDeferredRequestKilograms": 0.00005211685570252095
+      }
+    ],
+    [
+      2,
+      [
+        1,
+        0,
+        0
+      ],
+      4,
+      2562,
+      425,
+      4.235294117647059,
+      0.000011291453487305497,
+      0.00955430472137446,
+      0.0011818184385562632,
+      3.6418391728436213e-7,
+      8.620805041634178e-9,
+      0.03225305915609525,
+      0.0007634805431671117,
+      0.00006461674690405594,
+      0.9500086419624807,
+      1.099979531212229,
+      1.3596534456820063e-18,
+      2.8278541109713607e-18,
+      {
+        "deferredRequests": 1749,
+        "maximumDeferredRequestKilograms": 5.54447182381871e-8,
+        "summedDeferredRequestKilograms": 0.00001547241570302131
+      }
+    ],
+    [
+      2,
+      [
+        1,
+        0,
+        0
+      ],
+      4,
+      2562,
+      850,
+      2.1176470588235294,
+      0.000011327635671811945,
+      0.009584920409305888,
+      0.0011818184385562632,
+      3.6418391728436213e-7,
+      8.620805041634178e-9,
+      0.032150037998715755,
+      0.0007610418706426504,
+      0.0000646063694509369,
+      0.9500043209812404,
+      1.0999897656061144,
+      1.1802014926590997e-18,
+      3.0205314922407055e-18,
+      {
+        "deferredRequests": 5543,
+        "maximumDeferredRequestKilograms": 3.2514039444255677e-8,
+        "summedDeferredRequestKilograms": 0.00003676630135926982
+      }
+    ],
+    [
+      2,
+      [
+        1,
+        0,
+        0
+      ],
+      4,
+      2562,
+      1700,
+      1.0588235294117647,
+      0.000011345847283555996,
+      0.00960033023128015,
+      0.0011818184385562632,
+      3.6418391728436213e-7,
+      8.620805041634178e-9,
+      0.03209843286117458,
+      0.0007598202960239617,
+      0.00006460117933326792,
+      0.9500021604906201,
+      1.0999948828030575,
+      1.2206103787068911e-18,
+      3.640100846400911e-18,
+      {
+        "deferredRequests": 15831,
+        "maximumDeferredRequestKilograms": 3.3813981991846555e-8,
+        "summedDeferredRequestKilograms": 0.00007991404190847384
+      }
+    ],
+    [
+      2,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      2,
+      162,
+      425,
+      4.235294117647059,
+      0.00012553445249911192,
+      0.1055432190446566,
+      0.0011894127698151482,
+      1.519477400784349e-7,
+      8.543894433588924e-9,
+      0.0012104066816200105,
+      0.0000680601561045512,
+      0.0004491940406391448,
+      0.950045773824378,
+      1.097915074890558,
+      1.9840201088996894e-19,
+      1.1431828672709115e-17,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      2,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      2,
+      162,
+      850,
+      2.1176470588235294,
+      0.0001255563869794256,
+      0.10556166048136416,
+      0.0011894127698151482,
+      1.519477400784349e-7,
+      8.543894433588924e-9,
+      0.0012101952256983464,
+      0.00006804826611480128,
+      0.0004492577967409872,
+      0.9500435157495783,
+      1.0979195206576287,
+      2.7803362799551597e-19,
+      1.3525882935636924e-17,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      2,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      2,
+      162,
+      1700,
+      1.0588235294117647,
+      0.00012556735377782373,
+      0.10557088082830883,
+      0.0011894127698151482,
+      1.519477400784349e-7,
+      8.543894433588924e-9,
+      0.0012100895296980462,
+      0.00006804232291704031,
+      0.00044928967075841264,
+      0.9500423867121783,
+      1.097921743541164,
+      2.788532267505215e-19,
+      9.895714294861963e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      2,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      3,
+      642,
+      425,
+      4.235294117647059,
+      0.00003608915279284136,
+      0.03050846559935025,
+      0.0011829225784993254,
+      1.5573928453962162e-7,
+      8.63297104025194e-9,
+      0.0043154042832092765,
+      0.00023921234975525317,
+      0.00023709466583854422,
+      0.9500084464297812,
+      1.099332076735948,
+      9.346996546497971e-19,
+      2.598451068615724e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      2,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      3,
+      642,
+      850,
+      2.1176470588235294,
+      0.00003611165953388617,
+      0.030527491984892203,
+      0.0011829225784993254,
+      1.5573928453962162e-7,
+      8.63297104025194e-9,
+      0.004312714689655296,
+      0.00023906325966966435,
+      0.00023705169284449212,
+      0.9500050366955952,
+      1.099338326675052,
+      6.22939693669328e-19,
+      5.061618196834395e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      2,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      3,
+      642,
+      1700,
+      1.0588235294117647,
+      0.000036122956647589464,
+      0.030537042156567534,
+      0.0011829225784993254,
+      1.5573928453962162e-7,
+      8.63297104025194e-9,
+      0.004311365928846645,
+      0.0002389884948918773,
+      0.00023703020967769106,
+      0.9500033318285024,
+      1.0993414516446043,
+      5.689109965045491e-19,
+      7.08615415658403e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      2,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      4,
+      2562,
+      425,
+      4.235294117647059,
+      0.000011044089272654844,
+      0.009340377884412986,
+      0.0011824028330893307,
+      2.5414171149684283e-7,
+      8.629244286281346e-9,
+      0.023011558963589467,
+      0.000781345032011589,
+      0.00011214599469999698,
+      0.9500091981076249,
+      1.0999178028138632,
+      1.4385283146295237e-18,
+      2.295904883002115e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      2,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      4,
+      2562,
+      850,
+      2.1176470588235294,
+      0.000011079515428024197,
+      0.009370339040102028,
+      0.0011824028330893307,
+      2.5414171149684283e-7,
+      8.629244286281346e-9,
+      0.02293798074002626,
+      0.0007788467232470106,
+      0.00011215944522335874,
+      0.9500047461697194,
+      1.0999274935061085,
+      1.3918583222207434e-18,
+      2.3828860080319546e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      2,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      4,
+      2562,
+      1700,
+      1.0588235294117647,
+      0.000011097353643126528,
+      0.009385425451097613,
+      0.0011824028330893307,
+      2.5414171149684283e-7,
+      8.629244286281346e-9,
+      0.02290110955004601,
+      0.0007775947819439027,
+      0.00011216613799169828,
+      0.9500024644583231,
+      1.0999323388522315,
+      1.6321881066215247e-18,
+      1.614848658984408e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ]
+  ],
+  "legacyRows": [
+    [
+      1,
+      [
+        1,
+        0,
+        0
+      ],
+      4,
+      2562,
+      1700,
+      1.0588235294117647,
+      0.00016161588033922317,
+      0.27261393306651793,
+      0.0005928379320942074,
+      1.0897564512235607e-7,
+      2.2624387396183824e-9,
+      0.0006742879777260871,
+      0.000013998864065026552,
+      0.0008155679328842869,
+      0.9000022848596191,
+      1.0999968093283776,
+      1.4004121773803248e-18,
+      4.382187957863162e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      1,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      4,
+      2562,
+      1700,
+      1.0588235294117647,
+      0.00016601724265233325,
+      0.28005401470350316,
+      0.0005928043660723731,
+      7.677160177425494e-8,
+      2.2601997811097045e-9,
+      0.00046243149535393134,
+      0.000013614247201074925,
+      0.0008973576714730314,
+      0.9000231900794547,
+      1.0999759185386346,
+      1.2363801284775748e-18,
+      2.2158040460409143e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      2,
+      [
+        1,
+        0,
+        0
+      ],
+      4,
+      2562,
+      1700,
+      1.0588235294117647,
+      0.00027501494330725205,
+      0.23270490147642026,
+      0.0011818184385562632,
+      3.6418391728436213e-7,
+      8.620805041634178e-9,
+      0.0013242331958576111,
+      0.00003134667861303394,
+      0.0009823255959032773,
+      0.9500023428852229,
+      1.0999944775083543,
+      1.5862231049404707e-18,
+      3.122052193972008e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ],
+    [
+      2,
+      [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      4,
+      2562,
+      1700,
+      1.0588235294117647,
+      0.00025364031825197405,
+      0.21451261038446065,
+      0.0011824028330893307,
+      2.5414171149684283e-7,
+      8.629244286281346e-9,
+      0.0010019767884235607,
+      0.00003402157963588735,
+      0.0009236599534847567,
+      0.9500029155668147,
+      1.0999317494168135,
+      1.736124382657966e-18,
+      2.1906400990207627e-18,
+      {
+        "deferredRequests": 0,
+        "maximumDeferredRequestKilograms": 0,
+        "summedDeferredRequestKilograms": 0
+      }
+    ]
+  ],
+  "nativeTimeControls": [
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "degree": 1,
+      "lastTimeDifferenceOverFineReferenceError": 0.00013196599490132425,
+      "subdivision": 2,
+      "successiveTimeDifferenceRatio": 0.49986321517217003,
+      "timeRefinementRmsDifferencesMeters": [
+        1.3100672019187345e-8,
+        6.548544036427071e-9
+      ]
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "degree": 1,
+      "lastTimeDifferenceOverFineReferenceError": 0.0009364296380702031,
+      "subdivision": 3,
+      "successiveTimeDifferenceRatio": 0.4997952493611336,
+      "timeRefinementRmsDifferencesMeters": [
+        1.8611307696595782e-8,
+        9.301843171156875e-9
+      ]
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "degree": 1,
+      "lastTimeDifferenceOverFineReferenceError": 0.0029796957317875716,
+      "subdivision": 4,
+      "successiveTimeDifferenceRatio": 0.49978679681721266,
+      "timeRefinementRmsDifferencesMeters": [
+        1.9357432388948107e-8,
+        9.674589128278139e-9
+      ]
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "degree": 1,
+      "lastTimeDifferenceOverFineReferenceError": 0.00020289413449382408,
+      "subdivision": 2,
+      "successiveTimeDifferenceRatio": 0.49987277904317384,
+      "timeRefinementRmsDifferencesMeters": [
+        1.1127468450350834e-8,
+        5.562318577992111e-9
+      ]
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "degree": 1,
+      "lastTimeDifferenceOverFineReferenceError": 0.0009075634853516648,
+      "subdivision": 3,
+      "successiveTimeDifferenceRatio": 0.4997834113870263,
+      "timeRefinementRmsDifferencesMeters": [
+        1.800006189105365e-8,
+        8.9961323370884e-9
+      ]
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "degree": 1,
+      "lastTimeDifferenceOverFineReferenceError": 0.0029541001268853424,
+      "subdivision": 4,
+      "successiveTimeDifferenceRatio": 0.49978767010888664,
+      "timeRefinementRmsDifferencesMeters": [
+        1.932155809446656e-8,
+        9.656676502906942e-9
+      ]
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "degree": 2,
+      "lastTimeDifferenceOverFineReferenceError": 0.00009275884581708026,
+      "subdivision": 2,
+      "successiveTimeDifferenceRatio": 0.4998845334785494,
+      "timeRefinementRmsDifferencesMeters": [
+        3.797459843609391e-8,
+        1.8982914423262057e-8
+      ]
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "degree": 2,
+      "lastTimeDifferenceOverFineReferenceError": 0.0011132080893573094,
+      "subdivision": 3,
+      "successiveTimeDifferenceRatio": 0.49973373214733463,
+      "timeRefinementRmsDifferencesMeters": [
+        7.520364301193483e-8,
+        3.7581797193430016e-8
+      ]
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "degree": 2,
+      "lastTimeDifferenceOverFineReferenceError": 0.0031921945849294254,
+      "subdivision": 4,
+      "successiveTimeDifferenceRatio": 0.49977896624590556,
+      "timeRefinementRmsDifferencesMeters": [
+        7.246834041867883e-8,
+        3.621815226000368e-8
+      ]
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "degree": 2,
+      "lastTimeDifferenceOverFineReferenceError": 0.00012773302267242542,
+      "subdivision": 2,
+      "successiveTimeDifferenceRatio": 0.4999036383477758,
+      "timeRefinementRmsDifferencesMeters": [
+        3.2084378701522976e-8,
+        1.6039097647019223e-8
+      ]
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "degree": 2,
+      "lastTimeDifferenceOverFineReferenceError": 0.0009839111273446687,
+      "subdivision": 3,
+      "successiveTimeDifferenceRatio": 0.4997421607019088,
+      "timeRefinementRmsDifferencesMeters": [
+        7.112023317831024e-8,
+        3.5541778998152344e-8
+      ]
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "degree": 2,
+      "lastTimeDifferenceOverFineReferenceError": 0.003273013572093424,
+      "subdivision": 4,
+      "successiveTimeDifferenceRatio": 0.4997814394114639,
+      "timeRefinementRmsDifferencesMeters": [
+        7.267534610938252e-8,
+        3.632178908827353e-8
+      ]
+    }
+  ],
+  "spatialComparisons": [
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "coarseSubdivision": 2,
+      "degree": 1,
+      "fineOverCoarseRmsError": 0.20017560340615545,
+      "fineSubdivision": 3,
+      "rmsErrorDecreases": true
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "coarseSubdivision": 3,
+      "degree": 1,
+      "fineOverCoarseRmsError": 0.3268637423513742,
+      "fineSubdivision": 4,
+      "rmsErrorDecreases": true
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "coarseSubdivision": 2,
+      "degree": 1,
+      "fineOverCoarseRmsError": 0.3615700540327237,
+      "fineSubdivision": 3,
+      "rmsErrorDecreases": true
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "coarseSubdivision": 3,
+      "degree": 1,
+      "fineOverCoarseRmsError": 0.32977949632682757,
+      "fineSubdivision": 4,
+      "rmsErrorDecreases": true
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "coarseSubdivision": 2,
+      "degree": 2,
+      "fineOverCoarseRmsError": 0.1649656935623757,
+      "fineSubdivision": 3,
+      "rmsErrorDecreases": true
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "coarseSubdivision": 3,
+      "degree": 2,
+      "fineOverCoarseRmsError": 0.3360746403813598,
+      "fineSubdivision": 4,
+      "rmsErrorDecreases": true
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "coarseSubdivision": 2,
+      "degree": 2,
+      "fineOverCoarseRmsError": 0.2876779318890854,
+      "fineSubdivision": 3,
+      "rmsErrorDecreases": true
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "coarseSubdivision": 3,
+      "degree": 2,
+      "fineOverCoarseRmsError": 0.30721055730268054,
+      "fineSubdivision": 4,
+      "rmsErrorDecreases": true
+    }
+  ],
+  "finestComparisons": [
+    {
+      "degree": 1,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "rms": 0.000003246837932165035,
+      "relativeChange": 0.005476771570090901,
+      "legacyRms": 0.00016161588033922317,
+      "reduction": 49.77639282150912,
+      "referenceSpatialRatio": 0.0335636232541147,
+      "referenceTemporalRatio": 0.0006968129567556696
+    },
+    {
+      "degree": 1,
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "rms": 0.0000032689062957011093,
+      "relativeChange": 0.00551430873790498,
+      "legacyRms": 0.00016601724265233325,
+      "reduction": 50.786785436664275,
+      "referenceSpatialRatio": 0.023485409133695925,
+      "referenceTemporalRatio": 0.0006914238514826993
+    },
+    {
+      "degree": 2,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "rms": 0.000011345847283555996,
+      "relativeChange": 0.00960033023128015,
+      "legacyRms": 0.00027501494330725205,
+      "reduction": 24.239260095263447,
+      "referenceSpatialRatio": 0.03209843286117458,
+      "referenceTemporalRatio": 0.0007598202960239617
+    },
+    {
+      "degree": 2,
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "rms": 0.000011097353643126528,
+      "relativeChange": 0.009385425451097613,
+      "legacyRms": 0.00025364031825197405,
+      "reduction": 22.855928215739404,
+      "referenceSpatialRatio": 0.02290110955004601,
+      "referenceTemporalRatio": 0.0007775947819439027
+    }
+  ],
+  "maximumLocalRelativeResidual": 1.736124382657966e-18,
+  "maximumGlobalRelativeResidual": 2.0230862971909998e-17,
+  "maximumReferenceSpatialDifferenceOverNativeRmsError": 0.03371294610987862,
+  "maximumReferenceTemporalDifferenceOverNativeRmsError": 0.000781345032011589,
+  "report": {
+    "path": "artifacts/surface-evolution-refined.json",
+    "bytes": 43215413,
+    "sha256": "0af89317143631d471bf5d6f23aa9536971654e51325705d1df661fb2ee00052"
+  },
+  "sourceFingerprints": [
+    {
+      "path": "native/src/seasonal_moisture/regional_soil.rs",
+      "bytes": 17000,
+      "sha256": "eedd833a610a49d7d624f1697ff610d0dd948101cee0dc22635d8729b62cd5e2"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_evolution.rs",
+      "bytes": 15652,
+      "sha256": "60ab699b8d808cc89aaada58c00844368fc2dfce04d2bb346a0606e75a289375"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_evolution/zonal.rs",
+      "bytes": 11321,
+      "sha256": "c37fbc763062d95946def1509d952eee7ec53622e22e64673d48efb08f728912"
+    },
+    {
+      "path": "native/examples/surface_evolution_report.rs",
+      "bytes": 1129,
+      "sha256": "18fecaadabe0af74c30e6b1e025b02feffbddd3d59266b37ebe16b69db38ff93"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface.rs",
+      "bytes": 3855,
+      "sha256": "ed73e05fe90a4ddd1b738206d94d73e7122758404360663a486b40150960d644"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_gradient.rs",
+      "bytes": 16794,
+      "sha256": "121fdcc182f8e0d31cdb8fe33c28478f4d1279394211dcefeb6e325e2e6c14ca"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_cotan.rs",
+      "bytes": 13048,
+      "sha256": "96160c7770430ca850fd10d2aa2cc4da1dd42a006498847f30a3d31feb4b1f02"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_verification.rs",
+      "bytes": 28946,
+      "sha256": "dea06becf25ca97a0d72621de514d1213d1205f9f37924e4292089a82392a9e5"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/cycle.rs",
+      "bytes": 11269,
+      "sha256": "fdddff7fbaede4043d7297cfdd9659435c90dabf18d8d6cf45667cf4964be5e1"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_constitutive.rs",
+      "bytes": 17550,
+      "sha256": "45271a39c56cbfcac4d5a9469fd342578b1c34679dd1655b37e0dfc899f783f6"
+    },
+    {
+      "path": "native/src/moisture_transport.rs",
+      "bytes": 15160,
+      "sha256": "d117d9da8c1cc3f73bb52ead789001cecd210e860a4d4976d0a3de094c72b707"
+    },
+    {
+      "path": "native/Cargo.lock",
+      "bytes": 2675,
+      "sha256": "6423d20d12d748711ebc5bf101b0891cc019a25a68d15d56c74b57158724b42d"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 81221,
+      "sha256": "a08876e9e441f3ba1bebe19ab9ef34e8986bde8c677c4af4d8796f04d5a26090"
+    },
+    {
+      "path": "native/src/seasonal_moisture/surface_flow.rs",
+      "bytes": 32301,
+      "sha256": "9f0e75238e06f2f3e51b3e2a0931fd722d723ffdf4536ba82dd631fe8166928c"
+    },
+    {
+      "path": "native/src/surface_water/ponded_soil.rs",
+      "bytes": 15083,
+      "sha256": "1ae6c9da06c84e7e8b4092f5cec7e58caef971e75ea8be10b88fb129a30545f7"
+    },
+    {
+      "path": "native/src/surface_water/stock_precision.rs",
+      "bytes": 5487,
+      "sha256": "b5b20a0589d88103ba6b8a51b7de6945104e9c3c4997320da2531715218ee8b3"
+    }
+  ],
+  "regressions": [
+    {
+      "path": "artifacts/surface-evolution-legacy-seasonal-rebuilt.json",
+      "bytes": 5272305,
+      "sha256": "5618b1522ac69ec8e460c0ed031d3eda14ca43aab86310b7ee2c39cc93227514"
+    },
+    {
+      "path": "artifacts/surface-evolution-constitutive-rebuilt.json",
+      "bytes": 66531115,
+      "sha256": "fa9a6b548d25490f6416017422846f6f5770e0c12b0c34cd5ca21a49c203c593"
+    }
+  ],
+  "numericalRetention": {
+    "totalAttemptedDeferredRequests": 102358,
+    "maximumSingleAttemptKilograms": 6.904204717732597e-8,
+    "maximumSummedAttemptsPerRunKilograms": 0.00007991404190847384,
+    "maximumAttemptCountPerRun": 17523,
+    "interpretation": "Attempted requests; donors unchanged, no completed transfers or lost water. All tilted candidate and legacy runs have zero deferrals."
+  },
+  "omittedFromCompactRecord": [
+    "Initial and final regional high/low owners",
+    "Complete directed cumulative transfer pairs",
+    "Complete reference final band arrays",
+    "Native-center sampled reference and signed endpoint error arrays"
+  ],
+  "reportByteIdenticalRepeat": true,
+  "reportRepeat": {
+    "path": "artifacts/surface-evolution-refined-repeat.json",
+    "bytes": 43215413,
+    "sha256": "0af89317143631d471bf5d6f23aa9536971654e51325705d1df661fb2ee00052"
+  },
+  "validation": {
+    "status": "Passed for the declared bounded smooth fully wet verification scope; moving fronts and seasonal promotion remain unqualified.",
+    "npmTest": {
+      "command": "npm test",
+      "log": "artifacts/surface-evolution-npm-test-log.txt",
+      "exitCode": 0,
+      "nativePassed": 554,
+      "nativeTargets": 104,
+      "nativeIgnored": 1,
+      "ignoredTest": "both_annual_snow_witnesses_complete_with_unchanged_ledgers (pre-existing)",
+      "nodeFilesPassed": 18
+    },
+    "releaseRegression": {
+      "command": "cargo test --release --locked --manifest-path native/Cargo.toml --lib --test regional_soil --test regional_surface_flow",
+      "log": "artifacts/surface-evolution-release-final-regression-log.txt",
+      "exitCode": 0,
+      "libraryPassed": 99,
+      "regionalSoilPassed": 12,
+      "regionalSurfacePassed": 5
+    },
+    "clippy": {
+      "command": "cargo clippy --locked --manifest-path native/Cargo.toml --all-targets -- -D warnings",
+      "log": "artifacts/surface-evolution-final-clippy-log.txt",
+      "exitCode": 0
+    },
+    "formatAndWhitespace": "cargo fmt --manifest-path native/Cargo.toml --check and git diff --check pass",
+    "cliControls": "Missing/extra arguments, invalid options and existing output paths reject; invalid outputs absent and existing report hashes unchanged. Overwrite refusal checked in both modes.",
+    "legacyReplay": "Both rebuilt historic artifacts compare byte-for-byte with their original files.",
+    "desktop": "Not rerun; no renderer, adapter, simulation selector or save contract changed.",
+    "ownerEdits": "src/renderer/map.ts and src/renderer/style.css remain untouched and excluded."
+  }
+}
