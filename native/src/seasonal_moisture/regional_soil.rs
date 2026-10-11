@@ -17,6 +17,7 @@ mod accounting;
 mod cycle;
 mod observation;
 mod surface;
+pub mod surface_constitutive;
 mod surface_cotan;
 pub mod surface_verification;
 pub use observation::{

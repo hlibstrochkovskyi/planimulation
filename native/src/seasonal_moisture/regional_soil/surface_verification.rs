@@ -83,7 +83,7 @@ fn mass_sum(masses: &[Mass]) -> f64 {
 // Independently reconstruct every column's cumulative identity from directed
 // face histories, including signed tails. Balanced geographic teleportation
 // cannot pass merely because the global sum stays unchanged.
-fn audit(
+pub(super) fn audit(
     layout: &surface_flow::Layout,
     initial: &[Mass],
     liquid: &[Mass],

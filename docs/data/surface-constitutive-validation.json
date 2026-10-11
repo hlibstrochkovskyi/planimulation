@@ -1,0 +1,1147 @@
+{
+  "summaryVersion": "surface-constitutive-validation-1",
+  "recordedDate": "2026-10-11",
+  "scope": "Necessary frozen weak-work screen against a selected isotropic capped diffusive-wave reference; current nonlinear gate not passed. No evolving front or production-law replacement.",
+  "sourceReports": {
+    "primary": {
+      "path": "artifacts/constitutive-work-v1-final.json",
+      "bytes": 66531115,
+      "sha256": "fa9a6b548d25490f6416017422846f6f5770e0c12b0c34cd5ca21a49c203c593"
+    },
+    "repeat": {
+      "path": "artifacts/constitutive-work-v1-repeat.json",
+      "bytes": 66531115,
+      "sha256": "fa9a6b548d25490f6416017422846f6f5770e0c12b0c34cd5ca21a49c203c593"
+    },
+    "draft": {
+      "path": "artifacts/constitutive-work-v1.json",
+      "bytes": 66531115,
+      "sha256": "fa9a6b548d25490f6416017422846f6f5770e0c12b0c34cd5ca21a49c203c593"
+    },
+    "repeatByteIdentical": true
+  },
+  "legacyTrajectoryRegression": {
+    "historic": {
+      "path": "artifacts/cotan-seasonal-legacy-final.json",
+      "bytes": 5272305,
+      "sha256": "5618b1522ac69ec8e460c0ed031d3eda14ca43aab86310b7ee2c39cc93227514"
+    },
+    "after": {
+      "path": "artifacts/constitutive-legacy-regression.json",
+      "bytes": 5272305,
+      "sha256": "5618b1522ac69ec8e460c0ed031d3eda14ca43aab86310b7ee2c39cc93227514"
+    },
+    "byteIdentical": true,
+    "cases": 12,
+    "daysPerCase": 1,
+    "activeFundedCases": 3,
+    "baselineGitRevision": "06b7b73ea53ed8e3cd56eacac164dcafc83135b4"
+  },
+  "qualification": {
+    "completedBoundedCases": 32,
+    "linearCappedControlRefines": true,
+    "nonlinearIsotropicWeakWorkGatePassed": false,
+    "continuumFrontAccuracyVerified": false,
+    "limitingGraphPDEProven": false,
+    "physicalCalibration": false,
+    "productionEquationChanged": false,
+    "defaultOrDesktopPromoted": false
+  },
+  "aggregate": {
+    "maximumLocalRelativeResidual": 1.2019171454311775e-23,
+    "maximumGlobalRelativeResidual": 7.097834563787805e-18,
+    "maximumRelativeStockWorkIdentityDifference": 2.1610445890878048e-16,
+    "maximumRelativeReferenceQuadratureDifference": 6.63579776392164e-9,
+    "maximumDeferredRequestKilograms": 8.641938385204372e-10,
+    "maximumSummedDeferredRequestKilograms": 8.136284790095745e-9,
+    "maximumDeferredRequests": 20,
+    "allTiltedCasesHaveNoDeferredRequests": true,
+    "finestNonlinearSignedDiscrepancies": [
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "discrepancy": 0.11744704704774978
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "discrepancy": 0.10861772827864202
+      }
+    ],
+    "maximumHalfStepRelativeWorkDifference": 0
+  },
+  "analyticLocalIllustration": {
+    "geometry": "Ideal planar equilateral lattice, locally frozen positive depth factor and smooth nonzero gradient, uncapped limit; not a claimed native spherical limiting PDE",
+    "ratio": "(2/3) sum[k=0,1,2] |cos(theta-k*pi/3)|^(3/2)",
+    "alignedRatio": 1.1380711874576983,
+    "rotatedThirtyDegreesRatio": 1.074569931823542
+  },
+  "report": {
+    "amplitudeMeters": 0.1,
+    "cases": [
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "capSquareMetersPerSecond": 100,
+        "coarseQuadratureWorkMetersFourthPerSecond": 8.377580409572783,
+        "completedAdjacencyWorkMetersFourthPerSecond": 8.21989906348978,
+        "continuumWorkMetersFourthPerSecond": 8.377580409572783,
+        "fullyCappedEdgeRegimeCertified": true,
+        "globalRelativeResidual": 3.530789103933919e-19,
+        "maximumLocalRelativeResidual": 4.818230564281053e-27,
+        "minimumInitialUncappedEdgeMobilityBound": 7802.531158015317,
+        "regions": 162,
+        "relativeReferenceQuadratureDifference": 0,
+        "relativeStockWorkIdentityDifference": 2.1610445890878048e-16,
+        "resolution": {
+          "deferredRequests": 1,
+          "maximumDeferredRequestKilograms": 4.0781187632555215e-14,
+          "summedDeferredRequestKilograms": 4.0781187632555215e-14
+        },
+        "signedRelativeWorkDiscrepancy": -0.01882182424687029,
+        "stabilityBoundSeconds": 766739.3628931793,
+        "stepSeconds": 0.01,
+        "stockReconstructedWorkMetersFourthPerSecond": 8.219899063489782,
+        "subdivision": 2,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "capSquareMetersPerSecond": 100,
+        "coarseQuadratureWorkMetersFourthPerSecond": 8.377580409572783,
+        "completedAdjacencyWorkMetersFourthPerSecond": 8.21989906348978,
+        "continuumWorkMetersFourthPerSecond": 8.377580409572783,
+        "fullyCappedEdgeRegimeCertified": true,
+        "globalRelativeResidual": 3.0916288578198853e-19,
+        "maximumLocalRelativeResidual": 2.4091152821442793e-27,
+        "minimumInitialUncappedEdgeMobilityBound": 7802.531158015317,
+        "regions": 162,
+        "relativeReferenceQuadratureDifference": 0,
+        "relativeStockWorkIdentityDifference": 2.1610445890878048e-16,
+        "resolution": {
+          "deferredRequests": 1,
+          "maximumDeferredRequestKilograms": 2.0390593816277608e-14,
+          "summedDeferredRequestKilograms": 2.0390593816277608e-14
+        },
+        "signedRelativeWorkDiscrepancy": -0.01882182424687029,
+        "stabilityBoundSeconds": 766739.3628931793,
+        "stepSeconds": 0.005,
+        "stockReconstructedWorkMetersFourthPerSecond": 8.219899063489782,
+        "subdivision": 2,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "capSquareMetersPerSecond": 100,
+        "coarseQuadratureWorkMetersFourthPerSecond": 8.377580409572783,
+        "completedAdjacencyWorkMetersFourthPerSecond": 8.33766182264662,
+        "continuumWorkMetersFourthPerSecond": 8.377580409572783,
+        "fullyCappedEdgeRegimeCertified": true,
+        "globalRelativeResidual": 1.0229046358811023e-19,
+        "maximumLocalRelativeResidual": 9.547241458631243e-27,
+        "minimumInitialUncappedEdgeMobilityBound": 5517.222692251954,
+        "regions": 642,
+        "relativeReferenceQuadratureDifference": 0,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 4,
+          "maximumDeferredRequestKilograms": 8.641938385204372e-14,
+          "summedDeferredRequestKilograms": 3.2190853626040584e-13
+        },
+        "signedRelativeWorkDiscrepancy": -0.004764930322906702,
+        "stabilityBoundSeconds": 188941.5713739531,
+        "stepSeconds": 0.01,
+        "stockReconstructedWorkMetersFourthPerSecond": 8.33766182264662,
+        "subdivision": 3,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "capSquareMetersPerSecond": 100,
+        "coarseQuadratureWorkMetersFourthPerSecond": 8.377580409572783,
+        "completedAdjacencyWorkMetersFourthPerSecond": 8.33766182264662,
+        "continuumWorkMetersFourthPerSecond": 8.377580409572783,
+        "fullyCappedEdgeRegimeCertified": true,
+        "globalRelativeResidual": 5.1145231794055117e-20,
+        "maximumLocalRelativeResidual": 4.773620729322016e-27,
+        "minimumInitialUncappedEdgeMobilityBound": 5517.222692251954,
+        "regions": 642,
+        "relativeReferenceQuadratureDifference": 0,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 4,
+          "maximumDeferredRequestKilograms": 4.320969192602186e-14,
+          "summedDeferredRequestKilograms": 1.6095426813020292e-13
+        },
+        "signedRelativeWorkDiscrepancy": -0.004764930322906702,
+        "stabilityBoundSeconds": 188941.5713739531,
+        "stepSeconds": 0.005,
+        "stockReconstructedWorkMetersFourthPerSecond": 8.33766182264662,
+        "subdivision": 3,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "capSquareMetersPerSecond": 100,
+        "coarseQuadratureWorkMetersFourthPerSecond": 8.377580409572783,
+        "completedAdjacencyWorkMetersFourthPerSecond": 8.36756925339741,
+        "continuumWorkMetersFourthPerSecond": 8.377580409572783,
+        "fullyCappedEdgeRegimeCertified": true,
+        "globalRelativeResidual": 2.150957827401533e-20,
+        "maximumLocalRelativeResidual": 2.004758244625906e-26,
+        "minimumInitialUncappedEdgeMobilityBound": 3901.265579007655,
+        "regions": 2562,
+        "relativeReferenceQuadratureDifference": 0,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 12,
+          "maximumDeferredRequestKilograms": 7.274573402987259e-14,
+          "summedDeferredRequestKilograms": 6.482571037811945e-13
+        },
+        "signedRelativeWorkDiscrepancy": -0.0011949937435317137,
+        "stabilityBoundSeconds": 47065.30444451891,
+        "stepSeconds": 0.01,
+        "stockReconstructedWorkMetersFourthPerSecond": 8.36756925339741,
+        "subdivision": 4,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "capSquareMetersPerSecond": 100,
+        "coarseQuadratureWorkMetersFourthPerSecond": 8.377580409572783,
+        "completedAdjacencyWorkMetersFourthPerSecond": 8.36756925339741,
+        "continuumWorkMetersFourthPerSecond": 8.377580409572783,
+        "fullyCappedEdgeRegimeCertified": true,
+        "globalRelativeResidual": 1.0754789137007665e-20,
+        "maximumLocalRelativeResidual": 1.0023791223171859e-26,
+        "minimumInitialUncappedEdgeMobilityBound": 3901.265579007655,
+        "regions": 2562,
+        "relativeReferenceQuadratureDifference": 0,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 12,
+          "maximumDeferredRequestKilograms": 3.6372867014936294e-14,
+          "summedDeferredRequestKilograms": 3.2412855189059725e-13
+        },
+        "signedRelativeWorkDiscrepancy": -0.0011949937435317137,
+        "stabilityBoundSeconds": 47065.30444451891,
+        "stepSeconds": 0.005,
+        "stockReconstructedWorkMetersFourthPerSecond": 8.36756925339741,
+        "subdivision": 4,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "capSquareMetersPerSecond": 100,
+        "coarseQuadratureWorkMetersFourthPerSecond": 8.377580409572783,
+        "completedAdjacencyWorkMetersFourthPerSecond": 8.375075645372247,
+        "continuumWorkMetersFourthPerSecond": 8.377580409572783,
+        "fullyCappedEdgeRegimeCertified": true,
+        "globalRelativeResidual": 1.0480694792080678e-21,
+        "maximumLocalRelativeResidual": 5.180926794494907e-26,
+        "minimumInitialUncappedEdgeMobilityBound": 2758.611346125971,
+        "regions": 10242,
+        "relativeReferenceQuadratureDifference": 0,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 20,
+          "maximumDeferredRequestKilograms": 6.190240902189365e-14,
+          "summedDeferredRequestKilograms": 8.897575427583155e-13
+        },
+        "signedRelativeWorkDiscrepancy": -0.0002989842028461309,
+        "stabilityBoundSeconds": 11755.71674038546,
+        "stepSeconds": 0.01,
+        "stockReconstructedWorkMetersFourthPerSecond": 8.375075645372247,
+        "subdivision": 5,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "capSquareMetersPerSecond": 100,
+        "coarseQuadratureWorkMetersFourthPerSecond": 8.377580409572783,
+        "completedAdjacencyWorkMetersFourthPerSecond": 8.375075645372247,
+        "continuumWorkMetersFourthPerSecond": 8.377580409572783,
+        "fullyCappedEdgeRegimeCertified": true,
+        "globalRelativeResidual": 7.065064338187911e-21,
+        "maximumLocalRelativeResidual": 2.590463397252713e-26,
+        "minimumInitialUncappedEdgeMobilityBound": 2758.611346125971,
+        "regions": 10242,
+        "relativeReferenceQuadratureDifference": 0,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 20,
+          "maximumDeferredRequestKilograms": 3.0951204510946825e-14,
+          "summedDeferredRequestKilograms": 4.4487877137915775e-13
+        },
+        "signedRelativeWorkDiscrepancy": -0.0002989842028461309,
+        "stabilityBoundSeconds": 11755.71674038546,
+        "stepSeconds": 0.005,
+        "stockReconstructedWorkMetersFourthPerSecond": 8.375075645372247,
+        "subdivision": 5,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "capSquareMetersPerSecond": 100,
+        "coarseQuadratureWorkMetersFourthPerSecond": 8.377580409572783,
+        "completedAdjacencyWorkMetersFourthPerSecond": 8.21989906348978,
+        "continuumWorkMetersFourthPerSecond": 8.377580409572783,
+        "fullyCappedEdgeRegimeCertified": true,
+        "globalRelativeResidual": 3.063415713141468e-19,
+        "maximumLocalRelativeResidual": 5.497023645852769e-27,
+        "minimumInitialUncappedEdgeMobilityBound": 7802.531158015317,
+        "regions": 162,
+        "relativeReferenceQuadratureDifference": 0,
+        "relativeStockWorkIdentityDifference": 2.1610445890878048e-16,
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "signedRelativeWorkDiscrepancy": -0.01882182424687029,
+        "stabilityBoundSeconds": 766739.3628931793,
+        "stepSeconds": 0.01,
+        "stockReconstructedWorkMetersFourthPerSecond": 8.219899063489779,
+        "subdivision": 2,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "capSquareMetersPerSecond": 100,
+        "coarseQuadratureWorkMetersFourthPerSecond": 8.377580409572783,
+        "completedAdjacencyWorkMetersFourthPerSecond": 8.21989906348978,
+        "continuumWorkMetersFourthPerSecond": 8.377580409572783,
+        "fullyCappedEdgeRegimeCertified": true,
+        "globalRelativeResidual": 1.531707856570734e-19,
+        "maximumLocalRelativeResidual": 2.7485118229263843e-27,
+        "minimumInitialUncappedEdgeMobilityBound": 7802.531158015317,
+        "regions": 162,
+        "relativeReferenceQuadratureDifference": 0,
+        "relativeStockWorkIdentityDifference": 2.1610445890878048e-16,
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "signedRelativeWorkDiscrepancy": -0.01882182424687029,
+        "stabilityBoundSeconds": 766739.3628931793,
+        "stepSeconds": 0.005,
+        "stockReconstructedWorkMetersFourthPerSecond": 8.219899063489779,
+        "subdivision": 2,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "capSquareMetersPerSecond": 100,
+        "coarseQuadratureWorkMetersFourthPerSecond": 8.377580409572783,
+        "completedAdjacencyWorkMetersFourthPerSecond": 8.33766182264662,
+        "continuumWorkMetersFourthPerSecond": 8.377580409572783,
+        "fullyCappedEdgeRegimeCertified": true,
+        "globalRelativeResidual": 5.753164828591257e-20,
+        "maximumLocalRelativeResidual": 9.819802740352931e-27,
+        "minimumInitialUncappedEdgeMobilityBound": 5517.222692251954,
+        "regions": 642,
+        "relativeReferenceQuadratureDifference": 0,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "signedRelativeWorkDiscrepancy": -0.004764930322906702,
+        "stabilityBoundSeconds": 188941.5713739531,
+        "stepSeconds": 0.01,
+        "stockReconstructedWorkMetersFourthPerSecond": 8.33766182264662,
+        "subdivision": 3,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "capSquareMetersPerSecond": 100,
+        "coarseQuadratureWorkMetersFourthPerSecond": 8.377580409572783,
+        "completedAdjacencyWorkMetersFourthPerSecond": 8.33766182264662,
+        "continuumWorkMetersFourthPerSecond": 8.377580409572783,
+        "fullyCappedEdgeRegimeCertified": true,
+        "globalRelativeResidual": 2.8765824142956285e-20,
+        "maximumLocalRelativeResidual": 4.90990137019702e-27,
+        "minimumInitialUncappedEdgeMobilityBound": 5517.222692251954,
+        "regions": 642,
+        "relativeReferenceQuadratureDifference": 0,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "signedRelativeWorkDiscrepancy": -0.004764930322906702,
+        "stabilityBoundSeconds": 188941.5713739531,
+        "stepSeconds": 0.005,
+        "stockReconstructedWorkMetersFourthPerSecond": 8.33766182264662,
+        "subdivision": 3,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "capSquareMetersPerSecond": 100,
+        "coarseQuadratureWorkMetersFourthPerSecond": 8.377580409572783,
+        "completedAdjacencyWorkMetersFourthPerSecond": 8.36756925339741,
+        "continuumWorkMetersFourthPerSecond": 8.377580409572783,
+        "fullyCappedEdgeRegimeCertified": true,
+        "globalRelativeResidual": 2.1039744779489705e-20,
+        "maximumLocalRelativeResidual": 2.5184809381381085e-26,
+        "minimumInitialUncappedEdgeMobilityBound": 3901.265579007655,
+        "regions": 2562,
+        "relativeReferenceQuadratureDifference": 0,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "signedRelativeWorkDiscrepancy": -0.0011949937435317137,
+        "stabilityBoundSeconds": 47065.30444451891,
+        "stepSeconds": 0.01,
+        "stockReconstructedWorkMetersFourthPerSecond": 8.36756925339741,
+        "subdivision": 4,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "capSquareMetersPerSecond": 100,
+        "coarseQuadratureWorkMetersFourthPerSecond": 8.377580409572783,
+        "completedAdjacencyWorkMetersFourthPerSecond": 8.36756925339741,
+        "continuumWorkMetersFourthPerSecond": 8.377580409572783,
+        "fullyCappedEdgeRegimeCertified": true,
+        "globalRelativeResidual": 1.9836523921422926e-20,
+        "maximumLocalRelativeResidual": 1.259240469075073e-26,
+        "minimumInitialUncappedEdgeMobilityBound": 3901.265579007655,
+        "regions": 2562,
+        "relativeReferenceQuadratureDifference": 0,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "signedRelativeWorkDiscrepancy": -0.0011949937435317137,
+        "stabilityBoundSeconds": 47065.30444451891,
+        "stepSeconds": 0.005,
+        "stockReconstructedWorkMetersFourthPerSecond": 8.36756925339741,
+        "subdivision": 4,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "capSquareMetersPerSecond": 100,
+        "coarseQuadratureWorkMetersFourthPerSecond": 8.377580409572783,
+        "completedAdjacencyWorkMetersFourthPerSecond": 8.375075645372249,
+        "continuumWorkMetersFourthPerSecond": 8.377580409572783,
+        "fullyCappedEdgeRegimeCertified": true,
+        "globalRelativeResidual": 4.003138927252074e-21,
+        "maximumLocalRelativeResidual": 4.5284153635329705e-26,
+        "minimumInitialUncappedEdgeMobilityBound": 2758.611346125971,
+        "regions": 10242,
+        "relativeReferenceQuadratureDifference": 0,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "signedRelativeWorkDiscrepancy": -0.0002989842028459089,
+        "stabilityBoundSeconds": 11755.71674038546,
+        "stepSeconds": 0.01,
+        "stockReconstructedWorkMetersFourthPerSecond": 8.375075645372249,
+        "subdivision": 5,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "capSquareMetersPerSecond": 100,
+        "coarseQuadratureWorkMetersFourthPerSecond": 8.377580409572783,
+        "completedAdjacencyWorkMetersFourthPerSecond": 8.375075645372249,
+        "continuumWorkMetersFourthPerSecond": 8.377580409572783,
+        "fullyCappedEdgeRegimeCertified": true,
+        "globalRelativeResidual": 2.001569463626037e-21,
+        "maximumLocalRelativeResidual": 2.2642076817674292e-26,
+        "minimumInitialUncappedEdgeMobilityBound": 2758.611346125971,
+        "regions": 10242,
+        "relativeReferenceQuadratureDifference": 0,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "signedRelativeWorkDiscrepancy": -0.0002989842028459089,
+        "stabilityBoundSeconds": 11755.71674038546,
+        "stepSeconds": 0.005,
+        "stockReconstructedWorkMetersFourthPerSecond": 8.375075645372249,
+        "subdivision": 5,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "capSquareMetersPerSecond": 1000000,
+        "coarseQuadratureWorkMetersFourthPerSecond": 2261.229790572958,
+        "completedAdjacencyWorkMetersFourthPerSecond": 2521.8678374077926,
+        "continuumWorkMetersFourthPerSecond": 2261.2298055780216,
+        "fullyCappedEdgeRegimeCertified": false,
+        "globalRelativeResidual": 4.8467960143081934e-18,
+        "maximumLocalRelativeResidual": 1.2334670230599522e-24,
+        "minimumInitialUncappedEdgeMobilityBound": 7802.531158015317,
+        "regions": 162,
+        "relativeReferenceQuadratureDifference": 6.63579776392164e-9,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 1,
+          "maximumDeferredRequestKilograms": 4.0781187632555216e-10,
+          "summedDeferredRequestKilograms": 4.0781187632555216e-10
+        },
+        "signedRelativeWorkDiscrepancy": 0.11526384058215888,
+        "stabilityBoundSeconds": 76.67393628931792,
+        "stepSeconds": 0.01,
+        "stockReconstructedWorkMetersFourthPerSecond": 2521.8678374077926,
+        "subdivision": 2,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "capSquareMetersPerSecond": 1000000,
+        "coarseQuadratureWorkMetersFourthPerSecond": 2261.229790572958,
+        "completedAdjacencyWorkMetersFourthPerSecond": 2521.8678374077926,
+        "continuumWorkMetersFourthPerSecond": 2261.2298055780216,
+        "fullyCappedEdgeRegimeCertified": false,
+        "globalRelativeResidual": 1.9479230616540636e-18,
+        "maximumLocalRelativeResidual": 6.167335118799362e-25,
+        "minimumInitialUncappedEdgeMobilityBound": 7802.531158015317,
+        "regions": 162,
+        "relativeReferenceQuadratureDifference": 6.63579776392164e-9,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 1,
+          "maximumDeferredRequestKilograms": 2.0390593816277608e-10,
+          "summedDeferredRequestKilograms": 2.0390593816277608e-10
+        },
+        "signedRelativeWorkDiscrepancy": 0.11526384058215888,
+        "stabilityBoundSeconds": 76.67393628931792,
+        "stepSeconds": 0.005,
+        "stockReconstructedWorkMetersFourthPerSecond": 2521.8678374077926,
+        "subdivision": 2,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "capSquareMetersPerSecond": 1000000,
+        "coarseQuadratureWorkMetersFourthPerSecond": 2261.229790572958,
+        "completedAdjacencyWorkMetersFourthPerSecond": 2533.2164667720726,
+        "continuumWorkMetersFourthPerSecond": 2261.2298055780216,
+        "fullyCappedEdgeRegimeCertified": false,
+        "globalRelativeResidual": 1.0135466829545107e-18,
+        "maximumLocalRelativeResidual": 2.498913994477523e-24,
+        "minimumInitialUncappedEdgeMobilityBound": 5517.222692251954,
+        "regions": 642,
+        "relativeReferenceQuadratureDifference": 6.63579776392164e-9,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 4,
+          "maximumDeferredRequestKilograms": 8.641938385204372e-10,
+          "summedDeferredRequestKilograms": 3.2190853626040584e-9
+        },
+        "signedRelativeWorkDiscrepancy": 0.1202826269683479,
+        "stabilityBoundSeconds": 18.89415713739531,
+        "stepSeconds": 0.01,
+        "stockReconstructedWorkMetersFourthPerSecond": 2533.2164667720726,
+        "subdivision": 3,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "capSquareMetersPerSecond": 1000000,
+        "coarseQuadratureWorkMetersFourthPerSecond": 2261.229790572958,
+        "completedAdjacencyWorkMetersFourthPerSecond": 2533.2164667720726,
+        "continuumWorkMetersFourthPerSecond": 2261.2298055780216,
+        "fullyCappedEdgeRegimeCertified": false,
+        "globalRelativeResidual": 1.1139012677006109e-18,
+        "maximumLocalRelativeResidual": 1.249456997418676e-24,
+        "minimumInitialUncappedEdgeMobilityBound": 5517.222692251954,
+        "regions": 642,
+        "relativeReferenceQuadratureDifference": 6.63579776392164e-9,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 4,
+          "maximumDeferredRequestKilograms": 4.320969192602186e-10,
+          "summedDeferredRequestKilograms": 1.6095426813020292e-9
+        },
+        "signedRelativeWorkDiscrepancy": 0.1202826269683479,
+        "stabilityBoundSeconds": 18.89415713739531,
+        "stepSeconds": 0.005,
+        "stockReconstructedWorkMetersFourthPerSecond": 2533.2164667720726,
+        "subdivision": 3,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "capSquareMetersPerSecond": 1000000,
+        "coarseQuadratureWorkMetersFourthPerSecond": 2261.229790572958,
+        "completedAdjacencyWorkMetersFourthPerSecond": 2530.34140555901,
+        "continuumWorkMetersFourthPerSecond": 2261.2298055780216,
+        "fullyCappedEdgeRegimeCertified": false,
+        "globalRelativeResidual": 1.6613442430359457e-18,
+        "maximumLocalRelativeResidual": 5.099695460504216e-24,
+        "minimumInitialUncappedEdgeMobilityBound": 3901.265579007655,
+        "regions": 2562,
+        "relativeReferenceQuadratureDifference": 6.63579776392164e-9,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 12,
+          "maximumDeferredRequestKilograms": 7.27457340298726e-10,
+          "summedDeferredRequestKilograms": 6.482571037811945e-9
+        },
+        "signedRelativeWorkDiscrepancy": 0.11901116786853838,
+        "stabilityBoundSeconds": 4.706530444451891,
+        "stepSeconds": 0.01,
+        "stockReconstructedWorkMetersFourthPerSecond": 2530.34140555901,
+        "subdivision": 4,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "capSquareMetersPerSecond": 1000000,
+        "coarseQuadratureWorkMetersFourthPerSecond": 2261.229790572958,
+        "completedAdjacencyWorkMetersFourthPerSecond": 2530.34140555901,
+        "continuumWorkMetersFourthPerSecond": 2261.2298055780216,
+        "fullyCappedEdgeRegimeCertified": false,
+        "globalRelativeResidual": 1.1038796883184828e-18,
+        "maximumLocalRelativeResidual": 2.5498477309443906e-24,
+        "minimumInitialUncappedEdgeMobilityBound": 3901.265579007655,
+        "regions": 2562,
+        "relativeReferenceQuadratureDifference": 6.63579776392164e-9,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 12,
+          "maximumDeferredRequestKilograms": 3.63728670149363e-10,
+          "summedDeferredRequestKilograms": 3.2412855189059726e-9
+        },
+        "signedRelativeWorkDiscrepancy": 0.11901116786853838,
+        "stabilityBoundSeconds": 4.706530444451891,
+        "stepSeconds": 0.005,
+        "stockReconstructedWorkMetersFourthPerSecond": 2530.34140555901,
+        "subdivision": 4,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "capSquareMetersPerSecond": 1000000,
+        "coarseQuadratureWorkMetersFourthPerSecond": 2261.229790572958,
+        "completedAdjacencyWorkMetersFourthPerSecond": 2526.8045689395176,
+        "continuumWorkMetersFourthPerSecond": 2261.2298055780216,
+        "fullyCappedEdgeRegimeCertified": false,
+        "globalRelativeResidual": 4.090587564392006e-19,
+        "maximumLocalRelativeResidual": 1.041430194109385e-23,
+        "minimumInitialUncappedEdgeMobilityBound": 2758.611346125971,
+        "regions": 10242,
+        "relativeReferenceQuadratureDifference": 6.63579776392164e-9,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 18,
+          "maximumDeferredRequestKilograms": 6.190240902189364e-10,
+          "summedDeferredRequestKilograms": 8.136284790095745e-9
+        },
+        "signedRelativeWorkDiscrepancy": 0.11744704704774978,
+        "stabilityBoundSeconds": 1.175571674038546,
+        "stepSeconds": 0.01,
+        "stockReconstructedWorkMetersFourthPerSecond": 2526.8045689395176,
+        "subdivision": 5,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "capSquareMetersPerSecond": 1000000,
+        "coarseQuadratureWorkMetersFourthPerSecond": 2261.229790572958,
+        "completedAdjacencyWorkMetersFourthPerSecond": 2526.8045689395176,
+        "continuumWorkMetersFourthPerSecond": 2261.2298055780216,
+        "fullyCappedEdgeRegimeCertified": false,
+        "globalRelativeResidual": 7.21340709271017e-19,
+        "maximumLocalRelativeResidual": 5.207150973966325e-24,
+        "minimumInitialUncappedEdgeMobilityBound": 2758.611346125971,
+        "regions": 10242,
+        "relativeReferenceQuadratureDifference": 6.63579776392164e-9,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 20,
+          "maximumDeferredRequestKilograms": 3.095120451094682e-10,
+          "summedDeferredRequestKilograms": 4.448787713791577e-9
+        },
+        "signedRelativeWorkDiscrepancy": 0.11744704704774978,
+        "stabilityBoundSeconds": 1.175571674038546,
+        "stepSeconds": 0.005,
+        "stockReconstructedWorkMetersFourthPerSecond": 2526.8045689395176,
+        "subdivision": 5,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "capSquareMetersPerSecond": 1000000,
+        "coarseQuadratureWorkMetersFourthPerSecond": 2261.229790572958,
+        "completedAdjacencyWorkMetersFourthPerSecond": 2503.162544452384,
+        "continuumWorkMetersFourthPerSecond": 2261.2298055780216,
+        "fullyCappedEdgeRegimeCertified": false,
+        "globalRelativeResidual": 1.3468057837422956e-18,
+        "maximumLocalRelativeResidual": 1.4455789557443091e-24,
+        "minimumInitialUncappedEdgeMobilityBound": 7802.531158015317,
+        "regions": 162,
+        "relativeReferenceQuadratureDifference": 6.63579776392164e-9,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "signedRelativeWorkDiscrepancy": 0.10699166368564605,
+        "stabilityBoundSeconds": 76.67393628931792,
+        "stepSeconds": 0.01,
+        "stockReconstructedWorkMetersFourthPerSecond": 2503.162544452384,
+        "subdivision": 2,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "capSquareMetersPerSecond": 1000000,
+        "coarseQuadratureWorkMetersFourthPerSecond": 2261.229790572958,
+        "completedAdjacencyWorkMetersFourthPerSecond": 2503.162544452384,
+        "continuumWorkMetersFourthPerSecond": 2261.2298055780216,
+        "fullyCappedEdgeRegimeCertified": false,
+        "globalRelativeResidual": 7.097834563787805e-18,
+        "maximumLocalRelativeResidual": 7.227894779536366e-25,
+        "minimumInitialUncappedEdgeMobilityBound": 7802.531158015317,
+        "regions": 162,
+        "relativeReferenceQuadratureDifference": 6.63579776392164e-9,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "signedRelativeWorkDiscrepancy": 0.10699166368564605,
+        "stabilityBoundSeconds": 76.67393628931792,
+        "stepSeconds": 0.005,
+        "stockReconstructedWorkMetersFourthPerSecond": 2503.162544452384,
+        "subdivision": 2,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "capSquareMetersPerSecond": 1000000,
+        "coarseQuadratureWorkMetersFourthPerSecond": 2261.229790572958,
+        "completedAdjacencyWorkMetersFourthPerSecond": 2513.553148252301,
+        "continuumWorkMetersFourthPerSecond": 2261.2298055780216,
+        "fullyCappedEdgeRegimeCertified": false,
+        "globalRelativeResidual": 2.6161306567189284e-19,
+        "maximumLocalRelativeResidual": 2.9011960784728548e-24,
+        "minimumInitialUncappedEdgeMobilityBound": 5517.222692251954,
+        "regions": 642,
+        "relativeReferenceQuadratureDifference": 6.63579776392164e-9,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "signedRelativeWorkDiscrepancy": 0.11158677550235985,
+        "stabilityBoundSeconds": 18.89415713739531,
+        "stepSeconds": 0.01,
+        "stockReconstructedWorkMetersFourthPerSecond": 2513.553148252301,
+        "subdivision": 3,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "capSquareMetersPerSecond": 1000000,
+        "coarseQuadratureWorkMetersFourthPerSecond": 2261.229790572958,
+        "completedAdjacencyWorkMetersFourthPerSecond": 2513.553148252301,
+        "continuumWorkMetersFourthPerSecond": 2261.2298055780216,
+        "fullyCappedEdgeRegimeCertified": false,
+        "globalRelativeResidual": 9.3809475912753e-21,
+        "maximumLocalRelativeResidual": 1.4505980407530454e-24,
+        "minimumInitialUncappedEdgeMobilityBound": 5517.222692251954,
+        "regions": 642,
+        "relativeReferenceQuadratureDifference": 6.63579776392164e-9,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "signedRelativeWorkDiscrepancy": 0.11158677550235985,
+        "stabilityBoundSeconds": 18.89415713739531,
+        "stepSeconds": 0.005,
+        "stockReconstructedWorkMetersFourthPerSecond": 2513.553148252301,
+        "subdivision": 3,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "capSquareMetersPerSecond": 1000000,
+        "coarseQuadratureWorkMetersFourthPerSecond": 2261.229790572958,
+        "completedAdjacencyWorkMetersFourthPerSecond": 2510.4492043769683,
+        "continuumWorkMetersFourthPerSecond": 2261.2298055780216,
+        "fullyCappedEdgeRegimeCertified": false,
+        "globalRelativeResidual": 1.4933793328292888e-18,
+        "maximumLocalRelativeResidual": 5.225707530457736e-24,
+        "minimumInitialUncappedEdgeMobilityBound": 3901.265579007655,
+        "regions": 2562,
+        "relativeReferenceQuadratureDifference": 6.63579776392164e-9,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "signedRelativeWorkDiscrepancy": 0.11021409596856113,
+        "stabilityBoundSeconds": 4.706530444451891,
+        "stepSeconds": 0.01,
+        "stockReconstructedWorkMetersFourthPerSecond": 2510.4492043769683,
+        "subdivision": 4,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "capSquareMetersPerSecond": 1000000,
+        "coarseQuadratureWorkMetersFourthPerSecond": 2261.229790572958,
+        "completedAdjacencyWorkMetersFourthPerSecond": 2510.4492043769683,
+        "continuumWorkMetersFourthPerSecond": 2261.2298055780216,
+        "fullyCappedEdgeRegimeCertified": false,
+        "globalRelativeResidual": 7.711301491437447e-19,
+        "maximumLocalRelativeResidual": 2.6128537702361576e-24,
+        "minimumInitialUncappedEdgeMobilityBound": 3901.265579007655,
+        "regions": 2562,
+        "relativeReferenceQuadratureDifference": 6.63579776392164e-9,
+        "relativeStockWorkIdentityDifference": 0,
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "signedRelativeWorkDiscrepancy": 0.11021409596856113,
+        "stabilityBoundSeconds": 4.706530444451891,
+        "stepSeconds": 0.005,
+        "stockReconstructedWorkMetersFourthPerSecond": 2510.4492043769683,
+        "subdivision": 4,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "capSquareMetersPerSecond": 1000000,
+        "coarseQuadratureWorkMetersFourthPerSecond": 2261.229790572958,
+        "completedAdjacencyWorkMetersFourthPerSecond": 2506.8394501758617,
+        "continuumWorkMetersFourthPerSecond": 2261.2298055780216,
+        "fullyCappedEdgeRegimeCertified": false,
+        "globalRelativeResidual": 4.1051466656846465e-20,
+        "maximumLocalRelativeResidual": 1.2019171454311775e-23,
+        "minimumInitialUncappedEdgeMobilityBound": 2758.611346125971,
+        "regions": 10242,
+        "relativeReferenceQuadratureDifference": 6.63579776392164e-9,
+        "relativeStockWorkIdentityDifference": 1.8140266256563114e-16,
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "signedRelativeWorkDiscrepancy": 0.10861772827864202,
+        "stabilityBoundSeconds": 1.175571674038546,
+        "stepSeconds": 0.01,
+        "stockReconstructedWorkMetersFourthPerSecond": 2506.839450175861,
+        "subdivision": 5,
+        "substeps": 1
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "capSquareMetersPerSecond": 1000000,
+        "coarseQuadratureWorkMetersFourthPerSecond": 2261.229790572958,
+        "completedAdjacencyWorkMetersFourthPerSecond": 2506.8394501758617,
+        "continuumWorkMetersFourthPerSecond": 2261.2298055780216,
+        "fullyCappedEdgeRegimeCertified": false,
+        "globalRelativeResidual": 1.2366714914962373e-19,
+        "maximumLocalRelativeResidual": 6.0095857271558875e-24,
+        "minimumInitialUncappedEdgeMobilityBound": 2758.611346125971,
+        "regions": 10242,
+        "relativeReferenceQuadratureDifference": 6.63579776392164e-9,
+        "relativeStockWorkIdentityDifference": 1.8140266256563114e-16,
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "signedRelativeWorkDiscrepancy": 0.10861772827864202,
+        "stabilityBoundSeconds": 1.175571674038546,
+        "stepSeconds": 0.005,
+        "stockReconstructedWorkMetersFourthPerSecond": 2506.839450175861,
+        "subdivision": 5,
+        "substeps": 1
+      }
+    ],
+    "continuumReference": "beta=min(cap,h^(5/3)/(n*sqrt(|grad h|))); work=integral beta |grad h|^2 dArea",
+    "implementedSlopeMeaning": "Absolute head difference divided by edge distance, not a reconstructed full gradient magnitude",
+    "initialization": "Continuous depth point samples times unchanged spherical areas; no mass rescaling",
+    "meanDepthMeters": 1,
+    "quadratureIntervals": [
+      16384,
+      32768
+    ],
+    "radiusMeters": 100000,
+    "reportVersion": "surface-constitutive-work-report-1",
+    "roughness": 0.04,
+    "scope": "Frozen fully wet flat sphere; necessary weak-work consistency screen against an explicitly chosen isotropic capped diffusive-wave reference. Not an evolution, wetting front, calibrated discharge or seasonal checkpoint.",
+    "surfaceStage": "Unchanged paired stage with cotangent weak-form conductances"
+  },
+  "sourceFiles": [
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_constitutive.rs",
+      "bytes": 11106,
+      "sha256": "1e884708b7e149bd4d064ecf61311d43d5e92cae404ea275ec3d26e22c89e534"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_verification.rs",
+      "bytes": 28946,
+      "sha256": "dea06becf25ca97a0d72621de514d1213d1205f9f37924e4292089a82392a9e5"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_cotan.rs",
+      "bytes": 13048,
+      "sha256": "96160c7770430ca850fd10d2aa2cc4da1dd42a006498847f30a3d31feb4b1f02"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface.rs",
+      "bytes": 3116,
+      "sha256": "0892c5f4e45ebeb21e7a33f72326201e31add81554165f032cd70bb64ec5d3a4"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/cycle.rs",
+      "bytes": 11269,
+      "sha256": "fdddff7fbaede4043d7297cfdd9659435c90dabf18d8d6cf45667cf4964be5e1"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil.rs",
+      "bytes": 16951,
+      "sha256": "fa64aed055c65370506591f6fafacc75b14791608a851fff8f270efa1869cd70"
+    },
+    {
+      "path": "native/src/seasonal_moisture/surface_flow.rs",
+      "bytes": 32301,
+      "sha256": "9f0e75238e06f2f3e51b3e2a0931fd722d723ffdf4536ba82dd631fe8166928c"
+    },
+    {
+      "path": "native/src/surface_water/ponded_soil.rs",
+      "bytes": 15083,
+      "sha256": "1ae6c9da06c84e7e8b4092f5cec7e58caef971e75ea8be10b88fb129a30545f7"
+    },
+    {
+      "path": "native/src/surface_water.rs",
+      "bytes": 17959,
+      "sha256": "b6823e2b1300235d0e34b69201d8a121fffb615367c27cd333b59443f0be97c9"
+    },
+    {
+      "path": "native/src/moisture_transport.rs",
+      "bytes": 15160,
+      "sha256": "d117d9da8c1cc3f73bb52ead789001cecd210e860a4d4976d0a3de094c72b707"
+    },
+    {
+      "path": "native/src/lib.rs",
+      "bytes": 14371,
+      "sha256": "67b76120dbfeb88fa6791e5298bbe7d773511e1fd8c366c93f35117236dc4254"
+    },
+    {
+      "path": "native/examples/surface_constitutive_report.rs",
+      "bytes": 946,
+      "sha256": "5544a9200d7d0807b6c6dc54aba8e3a9a83c8eac5f6aadcbc9aba0d1469f9899"
+    },
+    {
+      "path": "native/examples/regional_soil_report.rs",
+      "bytes": 8015,
+      "sha256": "371de309844d29d1d40b93d89e3b39fc43d0f80fcc16ae39a4e3bc577cec6cd0"
+    },
+    {
+      "path": "native/Cargo.toml",
+      "bytes": 280,
+      "sha256": "4fe3a9dd2d6fdad080aaeabd2e4b33ca6f397b815d7a8ddad11b46bdc7854872"
+    },
+    {
+      "path": "native/Cargo.lock",
+      "bytes": 2675,
+      "sha256": "6423d20d12d748711ebc5bf101b0891cc019a25a68d15d56c74b57158724b42d"
+    }
+  ],
+  "environment": {
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01) (Arch Linux rust 1:1.98.1-1)",
+    "cargo": "cargo 1.98.1 (797e8a9bc 2026-08-05) (Arch Linux rust 1:1.98.1-1)",
+    "node": "v25.2.1",
+    "exactReproductionScope": "Same build and supported local environment; cross-platform bitwise equality is not asserted"
+  },
+  "validation": {
+    "fullSuite": {
+      "command": "npm test",
+      "exitCode": 0,
+      "nativePassed": 535,
+      "nativeFailed": 0,
+      "nativeIgnored": 1,
+      "nativeTargets": 102,
+      "nodeFilesPassed": 18,
+      "nodeFilesFailed": 0,
+      "log": "artifacts/constitutive-full-test-log.txt"
+    },
+    "directedRelease": {
+      "passed": 5,
+      "failed": 0,
+      "log": "artifacts/constitutive-release-tests-log.txt"
+    },
+    "releaseRegression": {
+      "libraryPassed": 80,
+      "regionalSoilPassed": 12,
+      "failed": 0,
+      "log": "artifacts/constitutive-release-regression-log.txt"
+    },
+    "clippyAllTargetsWarningsDenied": true,
+    "clippyLog": "artifacts/constitutive-final-clippy-log.txt",
+    "formattingCheck": true,
+    "diffCheck": true,
+    "invalidArgumentsRefused": true,
+    "overwriteRefusedWithoutChangingOutput": true,
+    "invalidOutputCreated": false,
+    "guiRerun": false,
+    "ownerRendererEditsExcluded": true
+  }
+}

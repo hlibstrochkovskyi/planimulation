@@ -56,3 +56,5 @@ cargo test --release --locked --manifest-path native/Cargo.toml --example region
 The CLI accepts 1–365 days, refuses unknown/duplicate flags and existing paths, and publishes buffered complete JSON to an exclusively created output file. Progress messages are not part of reproducible output. Full checkpoints belong in ignored `artifacts/`; scalar evidence and source hashes are retained separately.
 
 Nonlinear sharp-head/front accuracy against a fixed continuum problem, broader dense annual/long-term ensembles, empirical mobility/soil calibration and a history-aware desktop adapter remain subsequent gates. Finite reference-body heads/coasts are still prescribed. No ecology readiness, calibrated discharge or milestone C/D completion is implied.
+
+The subsequent [constitutive-law screen](surface-constitutive-screen.md) examines the inherited directional nonlinear mobility before defining an isotropic front reference. It retains a failed weak-work gate without altering these dense trajectories.

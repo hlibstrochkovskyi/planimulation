@@ -58,6 +58,7 @@ The separate [unified regional soil cycle](docs/regional-soil-cycle.md) applies 
 | [Cotangent surface candidate](docs/surface-cotan-candidate.md) | Separately pinned weak-form conductance, unchanged spherical areas, two analytic modes and explicit non-seasonal scope |
 | [Cotangent seasonal integration](docs/cotangent-seasonal-cycle.md) | Headless family/schema 2, immutable prepared operator, explicit graph-exchange meaning and isolated old saves/desktop |
 | [Dense cotangent controls](docs/cotangent-dense-study.md) | Explicit model-2 dense tool, complete initial-state guards, same-mesh cadence/cap and finite-body comparisons |
+| [Nonlinear constitutive screen](docs/surface-constitutive-screen.md) | Frozen production-stage weak work, independent isotropic reference, capped control and retained nonlinear discrepancy |
 | [Seasonal-water desktop](docs/seasonal-water-desktop.md) | Run/pause, eight dynamic layers, interval inspection, versioned frames, baseline timing evidence, and limits |
 | [Seasonal-water checkpoints](docs/seasonal-water-checkpoints.md) | Complete native state, candidate validation, bounded file I/O, exact continuation, and limits |
 | [Typed surface water](docs/surface-water.md) | Empirical snowmelt, soil bucket, pending-runoff ownership, defaults, and limitations |
