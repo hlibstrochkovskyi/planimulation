@@ -59,6 +59,7 @@ pub(super) struct Prepared {
     layout: Layout,
     triangles: Vec<Triangle>,
     incident: Vec<[usize; 2]>,
+    local_weights: Vec<[f64; 2]>,
 }
 
 impl Prepared {
@@ -85,9 +86,10 @@ impl Prepared {
             return Err("Full-gradient mesh/layout shape mismatch.".into());
         }
         let mut triangles = Vec::with_capacity(faces.len());
-        let mut edges: BTreeMap<[usize; 2], Vec<usize>> = BTreeMap::new();
+        let mut edges: BTreeMap<[usize; 2], Vec<(usize, f64)>> = BTreeMap::new();
         for (t, face) in faces.iter().enumerate() {
             let ids = face.map(|id| id as usize);
+            let weights = surface_cotan::triangle_weights(ids.map(|id| mesh.centers[id]))?;
             triangles.push(Triangle {
                 ids,
                 dual: dual_basis(ids.map(|id| mesh.centers[id]), radius)?,
@@ -95,7 +97,10 @@ impl Prepared {
             for i in 0..3 {
                 let a = ids[i];
                 let b = ids[(i + 1) % 3];
-                edges.entry([a.min(b), a.max(b)]).or_default().push(t);
+                edges
+                    .entry([a.min(b), a.max(b)])
+                    .or_default()
+                    .push((t, weights[(i + 2) % 3]));
             }
         }
         if edges.len() != layout.faces.len() {
@@ -105,16 +110,25 @@ impl Prepared {
             .faces
             .iter()
             .map(|face| match edges.get(&face.regions).map(Vec::as_slice) {
-                Some(&[a, b]) if a != b => Ok([a, b]),
+                Some(&[(a, _), (b, _)]) if a != b => Ok([a, b]),
                 _ => Err("Full-gradient edge requires two incident triangles.".into()),
             })
             .collect::<Result<_, String>>()?;
+        let local_weights = layout
+            .faces
+            .iter()
+            .map(|face| {
+                let pair = &edges[&face.regions];
+                [pair[0].1, pair[1].1]
+            })
+            .collect();
         // Own the immutable cotangent layout: a stencil cannot be paired later
         // with reordered edges or a different seasonal/world preparation.
         Ok(Self {
             layout: surface_cotan::prepare(mesh, layout)?,
             triangles,
             incident,
+            local_weights,
         })
     }
 
@@ -134,6 +148,46 @@ impl Prepared {
             .iter()
             .map(|&[a, b]| 0.5 * slopes[a] + 0.5 * slopes[b])
             .collect())
+    }
+
+    // Additional precondition applies only to the incident-mobility experiment.
+    // Positive assembled weights alone do not bound independently weighted terms.
+    pub fn has_positive_local_weights(&self) -> bool {
+        self.local_weights
+            .iter()
+            .flatten()
+            .all(|w| w.is_finite() && *w > 0.)
+    }
+
+    pub fn incident_mobilities(&self, depth: &[f64]) -> Result<Vec<f64>, String> {
+        if depth.len() != self.layout.beds.len() || depth.iter().any(|h| !h.is_finite() || *h < 0.)
+        {
+            return Err("Invalid incident-mobility depths.".into());
+        }
+        let slopes = self
+            .triangles
+            .iter()
+            .map(|t| t.slope(&self.layout.beds, depth))
+            .collect::<Result<Vec<_>, _>>()?;
+        self.layout
+            .faces
+            .iter()
+            .zip(&self.incident)
+            .zip(&self.local_weights)
+            .map(|((face, &[a, b]), &weights)| {
+                let [i, j] = face.regions;
+                let h = 0.5 * depth[i] + 0.5 * depth[j];
+                super::surface_incident::mobility_mean(
+                    h,
+                    [slopes[a], slopes[b]],
+                    weights,
+                    self.layout.settings.roughness,
+                    self.layout
+                        .settings
+                        .maximum_diffusivity_square_meters_per_second,
+                )
+            })
+            .collect()
     }
 }
 
@@ -389,6 +443,8 @@ mod tests {
             )
             .unwrap();
             let prepared = Prepared::new(&mesh, layout.clone(), 100_000.).unwrap();
+            assert!(prepared.has_positive_local_weights());
+            assert!(super::super::surface_incident::Prepared::new(&prepared).is_ok());
             assert_eq!(prepared.layout.areas, layout.areas);
             assert!(
                 prepared
@@ -421,5 +477,41 @@ mod tests {
                 assert!(Prepared::new(&mesh, bad_layout, 100_000.).is_err());
             }
         }
+    }
+
+    #[test]
+    fn incident_assembly_rejects_negative_local_terms_even_with_positive_edge_sum() {
+        let mesh = Surface::build(0, 100_000.);
+        let mut prepared = Prepared::new(&mesh, layout(&mesh, 1000.), 100_000.).unwrap();
+        let total = prepared.layout.faces[0].width_over_distance;
+        prepared.local_weights[0] = [-0.1, total + 0.1];
+        assert!(prepared.layout.faces[0].width_over_distance > 0.);
+        assert!(super::super::surface_incident::Prepared::new(&prepared).is_err());
+        // Earlier full-gradient preparation still has its assembled-only contract.
+        assert!(prepared.edge_slopes(&vec![1.; mesh.areas.len()]).is_ok());
+    }
+
+    #[test]
+    fn incident_terms_reconstruct_each_triangle_before_the_nonlinear_mean() {
+        let points = [[0., 0., 0.], [1., 0., 0.], [0., 1., 0.], [1., -1., 0.]];
+        let ids = [[0, 1, 2], [1, 0, 3]];
+        let depth = [0., 1., 1., 3.];
+        let slopes = ids.map(|ids| {
+            Triangle {
+                ids,
+                dual: dual_basis(ids.map(|i| points[i]), 1.).unwrap(),
+            }
+            .slope(&[0.; 4], &depth)
+            .unwrap()
+        });
+        let weights =
+            ids.map(|ids| surface_cotan::triangle_weights(ids.map(|i| points[i])).unwrap()[2]);
+        assert_eq!(weights, [0.5, 0.5]);
+        assert_eq!(slopes, [2_f64.sqrt(), 5_f64.sqrt()]);
+        let value =
+            super::super::surface_incident::mobility_mean(0.5, slopes, weights, 0.04, 1000.)
+                .unwrap();
+        let exact = 0.5_f64.powf(5. / 3.) / 0.04 * 0.5 * (2_f64.powf(-0.25) + 5_f64.powf(-0.25));
+        assert!((value / exact - 1.).abs() < 1e-14);
     }
 }

@@ -3,7 +3,7 @@
 mod zonal;
 use super::{
     Mass, ResolutionBudget, surface, surface_centered, surface_cotan, surface_flow,
-    surface_gradient, surface_verification,
+    surface_gradient, surface_incident, surface_verification,
 };
 use crate::{Surface, dot, moisture_transport::total_mass, norm};
 use serde_json::{Value, json};
@@ -111,6 +111,11 @@ fn run(
         None
     };
     let layout = prepared.layout();
+    let incident = if stage == surface::VerificationStage::FlatIncidentMobility {
+        Some(surface_incident::Prepared::new(&prepared)?)
+    } else {
+        None
+    };
     let dt = END_SECONDS / steps as f64;
     if dt > layout.stable_seconds {
         return Err("Evolution control must use one stable substep.".into());
@@ -154,6 +159,9 @@ fn run(
             }
             surface::VerificationStage::FlatCenteredDepth => {
                 centered.as_ref().unwrap().advance(stocks, dt)?
+            }
+            surface::VerificationStage::FlatIncidentMobility => {
+                incident.as_ref().unwrap().advance(stocks, dt)?
             }
         };
         if count != 1 {
@@ -219,6 +227,7 @@ fn run(
             surface::VerificationStage::LegacyDirectional => surface_cotan::MODEL_VERSION,
             surface::VerificationStage::FullGradient => surface_gradient::MODEL_VERSION,
             surface::VerificationStage::FlatCenteredDepth => surface_centered::MODEL_VERSION,
+            surface::VerificationStage::FlatIncidentMobility => surface_incident::MODEL_VERSION,
         },
         "endSeconds":END_SECONDS,"steps":steps,"stepSeconds":dt,"stabilityBoundSeconds":layout.stable_seconds,
         "minimumDepthMeters":minimum_depth,"maximumDepthMeters":maximum_depth,
@@ -280,6 +289,11 @@ pub fn centered_report() -> Result<Value, String> {
     report_for(surface::VerificationStage::FlatCenteredDepth)
 }
 
+/// Same fixed wet problems, with gradient-side mobility assembly changed.
+pub fn incident_report() -> Result<Value, String> {
+    report_for(surface::VerificationStage::FlatIncidentMobility)
+}
+
 fn report_for(stage: surface::VerificationStage) -> Result<Value, String> {
     let mesh = Surface::build(4, RADIUS);
     let prepared = surface_gradient::Prepared::new(&mesh, physical_layout(&mesh)?, RADIUS)?;
@@ -328,7 +342,9 @@ fn report_for(stage: surface::VerificationStage) -> Result<Value, String> {
                 }
                 previous = Some((level, error));
                 if level == 4 {
-                    let control = if stage == surface::VerificationStage::FlatCenteredDepth {
+                    let control = if stage == surface::VerificationStage::FlatIncidentMobility {
+                        surface::VerificationStage::FlatCenteredDepth
+                    } else if stage == surface::VerificationStage::FlatCenteredDepth {
                         surface::VerificationStage::FullGradient
                     } else {
                         surface::VerificationStage::LegacyDirectional
@@ -357,6 +373,14 @@ fn report_for(stage: surface::VerificationStage) -> Result<Value, String> {
             "Arithmetic mean of frozen neighboring depths; flat closed terrestrial cells only"
         );
         result["matchedSourceDepthControls"] = json!(controls);
+    } else if stage == surface::VerificationStage::FlatIncidentMobility {
+        result["reportVersion"] = json!("surface-flat-incident-wet-report-1");
+        result["surfaceModelVersion"] = json!(surface_incident::MODEL_VERSION);
+        result["interfaceDepth"] = json!("Unchanged arithmetic mean of frozen neighboring depths");
+        result["mobilityAssembly"] = json!(
+            "Positive individual half-cotangent weighted mean of separately capped incident-triangle mobilities; not triangle depth integration"
+        );
+        result["matchedCenteredDepthControls"] = json!(controls);
     } else {
         result["matchedLegacyControls"] = json!(controls);
     }
@@ -379,6 +403,46 @@ mod tests {
                 .depth,
             result: Value::Null,
         }
+    }
+
+    #[test]
+    fn incident_wet_evolution_repeats_with_identical_initialization_and_reference() {
+        let reference = test_reference(2);
+        let a = run(
+            2,
+            AXES[1],
+            2,
+            512,
+            &reference,
+            surface::VerificationStage::FlatIncidentMobility,
+        )
+        .unwrap();
+        let b = run(
+            2,
+            AXES[1],
+            2,
+            512,
+            &reference,
+            surface::VerificationStage::FlatIncidentMobility,
+        )
+        .unwrap();
+        let old = run(
+            2,
+            AXES[1],
+            2,
+            512,
+            &reference,
+            surface::VerificationStage::FlatCenteredDepth,
+        )
+        .unwrap();
+        assert_eq!(a.result, b.result);
+        assert_eq!(a.result["initialLiquid"], old.result["initialLiquid"]);
+        assert_eq!(
+            a.result["referenceAtCentersMeters"],
+            old.result["referenceAtCentersMeters"]
+        );
+        assert_ne!(a.result["finalLiquid"], old.result["finalLiquid"]);
+        assert_eq!(a.result["operator"], surface_incident::MODEL_VERSION);
     }
 
     #[test]

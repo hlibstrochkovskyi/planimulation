@@ -1,0 +1,3650 @@
+{
+  "recordVersion": "surface-flat-incident-validation-1",
+  "date": "2026-10-11",
+  "baseCommit": "4b08b21d52d5aa601b916cf12ef4574cb7532cb0",
+  "status": "Small smooth RMS gains, but dry threshold contours worsen: not selected as a front remedy; no seasonal or desktop promotion",
+  "dry": {
+    "report": {
+      "path": "artifacts/incident-dry-final.json",
+      "bytes": 79542597,
+      "sha256": "c872e47fe5b1132ad2b4949debb153dc07dcd574619808f7aaf539c692e35535"
+    },
+    "baseline": {
+      "path": "artifacts/centered-dry-final.json",
+      "bytes": 79548379,
+      "sha256": "d6ff42acd709344daa2bd89e9260d09b9ab666cb9f52b9484a7224d2a29e8e8c"
+    },
+    "reportVersion": "surface-flat-incident-front-report-1",
+    "modelVersion": "regional-surface-flat-incident-mobility-candidate-1",
+    "parameters": {
+      "radiusMeters": 1000,
+      "roughness": 0.04,
+      "capSquareMetersPerSecond": 1000,
+      "endSeconds": 300,
+      "baseSteps": 2836
+    },
+    "scope": "One flat closed sphere with h=p_+^(3/7), no film, two orientations, independent band reference. Threshold contours are not exact support. No terrain barriers, coasts, seasonal selection or calibration.",
+    "interfaceDepth": "Unchanged arithmetic mean of frozen neighboring depths",
+    "mobilityAssembly": "Positive individual half-cotangent weighted mean of separately capped incident-triangle mobilities; not triangle depth integration",
+    "referenceControlsUnchanged": true,
+    "initialPairedOwnersUnchanged": true,
+    "referenceSamplesUnchanged": true,
+    "matchedCenteredControlsUnchanged": true,
+    "candidateCases": 18,
+    "matchedControls": 2,
+    "groups": [
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "lastTimeDifferenceOverFineRmsError": 0.0001564979440572639,
+        "subdivision": 3,
+        "successiveTimeDifferenceRatio": 0.4999296696704076,
+        "timeRefinementRmsDifferencesMeters": [
+          0.000007683231934244123,
+          0.000003841075602887791
+        ],
+        "normalizedNativeAxis": [
+          1,
+          0,
+          0
+        ],
+        "cases": [
+          {
+            "values": [0.024547309865806773,4398229715.025709,4345869859.494012,339793836.6268445,false,0.1146966679230148,8.958687613683887e-18,1.4249802922620543e-16,278357880.50686926,0.00029828291976715895,0.000007322043259202031,0.0006593080415986345,0.000016184238794139904,642,-0.011904756896353062,1.8894157137395315,0.10578279266572638,2836,3],
+            "resolution": {
+              "deferredRequests": 616432,
+              "maximumDeferredRequestKilograms": 1.337951617413442e-11,
+              "summedDeferredRequestKilograms": 2.501897879298381e-8
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 207.29646938279967,
+                "maximumSignedCrossingErrorMeters": 207.29646938279967,
+                "minimumSignedCrossingErrorMeters": 108.7690013434841,
+                "nativeThresholdWetAreaSquareMeters": 7799766.29356733,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 129.5727251373151,
+                "maximumSignedCrossingErrorMeters": 129.5727251373151,
+                "minimumSignedCrossingErrorMeters": 58.10745431575204,
+                "nativeThresholdWetAreaSquareMeters": 7492785.134555554,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 54.50061341975099,
+                "maximumSignedCrossingErrorMeters": 54.50061341975099,
+                "minimumSignedCrossingErrorMeters": 0.9491316375394021,
+                "nativeThresholdWetAreaSquareMeters": 7253959.79328575,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          },
+          {
+            "values": [0.024545060029572383,4398229715.025709,4345869859.494012,339799585.6532777,false,0.11467697984416025,1.2650730645440015e-17,1.6248709464044574e-16,278357880.50686926,0.0002983102608174633,0.000007322043259202031,0.0006593684747415898,0.000016184238794139904,642,-0.011904756896353062,1.8894157137395315,0.05289139633286319,5672,3],
+            "resolution": {
+              "deferredRequests": 1224631,
+              "maximumDeferredRequestKilograms": 6.68975808706721e-12,
+              "summedDeferredRequestKilograms": 3.892062845136551e-8
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 207.31423237213798,
+                "maximumSignedCrossingErrorMeters": 207.31423237213798,
+                "minimumSignedCrossingErrorMeters": 108.77951773349382,
+                "nativeThresholdWetAreaSquareMeters": 7799766.29356733,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 129.58498643536353,
+                "maximumSignedCrossingErrorMeters": 129.58498643536353,
+                "minimumSignedCrossingErrorMeters": 58.11814856158093,
+                "nativeThresholdWetAreaSquareMeters": 7492785.134555554,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 54.505500056342356,
+                "maximumSignedCrossingErrorMeters": 54.505500056342356,
+                "minimumSignedCrossingErrorMeters": 0.987589018690338,
+                "nativeThresholdWetAreaSquareMeters": 7253959.79328575,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          },
+          {
+            "values": [0.024543936510004943,4398229715.025709,4345869859.494012,339802459.42665195,false,0.1146671365614999,1.0859337183116133e-17,1.4340817824042475e-16,278357880.50686926,0.0002983239162233539,0.000007322043259202031,0.0006593986578942892,0.000016184238794139904,642,-0.011904756896353062,1.8894157137395315,0.026445698166431594,11344,3],
+            "resolution": {
+              "deferredRequests": 2438574,
+              "maximumDeferredRequestKilograms": 3.344879043533605e-12,
+              "summedDeferredRequestKilograms": 4.6061036149352485e-8
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 207.3231065778902,
+                "maximumSignedCrossingErrorMeters": 207.3231065778902,
+                "minimumSignedCrossingErrorMeters": 108.78477319617707,
+                "nativeThresholdWetAreaSquareMeters": 7799766.29356733,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 129.59111428599024,
+                "maximumSignedCrossingErrorMeters": 129.59111428599024,
+                "minimumSignedCrossingErrorMeters": 58.123494631180385,
+                "nativeThresholdWetAreaSquareMeters": 7492785.134555554,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 54.50794289236249,
+                "maximumSignedCrossingErrorMeters": 54.50794289236249,
+                "minimumSignedCrossingErrorMeters": 1.0068069603703655,
+                "nativeThresholdWetAreaSquareMeters": 7253959.79328575,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "lastTimeDifferenceOverFineRmsError": 0.00043543650185273063,
+        "subdivision": 4,
+        "successiveTimeDifferenceRatio": 0.4998514458491103,
+        "timeRefinementRmsDifferencesMeters": [
+          0.000011774826621766277,
+          0.000005885664111512469
+        ],
+        "normalizedNativeAxis": [
+          1,
+          0,
+          0
+        ],
+        "cases": [
+          {
+            "values": [0.01352664346891604,4398229715.025709,4378349904.875703,318485822.1573217,false,0.09851527263068925,5.5977873903505986e-18,2.6154587438092867e-16,278357880.50686926,0.016170652339554593,0.000218734648856948,0.019406760051590026,0.0002625083241046609,2562,-0.004519957218717051,0.470653044445189,0.10578279266572638,2836,4],
+            "resolution": {
+              "deferredRequests": 1350662,
+              "maximumDeferredRequestKilograms": 4.6380863556806895e-12,
+              "summedDeferredRequestKilograms": 6.003389052096067e-10
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 101.91145589447959,
+                "maximumSignedCrossingErrorMeters": 101.91145589447959,
+                "minimumSignedCrossingErrorMeters": 53.3317232441175,
+                "nativeThresholdWetAreaSquareMeters": 7643891.03813097,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 62.98028977794279,
+                "maximumSignedCrossingErrorMeters": 62.98028977794279,
+                "minimumSignedCrossingErrorMeters": 25.593510744613912,
+                "nativeThresholdWetAreaSquareMeters": 7370668.376033049,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 22.426036980477626,
+                "maximumSignedCrossingErrorMeters": 22.426036980477626,
+                "minimumSignedCrossingErrorMeters": -2.3855416963776133,
+                "nativeThresholdWetAreaSquareMeters": 7233136.154902228,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          },
+          {
+            "values": [0.013520010585053706,4398229715.025709,4378349904.875703,318493516.5437487,false,0.09846207050336905,5.762000923283492e-18,2.719980459123245e-16,278357880.50686926,0.016178585621727096,0.000218734648856948,0.01941628096022812,0.0002625083241046609,2562,-0.004519957218717051,0.470653044445189,0.05289139633286319,5672,4],
+            "resolution": {
+              "deferredRequests": 2662484,
+              "maximumDeferredRequestKilograms": 4.473341291977651e-12,
+              "summedDeferredRequestKilograms": 4.7161190102763614e-9
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 101.96366659861367,
+                "maximumSignedCrossingErrorMeters": 101.96366659861367,
+                "minimumSignedCrossingErrorMeters": 53.53770229070154,
+                "nativeThresholdWetAreaSquareMeters": 7643891.03813097,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 63.00852112474886,
+                "maximumSignedCrossingErrorMeters": 63.00852112474886,
+                "minimumSignedCrossingErrorMeters": 25.641544865488306,
+                "nativeThresholdWetAreaSquareMeters": 7370668.376033049,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 22.438697760058357,
+                "maximumSignedCrossingErrorMeters": 22.438697760058357,
+                "minimumSignedCrossingErrorMeters": -2.352322312920929,
+                "nativeThresholdWetAreaSquareMeters": 7233136.154902228,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          },
+          {
+            "values": [0.013516698959480123,4398229715.025709,4378349904.875703,318497362.03982943,false,0.09843547520871937,6.700800663451155e-18,3.204983448145415e-16,278357880.50686926,0.01618254941629335,0.000218734648856948,0.01942103799837512,0.0002625083241046609,2562,-0.004519957218717051,0.470653044445189,0.026445698166431594,11344,4],
+            "resolution": {
+              "deferredRequests": 5488444,
+              "maximumDeferredRequestKilograms": 3.288334675924857e-12,
+              "summedDeferredRequestKilograms": 5.271305073142676e-8
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 101.98971109652067,
+                "maximumSignedCrossingErrorMeters": 101.98971109652067,
+                "minimumSignedCrossingErrorMeters": 53.640355688917566,
+                "nativeThresholdWetAreaSquareMeters": 7643891.03813097,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 63.02261860060088,
+                "maximumSignedCrossingErrorMeters": 63.02261860060088,
+                "minimumSignedCrossingErrorMeters": 25.665517893776357,
+                "nativeThresholdWetAreaSquareMeters": 7370668.376033049,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 22.44502114607205,
+                "maximumSignedCrossingErrorMeters": 22.44502114607205,
+                "minimumSignedCrossingErrorMeters": -2.3357300162647476,
+                "nativeThresholdWetAreaSquareMeters": 7233136.154902228,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "lastTimeDifferenceOverFineRmsError": 0.0012497984973045678,
+        "subdivision": 5,
+        "successiveTimeDifferenceRatio": 0.49964385958421553,
+        "timeRefinementRmsDifferencesMeters": [
+          0.000016779507979824193,
+          0.000008383778128963503
+        ],
+        "normalizedNativeAxis": [
+          1,
+          0,
+          0
+        ],
+        "cases": [
+          {
+            "values": [0.006725950440125303,4398229715.025709,4390735496.954987,301712255.3774189,false,0.06692042072968492,3.1621574364750107e-18,3.6229468504231535e-16,278357880.50686926,0.01628321904063294,0.00010952012427300184,0.023828035508981174,0.00016026618591895327,10242,-0.0017039169293772947,0.11755716740385459,0.10578279266572638,2836,5],
+            "resolution": {
+              "deferredRequests": 2845996,
+              "maximumDeferredRequestKilograms": 7.588841795958013e-13,
+              "summedDeferredRequestKilograms": 5.90311676195957e-11
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 46.742086332137504,
+                "maximumSignedCrossingErrorMeters": 46.742086332137504,
+                "minimumSignedCrossingErrorMeters": 25.637593734196162,
+                "nativeThresholdWetAreaSquareMeters": 7413464.197287465,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 25.61048035176161,
+                "maximumSignedCrossingErrorMeters": 25.61048035176161,
+                "minimumSignedCrossingErrorMeters": 10.570100611829947,
+                "nativeThresholdWetAreaSquareMeters": 7294696.558135992,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 6.29560974316945,
+                "maximumSignedCrossingErrorMeters": 6.29560974316945,
+                "minimumSignedCrossingErrorMeters": -3.977597391017662,
+                "nativeThresholdWetAreaSquareMeters": 7216802.987138698,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          },
+          {
+            "values": [0.006714041815448482,4398229715.025709,4390735496.954987,301720422.46359146,false,0.06680221928403038,3.5915826779196226e-18,4.052778567904632e-16,278357880.50686926,0.016312100413346346,0.00010952012427300184,0.023870299042551894,0.00016026618591895327,10242,-0.0017039169293772947,0.11755716740385459,0.05289139633286319,5672,5],
+            "resolution": {
+              "deferredRequests": 5651432,
+              "maximumDeferredRequestKilograms": 8.733063479703604e-13,
+              "summedDeferredRequestKilograms": 4.144980349317877e-10
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 46.75303592614766,
+                "maximumSignedCrossingErrorMeters": 46.75303592614766,
+                "minimumSignedCrossingErrorMeters": 25.699000164993045,
+                "nativeThresholdWetAreaSquareMeters": 7413464.197287465,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 25.66729938376966,
+                "maximumSignedCrossingErrorMeters": 25.66729938376966,
+                "minimumSignedCrossingErrorMeters": 10.627744507918369,
+                "nativeThresholdWetAreaSquareMeters": 7294696.558135992,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 6.3268501038145075,
+                "maximumSignedCrossingErrorMeters": 6.3268501038145075,
+                "minimumSignedCrossingErrorMeters": -3.955192680358266,
+                "nativeThresholdWetAreaSquareMeters": 7216802.987138698,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          },
+          {
+            "values": [0.006708103863978666,4398229715.025709,4390735496.954987,301724503.29208744,false,0.06674318370868218,4.0704262631159e-18,4.596111605896796e-16,278357880.50686926,0.016326539733695175,0.00010952012427300184,0.02389142881039073,0.00016026618591895327,10242,-0.0017039169293772947,0.11755716740385459,0.026445698166431594,11344,5],
+            "resolution": {
+              "deferredRequests": 11582102,
+              "maximumDeferredRequestKilograms": 1.1637760342451174e-12,
+              "summedDeferredRequestKilograms": 1.0342331217754111e-9
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 46.75849049889735,
+                "maximumSignedCrossingErrorMeters": 46.75849049889735,
+                "minimumSignedCrossingErrorMeters": 25.729497127952918,
+                "nativeThresholdWetAreaSquareMeters": 7413464.197287465,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 25.6956122944636,
+                "maximumSignedCrossingErrorMeters": 25.6956122944636,
+                "minimumSignedCrossingErrorMeters": 10.656441702413977,
+                "nativeThresholdWetAreaSquareMeters": 7294696.558135992,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 6.342421936134768,
+                "maximumSignedCrossingErrorMeters": 6.342421936134768,
+                "minimumSignedCrossingErrorMeters": -3.9439744605023197,
+                "nativeThresholdWetAreaSquareMeters": 7216802.987138698,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "lastTimeDifferenceOverFineRmsError": 0.0002475874927613806,
+        "subdivision": 3,
+        "successiveTimeDifferenceRatio": 0.49994009712773263,
+        "timeRefinementRmsDifferencesMeters": [
+          0.000007368831397340904,
+          0.000003683974284504497
+        ],
+        "normalizedNativeAxis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "cases": [
+          {
+            "values": [0.014881470055818313,4398229715.025709,4398552331.816088,257104143.81964698,false,0.07964420380339884,8.554657485094631e-18,1.420961390871371e-16,278357880.50686926,0.005318243697794779,0.00007914328433827746,0.004593908897703353,0.00006836411770032976,642,0.00007335150987598763,1.8894157137395315,0.10578279266572638,2836,3],
+            "resolution": {
+              "deferredRequests": 606602,
+              "maximumDeferredRequestKilograms": 3.060496262858503e-23,
+              "summedDeferredRequestKilograms": 7.204946441387448e-21
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 228.14823138386075,
+                "maximumSignedCrossingErrorMeters": 228.14823138386075,
+                "minimumSignedCrossingErrorMeters": 110.45747054873156,
+                "nativeThresholdWetAreaSquareMeters": 7963700.496324959,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 146.42362163682532,
+                "maximumSignedCrossingErrorMeters": 146.42362163682532,
+                "minimumSignedCrossingErrorMeters": 70.49183594807084,
+                "nativeThresholdWetAreaSquareMeters": 7708118.486767017,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 73.3207921652872,
+                "maximumSignedCrossingErrorMeters": 73.3207921652872,
+                "minimumSignedCrossingErrorMeters": 10.629603759706896,
+                "nativeThresholdWetAreaSquareMeters": 7335180.305078721,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          },
+          {
+            "values": [0.01488014516531334,4398229715.025709,4398552331.816088,257114376.30337927,false,0.07962658007329865,6.975139856819787e-18,1.6232087588008526e-16,278357880.50686926,0.0053187172207678456,0.00007914328433827746,0.00459431792773711,0.00006836411770032976,642,0.00007335150987598763,1.8894157137395315,0.05289139633286319,5672,3],
+            "resolution": {
+              "deferredRequests": 1193208,
+              "maximumDeferredRequestKilograms": 4.722618539351474e-23,
+              "summedDeferredRequestKilograms": 2.6252209211485168e-20
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 228.1709431805172,
+                "maximumSignedCrossingErrorMeters": 228.1709431805172,
+                "minimumSignedCrossingErrorMeters": 110.4711455991667,
+                "nativeThresholdWetAreaSquareMeters": 7963700.496324959,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 146.44629948408516,
+                "maximumSignedCrossingErrorMeters": 146.44629948408516,
+                "minimumSignedCrossingErrorMeters": 70.50479483085059,
+                "nativeThresholdWetAreaSquareMeters": 7708118.486767017,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 73.33732991733788,
+                "maximumSignedCrossingErrorMeters": 73.33732991733788,
+                "minimumSignedCrossingErrorMeters": 10.65450727195616,
+                "nativeThresholdWetAreaSquareMeters": 7335180.305078721,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          },
+          {
+            "values": [0.01487948459518927,4398229715.025709,4398552331.816088,257119491.3874674,false,0.0796177724196486,1.0012412621507658e-17,1.5118612906789707e-16,278357880.50686926,0.005318953343576531,0.00007914328433827746,0.004594521891062864,0.00006836411770032976,642,0.00007335150987598763,1.8894157137395315,0.026445698166431594,11344,3],
+            "resolution": {
+              "deferredRequests": 2475783,
+              "maximumDeferredRequestKilograms": 7.633119610126754e-23,
+              "summedDeferredRequestKilograms": 9.778465063252769e-20
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 228.18228943502206,
+                "maximumSignedCrossingErrorMeters": 228.18228943502206,
+                "minimumSignedCrossingErrorMeters": 110.47797814967231,
+                "nativeThresholdWetAreaSquareMeters": 7982383.861059578,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 146.45763111295574,
+                "maximumSignedCrossingErrorMeters": 146.45763111295574,
+                "minimumSignedCrossingErrorMeters": 70.5112719722718,
+                "nativeThresholdWetAreaSquareMeters": 7708118.486767017,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 73.34559564218668,
+                "maximumSignedCrossingErrorMeters": 73.34559564218668,
+                "minimumSignedCrossingErrorMeters": 10.666953847550342,
+                "nativeThresholdWetAreaSquareMeters": 7335180.305078721,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "lastTimeDifferenceOverFineRmsError": 0.0006540578232193603,
+        "subdivision": 4,
+        "successiveTimeDifferenceRatio": 0.4998645810834349,
+        "timeRefinementRmsDifferencesMeters": [
+          0.00001130993739796444,
+          0.0000056534371195133685
+        ],
+        "normalizedNativeAxis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "cases": [
+          {
+            "values": [0.008650836588261943,4398229715.025709,4398577578.071562,271721861.0764761,false,0.08149997139125553,3.986553407404091e-18,3.343417632096731e-16,278357880.50686926,0.01477087919667889,0.00012778046219542692,0.00952373909139941,0.00008238831058893857,2562,0.0000790916046663624,0.470653044445189,0.10578279266572638,2836,4],
+            "resolution": {
+              "deferredRequests": 1371855,
+              "maximumDeferredRequestKilograms": 4.119944592032148e-24,
+              "summedDeferredRequestKilograms": 1.5822269265782502e-21
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 112.70665016742853,
+                "maximumSignedCrossingErrorMeters": 112.70665016742853,
+                "minimumSignedCrossingErrorMeters": 56.24507477849039,
+                "nativeThresholdWetAreaSquareMeters": 7609627.8859700775,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 69.6844760703419,
+                "maximumSignedCrossingErrorMeters": 69.6844760703419,
+                "minimumSignedCrossingErrorMeters": 27.15514639754457,
+                "nativeThresholdWetAreaSquareMeters": 7433569.925406258,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 27.417676722228723,
+                "maximumSignedCrossingErrorMeters": 27.417676722228723,
+                "minimumSignedCrossingErrorMeters": 0.9418928342623811,
+                "nativeThresholdWetAreaSquareMeters": 7286657.9998523025,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          },
+          {
+            "values": [0.00864603104878362,4398229715.025709,4398577578.071562,271731402.4685885,false,0.08144163695653882,4.045191735851434e-18,3.481503238940248e-16,278357880.50686926,0.014779088980186338,0.00012778046219542692,0.009529032468664277,0.00008238831058893857,2562,0.0000790916046663624,0.470653044445189,0.05289139633286319,5672,4],
+            "resolution": {
+              "deferredRequests": 2742865,
+              "maximumDeferredRequestKilograms": 7.75046704887289e-24,
+              "summedDeferredRequestKilograms": 5.758197913151277e-21
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 112.74095075212487,
+                "maximumSignedCrossingErrorMeters": 112.74095075212487,
+                "minimumSignedCrossingErrorMeters": 56.29547198854512,
+                "nativeThresholdWetAreaSquareMeters": 7609627.8859700775,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 69.71477406923809,
+                "maximumSignedCrossingErrorMeters": 69.71477406923809,
+                "minimumSignedCrossingErrorMeters": 27.173342113695263,
+                "nativeThresholdWetAreaSquareMeters": 7433569.925406258,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 27.434275939676844,
+                "maximumSignedCrossingErrorMeters": 27.434275939676844,
+                "minimumSignedCrossingErrorMeters": 0.9708724131154423,
+                "nativeThresholdWetAreaSquareMeters": 7286657.9998523025,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          },
+          {
+            "values": [0.008643635040838428,4398229715.025709,4398577578.071562,271736171.3316513,false,0.0814124783860196,4.820729355259442e-18,3.289826747100595e-16,278357880.50686926,0.014783185730506304,0.00012778046219542692,0.00953167390798894,0.00008238831058893857,2562,0.0000790916046663624,0.470653044445189,0.026445698166431594,11344,4],
+            "resolution": {
+              "deferredRequests": 5534040,
+              "maximumDeferredRequestKilograms": 1.757633872551836e-23,
+              "summedDeferredRequestKilograms": 2.114059311817564e-20
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 112.7580645613877,
+                "maximumSignedCrossingErrorMeters": 112.7580645613877,
+                "minimumSignedCrossingErrorMeters": 56.32060036272479,
+                "nativeThresholdWetAreaSquareMeters": 7609627.8859700775,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 69.7299014492685,
+                "maximumSignedCrossingErrorMeters": 69.7299014492685,
+                "minimumSignedCrossingErrorMeters": 27.18243189045588,
+                "nativeThresholdWetAreaSquareMeters": 7433569.925406258,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 27.44256727295813,
+                "maximumSignedCrossingErrorMeters": 27.44256727295813,
+                "minimumSignedCrossingErrorMeters": 0.9853519407259093,
+                "nativeThresholdWetAreaSquareMeters": 7286657.9998523025,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "lastTimeDifferenceOverFineRmsError": 0.0016741608491430684,
+        "subdivision": 5,
+        "successiveTimeDifferenceRatio": 0.499696606153938,
+        "timeRefinementRmsDifferencesMeters": [
+          0.000016040978603938765,
+          0.000008015622567776136
+        ],
+        "normalizedNativeAxis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "cases": [
+          {
+            "values": [0.004800370750840438,4398229715.025709,4398103732.744102,275904898.5197045,false,0.053400652122459966,1.914692219224923e-18,3.8156822675732614e-16,278357880.50686926,0.025745217489364727,0.00012358658900997214,0.022003206802966725,0.00010562355036165482,10242,-0.00002864386122835593,0.11755716740385459,0.10578279266572638,2836,5],
+            "resolution": {
+              "deferredRequests": 2791902,
+              "maximumDeferredRequestKilograms": 1.10544931597985e-24,
+              "summedDeferredRequestKilograms": 3.3099215953374467e-22
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 52.332221587035654,
+                "maximumSignedCrossingErrorMeters": 52.332221587035654,
+                "minimumSignedCrossingErrorMeters": 24.482013451898823,
+                "nativeThresholdWetAreaSquareMeters": 7409751.648443686,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 30.848487205949127,
+                "maximumSignedCrossingErrorMeters": 30.848487205949127,
+                "minimumSignedCrossingErrorMeters": 11.698212942608643,
+                "nativeThresholdWetAreaSquareMeters": 7321834.03704306,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 9.054068798022508,
+                "maximumSignedCrossingErrorMeters": 9.054068798022508,
+                "minimumSignedCrossingErrorMeters": -2.957106212231775,
+                "nativeThresholdWetAreaSquareMeters": 7217169.511085357,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          },
+          {
+            "values": [0.004792005156010806,4398229715.025709,4398103732.744102,275914017.9348375,false,0.05327063504797405,1.982581538478158e-18,3.8081588320610313e-16,278357880.50686926,0.025790161943993837,0.00012358658900997214,0.022041618680056496,0.00010562355036165482,10242,-0.00002864386122835593,0.11755716740385459,0.05289139633286319,5672,5],
+            "resolution": {
+              "deferredRequests": 5625755,
+              "maximumDeferredRequestKilograms": 1.3293765030600803e-24,
+              "summedDeferredRequestKilograms": 1.1946007401047406e-21
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 52.365514354551166,
+                "maximumSignedCrossingErrorMeters": 52.365514354551166,
+                "minimumSignedCrossingErrorMeters": 24.515176708860942,
+                "nativeThresholdWetAreaSquareMeters": 7412297.82156445,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 30.872307670243735,
+                "maximumSignedCrossingErrorMeters": 30.872307670243735,
+                "minimumSignedCrossingErrorMeters": 11.727246987007556,
+                "nativeThresholdWetAreaSquareMeters": 7321834.03704306,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 9.07497168184146,
+                "maximumSignedCrossingErrorMeters": 9.07497168184146,
+                "minimumSignedCrossingErrorMeters": -2.9337764377805886,
+                "nativeThresholdWetAreaSquareMeters": 7217169.511085357,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          },
+          {
+            "values": [0.00478784495042934,4398229715.025709,4398103732.744102,275918574.8549632,false,0.05320568618226176,2.5888800754495057e-18,4.469097790232909e-16,278357880.50686926,0.025812571269437156,0.00012358658900997214,0.022060770859378655,0.00010562355036165482,10242,-0.00002864386122835593,0.11755716740385459,0.026445698166431594,11344,5],
+            "resolution": {
+              "deferredRequests": 11473914,
+              "maximumDeferredRequestKilograms": 2.8990334683328527e-24,
+              "summedDeferredRequestKilograms": 4.3288844967418166e-21
+            },
+            "contours": [
+              {
+                "maximumAbsoluteCrossingErrorMeters": 52.3820786920659,
+                "maximumSignedCrossingErrorMeters": 52.3820786920659,
+                "minimumSignedCrossingErrorMeters": 24.531665023239448,
+                "nativeThresholdWetAreaSquareMeters": 7412297.82156445,
+                "referenceAdvanceMeters": 152.85889161167486,
+                "referenceP": -0.15226420843148336,
+                "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+                "thresholdMeters": 0.001
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 30.8841836422018,
+                "maximumSignedCrossingErrorMeters": 30.8841836422018,
+                "minimumSignedCrossingErrorMeters": 11.741727227651433,
+                "nativeThresholdWetAreaSquareMeters": 7321834.03704306,
+                "referenceAdvanceMeters": 152.48093778513817,
+                "referenceP": -0.15186945517639472,
+                "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+                "thresholdMeters": 0.01
+              },
+              {
+                "maximumAbsoluteCrossingErrorMeters": 9.085395629975679,
+                "maximumSignedCrossingErrorMeters": 9.085395629975679,
+                "minimumSignedCrossingErrorMeters": -2.9221183117780214,
+                "nativeThresholdWetAreaSquareMeters": 7217169.511085357,
+                "referenceAdvanceMeters": 152.25120874836273,
+                "referenceP": -0.15075326389829835,
+                "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+                "thresholdMeters": 0.05
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "matchedCenteredDepthControls": [
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "values": [0.006824520359462282,4398229715.025709,4390735496.954987,301517638.8198004,false,0.06676584891421294,3.532297495501006e-18,4.363501119861716e-16,278357880.50686926,0.01604803246299219,0.00010952012427300184,0.02348387541942669,0.00016026618591895327,10242,-0.0017039169293772947,0.11755716740385459,0.026445698166431594,11344,5],
+        "resolution": {
+          "deferredRequests": 12265501,
+          "maximumDeferredRequestKilograms": 1.1637760342451174e-12,
+          "summedDeferredRequestKilograms": 1.022202069672251e-9
+        },
+        "contours": [
+          {
+            "maximumAbsoluteCrossingErrorMeters": 46.63110396147596,
+            "maximumSignedCrossingErrorMeters": 46.63110396147596,
+            "minimumSignedCrossingErrorMeters": 25.178760241083566,
+            "nativeThresholdWetAreaSquareMeters": 7413464.197287465,
+            "referenceAdvanceMeters": 152.85889161167486,
+            "referenceP": -0.15226420843148336,
+            "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+            "thresholdMeters": 0.001
+          },
+          {
+            "maximumAbsoluteCrossingErrorMeters": 25.293064525581997,
+            "maximumSignedCrossingErrorMeters": 25.293064525581997,
+            "minimumSignedCrossingErrorMeters": 10.107269376979477,
+            "nativeThresholdWetAreaSquareMeters": 7294696.558135992,
+            "referenceAdvanceMeters": 152.48093778513817,
+            "referenceP": -0.15186945517639472,
+            "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+            "thresholdMeters": 0.01
+          },
+          {
+            "maximumAbsoluteCrossingErrorMeters": 5.851628920208185,
+            "maximumSignedCrossingErrorMeters": 5.851628920208185,
+            "minimumSignedCrossingErrorMeters": -4.232504808953541,
+            "nativeThresholdWetAreaSquareMeters": 7216802.987138698,
+            "referenceAdvanceMeters": 152.25120874836273,
+            "referenceP": -0.15075326389829835,
+            "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+            "thresholdMeters": 0.05
+          }
+        ]
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "values": [0.0048344723907228215,4398229715.025709,4398103732.744102,275827340.11638355,false,0.05415111768585407,2.22268333935502e-18,4.300947891284041e-16,278357880.50686926,0.025563614603970095,0.00012358658900997214,0.021847999497182486,0.00010562355036165482,10242,-0.00002864386122835593,0.11755716740385459,0.026445698166431594,11344,5],
+        "resolution": {
+          "deferredRequests": 12100348,
+          "maximumDeferredRequestKilograms": 1.958678885833198e-21,
+          "summedDeferredRequestKilograms": 1.832465514348543e-19
+        },
+        "contours": [
+          {
+            "maximumAbsoluteCrossingErrorMeters": 52.19998888595101,
+            "maximumSignedCrossingErrorMeters": 52.19998888595101,
+            "minimumSignedCrossingErrorMeters": 24.460140386469043,
+            "nativeThresholdWetAreaSquareMeters": 7409751.648443686,
+            "referenceAdvanceMeters": 152.85889161167486,
+            "referenceP": -0.15226420843148336,
+            "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+            "thresholdMeters": 0.001
+          },
+          {
+            "maximumAbsoluteCrossingErrorMeters": 30.7507378417351,
+            "maximumSignedCrossingErrorMeters": 30.7507378417351,
+            "minimumSignedCrossingErrorMeters": 11.59890218621773,
+            "nativeThresholdWetAreaSquareMeters": 7321834.03704306,
+            "referenceAdvanceMeters": 152.48093778513817,
+            "referenceP": -0.15186945517639472,
+            "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+            "thresholdMeters": 0.01
+          },
+          {
+            "maximumAbsoluteCrossingErrorMeters": 8.986489915311369,
+            "maximumSignedCrossingErrorMeters": 8.986489915311369,
+            "minimumSignedCrossingErrorMeters": -3.0766067906713435,
+            "nativeThresholdWetAreaSquareMeters": 7215958.746790641,
+            "referenceAdvanceMeters": 152.25120874836273,
+            "referenceP": -0.15075326389829835,
+            "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+            "thresholdMeters": 0.05
+          }
+        ]
+      }
+    ],
+    "spatialComparisons": [
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "coarseSubdivision": 3,
+        "fineOverCoarseRmsError": 0.5507143873995215,
+        "fineSubdivision": 4
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "coarseSubdivision": 4,
+        "fineOverCoarseRmsError": 0.4962827006866085,
+        "fineSubdivision": 5
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "coarseSubdivision": 3,
+        "fineOverCoarseRmsError": 0.5809095728781511,
+        "fineSubdivision": 4
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "coarseSubdivision": 4,
+        "fineOverCoarseRmsError": 0.5539156764264449,
+        "fineSubdivision": 5
+      }
+    ],
+    "baselineComparisons": [
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "subdivision": 3,
+        "steps": 2836,
+        "baselineRmsErrorMeters": 0.024732279882963715,
+        "candidateRmsErrorMeters": 0.024547309865806773,
+        "candidateOverBaselineRmsError": 0.9925211093343499,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 206.57103705664338,
+            "candidateMaximumAbsoluteErrorMeters": 207.29646938279967,
+            "candidateOverBaselineMaximumError": 1.00351178140214
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 128.7176284761262,
+            "candidateMaximumAbsoluteErrorMeters": 129.5727251373151,
+            "candidateOverBaselineMaximumError": 1.0066431977601848
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 54.09676910097572,
+            "candidateMaximumAbsoluteErrorMeters": 54.50061341975099,
+            "candidateOverBaselineMaximumError": 1.0074652206681967
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "subdivision": 3,
+        "steps": 5672,
+        "baselineRmsErrorMeters": 0.024729925338330832,
+        "candidateRmsErrorMeters": 0.024545060029572383,
+        "candidateOverBaselineRmsError": 0.9925246313432289,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 206.58950839621193,
+            "candidateMaximumAbsoluteErrorMeters": 207.31423237213798,
+            "candidateOverBaselineMaximumError": 1.00350803862961
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 128.73042983926243,
+            "candidateMaximumAbsoluteErrorMeters": 129.58498643536353,
+            "candidateOverBaselineMaximumError": 1.0066383418214957
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 54.101758447457236,
+            "candidateMaximumAbsoluteErrorMeters": 54.505500056342356,
+            "candidateOverBaselineMaximumError": 1.0074626337566686
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "subdivision": 3,
+        "steps": 11344,
+        "baselineRmsErrorMeters": 0.024728749465372957,
+        "candidateRmsErrorMeters": 0.024543936510004943,
+        "candidateOverBaselineRmsError": 0.9925263929893906,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 206.59873643101557,
+            "candidateMaximumAbsoluteErrorMeters": 207.3231065778902,
+            "candidateOverBaselineMaximumError": 1.003506169298942
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 128.7368276054377,
+            "candidateMaximumAbsoluteErrorMeters": 129.59111428599024,
+            "candidateOverBaselineMaximumError": 1.0066359152733733
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 54.10425260073603,
+            "candidateMaximumAbsoluteErrorMeters": 54.50794289236249,
+            "candidateOverBaselineMaximumError": 1.0074613412480808
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "subdivision": 4,
+        "steps": 2836,
+        "baselineRmsErrorMeters": 0.013668741415382098,
+        "candidateRmsErrorMeters": 0.01352664346891604,
+        "candidateOverBaselineRmsError": 0.9896041674834708,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 100.88487157433246,
+            "candidateMaximumAbsoluteErrorMeters": 101.91145589447959,
+            "candidateOverBaselineMaximumError": 1.0101758004359527
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 62.225966021223876,
+            "candidateMaximumAbsoluteErrorMeters": 62.98028977794279,
+            "candidateOverBaselineMaximumError": 1.012122330997025
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 22.006057532093948,
+            "candidateMaximumAbsoluteErrorMeters": 22.426036980477626,
+            "candidateOverBaselineMaximumError": 1.0190847200945092
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "subdivision": 4,
+        "steps": 5672,
+        "baselineRmsErrorMeters": 0.01366184890905908,
+        "candidateRmsErrorMeters": 0.013520010585053706,
+        "candidateOverBaselineRmsError": 0.9896179261716676,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 100.94026203554441,
+            "candidateMaximumAbsoluteErrorMeters": 101.96366659861367,
+            "candidateOverBaselineMaximumError": 1.0101387151413268
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 62.255559093229884,
+            "candidateMaximumAbsoluteErrorMeters": 63.00852112474886,
+            "candidateOverBaselineMaximumError": 1.012094695517735
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 22.0208355883631,
+            "candidateMaximumAbsoluteErrorMeters": 22.438697760058357,
+            "candidateOverBaselineMaximumError": 1.018975763658854
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "subdivision": 4,
+        "steps": 11344,
+        "baselineRmsErrorMeters": 0.013658407495014638,
+        "candidateRmsErrorMeters": 0.013516698959480123,
+        "candidateOverBaselineRmsError": 0.9896248127326528,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 100.96789174093357,
+            "candidateMaximumAbsoluteErrorMeters": 101.98971109652067,
+            "candidateOverBaselineMaximumError": 1.0101202405831045
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 62.270336496464964,
+            "candidateMaximumAbsoluteErrorMeters": 63.02261860060088,
+            "candidateOverBaselineMaximumError": 1.012080906358658
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 22.028218037537293,
+            "candidateMaximumAbsoluteErrorMeters": 22.44502114607205,
+            "candidateOverBaselineMaximumError": 1.0189213266286226
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "subdivision": 5,
+        "steps": 2836,
+        "baselineRmsErrorMeters": 0.006843044624200215,
+        "candidateRmsErrorMeters": 0.006725950440125303,
+        "candidateOverBaselineRmsError": 0.9828885838825583,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 46.61371603776554,
+            "candidateMaximumAbsoluteErrorMeters": 46.742086332137504,
+            "candidateOverBaselineMaximumError": 1.002753916771363
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 25.2745947061066,
+            "candidateMaximumAbsoluteErrorMeters": 25.61048035176161,
+            "candidateOverBaselineMaximumError": 1.0132894572419733
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 5.801145545735631,
+            "candidateMaximumAbsoluteErrorMeters": 6.29560974316945,
+            "candidateOverBaselineMaximumError": 1.085235613127703
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "subdivision": 5,
+        "steps": 5672,
+        "baselineRmsErrorMeters": 0.0068306843082129925,
+        "candidateRmsErrorMeters": 0.006714041815448482,
+        "candidateOverBaselineRmsError": 0.9829237470945241,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 46.625322579377794,
+            "candidateMaximumAbsoluteErrorMeters": 46.75303592614766,
+            "candidateOverBaselineMaximumError": 1.0027391413014342
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 25.286915079985263,
+            "candidateMaximumAbsoluteErrorMeters": 25.66729938376966,
+            "candidateOverBaselineMaximumError": 1.0150427326774025
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 5.834837319091513,
+            "candidateMaximumAbsoluteErrorMeters": 6.3268501038145075,
+            "candidateOverBaselineMaximumError": 1.0843233080574732
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "subdivision": 5,
+        "steps": 11344,
+        "baselineRmsErrorMeters": 0.006824520359462282,
+        "candidateRmsErrorMeters": 0.006708103863978666,
+        "candidateOverBaselineRmsError": 0.9829414391998695,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 46.63110396147596,
+            "candidateMaximumAbsoluteErrorMeters": 46.75849049889735,
+            "candidateOverBaselineMaximumError": 1.0027317933010258
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 25.293064525581997,
+            "candidateMaximumAbsoluteErrorMeters": 25.6956122944636,
+            "candidateOverBaselineMaximumError": 1.015915341870672
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 5.851628920208185,
+            "candidateMaximumAbsoluteErrorMeters": 6.342421936134768,
+            "candidateOverBaselineMaximumError": 1.0838728878093524
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "subdivision": 3,
+        "steps": 2836,
+        "baselineRmsErrorMeters": 0.015020384967323445,
+        "candidateRmsErrorMeters": 0.014881470055818313,
+        "candidateOverBaselineRmsError": 0.9907515744897791,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 226.9098208641629,
+            "candidateMaximumAbsoluteErrorMeters": 228.14823138386075,
+            "candidateOverBaselineMaximumError": 1.0054577211113274
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 145.9585028584569,
+            "candidateMaximumAbsoluteErrorMeters": 146.42362163682532,
+            "candidateOverBaselineMaximumError": 1.0031866507895018
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 72.53229674477856,
+            "candidateMaximumAbsoluteErrorMeters": 73.3207921652872,
+            "candidateOverBaselineMaximumError": 1.0108709561932547
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "subdivision": 3,
+        "steps": 5672,
+        "baselineRmsErrorMeters": 0.015018966369422987,
+        "candidateRmsErrorMeters": 0.01488014516531334,
+        "candidateOverBaselineRmsError": 0.9907569402117931,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 226.93381407389057,
+            "candidateMaximumAbsoluteErrorMeters": 228.1709431805172,
+            "candidateOverBaselineMaximumError": 1.0054514974406759
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 145.98151860254595,
+            "candidateMaximumAbsoluteErrorMeters": 146.44629948408516,
+            "candidateOverBaselineMaximumError": 1.0031838337207921
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 72.54929528746578,
+            "candidateMaximumAbsoluteErrorMeters": 73.33732991733788,
+            "candidateOverBaselineMaximumError": 1.0108620576774678
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "subdivision": 3,
+        "steps": 11344,
+        "baselineRmsErrorMeters": 0.015018258938090969,
+        "candidateRmsErrorMeters": 0.01487948459518927,
+        "candidateOverBaselineRmsError": 0.9907596251020999,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 226.94580039240543,
+            "candidateMaximumAbsoluteErrorMeters": 228.18228943502206,
+            "candidateOverBaselineMaximumError": 1.0054483891769694
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 145.99301905630546,
+            "candidateMaximumAbsoluteErrorMeters": 146.45763111295574,
+            "candidateOverBaselineMaximumError": 1.0031824265273335
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 72.55779131771622,
+            "candidateMaximumAbsoluteErrorMeters": 73.34559564218668,
+            "candidateOverBaselineMaximumError": 1.0108576117073467
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "subdivision": 4,
+        "steps": 2836,
+        "baselineRmsErrorMeters": 0.008719521718100934,
+        "candidateRmsErrorMeters": 0.008650836588261943,
+        "candidateOverBaselineRmsError": 0.992122832873229,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 112.28126854681663,
+            "candidateMaximumAbsoluteErrorMeters": 112.70665016742853,
+            "candidateOverBaselineMaximumError": 1.003788535934064
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 69.32650697980903,
+            "candidateMaximumAbsoluteErrorMeters": 69.6844760703419,
+            "candidateOverBaselineMaximumError": 1.0051635241140469
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 27.216474044741368,
+            "candidateMaximumAbsoluteErrorMeters": 27.417676722228723,
+            "candidateOverBaselineMaximumError": 1.0073926797849198
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "subdivision": 4,
+        "steps": 5672,
+        "baselineRmsErrorMeters": 0.008714542576420351,
+        "candidateRmsErrorMeters": 0.00864603104878362,
+        "candidateOverBaselineRmsError": 0.9921382531514495,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 112.31677608127688,
+            "candidateMaximumAbsoluteErrorMeters": 112.74095075212487,
+            "candidateOverBaselineMaximumError": 1.0037765922923307
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 69.35748085302707,
+            "candidateMaximumAbsoluteErrorMeters": 69.71477406923809,
+            "candidateOverBaselineMaximumError": 1.0051514733784543
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 27.233558125908885,
+            "candidateMaximumAbsoluteErrorMeters": 27.434275939676844,
+            "candidateOverBaselineMaximumError": 1.0073702383228802
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "subdivision": 4,
+        "steps": 11344,
+        "baselineRmsErrorMeters": 0.008712059760563794,
+        "candidateRmsErrorMeters": 0.008643635040838428,
+        "candidateOverBaselineRmsError": 0.9921459767717505,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 112.33449177889287,
+            "candidateMaximumAbsoluteErrorMeters": 112.7580645613877,
+            "candidateOverBaselineMaximumError": 1.0037706387039926
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 69.37294557293616,
+            "candidateMaximumAbsoluteErrorMeters": 69.7299014492685,
+            "candidateOverBaselineMaximumError": 1.0051454623035583
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 27.24209136330691,
+            "candidateMaximumAbsoluteErrorMeters": 27.44256727295813,
+            "candidateOverBaselineMaximumError": 1.0073590498973675
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "subdivision": 5,
+        "steps": 2836,
+        "baselineRmsErrorMeters": 0.004847466512310008,
+        "candidateRmsErrorMeters": 0.004800370750840438,
+        "candidateOverBaselineRmsError": 0.9902844586239078,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 52.14812361300214,
+            "candidateMaximumAbsoluteErrorMeters": 52.332221587035654,
+            "candidateOverBaselineMaximumError": 1.0035302895152993
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 30.714097292737108,
+            "candidateMaximumAbsoluteErrorMeters": 30.848487205949127,
+            "candidateOverBaselineMaximumError": 1.004375512388697
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 8.954361257969223,
+            "candidateMaximumAbsoluteErrorMeters": 9.054068798022508,
+            "candidateOverBaselineMaximumError": 1.0111350812392728
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "subdivision": 5,
+        "steps": 5672,
+        "baselineRmsErrorMeters": 0.004838788746489005,
+        "candidateRmsErrorMeters": 0.004792005156010806,
+        "candidateOverBaselineRmsError": 0.9903315492927554,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 52.18275814225848,
+            "candidateMaximumAbsoluteErrorMeters": 52.365514354551166,
+            "candidateOverBaselineMaximumError": 1.003502233664891
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 30.738548048804716,
+            "candidateMaximumAbsoluteErrorMeters": 30.872307670243735,
+            "candidateOverBaselineMaximumError": 1.0043515269890642
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 8.97579987936692,
+            "candidateMaximumAbsoluteErrorMeters": 9.07497168184146,
+            "candidateOverBaselineMaximumError": 1.0110487983029246
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "subdivision": 5,
+        "steps": 11344,
+        "baselineRmsErrorMeters": 0.0048344723907228215,
+        "candidateRmsErrorMeters": 0.00478784495042934,
+        "candidateOverBaselineRmsError": 0.9903552163452297,
+        "contours": [
+          {
+            "thresholdMeters": 0.001,
+            "baselineMaximumAbsoluteErrorMeters": 52.19998888595101,
+            "candidateMaximumAbsoluteErrorMeters": 52.3820786920659,
+            "candidateOverBaselineMaximumError": 1.0034883112046773
+          },
+          {
+            "thresholdMeters": 0.01,
+            "baselineMaximumAbsoluteErrorMeters": 30.7507378417351,
+            "candidateMaximumAbsoluteErrorMeters": 30.8841836422018,
+            "candidateOverBaselineMaximumError": 1.0043395967001998
+          },
+          {
+            "thresholdMeters": 0.05,
+            "baselineMaximumAbsoluteErrorMeters": 8.986489915311369,
+            "candidateMaximumAbsoluteErrorMeters": 9.085395629975679,
+            "candidateOverBaselineMaximumError": 1.0110060452519725
+          }
+        ]
+      }
+    ],
+    "maximumCandidateAudit": {
+      "local": 4.596111605896796e-16,
+      "global": 1.2650730645440015e-17
+    },
+    "maximumAllCasesAudit": {
+      "local": 4.596111605896796e-16,
+      "global": 1.2650730645440015e-17
+    },
+    "candidateNumericalRetention": {
+      "totalAttemptedRequests": 67676681,
+      "maximumSingleRequestKilograms": 1.337951617413442e-11,
+      "maximumPerRunSummedRequestsKilograms": 5.271305073142676e-8
+    },
+    "allCasesNumericalRetention": {
+      "totalAttemptedRequests": 92042530,
+      "maximumSingleRequestKilograms": 1.337951617413442e-11,
+      "maximumPerRunSummedRequestsKilograms": 5.271305073142676e-8
+    },
+    "planarCertificate": [
+      {
+        "bands": 64,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.999070256679066e-13,
+          "maximumIterations": 34,
+          "maximumRelativeInventoryDrift": 1.094506931685336e-15
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.00025547481009095975,
+        "stepSeconds": 0.0625,
+        "steps": 1600
+      },
+      {
+        "bands": 128,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.999468158876368e-13,
+          "maximumIterations": 47,
+          "maximumRelativeInventoryDrift": 5.786846078208075e-14
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.0000976945543239255,
+        "stepSeconds": 0.0625,
+        "steps": 1600
+      },
+      {
+        "bands": 256,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.999844919131307e-13,
+          "maximumIterations": 63,
+          "maximumRelativeInventoryDrift": 3.3924206006785645e-14
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.0000937380481927127,
+        "stepSeconds": 0.0625,
+        "steps": 1600
+      },
+      {
+        "bands": 512,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.99934510192979e-13,
+          "maximumIterations": 74,
+          "maximumRelativeInventoryDrift": 4.65339396229433e-15
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.00003698841630143694,
+        "stepSeconds": 0.0625,
+        "steps": 1600
+      },
+      {
+        "bands": 1024,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 8.894378289436844e-13,
+          "maximumIterations": 88,
+          "maximumRelativeInventoryDrift": 1.0541944454019086e-14
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.000018832672568415967,
+        "stepSeconds": 0.25,
+        "steps": 400
+      },
+      {
+        "bands": 1024,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.825508462402155e-13,
+          "maximumIterations": 84,
+          "maximumRelativeInventoryDrift": 4.0930460397697225e-15
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.00001550573136597071,
+        "stepSeconds": 0.125,
+        "steps": 800
+      },
+      {
+        "bands": 1024,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.999908887059483e-13,
+          "maximumIterations": 81,
+          "maximumRelativeInventoryDrift": 4.129183036790136e-15
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.00002192393211257719,
+        "stepSeconds": 0.0625,
+        "steps": 1600
+      },
+      {
+        "bands": 1024,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.552410945579126e-13,
+          "maximumIterations": 76,
+          "maximumRelativeInventoryDrift": 3.3856589585162205e-15
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.0000262271437883841,
+        "stepSeconds": 0.03125,
+        "steps": 3200
+      }
+    ],
+    "sphericalReference": [
+      {
+        "bands": 256,
+        "contours": [
+          {
+            "p": -0.15981848051165948,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15613754834990712,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.14963587339254492,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.998529781896082e-13,
+          "maximumIterations": 57,
+          "maximumRelativeInventoryDrift": 1.609823385706477e-14
+        },
+        "stepSeconds": 0.5,
+        "steps": 600
+      },
+      {
+        "bands": 512,
+        "contours": [
+          {
+            "p": -0.15722467569321374,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15377254252878514,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.15031210435993803,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.994990946005089e-13,
+          "maximumIterations": 65,
+          "maximumRelativeInventoryDrift": 2.220446049250313e-14
+        },
+        "stepSeconds": 1,
+        "steps": 300
+      },
+      {
+        "bands": 512,
+        "contours": [
+          {
+            "p": -0.15640153640472132,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15352332016627668,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.14985100479562852,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.998876726591277e-13,
+          "maximumIterations": 62,
+          "maximumRelativeInventoryDrift": 2.5424107263916085e-14
+        },
+        "stepSeconds": 0.5,
+        "steps": 600
+      },
+      {
+        "bands": 512,
+        "contours": [
+          {
+            "p": -0.15563058373034488,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.1533852514108106,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.14964201168536462,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.99263172207776e-13,
+          "maximumIterations": 57,
+          "maximumRelativeInventoryDrift": 2.3425705819590803e-14
+        },
+        "stepSeconds": 0.25,
+        "steps": 1200
+      },
+      {
+        "bands": 1024,
+        "contours": [
+          {
+            "p": -0.15330085201233423,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15252667421345711,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.1502820541361618,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.99859917083512e-13,
+          "maximumIterations": 61,
+          "maximumRelativeInventoryDrift": 3.930189507173054e-14
+        },
+        "stepSeconds": 0.25,
+        "steps": 1200
+      },
+      {
+        "bands": 2048,
+        "contours": [
+          {
+            "p": -0.15277735742463494,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15206479603727974,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.15072793922984618,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.996656280542027e-13,
+          "maximumIterations": 64,
+          "maximumRelativeInventoryDrift": 1.1446399383885364e-13
+        },
+        "stepSeconds": 0.25,
+        "steps": 1200
+      },
+      {
+        "bands": 4096,
+        "contours": [
+          {
+            "p": -0.15249855277023017,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15199097085851743,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.15081883172625865,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.996864447359144e-13,
+          "maximumIterations": 67,
+          "maximumRelativeInventoryDrift": 3.8746783559417963e-14
+        },
+        "stepSeconds": 0.25,
+        "steps": 1200
+      },
+      {
+        "bands": 4096,
+        "contours": [
+          {
+            "p": -0.15226420843148336,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15186945517639472,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.15075326389829835,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.99788793420997e-13,
+          "maximumIterations": 64,
+          "maximumRelativeInventoryDrift": 6.461498003318411e-14
+        },
+        "stepSeconds": 0.125,
+        "steps": 2400
+      }
+    ],
+    "caseColumns": [
+      "areaWeightedRmsErrorMeters",
+      "continuumInitialInventoryKilograms",
+      "initialPointInventoryKilograms",
+      "initiallyDryHalfInventoryKilograms",
+      "legacyDirectionalMobility",
+      "maximumErrorMeters",
+      "maximumGlobalRelativeResidual",
+      "maximumLocalRelativeResidual",
+      "referenceDryHalfInventoryKilograms",
+      "referenceSpatialDifferenceOverNativeRmsError",
+      "referenceSpatialDifferenceRmsMeters",
+      "referenceTemporalDifferenceOverNativeRmsError",
+      "referenceTemporalDifferenceRmsMeters",
+      "regions",
+      "relativeInitialQuadratureDiscrepancy",
+      "stabilityBoundSeconds",
+      "stepSeconds",
+      "steps",
+      "subdivision"
+    ],
+    "retentionInterpretation": "Attempted requests leave donors unchanged; not completed transfers or lost stocks."
+  },
+  "wet": {
+    "report": {
+      "path": "artifacts/incident-wet-final.json",
+      "bytes": 43184193,
+      "sha256": "d355a4d01b76f064b86786847447b9e71fea1d5f437621b1d5e39d23ce2b10b4"
+    },
+    "baseline": {
+      "path": "artifacts/centered-wet-final.json",
+      "bytes": 43185212,
+      "sha256": "b25b8c7aa61ad3450e7b0ae4f676ec475d07ecba3cb275b3fba388e39b308bfd"
+    },
+    "reportVersion": "surface-flat-incident-wet-report-1",
+    "modelVersion": "regional-surface-flat-incident-mobility-candidate-1",
+    "parameters": {
+      "radiusMeters": 100000,
+      "roughness": 0.04,
+      "capSquareMetersPerSecond": 1000000,
+      "endSeconds": 1800,
+      "meanDepthMeters": 1,
+      "amplitudeMeters": 0.1,
+      "baseSteps": 425
+    },
+    "scope": "Unforced positive fully wet axisymmetric profiles on a closed flat sphere. Independent latitude-band reference. Not moving dry fronts, terrain/coastal hydraulics, seasonal integration or physical calibration.",
+    "interfaceDepth": "Unchanged arithmetic mean of frozen neighboring depths",
+    "mobilityAssembly": "Positive individual half-cotangent weighted mean of separately capped incident-triangle mobilities; not triangle depth integration",
+    "referenceControlsUnchanged": true,
+    "initialPairedOwnersUnchanged": true,
+    "referenceSamplesUnchanged": true,
+    "matchedCenteredControlsUnchanged": true,
+    "candidateCases": 36,
+    "matchedControls": 4,
+    "groups": [
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 1,
+        "lastTimeDifferenceOverFineReferenceError": 0.00012726772660499996,
+        "subdivision": 2,
+        "successiveTimeDifferenceRatio": 0.499864919882243,
+        "timeRefinementRmsDifferencesMeters": [
+          1.2902510711514947e-8,
+          6.4495124830912015e-9
+        ],
+        "normalizedNativeAxis": [
+          1,
+          0,
+          0
+        ],
+        "cases": [
+          {
+            "values": [0.0000506607175039584,1,1800,1.0999942459901426,0.00043243471992848725,1.4829664241058183e-17,2.516771206119002e-19,0.900004149676485,0.0006034390543739617,4.056603964310831e-7,2.8865297915406194e-9,0.008007395402550046,0.00005697767291422746,162,0.0839533290673677,76.67393628931792,4.235294117647059,425,2],
+            "resolution": {
+              "deferredRequests": 646,
+              "maximumDeferredRequestKilograms": 1.3808768673302263e-8,
+              "summedDeferredRequestKilograms": 0.0000061577858414696174
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.00005067139449259854,1,1800,1.0999971229950714,0.00043257670290564043,1.566606364919278e-17,2.4010794695455727e-19,0.9000020748382425,0.0006034390543739617,4.056603964310831e-7,2.8865297915406194e-9,0.008005708161245436,0.0000569656671272832,162,0.0839710226332096,76.67393628931792,2.1176470588235294,850,2],
+            "resolution": {
+              "deferredRequests": 1386,
+              "maximumDeferredRequestKilograms": 1.5944945211722894e-8,
+              "summedDeferredRequestKilograms": 0.000006733446018376902
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.00005067673207606287,1,1800,1.0999985614975358,0.00043264767413919714,1.2159706835882744e-17,2.9218957613456525e-19,0.9000010374191213,0.0006034390543739617,4.056603964310831e-7,2.8865297915406194e-9,0.00800486495108268,0.00005695966715470334,162,0.0839798679066894,76.67393628931792,1.0588235294117647,1700,2],
+            "resolution": {
+              "deferredRequests": 2816,
+              "maximumDeferredRequestKilograms": 7.947207335370726e-9,
+              "summedDeferredRequestKilograms": 0.0000067964659072165695
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 1,
+        "lastTimeDifferenceOverFineReferenceError": 0.0010350528898399151,
+        "subdivision": 3,
+        "successiveTimeDifferenceRatio": 0.4997895139210494,
+        "timeRefinementRmsDifferencesMeters": [
+          1.878905641843819e-8,
+          9.390573374406396e-9
+        ],
+        "normalizedNativeAxis": [
+          1,
+          0,
+          0
+        ],
+        "cases": [
+          {
+            "values": [0.00000906088266855633,1,1800,1.099991698974413,0.00007123706385248063,6.679257120613383e-18,4.564315824924562e-19,0.9000059526468633,0.0005932045390151397,2.0465954155770733e-7,2.2251496502055418e-9,0.022587152824297164,0.0002455775813020295,642,0.015274466179236501,18.89415713739531,4.235294117647059,425,3],
+            "resolution": {
+              "deferredRequests": 3580,
+              "maximumDeferredRequestKilograms": 5.4119333180578875e-8,
+              "summedDeferredRequestKilograms": 0.00003011015522560226
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.000009068656182370054,1,1800,1.0999958494872066,0.00007121739424409412,5.735244181801007e-18,5.209083332288902e-19,0.9000029763234315,0.0005932045390151397,2.0465954155770733e-7,2.2251496502055418e-9,0.02256779146127254,0.0002453670759435505,642,0.015287570451544717,18.89415713739531,2.1176470588235294,850,3],
+            "resolution": {
+              "deferredRequests": 7320,
+              "maximumDeferredRequestKilograms": 2.739926231099811e-8,
+              "summedDeferredRequestKilograms": 0.00003249705166114963
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.000009072554133788057,1,1800,1.0999979247436034,0.00007120756769540826,6.51129720439349e-18,5.024448093555651e-19,0.9000014881617159,0.0005932045390151397,2.0465954155770733e-7,2.2251496502055418e-9,0.022558095387440358,0.00024526165591215676,642,0.015294141458948798,18.89415713739531,1.0588235294117647,1700,3],
+            "resolution": {
+              "deferredRequests": 15733,
+              "maximumDeferredRequestKilograms": 1.3703681503546849e-8,
+              "summedDeferredRequestKilograms": 0.00003519347807875788
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 1,
+        "lastTimeDifferenceOverFineReferenceError": 0.004224565274520873,
+        "subdivision": 4,
+        "successiveTimeDifferenceRatio": 0.4997846843915031,
+        "timeRefinementRmsDifferencesMeters": [
+          1.95090721646182e-8,
+          9.750335474564764e-9
+        ],
+        "normalizedNativeAxis": [
+          1,
+          0,
+          0
+        ],
+        "cases": [
+          {
+            "values": [0.0000022942818606087355,1,1800,1.0999882020058414,0.00003143438134234344,2.040932422190658e-18,9.388747650854536e-19,0.9000084482230878,0.0005928379320942074,1.0897564512235607e-7,2.2624387396183824e-9,0.047498804307088,0.0009861206586962666,2562,0.003869998420148583,4.706530444451891,4.235294117647059,425,4],
+            "resolution": {
+              "deferredRequests": 3192,
+              "maximumDeferredRequestKilograms": 3.6367150234216586e-8,
+              "summedDeferredRequestKilograms": 0.000021585924001147867
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.0000023034023257779097,1,1800,1.0999941010029206,0.000031429383047232307,2.5912638246619736e-18,1.001504172865208e-18,0.900004224111544,0.0005928379320942074,1.0897564512235607e-7,2.2624387396183824e-9,0.04731072982899442,0.0009822160524450747,2562,0.003885382835813343,4.706530444451891,2.1176470588235294,850,4],
+            "resolution": {
+              "deferredRequests": 7986,
+              "maximumDeferredRequestKilograms": 1.8426546691459036e-8,
+              "summedDeferredRequestKilograms": 0.000028494562999133176
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.0000023080091893409303,1,1800,1.0999970505014605,0.00003142688206148048,3.3787152217232873e-18,1.0408727953398531e-18,0.900002112055772,0.0005928379320942074,1.0897564512235607e-7,2.2624387396183824e-9,0.047216296029338994,0.0009802555163415268,2562,0.0038931537008569258,4.706530444451891,1.0588235294117647,1700,4],
+            "resolution": {
+              "deferredRequests": 17180,
+              "maximumDeferredRequestKilograms": 2.630860628855105e-8,
+              "summedDeferredRequestKilograms": 0.00003241460964928161
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 1,
+        "lastTimeDifferenceOverFineReferenceError": 0.0002300157997239135,
+        "subdivision": 2,
+        "successiveTimeDifferenceRatio": 0.4998661265769896,
+        "timeRefinementRmsDifferencesMeters": [
+          1.1718446359098201e-8,
+          5.8576543910226445e-9
+        ],
+        "normalizedNativeAxis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "cases": [
+          {
+            "values": [0.000025459453513892274,1,1800,1.099300235972901,0.00013092969744121774,4.460927582106111e-18,2.0860458558613118e-19,0.9006982875371009,0.0005907777552796299,4.8371626294584643e-8,2.0275356433886656e-9,0.0018999475486852085,0.00007963783049319244,162,0.0430948072881344,76.67393628931792,4.235294117647059,425,2],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.000025464025760801843,1,1800,1.0993029068347282,0.00013095025793874449,1.1344251562507758e-17,2.261541639321516e-19,0.9006963549202728,0.0005907777552796299,4.8371626294584643e-8,2.0275356433886656e-9,0.001899606399591604,0.00007962353095439297,162,0.04310254665690499,76.67393628931792,2.1176470588235294,850,2],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.000025466313175240786,1,1800,1.0993042422656418,0.00013096054213934671,6.8200886194651654e-18,2.4938275639493217e-19,0.9006953886118587,0.0005907777552796299,4.8371626294584643e-8,2.0275356433886656e-9,0.0018994357746928668,0.00007961637907445136,162,0.04310641852651839,76.67393628931792,1.0588235294117647,1700,2],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 1,
+        "lastTimeDifferenceOverFineReferenceError": 0.0010139976150761612,
+        "subdivision": 3,
+        "successiveTimeDifferenceRatio": 0.49977822528910454,
+        "timeRefinementRmsDifferencesMeters": [
+          1.8568698946134643e-8,
+          9.280231405226837e-9
+        ],
+        "normalizedNativeAxis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "cases": [
+          {
+            "values": [0.000009143021036190471,1,1800,1.0997738728302124,0.00009889698310794337,2.333884373064201e-18,4.3105378888066126e-19,0.9002240361948871,0.0005928462543818394,4.845809435789071e-8,2.261569280903069e-9,0.005300009063315165,0.00024735470605953823,642,0.01542224644013969,18.89415713739531,4.235294117647059,425,3],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.00000914908160020181,1,1800,1.0997775795949911,0.00009887493302551675,4.220611587706214e-18,5.018835439274209e-19,0.9002213749175586,0.0005928462543818394,4.845809435789071e-8,2.261569280903069e-9,0.0052964982142930965,0.00024719085256089346,642,0.015432469265984575,18.89415713739531,2.1176470588235294,850,3],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.000009152123503298181,1,1800,1.0997794329773807,0.00009886389815871865,4.582832526982005e-18,5.792664053864976e-19,0.9002200442788943,0.0005928462543818394,4.845809435789071e-8,2.261569280903069e-9,0.005294737810348353,0.0002471086934183154,642,0.015437600281106773,18.89415713739531,1.0588235294117647,1700,3],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 1,
+        "lastTimeDifferenceOverFineReferenceError": 0.004086738934551374,
+        "subdivision": 4,
+        "successiveTimeDifferenceRatio": 0.4997862792672567,
+        "timeRefinementRmsDifferencesMeters": [
+          1.947104060528585e-8,
+          9.731358937577488e-9
+        ],
+        "normalizedNativeAxis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "cases": [
+          {
+            "values": [0.000002368958281607705,1,1800,1.0999677586427858,0.000040848705180396294,1.0362805011886922e-18,1.0490888080807379e-18,0.9000290337396663,0.0005928043660723731,7.677160177425494e-8,2.2601997811097045e-9,0.03240732535068263,0.000954090157964204,2562,0.003996188991156129,4.706530444451891,4.235294117647059,425,4],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.0000023770905603670276,1,1800,1.0999734089248268,0.000040858894616357944,2.3718228191000364e-18,1.1985057230299622e-18,0.9000249872663996,0.0005928043660723731,7.677160177425494e-8,2.2601997811097045e-9,0.03229645645574448,0.0009508261144079951,2562,0.004009907309078116,4.706530444451891,2.1176470588235294,850,4],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.0000023812039607677457,1,1800,1.099976234065847,0.00004086396395641678,2.9320945961778595e-18,1.1116592215034073e-18,0.9000229640297662,0.0005928043660723731,7.677160177425494e-8,2.2601997811097045e-9,0.032240666082842526,0.0009491836139819677,2562,0.004016846192521183,4.706530444451891,1.0588235294117647,1700,4],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 2,
+        "lastTimeDifferenceOverFineReferenceError": 0.0000996975296300186,
+        "subdivision": 2,
+        "successiveTimeDifferenceRatio": 0.499884823883841,
+        "timeRefinementRmsDifferencesMeters": [
+          3.9380424750141545e-8,
+          1.968567669069536e-8
+        ],
+        "normalizedNativeAxis": [
+          1,
+          0,
+          0
+        ],
+        "cases": [
+          {
+            "values": [0.0001974097855172519,2,1800,1.099990208199858,0.0012485629930376607,1.4006174268427622e-17,2.4229395990620366e-19,0.9500041932743896,0.0012527183456405983,0.0000013617490721754296,1.077798459656025e-8,0.006898082932451312,0.00005459701284979284,162,0.15758513172911437,76.67393628931792,4.235294117647059,425,2],
+            "resolution": {
+              "deferredRequests": 392,
+              "maximumDeferredRequestKilograms": 3.282011714607588e-8,
+              "summedDeferredRequestKilograms": 0.000004574700353634743
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.0001974392673772633,2,1800,1.0999951040999292,0.001248740585508834,2.3031219455931142e-17,2.2608748585136524e-19,0.9500020966371947,0.0012527183456405983,0.0000013617490721754296,1.077798459656025e-8,0.006897052902720838,0.000054588860360618516,162,0.15760866603761556,76.67393628931792,2.1176470588235294,850,2],
+            "resolution": {
+              "deferredRequests": 842,
+              "maximumDeferredRequestKilograms": 1.739109016221357e-8,
+              "summedDeferredRequestKilograms": 0.000004902578777609533
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.0001974540067717793,2,1800,1.0999975520499645,0.0012488293666019779,2.4888918491086098e-17,2.6869010139076063e-19,0.9500010483185972,0.0012527183456405983,0.0000013617490721754296,1.077798459656025e-8,0.006896538056831444,0.00005458478545344297,162,0.15762043196613995,76.67393628931792,1.0588235294117647,1700,2],
+            "resolution": {
+              "deferredRequests": 1623,
+              "maximumDeferredRequestKilograms": 8.804279221819872e-9,
+              "summedDeferredRequestKilograms": 0.000004530733468217635
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 2,
+        "lastTimeDifferenceOverFineReferenceError": 0.001391473225909418,
+        "subdivision": 3,
+        "successiveTimeDifferenceRatio": 0.4997341019556718,
+        "timeRefinementRmsDifferencesMeters": [
+          7.802579886696727e-8,
+          3.899215252615776e-8
+        ],
+        "normalizedNativeAxis": [
+          1,
+          0,
+          0
+        ],
+        "cases": [
+          {
+            "values": [0.000028016339414092597,2,1800,1.099985686162435,0.00017001701577701311,6.97387587174203e-18,5.499938599821004e-19,0.9500060719351886,0.0011833996536290713,6.869485521171381e-7,8.195970281262926e-9,0.024519568454813682,0.0002925425110012853,642,0.02367445294425794,18.89415713739531,4.235294117647059,425,3],
+            "resolution": {
+              "deferredRequests": 2017,
+              "maximumDeferredRequestKilograms": 7.662394722385919e-8,
+              "summedDeferredRequestKilograms": 0.00003605180255872994
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.00002802019657630252,2,1800,1.0999928430812176,0.0001697212855156227,8.437438161881765e-18,5.818444295255696e-19,0.9500030359675942,0.0011833996536290713,6.869485521171381e-7,8.195970281262926e-9,0.024516193176821254,0.0002925022406229117,642,0.023677712335282854,18.89415713739531,2.1176470588235294,850,3],
+            "resolution": {
+              "deferredRequests": 4497,
+              "maximumDeferredRequestKilograms": 3.679214972736337e-8,
+              "summedDeferredRequestKilograms": 0.00004683453373070893
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.000028022208261085196,2,1800,1.0999964215406088,0.00016957344601664648,1.0850548241926455e-17,6.3578246091847e-19,0.9500015179837971,0.0011833996536290713,6.869485521171381e-7,8.195970281262926e-9,0.02451443318516451,0.0002924812421954902,642,0.023679412255319596,18.89415713739531,1.0588235294117647,1700,3],
+            "resolution": {
+              "deferredRequests": 9926,
+              "maximumDeferredRequestKilograms": 1.933133525845887e-8,
+              "summedDeferredRequestKilograms": 0.000052107852983111296
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 2,
+        "lastTimeDifferenceOverFineReferenceError": 0.00439539058148995,
+        "subdivision": 4,
+        "successiveTimeDifferenceRatio": 0.4997768055384441,
+        "timeRefinementRmsDifferencesMeters": [
+          7.389160666001007e-8,
+          3.692931113264305e-8
+        ],
+        "normalizedNativeAxis": [
+          1,
+          0,
+          0
+        ],
+        "cases": [
+          {
+            "values": [0.000008389753333361169,2,1800,1.0999795880957426,0.00005293928242711132,2.964470635777932e-18,1.2182375265732393e-18,0.9500086372189228,0.0011818184385562632,3.6418391728436213e-7,8.620805041634178e-9,0.04340817933659796,0.0010275397498701482,2562,0.0070990205091149925,4.706530444451891,4.235294117647059,425,4],
+            "resolution": {
+              "deferredRequests": 1736,
+              "maximumDeferredRequestKilograms": 4.424289894223375e-8,
+              "summedDeferredRequestKilograms": 0.000015354718037436335
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.00000839764545301834,2,1800,1.0999897940478713,0.00005274108634911734,4.540715200530181e-18,1.162421454690925e-18,0.9500043186094613,0.0011818184385562632,3.6418391728436213e-7,8.620805041634178e-9,0.043367384265248374,0.001026574066488557,2562,0.007105698455066498,4.706530444451891,2.1176470588235294,850,4],
+            "resolution": {
+              "deferredRequests": 5167,
+              "maximumDeferredRequestKilograms": 3.9043285424899436e-8,
+              "summedDeferredRequestKilograms": 0.00003368212113906995
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.000008401826970317789,2,1800,1.0999948970239357,0.000052642003050995534,3.910302188930978e-18,1.1965178853660424e-18,0.9500021593047306,0.0011818184385562632,3.6418391728436213e-7,8.620805041634178e-9,0.04334580068965492,0.0010260631493709644,2562,0.007109236661243546,4.706530444451891,1.0588235294117647,1700,4],
+            "resolution": {
+              "deferredRequests": 15420,
+              "maximumDeferredRequestKilograms": 2.7568226917427194e-8,
+              "summedDeferredRequestKilograms": 0.00008177971701696855
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 2,
+        "lastTimeDifferenceOverFineReferenceError": 0.00013717471934193405,
+        "subdivision": 2,
+        "successiveTimeDifferenceRatio": 0.49990048008204047,
+        "timeRefinementRmsDifferencesMeters": [
+          3.341879437527305e-8,
+          1.670607135196199e-8
+        ],
+        "normalizedNativeAxis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "cases": [
+          {
+            "values": [0.00012175733859108095,2,1800,1.097914934865303,0.00046019625664350805,1.3151479776902183e-17,2.7597142900290387e-19,0.9500457477883559,0.0011894127698151482,1.519477400784349e-7,8.543894433588924e-9,0.0012479554976866543,0.00007017149465038313,162,0.1023676066719914,76.67393628931792,4.235294117647059,425,2],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.00012177698508791995,2,1800,1.097919450645001,0.00046025989264397715,7.60360655967161e-18,3.420793146611497e-19,0.9500435027315672,0.0011894127698151482,1.519477400784349e-7,8.543894433588924e-9,0.0012477541628143644,0.00007016017375878082,162,0.10238412448425775,76.67393628931792,2.1176470588235294,850,2],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.00012178680905713341,2,1800,1.09792170853485,0.00046029170660666363,1.3350490455783638e-17,2.6051722517487037e-19,0.9500423802031728,0.0011894127698151482,1.519477400784349e-7,8.543894433588924e-9,0.0012476535123533141,0.00007015451426747503,162,0.10239238399639919,76.67393628931792,1.0588235294117647,1700,2],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 2,
+        "lastTimeDifferenceOverFineReferenceError": 0.0010478567055312896,
+        "subdivision": 3,
+        "successiveTimeDifferenceRatio": 0.4997380499984873,
+        "timeRefinementRmsDifferencesMeters": [
+          7.36646650563831e-8,
+          3.68130360690686e-8
+        ],
+        "normalizedNativeAxis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "cases": [
+          {
+            "values": [0.000035126442643955996,2,1800,1.0993318239213463,0.0002028323404585919,3.4200228644934483e-18,5.074991890175757e-19,0.950008533402077,0.0011829225784993254,1.5573928453962162e-7,8.63297104025194e-9,0.004433676535885105,0.00024576844082266797,642,0.02969462522941947,18.89415713739531,4.235294117647059,425,3],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.000035129938381422095,2,1800,1.0993382002677514,0.00020279363040565102,3.550694262600607e-18,6.635994306230774e-19,0.9500050801817432,0.0011829225784993254,1.5573928453962162e-7,8.63297104025194e-9,0.004433235346122379,0.0002457439847038658,642,0.0296975803995461,18.89415713739531,2.1176470588235294,850,3],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.0000351317464255797,2,1800,1.099341388440954,0.00020277427830728278,4.5014186611510395e-18,5.243382777357404e-19,0.9500033535715763,0.0011829225784993254,1.5573928453962162e-7,8.63297104025194e-9,0.004433007191075097,0.0002457313375678417,642,0.02969910885473874,18.89415713739531,1.0588235294117647,1700,3],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          }
+        ]
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 2,
+        "lastTimeDifferenceOverFineReferenceError": 0.0039325869580234,
+        "subdivision": 4,
+        "successiveTimeDifferenceRatio": 0.4997799227410116,
+        "timeRefinementRmsDifferencesMeters": [
+          7.356294975242804e-8,
+          3.67652853438694e-8
+        ],
+        "normalizedNativeAxis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "cases": [
+          {
+            "values": [0.000009320665969632718,2,1800,1.0999176371305335,0.00009705927021053107,1.626321005326843e-18,1.242297940286893e-18,0.9500092396580949,0.0011824028330893307,2.5414171149684283e-7,8.629244286281346e-9,0.027266475627905944,0.0009258184248202796,2562,0.007882817690211454,4.706530444451891,4.235294117647059,425,4],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.00000933934578974599,2,1800,1.0999274106644437,0.0000970739435401935,1.5296309451993234e-18,1.5925530296909624e-18,0.9500047669449544,0.0011824028330893307,2.5414171149684283e-7,8.629244286281346e-9,0.027211939381864877,0.0009239666760979885,2562,0.007898615876405297,4.706530444451891,2.1176470588235294,850,4],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          },
+          {
+            "values": [0.000009348880453580204,2,1800,1.099932297431399,0.00009708124779783667,2.057366847280013e-18,1.2911761198405115e-18,0.9500024944632645,0.0011824028330893307,2.5414171149684283e-7,8.629244286281346e-9,0.02718418667975564,0.0009230243481161138,2562,0.007906679679677234,4.706530444451891,1.0588235294117647,1700,4],
+            "resolution": {
+              "deferredRequests": 0,
+              "maximumDeferredRequestKilograms": 0,
+              "summedDeferredRequestKilograms": 0
+            },
+            "operator": "regional-surface-flat-incident-mobility-candidate-1"
+          }
+        ]
+      }
+    ],
+    "matchedCenteredDepthControls": [
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "values": [0.000002524742504060062,1,1800,1.0999970441778562,0.00003145811224125605,4.29252148887601e-18,1.0899700801541185e-18,0.9000021165841198,0.0005928379320942074,1.0897564512235607e-7,2.2624387396183824e-9,0.04316307304491897,0.000896106726123608,2562,0.004258739812989661,4.706530444451891,1.0588235294117647,1700,4],
+        "resolution": {
+          "deferredRequests": 17291,
+          "maximumDeferredRequestKilograms": 2.088610282485129e-8,
+          "summedDeferredRequestKilograms": 0.000032900489054894746
+        },
+        "operator": "regional-surface-flat-centered-depth-candidate-1"
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "values": [0.000002516606125932496,1,1800,1.0999762600470107,0.00004157104264779221,2.686613148469652e-18,1.1457465849722065e-18,0.9000229454253257,0.0005928043660723731,7.677160177425494e-8,2.2601997811097045e-9,0.030506006078248823,0.0008981142332204317,2562,0.004245255720038427,4.706530444451891,1.0588235294117647,1700,4],
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "operator": "regional-surface-flat-centered-depth-candidate-1"
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "values": [0.000009413771856668777,2,1800,1.0999948860989632,0.000053363044032250784,4.592005853619299e-18,1.247249400323055e-18,0.9500021592253833,0.0011818184385562632,3.6418391728436213e-7,8.620805041634178e-9,0.03868629098190561,0.0009157652397882517,2562,0.007965497532911113,4.706530444451891,1.0588235294117647,1700,4],
+        "resolution": {
+          "deferredRequests": 15611,
+          "maximumDeferredRequestKilograms": 3.59034143296681e-8,
+          "summedDeferredRequestKilograms": 0.00007809077794334048
+        },
+        "operator": "regional-surface-flat-centered-depth-candidate-1"
+      },
+      {
+        "axis": [
+          0.2672612419124244,
+          0.5345224838248488,
+          0.8017837257372732
+        ],
+        "values": [0.000009402331947560308,2,1800,1.0999323422589677,0.0000988438119045032,2.0701812341267102e-18,1.261739110038572e-18,0.9500024632147246,0.0011824028330893307,2.5414171149684283e-7,8.629244286281346e-9,0.027029646784890088,0.0009177770296144925,2562,0.007951885503347708,4.706530444451891,1.0588235294117647,1700,4],
+        "resolution": {
+          "deferredRequests": 0,
+          "maximumDeferredRequestKilograms": 0,
+          "summedDeferredRequestKilograms": 0
+        },
+        "operator": "regional-surface-flat-centered-depth-candidate-1"
+      }
+    ],
+    "spatialComparisons": [
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "coarseSubdivision": 2,
+        "degree": 1,
+        "fineOverCoarseRmsError": 0.17902800283512113,
+        "fineSubdivision": 3,
+        "rmsErrorDecreases": true
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "coarseSubdivision": 3,
+        "degree": 1,
+        "fineOverCoarseRmsError": 0.2543946451358642,
+        "fineSubdivision": 4,
+        "rmsErrorDecreases": true
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "coarseSubdivision": 2,
+        "degree": 1,
+        "fineOverCoarseRmsError": 0.3593815657696453,
+        "fineSubdivision": 3,
+        "rmsErrorDecreases": true
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "coarseSubdivision": 3,
+        "degree": 1,
+        "fineOverCoarseRmsError": 0.26018048815770717,
+        "fineSubdivision": 4,
+        "rmsErrorDecreases": true
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "coarseSubdivision": 2,
+        "degree": 2,
+        "fineOverCoarseRmsError": 0.14191764816134494,
+        "fineSubdivision": 3,
+        "rmsErrorDecreases": true
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "coarseSubdivision": 3,
+        "degree": 2,
+        "fineOverCoarseRmsError": 0.29982744015165697,
+        "fineSubdivision": 4,
+        "rmsErrorDecreases": true
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "coarseSubdivision": 2,
+        "degree": 2,
+        "fineOverCoarseRmsError": 0.28846922501351085,
+        "fineSubdivision": 3,
+        "rmsErrorDecreases": true
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "coarseSubdivision": 3,
+        "degree": 2,
+        "fineOverCoarseRmsError": 0.26610918627071756,
+        "fineSubdivision": 4,
+        "rmsErrorDecreases": true
+      }
+    ],
+    "baselineComparisons": [
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 1,
+        "subdivision": 2,
+        "steps": 425,
+        "baselineRmsErrorMeters": 0.00005052121587221025,
+        "candidateRmsErrorMeters": 0.0000506607175039584,
+        "candidateOverBaselineRmsError": 1.0027612485040147
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 1,
+        "subdivision": 2,
+        "steps": 850,
+        "baselineRmsErrorMeters": 0.00005053204680746118,
+        "candidateRmsErrorMeters": 0.00005067139449259854,
+        "candidateOverBaselineRmsError": 1.0027576101492248
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 1,
+        "subdivision": 2,
+        "steps": 1700,
+        "baselineRmsErrorMeters": 0.00005053746137515759,
+        "candidateRmsErrorMeters": 0.00005067673207606287,
+        "candidateOverBaselineRmsError": 1.0027557913895087
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 1,
+        "subdivision": 3,
+        "steps": 425,
+        "baselineRmsErrorMeters": 0.000009751355483194737,
+        "candidateRmsErrorMeters": 0.00000906088266855633,
+        "candidateOverBaselineRmsError": 0.9291921194106447
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 1,
+        "subdivision": 3,
+        "steps": 850,
+        "baselineRmsErrorMeters": 0.000009760227665378345,
+        "candidateRmsErrorMeters": 0.000009068656182370054,
+        "candidateOverBaselineRmsError": 0.9291439189004325
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 1,
+        "subdivision": 3,
+        "steps": 1700,
+        "baselineRmsErrorMeters": 0.000009764672793714852,
+        "candidateRmsErrorMeters": 0.000009072554133788057,
+        "candidateOverBaselineRmsError": 0.9291201380170889
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 1,
+        "subdivision": 4,
+        "steps": 425,
+        "baselineRmsErrorMeters": 0.0000025064848736779793,
+        "candidateRmsErrorMeters": 0.0000022942818606087355,
+        "candidateOverBaselineRmsError": 0.9153384026779063
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 1,
+        "subdivision": 4,
+        "steps": 850,
+        "baselineRmsErrorMeters": 0.0000025186356269121285,
+        "candidateRmsErrorMeters": 0.0000023034023257779097,
+        "candidateOverBaselineRmsError": 0.9145436922933958
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 1,
+        "subdivision": 4,
+        "steps": 1700,
+        "baselineRmsErrorMeters": 0.000002524742504060062,
+        "candidateRmsErrorMeters": 0.0000023080091893409303,
+        "candidateOverBaselineRmsError": 0.9141562696510235
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 1,
+        "subdivision": 2,
+        "steps": 425,
+        "baselineRmsErrorMeters": 0.000028454639272515524,
+        "candidateRmsErrorMeters": 0.000025459453513892274,
+        "candidateOverBaselineRmsError": 0.8947382277477572
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 1,
+        "subdivision": 2,
+        "steps": 850,
+        "baselineRmsErrorMeters": 0.000028459970699048055,
+        "candidateRmsErrorMeters": 0.000025464025760801843,
+        "candidateOverBaselineRmsError": 0.8947312711623269
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 1,
+        "subdivision": 2,
+        "steps": 1700,
+        "baselineRmsErrorMeters": 0.000028462637080953282,
+        "candidateRmsErrorMeters": 0.000025466313175240786,
+        "candidateOverBaselineRmsError": 0.8947278181852804
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 1,
+        "subdivision": 3,
+        "steps": 425,
+        "baselineRmsErrorMeters": 0.000009645937938292888,
+        "candidateRmsErrorMeters": 0.000009143021036190471,
+        "candidateOverBaselineRmsError": 0.9478623120613379
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 1,
+        "subdivision": 3,
+        "steps": 850,
+        "baselineRmsErrorMeters": 0.000009655415340449521,
+        "candidateRmsErrorMeters": 0.00000914908160020181,
+        "candidateOverBaselineRmsError": 0.9475596106025059
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 1,
+        "subdivision": 3,
+        "steps": 1700,
+        "baselineRmsErrorMeters": 0.000009660161343674307,
+        "candidateRmsErrorMeters": 0.000009152123503298181,
+        "candidateOverBaselineRmsError": 0.9474089694465817
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 1,
+        "subdivision": 4,
+        "steps": 425,
+        "baselineRmsErrorMeters": 0.0000024993300280237186,
+        "candidateRmsErrorMeters": 0.000002368958281607705,
+        "candidateOverBaselineRmsError": 0.9478373224207202
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 1,
+        "subdivision": 4,
+        "steps": 850,
+        "baselineRmsErrorMeters": 0.000002510825176714764,
+        "candidateRmsErrorMeters": 0.0000023770905603670276,
+        "candidateOverBaselineRmsError": 0.9467367869384204
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 1,
+        "subdivision": 4,
+        "steps": 1700,
+        "baselineRmsErrorMeters": 0.000002516606125932496,
+        "candidateRmsErrorMeters": 0.0000023812039607677457,
+        "candidateOverBaselineRmsError": 0.9461965208740885
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 2,
+        "subdivision": 2,
+        "steps": 425,
+        "baselineRmsErrorMeters": 0.00020777539162935104,
+        "candidateRmsErrorMeters": 0.0001974097855172519,
+        "candidateOverBaselineRmsError": 0.9501114832184252
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 2,
+        "subdivision": 2,
+        "steps": 850,
+        "baselineRmsErrorMeters": 0.000207804993845971,
+        "candidateRmsErrorMeters": 0.0001974392673772633,
+        "candidateOverBaselineRmsError": 0.9501180107519891
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 2,
+        "subdivision": 2,
+        "steps": 1700,
+        "baselineRmsErrorMeters": 0.00020781979301770704,
+        "candidateRmsErrorMeters": 0.0001974540067717793,
+        "candidateOverBaselineRmsError": 0.9501212752865915
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 2,
+        "subdivision": 3,
+        "steps": 425,
+        "baselineRmsErrorMeters": 0.00003290567480618119,
+        "candidateRmsErrorMeters": 0.000028016339414092597,
+        "candidateOverBaselineRmsError": 0.8514136111510421
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 2,
+        "subdivision": 3,
+        "steps": 850,
+        "baselineRmsErrorMeters": 0.0000329319323771752,
+        "candidateRmsErrorMeters": 0.00002802019657630252,
+        "candidateOverBaselineRmsError": 0.8508518800349245
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 2,
+        "subdivision": 3,
+        "steps": 1700,
+        "baselineRmsErrorMeters": 0.000032945114131084246,
+        "candidateRmsErrorMeters": 0.000028022208261085196,
+        "candidateOverBaselineRmsError": 0.8505725052154484
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 2,
+        "subdivision": 4,
+        "steps": 425,
+        "baselineRmsErrorMeters": 0.000009353010779298532,
+        "candidateRmsErrorMeters": 0.000008389753333361169,
+        "candidateOverBaselineRmsError": 0.8970109766077264
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 2,
+        "subdivision": 4,
+        "steps": 850,
+        "baselineRmsErrorMeters": 0.000009393428715547237,
+        "candidateRmsErrorMeters": 0.00000839764545301834,
+        "candidateOverBaselineRmsError": 0.8939915027107452
+      },
+      {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "degree": 2,
+        "subdivision": 4,
+        "steps": 1700,
+        "baselineRmsErrorMeters": 0.000009413771856668777,
+        "candidateRmsErrorMeters": 0.000008401826970317789,
+        "candidateOverBaselineRmsError": 0.8925037804443795
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 2,
+        "subdivision": 2,
+        "steps": 425,
+        "baselineRmsErrorMeters": 0.00012831770710397335,
+        "candidateRmsErrorMeters": 0.00012175733859108095,
+        "candidateOverBaselineRmsError": 0.9488740201102824
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 2,
+        "subdivision": 2,
+        "steps": 850,
+        "baselineRmsErrorMeters": 0.00012833960896259483,
+        "candidateRmsErrorMeters": 0.00012177698508791995,
+        "candidateOverBaselineRmsError": 0.9488651716510403
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 2,
+        "subdivision": 2,
+        "steps": 1700,
+        "baselineRmsErrorMeters": 0.00012835055952591692,
+        "candidateRmsErrorMeters": 0.00012178680905713341,
+        "candidateOverBaselineRmsError": 0.9488607568753283
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 2,
+        "subdivision": 3,
+        "steps": 425,
+        "baselineRmsErrorMeters": 0.000035635677188061086,
+        "candidateRmsErrorMeters": 0.000035126442643955996,
+        "candidateOverBaselineRmsError": 0.9857099798772535
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 2,
+        "subdivision": 3,
+        "steps": 850,
+        "baselineRmsErrorMeters": 0.0000356570483262583,
+        "candidateRmsErrorMeters": 0.000035129938381422095,
+        "candidateOverBaselineRmsError": 0.9852172299845685
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 2,
+        "subdivision": 3,
+        "steps": 1700,
+        "baselineRmsErrorMeters": 0.000035667779735917797,
+        "candidateRmsErrorMeters": 0.0000351317464255797,
+        "candidateOverBaselineRmsError": 0.9849714976848332
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 2,
+        "subdivision": 4,
+        "steps": 425,
+        "baselineRmsErrorMeters": 0.000009344673395900652,
+        "candidateRmsErrorMeters": 0.000009320665969632718,
+        "candidateOverBaselineRmsError": 0.99743089723409
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 2,
+        "subdivision": 4,
+        "steps": 850,
+        "baselineRmsErrorMeters": 0.000009383018424009375,
+        "candidateRmsErrorMeters": 0.00000933934578974599,
+        "candidateOverBaselineRmsError": 0.9953455666087541
+      },
+      {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "degree": 2,
+        "subdivision": 4,
+        "steps": 1700,
+        "baselineRmsErrorMeters": 0.000009402331947560308,
+        "candidateRmsErrorMeters": 0.000009348880453580204,
+        "candidateOverBaselineRmsError": 0.99431508116516
+      }
+    ],
+    "maximumCandidateAudit": {
+      "local": 1.5925530296909624e-18,
+      "global": 2.4888918491086098e-17
+    },
+    "maximumAllCasesAudit": {
+      "local": 1.5925530296909624e-18,
+      "global": 2.4888918491086098e-17
+    },
+    "candidateNumericalRetention": {
+      "totalAttemptedRequests": 101459,
+      "maximumSingleRequestKilograms": 7.662394722385919e-8,
+      "maximumPerRunSummedRequestsKilograms": 0.00008177971701696855
+    },
+    "allCasesNumericalRetention": {
+      "totalAttemptedRequests": 134361,
+      "maximumSingleRequestKilograms": 7.662394722385919e-8,
+      "maximumPerRunSummedRequestsKilograms": 0.00008177971701696855
+    },
+    "references": [
+      {
+        "comparisonSamples": 4097,
+        "comparisons": [
+          {
+            "firstControl": 0,
+            "maximumSampledDifferenceMeters": 0.000028393757434796996,
+            "sampledRmsDifferenceMeters": 0.0000010458933032038143,
+            "secondControl": 3
+          },
+          {
+            "firstControl": 3,
+            "maximumSampledDifferenceMeters": 0.000010632743065563943,
+            "sampledRmsDifferenceMeters": 3.124975785270448e-7,
+            "secondControl": 4
+          },
+          {
+            "firstControl": 1,
+            "maximumSampledDifferenceMeters": 2.350337486856091e-7,
+            "sampledRmsDifferenceMeters": 1.894432898225011e-8,
+            "secondControl": 2
+          },
+          {
+            "firstControl": 2,
+            "maximumSampledDifferenceMeters": 1.1715599090855733e-7,
+            "sampledRmsDifferenceMeters": 9.449492564306897e-9,
+            "secondControl": 3
+          },
+          {
+            "firstControl": 4,
+            "maximumSampledDifferenceMeters": 5.727746232864206e-8,
+            "sampledRmsDifferenceMeters": 4.681775994670892e-9,
+            "secondControl": 5
+          },
+          {
+            "firstControl": 5,
+            "maximumSampledDifferenceMeters": 0.0000038617660385042996,
+            "sampledRmsDifferenceMeters": 9.074179939029381e-8,
+            "secondControl": 6
+          },
+          {
+            "firstControl": 6,
+            "maximumSampledDifferenceMeters": 2.703380075352868e-8,
+            "sampledRmsDifferenceMeters": 2.290963632181771e-9,
+            "secondControl": 7
+          }
+        ],
+        "controls": [
+          {
+            "bands": 512,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.545950409297016e-13,
+              "maximumIterations": 21,
+              "maximumRelativeInventoryDrift": 4.440892098500626e-16,
+              "summedIterations": 37800
+            },
+            "stepSeconds": 1,
+            "steps": 1800
+          },
+          {
+            "bands": 1024,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.947947430681602e-13,
+              "maximumIterations": 24,
+              "maximumRelativeInventoryDrift": 2.220446049250313e-16,
+              "summedIterations": 10391
+            },
+            "stepSeconds": 4,
+            "steps": 450
+          },
+          {
+            "bands": 1024,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.982875732116557e-13,
+              "maximumIterations": 23,
+              "maximumRelativeInventoryDrift": 2.220446049250313e-16,
+              "summedIterations": 19857
+            },
+            "stepSeconds": 2,
+            "steps": 900
+          },
+          {
+            "bands": 1024,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.992899088027561e-13,
+              "maximumIterations": 22,
+              "maximumRelativeInventoryDrift": 2.220446049250313e-16,
+              "summedIterations": 37890
+            },
+            "stepSeconds": 1,
+            "steps": 1800
+          },
+          {
+            "bands": 2048,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.985273665449575e-13,
+              "maximumIterations": 22,
+              "maximumRelativeInventoryDrift": 2.220446049250313e-16,
+              "summedIterations": 37929
+            },
+            "stepSeconds": 1,
+            "steps": 1800
+          },
+          {
+            "bands": 2048,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.999527969990356e-13,
+              "maximumIterations": 21,
+              "maximumRelativeInventoryDrift": 5.551115123125783e-16,
+              "summedIterations": 72234
+            },
+            "stepSeconds": 0.5,
+            "steps": 3600
+          },
+          {
+            "bands": 4096,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.997541328327954e-13,
+              "maximumIterations": 21,
+              "maximumRelativeInventoryDrift": 4.440892098500626e-16,
+              "summedIterations": 72255
+            },
+            "stepSeconds": 0.5,
+            "steps": 3600
+          },
+          {
+            "bands": 4096,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.994308819784753e-13,
+              "maximumIterations": 20,
+              "maximumRelativeInventoryDrift": 2.220446049250313e-16,
+              "summedIterations": 137289
+            },
+            "stepSeconds": 0.25,
+            "steps": 7200
+          }
+        ],
+        "degree": 1,
+        "sampling": "Linear interpolation/extrapolation of band-center averages; uncertainty retained by reference refinement, not fitted to the native output",
+        "selectedControl": 7
+      },
+      {
+        "comparisonSamples": 4097,
+        "comparisons": [
+          {
+            "firstControl": 0,
+            "maximumSampledDifferenceMeters": 0.00008764475273848049,
+            "sampledRmsDifferenceMeters": 0.0000033790112597543185,
+            "secondControl": 3
+          },
+          {
+            "firstControl": 3,
+            "maximumSampledDifferenceMeters": 0.00003326824279081819,
+            "sampledRmsDifferenceMeters": 0.000001030833964968658,
+            "secondControl": 4
+          },
+          {
+            "firstControl": 1,
+            "maximumSampledDifferenceMeters": 4.7672580905100403e-7,
+            "sampledRmsDifferenceMeters": 7.064335034843536e-8,
+            "secondControl": 2
+          },
+          {
+            "firstControl": 2,
+            "maximumSampledDifferenceMeters": 2.3803338633499038e-7,
+            "sampledRmsDifferenceMeters": 3.530047045059871e-8,
+            "secondControl": 3
+          },
+          {
+            "firstControl": 4,
+            "maximumSampledDifferenceMeters": 1.1646587294578126e-7,
+            "sampledRmsDifferenceMeters": 1.7590424389965588e-8,
+            "secondControl": 5
+          },
+          {
+            "firstControl": 5,
+            "maximumSampledDifferenceMeters": 0.000012137852326787879,
+            "sampledRmsDifferenceMeters": 3.0274986064961e-7,
+            "secondControl": 6
+          },
+          {
+            "firstControl": 6,
+            "maximumSampledDifferenceMeters": 5.6410930593386865e-8,
+            "sampledRmsDifferenceMeters": 8.67403853325972e-9,
+            "secondControl": 7
+          }
+        ],
+        "controls": [
+          {
+            "bands": 512,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.976599239153226e-13,
+              "maximumIterations": 41,
+              "maximumRelativeInventoryDrift": 4.6629367034256575e-15,
+              "summedIterations": 39702
+            },
+            "stepSeconds": 1,
+            "steps": 1800
+          },
+          {
+            "bands": 1024,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.964509889415739e-13,
+              "maximumIterations": 56,
+              "maximumRelativeInventoryDrift": 1.1879386363489175e-14,
+              "summedIterations": 10967
+            },
+            "stepSeconds": 4,
+            "steps": 450
+          },
+          {
+            "bands": 1024,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.867441472201019e-13,
+              "maximumIterations": 53,
+              "maximumRelativeInventoryDrift": 1.176836406102666e-14,
+              "summedIterations": 20856
+            },
+            "stepSeconds": 2,
+            "steps": 900
+          },
+          {
+            "bands": 1024,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.9157712324659e-13,
+              "maximumIterations": 49,
+              "maximumRelativeInventoryDrift": 1.1657341758564144e-14,
+              "summedIterations": 39740
+            },
+            "stepSeconds": 1,
+            "steps": 1800
+          },
+          {
+            "bands": 2048,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.98780397309159e-13,
+              "maximumIterations": 53,
+              "maximumRelativeInventoryDrift": 1.887379141862766e-14,
+              "summedIterations": 39835
+            },
+            "stepSeconds": 1,
+            "steps": 1800
+          },
+          {
+            "bands": 2048,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.99353424415339e-13,
+              "maximumIterations": 50,
+              "maximumRelativeInventoryDrift": 1.84297022087776e-14,
+              "summedIterations": 75883
+            },
+            "stepSeconds": 0.5,
+            "steps": 3600
+          },
+          {
+            "bands": 4096,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.999792386147918e-13,
+              "maximumIterations": 52,
+              "maximumRelativeInventoryDrift": 9.237055564881302e-14,
+              "summedIterations": 76006
+            },
+            "stepSeconds": 0.5,
+            "steps": 3600
+          },
+          {
+            "bands": 4096,
+            "diagnostics": {
+              "maximumEquationResidualMeters": 9.997966763331206e-13,
+              "maximumIterations": 49,
+              "maximumRelativeInventoryDrift": 9.192646643896296e-14,
+              "summedIterations": 144568
+            },
+            "stepSeconds": 0.25,
+            "steps": 7200
+          }
+        ],
+        "degree": 2,
+        "sampling": "Linear interpolation/extrapolation of band-center averages; uncertainty retained by reference refinement, not fitted to the native output",
+        "selectedControl": 7
+      }
+    ],
+    "caseColumns": [
+      "areaWeightedRmsErrorMeters",
+      "degree",
+      "endSeconds",
+      "maximumDepthMeters",
+      "maximumErrorMeters",
+      "maximumGlobalRelativeResidual",
+      "maximumLocalRelativeResidual",
+      "minimumDepthMeters",
+      "referenceChangeRmsMeters",
+      "referenceLastSpatialDifferenceRmsMeters",
+      "referenceLastTemporalDifferenceRmsMeters",
+      "referenceSpatialDifferenceOverNativeRmsError",
+      "referenceTemporalDifferenceOverNativeRmsError",
+      "regions",
+      "rmsErrorOverReferenceChange",
+      "stabilityBoundSeconds",
+      "stepSeconds",
+      "steps",
+      "subdivision"
+    ],
+    "retentionInterpretation": "Attempted requests leave donors unchanged; not completed transfers or lost stocks."
+  },
+  "seasonalRegression": {
+    "path": "artifacts/incident-seasonal-regression.json",
+    "bytes": 5272305,
+    "sha256": "5618b1522ac69ec8e460c0ed031d3eda14ca43aab86310b7ee2c39cc93227514"
+  },
+  "interpretation": "Edge depth retained. This ablation changes both nonlinear averaging order and local geometric weighting; it is not standard elementwise P1 depth integration. Graph-edge threshold contours are proxies, not exact support. No clipping, film, cutoff, stock rescaling or fitted coefficient; reference uncertainty remains empirical.",
+  "nextGate": "Review a consistent elementwise coefficient/flux formulation with positive depth quadrature and explicit dry/cap/outgoing-stock bounds, then repeat the fixed witnesses. Variable-bed lake-at-rest, disconnected-water and barrier controls remain separate prerequisites for seasonal extension.",
+  "sources": [
+    {
+      "path": "native/src/seasonal_moisture/regional_soil.rs",
+      "bytes": 17067,
+      "sha256": "73a707527569ae9ded47ae0f1f80703df00c6fce24f53f77bb19883c45a77502"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface.rs",
+      "bytes": 5891,
+      "sha256": "5555c7e2e5f52b267ef9b43bfae31354dd0d3ebf62c8f1e51e5f2ccd66ddd67e"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_centered.rs",
+      "bytes": 8311,
+      "sha256": "49eab68ec5a34e22e911960e4809c4fcdf4dcaa80a2015bd685451cea6c70f17"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_cotan.rs",
+      "bytes": 13059,
+      "sha256": "f1087920594c089f22992ce4a8b4f222d56b41afbd7114ee85b20230dca3a522"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_gradient.rs",
+      "bytes": 20574,
+      "sha256": "13aee9a3b9afc5dcad61f3e4ba16de8cd874f356fe03cacb0d68ffa59b81e732"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_incident.rs",
+      "bytes": 10178,
+      "sha256": "58a0362092a74ed797cc278a92811113aabd5aaa5185ba1eae01ee8f6afe592b"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front.rs",
+      "bytes": 4417,
+      "sha256": "f5588548d8e85540fb80be67b8ea5eec01103783e045b7c7fbb6cca8186ee8b0"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/native.rs",
+      "bytes": 17513,
+      "sha256": "a4b42a3e058aeb412dc823bc8ab9dc45c1a38424fe640e8f1f7707c162f1819f"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/reference.rs",
+      "bytes": 11933,
+      "sha256": "b4abd46b67f010efc783b17ba00389cf387f18026fd51bc8dc76f6675a04bf39"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_evolution.rs",
+      "bytes": 20441,
+      "sha256": "2fc29904b3159ba1c98e9afbbd57728e711ea67c87e0d5a6f405fbf33cdea7ae"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_evolution/zonal.rs",
+      "bytes": 11321,
+      "sha256": "c37fbc763062d95946def1509d952eee7ec53622e22e64673d48efb08f728912"
+    },
+    {
+      "path": "native/examples/surface_incident_report.rs",
+      "bytes": 1120,
+      "sha256": "f451e1a597b1891f21edc057b9c7e6279d78065a50f4d2935e19693785a0aefb"
+    },
+    {
+      "path": "native/Cargo.lock",
+      "bytes": 2675,
+      "sha256": "6423d20d12d748711ebc5bf101b0891cc019a25a68d15d56c74b57158724b42d"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 81221,
+      "sha256": "a08876e9e441f3ba1bebe19ab9ef34e8986bde8c677c4af4d8796f04d5a26090"
+    }
+  ],
+  "repeats": [
+    {
+      "cohort": "dry",
+      "path": "artifacts/incident-dry-repeat.json",
+      "bytes": 79542597,
+      "sha256": "c872e47fe5b1132ad2b4949debb153dc07dcd574619808f7aaf539c692e35535",
+      "byteIdentical": true
+    },
+    {
+      "cohort": "wet",
+      "path": "artifacts/incident-wet-repeat.json",
+      "bytes": 43184193,
+      "sha256": "d355a4d01b76f064b86786847447b9e71fea1d5f437621b1d5e39d23ce2b10b4",
+      "byteIdentical": true
+    }
+  ],
+  "legacyWetRegression": {
+    "path": "artifacts/incident-old-wet-regression.json",
+    "bytes": 43215413,
+    "sha256": "0af89317143631d471bf5d6f23aa9536971654e51325705d1df661fb2ee00052"
+  },
+  "environment": {
+    "rustc": "1.98.1 (48a229cea 2026-09-01) (Arch Linux rust 1:1.98.1-1)",
+    "cargo": "1.98.1 (797e8a9bc 2026-08-05) (Arch Linux rust 1:1.98.1-1)",
+    "node": "v25.2.1",
+    "platform": "Linux x86_64"
+  },
+  "validation": {
+    "newDirectedTests": 10,
+    "fullNpmTest": {
+      "nativeTargets": 107,
+      "nativePassed": 576,
+      "ignored": 1,
+      "nodePassed": 18,
+      "failed": 0
+    },
+    "release": {
+      "libraryPassed": 121,
+      "regionalSoilPassed": 12,
+      "regionalSurfacePassed": 5
+    },
+    "allTargetClippyWarningsDenied": true,
+    "formatting": true,
+    "whitespace": true,
+    "cliRefusalExitCodes": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "invalidOutputAbsent": true,
+    "existingReportUnchanged": true,
+    "guiRerun": false,
+    "logs": [
+      {
+        "path": "artifacts/incident-npm-test-log.txt",
+        "bytes": 77751,
+        "sha256": "a9ffd5a130bf5f13996c2d3084b11d3c001d40d004eaed821673728512c46f22"
+      },
+      {
+        "path": "artifacts/incident-release-log.txt",
+        "bytes": 17721,
+        "sha256": "231a29a9c0722e5ac4d7ad61ca2713d2eeac9093ba90d580328e10fcd9b1462b"
+      },
+      {
+        "path": "artifacts/incident-final-clippy-log.txt",
+        "bytes": 72,
+        "sha256": "4f27ac380b22e1d975eee20ce727fa8cbc09061177f6253af0777fd4de7b7506"
+      }
+    ]
+  }
+}

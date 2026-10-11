@@ -99,3 +99,8 @@ pub fn report() -> Result<Value, String> {
 pub fn centered_report() -> Result<Value, String> {
     native::centered_report(reference_report()?)
 }
+
+/// Gradient-side assembly comparison; the edge depth and reference are retained.
+pub fn incident_report() -> Result<Value, String> {
+    native::incident_report(reference_report()?)
+}

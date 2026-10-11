@@ -19,6 +19,15 @@ impl<'a> Prepared<'a> {
     }
 
     pub fn advance(&self, stocks: surface::Stocks<'_>, seconds: f64) -> Result<usize, String> {
+        self.validate(&stocks, seconds)?;
+        surface::advance_flat_centered(self.0, stocks, seconds)
+    }
+
+    pub(super) fn validate(
+        &self,
+        stocks: &surface::Stocks<'_>,
+        seconds: f64,
+    ) -> Result<(), String> {
         let layout = self.0.layout();
         if !seconds.is_finite()
             || seconds < 0.
@@ -34,7 +43,7 @@ impl<'a> Prepared<'a> {
         for owner in stocks.liquid.iter().chain(stocks.transfers.iter()) {
             owner.stock(f64::MAX)?;
         }
-        surface::advance_flat_centered(self.0, stocks, seconds)
+        Ok(())
     }
 }
 

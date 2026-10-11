@@ -1,7 +1,7 @@
 //! Existing paired stages on fixed continuous dry-cap inputs, not new physics.
 use super::super::{
     Mass, ResolutionBudget, surface, surface_centered, surface_flow, surface_gradient,
-    surface_verification,
+    surface_incident, surface_verification,
 };
 use super::{AXES, CAP, END_SECONDS, RADIUS, THRESHOLDS, reference, reference_front};
 use crate::{Surface, dot, moisture_transport::total_mass, norm};
@@ -61,6 +61,11 @@ fn run(
         None
     };
     let layout = prepared.layout();
+    let incident = if stage == surface::VerificationStage::FlatIncidentMobility {
+        Some(surface_incident::Prepared::new(&prepared)?)
+    } else {
+        None
+    };
     let dt = END_SECONDS / steps as f64;
     if dt > layout.stable_seconds {
         return Err("Native dry-front caller must use one stable substep.".into());
@@ -94,6 +99,9 @@ fn run(
             }
             surface::VerificationStage::FlatCenteredDepth => {
                 centered.as_ref().unwrap().advance(stocks, dt)?
+            }
+            surface::VerificationStage::FlatIncidentMobility => {
+                incident.as_ref().unwrap().advance(stocks, dt)?
             }
         };
         if count != 1 {
@@ -217,6 +225,10 @@ pub(super) fn centered_report(result: Value) -> Result<Value, String> {
     report_for(result, surface::VerificationStage::FlatCenteredDepth)
 }
 
+pub(super) fn incident_report(result: Value) -> Result<Value, String> {
+    report_for(result, surface::VerificationStage::FlatIncidentMobility)
+}
+
 fn report_for(mut result: Value, stage: surface::VerificationStage) -> Result<Value, String> {
     let controls = result["spherical"].as_array().unwrap();
     let depths: Vec<Vec<f64>> = controls
@@ -277,7 +289,9 @@ fn report_for(mut result: Value, stage: surface::VerificationStage) -> Result<Va
             }
             previous = Some((level, runs[2].error));
             if level == 5 {
-                let control = if stage == surface::VerificationStage::FlatCenteredDepth {
+                let control = if stage == surface::VerificationStage::FlatIncidentMobility {
+                    surface::VerificationStage::FlatCenteredDepth
+                } else if stage == surface::VerificationStage::FlatCenteredDepth {
                     surface::VerificationStage::FullGradient
                 } else {
                     surface::VerificationStage::LegacyDirectional
@@ -305,6 +319,14 @@ fn report_for(mut result: Value, stage: surface::VerificationStage) -> Result<Va
             "Arithmetic mean of frozen neighboring depths; flat closed terrestrial cells only"
         );
         result["matchedSourceDepthControls"] = json!(legacy);
+    } else if stage == surface::VerificationStage::FlatIncidentMobility {
+        result["reportVersion"] = json!("surface-flat-incident-front-report-1");
+        result["surfaceModelVersion"] = json!(surface_incident::MODEL_VERSION);
+        result["interfaceDepth"] = json!("Unchanged arithmetic mean of frozen neighboring depths");
+        result["mobilityAssembly"] = json!(
+            "Positive individual half-cotangent weighted mean of separately capped incident-triangle mobilities; not triangle depth integration"
+        );
+        result["matchedCenteredDepthControls"] = json!(legacy);
     } else {
         result["matchedLegacyControls"] = json!(legacy);
     }
@@ -314,6 +336,52 @@ fn report_for(mut result: Value, stage: surface::VerificationStage) -> Result<Va
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn incident_dry_evolution_repeats_with_identical_initialization_and_reference() {
+        let references = [
+            reference::spherical(128, 600).unwrap().depth,
+            reference::spherical(256, 600).unwrap().depth,
+            reference::spherical(256, 1200).unwrap().depth,
+        ];
+        let a = run(
+            3,
+            AXES[1],
+            1200,
+            &references,
+            surface::VerificationStage::FlatIncidentMobility,
+        )
+        .unwrap();
+        let b = run(
+            3,
+            AXES[1],
+            1200,
+            &references,
+            surface::VerificationStage::FlatIncidentMobility,
+        )
+        .unwrap();
+        let old = run(
+            3,
+            AXES[1],
+            1200,
+            &references,
+            surface::VerificationStage::FlatCenteredDepth,
+        )
+        .unwrap();
+        assert_eq!(a.result, b.result);
+        assert_eq!(a.result["initialLiquid"], old.result["initialLiquid"]);
+        assert_eq!(
+            a.result["referenceAtCentersMeters"],
+            old.result["referenceAtCentersMeters"]
+        );
+        assert_ne!(a.result["finalLiquid"], old.result["finalLiquid"]);
+        assert!(
+            a.result["initiallyDryHalfInventoryKilograms"]
+                .as_f64()
+                .unwrap()
+                > 0.
+        );
+    }
+
     #[test]
     fn native_dry_front_repeats_and_has_conservative_arrivals_without_a_film() {
         let coarse = reference::spherical(128, 600).unwrap().depth;

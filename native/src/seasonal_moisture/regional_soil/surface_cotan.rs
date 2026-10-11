@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 
 pub(super) const MODEL_VERSION: &str = "regional-surface-cotan-candidate-1";
 
-fn triangle_weights(points: [[f64; 3]; 3]) -> Result<[f64; 3], String> {
+pub(super) fn triangle_weights(points: [[f64; 3]; 3]) -> Result<[f64; 3], String> {
     let mut weights = [0.; 3];
     for i in 0..3 {
         let u = std::array::from_fn(|k| points[(i + 1) % 3][k] - points[i][k]);

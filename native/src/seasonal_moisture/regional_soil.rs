@@ -23,6 +23,7 @@ mod surface_cotan;
 pub mod surface_evolution;
 pub mod surface_front;
 mod surface_gradient;
+mod surface_incident;
 pub mod surface_verification;
 pub use observation::{
     COTANGENT_OBSERVATION_VERSION, OBSERVATION_VERSION, Observation, ReferenceBodyStock,
