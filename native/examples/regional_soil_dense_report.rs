@@ -2,7 +2,9 @@
 use planimulation_core::{
     Recipe, World,
     moisture_transport::{Geometry, total_mass},
-    seasonal_moisture::regional_soil::{Checkpoint, Model, NumericalPolicy, Settings},
+    seasonal_moisture::regional_soil::{
+        Checkpoint, Model, NumericalPolicy, Settings, SurfaceOperator,
+    },
     seasonal_temperature,
     surface_water::ponded_soil::Mass,
 };
@@ -95,6 +97,7 @@ fn fund(world: &World, cp: &mut Checkpoint) -> Result<Value, String> {
 }
 struct Run {
     report: Value,
+    initial_checkpoint: Checkpoint,
     final_checkpoint: Checkpoint,
     complete: bool,
 }
@@ -111,6 +114,7 @@ fn run(
         .settings
         .surface_flow
         .maximum_diffusivity_square_meters_per_second = cap;
+    let initial_checkpoint = start.clone();
     let (model, mut state) = Model::restore(start)?;
     let initial_budget = model.budget(&state)?;
     let (mut global, mut local) = (
@@ -199,6 +203,7 @@ fn run(
         "finalCheckpoint":cp});
     Ok(Run {
         report,
+        initial_checkpoint,
         final_checkpoint: cp,
         complete,
     })
@@ -217,6 +222,23 @@ fn field_difference(a: &[Mass], b: &[Mass], areas: &[f64]) -> Result<Value, Stri
     Ok(
         json!({"l1Kilograms":l1,"relativeToSecondStock":(denominator > 0.).then_some(l1 / denominator),
         "maximumColumnDifferenceMillimeters":differences.iter().zip(areas).map(|(&d,&a)| d / a).fold(0.,f64::max)}),
+    )
+}
+// Body inventories have no regional footprint. Never label their differences
+// as column depth or assign a fictitious unit area to obtain a depth metric.
+fn body_difference(a: &[Mass], b: &[Mass]) -> Result<Value, String> {
+    if a.len() != b.len() {
+        return Err("Comparison body-owner shape mismatch.".into());
+    }
+    let differences: Vec<_> = a
+        .iter()
+        .zip(b)
+        .map(|(a, b)| total_mass(&[a.high, -b.high, a.low, -b.low]).abs())
+        .collect();
+    let l1 = total_mass(&differences);
+    let denominator = sum(b);
+    Ok(
+        json!({"l1Kilograms":l1,"relativeToSecondStock":(denominator > 0.).then_some(l1 / denominator)}),
     )
 }
 // Never compare different geography, forcing, initial time, or failed endpoints.
@@ -247,6 +269,13 @@ fn compare(a: &Run, b: &Run, areas: &[f64], control: &str) -> Result<Value, Stri
     {
         return Err("Comparison changed geography, forcing or another setting.".into());
     }
+    let mut normalized_initial = a.initial_checkpoint.clone();
+    normalized_initial.settings = a_settings;
+    if normalized_initial != b.initial_checkpoint {
+        return Err(
+            "Comparison changed the complete initial stock, history, pins or clock.".into(),
+        );
+    }
     let stock_fields = ["liquid", "soil", "snow", "vapor", "drainage"];
     let mut fields = serde_json::Map::new();
     for (name, (a, b)) in stock_fields.into_iter().zip([
@@ -260,6 +289,12 @@ fn compare(a: &Run, b: &Run, areas: &[f64], control: &str) -> Result<Value, Stri
     }
     let a_flow = sum(&a_cp.surface_transfers);
     let b_flow = sum(&b_cp.surface_transfers);
+    if a_cp.settings.surface_operator == SurfaceOperator::CotangentWeakForm {
+        fields.insert(
+            "referenceBodies".into(),
+            body_difference(&a_cp.reference_bodies, &b_cp.reference_bodies)?,
+        );
+    }
     Ok(
         json!({"control":control,"comparable":true,"elapsedSeconds":a_cp.elapsed_seconds,
         "firstCeilingSeconds":a_cp.settings.max_coupled_step_seconds,"secondCeilingSeconds":b_cp.settings.max_coupled_step_seconds,
@@ -301,6 +336,9 @@ fn geography_difference(coarse: &World, fine: &World) -> Result<Value, String> {
         "spatialConvergenceIsolated":false}))
 }
 fn report(days: u32) -> Result<Value, String> {
+    report_with_operator(days, SurfaceOperator::BarycentricTwoPoint)
+}
+fn report_with_operator(days: u32, operator: SurfaceOperator) -> Result<Value, String> {
     if !(1..=365).contains(&days) {
         return Err("Report supports 1–365 days.".into());
     }
@@ -318,6 +356,7 @@ fn report(days: u32) -> Result<Value, String> {
                 &world,
                 Settings {
                     numerical_policy: NumericalPolicy::RetainDonor,
+                    surface_operator: operator,
                     ..Default::default()
                 },
                 Default::default(),
@@ -346,21 +385,27 @@ fn report(days: u32) -> Result<Value, String> {
         }
     }
     Ok(
-        json!({"reportVersion":"regional-soil-dense-report-1","requestedDays":days,
-        "scope":"Dense finite-funded generated worlds; matched same-mesh cadence and mobility controls. Not isolated spatial convergence, natural rainfall or calibrated hydraulics.",
+        json!({"reportVersion":if operator == SurfaceOperator::CotangentWeakForm {"regional-soil-cotan-dense-report-1"} else {"regional-soil-dense-report-1"},"requestedDays":days,
+        "scope":if operator == SurfaceOperator::CotangentWeakForm {
+            "Dense finite-funded cotangent seasonal worlds; matched same-mesh cadence and mobility controls, including finite-body differences. Surface histories are weak-form numerical adjacency exchanges, not literal barycentric-face discharge. Not isolated spatial convergence, natural rainfall or calibrated hydraulics."
+        } else {"Dense finite-funded generated worlds; matched same-mesh cadence and mobility controls. Not isolated spatial convergence, natural rainfall or calibrated hydraulics."},
         "groups":groups,"geographyComparisons":geography}),
     )
 }
 fn main() -> Result<(), String> {
     let args: Vec<_> = std::env::args().skip(1).collect();
-    if args.len() != 2 {
-        return Err("Usage: regional_soil_dense_report DAYS NEW_OUTPUT.json".into());
+    if !(args.len() == 2 || (args.len() == 3 && args[2] == "--cotangent")) {
+        return Err("Usage: regional_soil_dense_report DAYS NEW_OUTPUT.json [--cotangent]".into());
     }
     let days: u32 = args[0].parse().map_err(|_| "Invalid day count.")?;
     if std::path::Path::new(&args[1]).exists() {
         return Err("Report output already exists.".into());
     }
-    let result = report(days)?;
+    let result = if args.len() == 3 {
+        report_with_operator(days, SurfaceOperator::CotangentWeakForm)?
+    } else {
+        report(days)?
+    };
     let file = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -377,11 +422,15 @@ fn main() -> Result<(), String> {
 mod tests {
     use super::*;
     fn fixture() -> (World, Checkpoint) {
+        fixture_with_operator(SurfaceOperator::BarycentricTwoPoint)
+    }
+    fn fixture_with_operator(operator: SurfaceOperator) -> (World, Checkpoint) {
         let world = World::generate(recipe("first-light", 2).unwrap()).unwrap();
         let model = Model::from_world(
             &world,
             Settings {
                 numerical_policy: NumericalPolicy::RetainDonor,
+                surface_operator: operator,
                 ..Default::default()
             },
             Default::default(),
@@ -391,6 +440,95 @@ mod tests {
         let mut cp = model.initial_state().checkpoint();
         fund(&world, &mut cp).unwrap();
         (world, cp)
+    }
+    #[test]
+    fn cotangent_branches_share_complete_funding_and_compare_every_owned_reservoir() {
+        let (world, mut cp) = fixture_with_operator(SurfaceOperator::CotangentWeakForm);
+        // The first main-ocean contact can be cold during the first month.
+        // This directed soil assertion explicitly supplies warm forcing; the
+        // generated dense cohort continues to use its unchanged default climate.
+        cp.temperature_settings = seasonal_temperature::Settings {
+            reference_temperature_celsius: 30.,
+            sensitivity_celsius_per_watt_per_square_meter: 0.,
+            lapse_rate_celsius_per_meter: 0.,
+            ..Default::default()
+        };
+        assert_eq!(cp.schema_version, 2);
+        assert_eq!(
+            cp.surface_flow_model_version,
+            "regional-surface-cotan-paired-2"
+        );
+        let mut runs = Vec::new();
+        for (ceiling, cap) in [(900, 1e6), (450, 1e6), (225, 1e6), (900, 1e5), (900, 0.)] {
+            let r = run(&world, &cp, 1, ceiling, cap).unwrap();
+            assert!(r.complete);
+            assert_eq!(r.report["checks"]["replayExact"], true);
+            assert_eq!(r.report["checks"]["surfaceActivityMatchesCap"], true);
+            assert_eq!(r.report["checks"]["soilExchangeActive"], true);
+            let mut initial = r.initial_checkpoint.clone();
+            initial.settings = cp.settings;
+            assert_eq!(initial, cp);
+            runs.push(r);
+        }
+        for (a, b, control) in [
+            (0, 1, "cadence"),
+            (1, 2, "cadence"),
+            (0, 3, "mobilityCap"),
+            (0, 4, "mobilityCap"),
+        ] {
+            let result = compare(&runs[a], &runs[b], &world.surface.areas, control).unwrap();
+            assert_eq!(result["comparable"], true);
+            let bodies = &result["stockDifferences"]["referenceBodies"];
+            assert!(bodies.get("l1Kilograms").is_some());
+            assert!(bodies.get("maximumColumnDifferenceMillimeters").is_none());
+        }
+    }
+    #[test]
+    fn comparison_refuses_different_initial_clock_stocks_histories_and_operator() {
+        let (world, cp) = fixture_with_operator(SurfaceOperator::CotangentWeakForm);
+        let a = run(&world, &cp, 1, 900, 1e6).unwrap();
+        let mut b = run(&world, &cp, 1, 450, 1e6).unwrap();
+        let initial = b.initial_checkpoint.clone();
+        for variant in 0..5 {
+            b.initial_checkpoint = initial.clone();
+            match variant {
+                0 => b.initial_checkpoint.elapsed_seconds += 900,
+                1 => b.initial_checkpoint.liquid[0].high += 1.,
+                2 => b.initial_checkpoint.surface_transfers[0].high += 1.,
+                3 => b.initial_checkpoint.local_transfers[0].rain.high += 1.,
+                _ => b.initial_checkpoint.reference_bodies[0].low += 1.,
+            }
+            assert!(
+                compare(&a, &b, &world.surface.areas, "cadence").is_err(),
+                "Accepted initial corruption {variant}"
+            );
+        }
+        b.initial_checkpoint = initial;
+        b.final_checkpoint.settings.surface_operator = SurfaceOperator::BarycentricTwoPoint;
+        assert!(compare(&a, &b, &world.surface.areas, "cadence").is_err());
+    }
+    #[test]
+    fn body_comparisons_keep_signed_tails_without_fabricated_areas() {
+        let a = [Mass {
+            high: 2_f64.powi(70),
+            low: -0.5,
+        }];
+        let b = [Mass {
+            high: 2_f64.powi(70),
+            low: 0.5,
+        }];
+        assert_eq!(body_difference(&a, &b).unwrap()["l1Kilograms"], 1.);
+        assert_eq!(
+            body_difference(&a, &[Mass::default()]).unwrap()["relativeToSecondStock"],
+            Value::Null
+        );
+        assert!(body_difference(&a, &[]).is_err());
+        assert!(
+            body_difference(&a, &b)
+                .unwrap()
+                .get("maximumColumnDifferenceMillimeters")
+                .is_none()
+        );
     }
     #[test]
     fn actual_contact_funding_is_finite_and_all_branches_share_the_same_input() {
