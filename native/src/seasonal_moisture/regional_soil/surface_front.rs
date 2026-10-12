@@ -1,5 +1,7 @@
 //! Standalone moving wet/dry verification; no seasonal or rendering selection.
 mod element;
+mod moment_controls;
+mod moments;
 mod native;
 mod reconstruction;
 mod reference;
@@ -116,4 +118,9 @@ pub fn element_report() -> Result<Value, String> {
 /// Frozen interval reconstruction controls; no time evolution or model selection.
 pub fn reconstruction_report() -> Result<Value, String> {
     reconstruction::report()
+}
+
+/// Frozen all-cell moment reconstruction and face diagnostics, not evolution.
+pub fn moment_reconstruction_report() -> Result<Value, String> {
+    moment_controls::report()
 }

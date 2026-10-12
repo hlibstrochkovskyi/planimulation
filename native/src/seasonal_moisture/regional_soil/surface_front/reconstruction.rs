@@ -4,7 +4,7 @@
 use super::{THRESHOLDS, reference};
 use serde_json::{Value, json};
 
-const POWER: f64 = 3. / 7.;
+pub(super) const POWER: f64 = 3. / 7.;
 const SPEED: f64 = 0.1;
 const CAP: f64 = 100.;
 const RESIDUAL_LIMIT: f64 = 256. * f64::EPSILON;
@@ -30,7 +30,7 @@ fn mean_depth(a: f64, s: f64, width: f64) -> Result<f64, String> {
 
 /// Store pressure at the wetmost endpoint so a tiny wet fraction does not
 /// disappear when subtracting and adding half the much larger cell span.
-fn mean_from_peak(high: f64, span: f64) -> Result<f64, String> {
+pub(super) fn mean_from_peak(high: f64, span: f64) -> Result<f64, String> {
     if !high.is_finite() || !span.is_finite() || span < 0. {
         return Err("Invalid peak pressure or span.".into());
     }
@@ -58,7 +58,7 @@ fn mean_from_peak(high: f64, span: f64) -> Result<f64, String> {
 
 /// None means zero inventory does not identify a unique latent pressure.
 /// A positive fit returns wetmost endpoint pressure, not center pressure.
-fn fit_peak(mean: f64, s: f64, width: f64) -> Result<Option<f64>, String> {
+pub(super) fn fit_peak(mean: f64, s: f64, width: f64) -> Result<Option<f64>, String> {
     if !mean.is_finite() || mean < 0. || !s.is_finite() || !width.is_finite() || width <= 0. {
         return Err("Invalid interval stock fit inputs.".into());
     }
@@ -121,7 +121,7 @@ fn original_flux(v: f64, s: f64) -> f64 {
     -beta * grad_h
 }
 
-fn pressure_flux(v: f64, s: f64) -> f64 {
+pub(super) fn pressure_flux(v: f64, s: f64) -> f64 {
     if v <= 0. || s == 0. {
         return 0.;
     }
@@ -377,7 +377,7 @@ mod tests {
             (fitted["normalSignedAffineCrossingErrorMeters"]
                 .as_f64()
                 .unwrap()
-                + 0.008000272489785409)
+                + 0.008_000_272_489_785_41)
                 .abs()
                 < 1e-13
         );

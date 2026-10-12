@@ -1,0 +1,912 @@
+{
+  "record": "surface-moment-reconstruction-validation-1",
+  "date": "2026-10-12",
+  "sourceBaseCommit": "714951dfc20d6a1fee00cbd05cad87cddaf50462",
+  "scope": "Frozen equal-width one-dimensional cell-mean inference and face/root observations; no paired transfers, evolution, native spherical integration or model selection",
+  "report": {
+    "path": "artifacts/moment-reconstruction-final.json",
+    "bytes": 11474860,
+    "sha256": "9f0af5e4bfcac7e49500bc166f3dc1a6dd05ad9e2e7c308b366a1c335b3f21ad",
+    "version": "surface-moment-reconstruction-report-1",
+    "repeatPath": "artifacts/moment-reconstruction-final-repeat.json",
+    "byteIdenticalCompleteRepeat": true,
+    "releasePath": "artifacts/moment-reconstruction-release.json",
+    "byteIdenticalDebugRelease": true
+  },
+  "priorPlanarReport": {
+    "path": "artifacts/planar-after-moment-reconstruction.json",
+    "bytes": 953529,
+    "sha256": "1fe17f60c05faa09840977f9e627f1b1fdfa4fde8be992b9da6539655bd354ea",
+    "unchangedFromPriorFinal": true
+  },
+  "parameters": {
+    "domainMeters": [
+      -100,
+      100
+    ],
+    "speedMetersPerSecond": 0.1,
+    "roughness": 0.04,
+    "capSquareMetersPerSecond": 100,
+    "pressureSlopeMagnitude": 0.00003733333333333334,
+    "separateRelativeMomentResidualLimit": 5.684341886080802e-14,
+    "widthsMeters": [
+      4,
+      2,
+      1,
+      0.5
+    ],
+    "phases": [
+      0,
+      9.5367431640625e-7,
+      0.001,
+      0.05,
+      0.2,
+      0.5,
+      0.8,
+      0.95,
+      1
+    ],
+    "directions": [
+      -1,
+      1
+    ],
+    "thresholdsMeters": [
+      0,
+      0.001,
+      0.01,
+      0.05
+    ]
+  },
+  "inputContract": "Manufactured exact integrated cell means, not native point-initialized stocks",
+  "inferenceInputs": "Only cell means and common width; orientation and neighboring pair selected from means; no exact slope, speed, front, point sample or truth-selected stencil",
+  "faceFluxScope": "Two one-sided constitutive fluxes in one global direction; not a shared conservative exchange",
+  "contourScope": "Scan isolated in-cell affine roots in the waves; constant/dry level sets are non-isolated and not represented by Cell::root. Retain missing/multiple roots and exact-float boundary gaps without snapping",
+  "summary": {
+    "cases": 72,
+    "ownerStatuses": {
+      "dry": 6686,
+      "two-moment-fit": 6814
+    },
+    "maximumRelativeLocalStockResidual": 3.0550017896717185e-15,
+    "maximumRelativePairMomentResidual": 1.5428689183838196e-15,
+    "maximumAbsoluteFaceDepthJumpMeters": 6.586352104273542e-9,
+    "maximumAbsoluteFaceFluxJumpSquareMetersPerSecond": 6.586352104273545e-10,
+    "dryOwnersNextToPositiveFaceDepth": 16,
+    "contours": [
+      {
+        "thresholdMeters": 0,
+        "crossingCountDistribution": {
+          "0": 16,
+          "1": 56
+        },
+        "discoveredCrossings": 56,
+        "maximumAbsoluteDiscoveredPositionErrorMeters": 3.1086244689504383e-15,
+        "matchedPointObservations": 88,
+        "unresolvedMatchedPoints": 0,
+        "zeroDepthMatchedPoints": 18,
+        "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 7.836328379148929e-10,
+        "maximumRelativeMatchedFluxError": null
+      },
+      {
+        "thresholdMeters": 0.001,
+        "crossingCountDistribution": {
+          "1": 72
+        },
+        "discoveredCrossings": 72,
+        "maximumAbsoluteDiscoveredPositionErrorMeters": 3.1086244689504383e-15,
+        "matchedPointObservations": 72,
+        "unresolvedMatchedPoints": 0,
+        "zeroDepthMatchedPoints": 0,
+        "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 5.331564183197468e-17,
+        "maximumRelativeMatchedFluxError": 5.331564183197468e-13
+      },
+      {
+        "thresholdMeters": 0.01,
+        "crossingCountDistribution": {
+          "1": 72
+        },
+        "discoveredCrossings": 72,
+        "maximumAbsoluteDiscoveredPositionErrorMeters": 2.6645352591003757e-15,
+        "matchedPointObservations": 72,
+        "unresolvedMatchedPoints": 0,
+        "zeroDepthMatchedPoints": 0,
+        "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 2.6020852139652106e-18,
+        "maximumRelativeMatchedFluxError": 2.6020852139652106e-15
+      },
+      {
+        "thresholdMeters": 0.05,
+        "crossingCountDistribution": {
+          "1": 72
+        },
+        "discoveredCrossings": 72,
+        "maximumAbsoluteDiscoveredPositionErrorMeters": 3.055333763768431e-13,
+        "matchedPointObservations": 72,
+        "unresolvedMatchedPoints": 0,
+        "zeroDepthMatchedPoints": 0,
+        "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 1.8596235662471372e-15,
+        "maximumRelativeMatchedFluxError": 3.719247132494274e-13
+      }
+    ]
+  },
+  "perWidth": [
+    {
+      "widthMeters": 4,
+      "cases": 18,
+      "ownerStatuses": {
+        "dry": 434,
+        "two-moment-fit": 466
+      },
+      "maximumRelativeLocalStockResidual": 2.4092824573080527e-15,
+      "maximumRelativePairMomentResidual": 9.637129829232212e-16,
+      "maximumAbsoluteFaceDepthJumpMeters": 6.586352104273542e-9,
+      "maximumAbsoluteFaceFluxJumpSquareMetersPerSecond": 6.586352104273545e-10,
+      "dryOwnersNextToPositiveFaceDepth": 4,
+      "contours": [
+        {
+          "thresholdMeters": 0,
+          "crossingCountDistribution": {
+            "0": 4,
+            "1": 14
+          },
+          "discoveredCrossings": 14,
+          "maximumAbsoluteDiscoveredPositionErrorMeters": 3.1086244689504383e-15,
+          "matchedPointObservations": 22,
+          "unresolvedMatchedPoints": 0,
+          "zeroDepthMatchedPoints": 4,
+          "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 7.836328379148929e-10,
+          "maximumRelativeMatchedFluxError": null
+        },
+        {
+          "thresholdMeters": 0.001,
+          "crossingCountDistribution": {
+            "1": 18
+          },
+          "discoveredCrossings": 18,
+          "maximumAbsoluteDiscoveredPositionErrorMeters": 3.1086244689504383e-15,
+          "matchedPointObservations": 18,
+          "unresolvedMatchedPoints": 0,
+          "zeroDepthMatchedPoints": 0,
+          "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 5.331564183197468e-17,
+          "maximumRelativeMatchedFluxError": 5.331564183197468e-13
+        },
+        {
+          "thresholdMeters": 0.01,
+          "crossingCountDistribution": {
+            "1": 18
+          },
+          "discoveredCrossings": 18,
+          "maximumAbsoluteDiscoveredPositionErrorMeters": 2.6645352591003757e-15,
+          "matchedPointObservations": 18,
+          "unresolvedMatchedPoints": 0,
+          "zeroDepthMatchedPoints": 0,
+          "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 2.6020852139652106e-18,
+          "maximumRelativeMatchedFluxError": 2.6020852139652106e-15
+        },
+        {
+          "thresholdMeters": 0.05,
+          "crossingCountDistribution": {
+            "1": 18
+          },
+          "discoveredCrossings": 18,
+          "maximumAbsoluteDiscoveredPositionErrorMeters": 3.552713678800501e-14,
+          "matchedPointObservations": 18,
+          "unresolvedMatchedPoints": 0,
+          "zeroDepthMatchedPoints": 0,
+          "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 5.724587470723463e-17,
+          "maximumRelativeMatchedFluxError": 1.1449174941446925e-14
+        }
+      ]
+    },
+    {
+      "widthMeters": 2,
+      "cases": 18,
+      "ownerStatuses": {
+        "dry": 884,
+        "two-moment-fit": 916
+      },
+      "maximumRelativeLocalStockResidual": 2.8102998936104428e-15,
+      "maximumRelativePairMomentResidual": 1.5428689183838196e-15,
+      "maximumAbsoluteFaceDepthJumpMeters": 4.893640806597803e-9,
+      "maximumAbsoluteFaceFluxJumpSquareMetersPerSecond": 4.893640806597803e-10,
+      "dryOwnersNextToPositiveFaceDepth": 4,
+      "contours": [
+        {
+          "thresholdMeters": 0,
+          "crossingCountDistribution": {
+            "0": 4,
+            "1": 14
+          },
+          "discoveredCrossings": 14,
+          "maximumAbsoluteDiscoveredPositionErrorMeters": 2.220446049250313e-15,
+          "matchedPointObservations": 22,
+          "unresolvedMatchedPoints": 0,
+          "zeroDepthMatchedPoints": 5,
+          "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 6.586352104273537e-10,
+          "maximumRelativeMatchedFluxError": null
+        },
+        {
+          "thresholdMeters": 0.001,
+          "crossingCountDistribution": {
+            "1": 18
+          },
+          "discoveredCrossings": 18,
+          "maximumAbsoluteDiscoveredPositionErrorMeters": 2.220446049250313e-15,
+          "matchedPointObservations": 18,
+          "unresolvedMatchedPoints": 0,
+          "zeroDepthMatchedPoints": 0,
+          "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 3.585998685495806e-17,
+          "maximumRelativeMatchedFluxError": 3.585998685495806e-13
+        },
+        {
+          "thresholdMeters": 0.01,
+          "crossingCountDistribution": {
+            "1": 18
+          },
+          "discoveredCrossings": 18,
+          "maximumAbsoluteDiscoveredPositionErrorMeters": 1.3322676295501878e-15,
+          "matchedPointObservations": 18,
+          "unresolvedMatchedPoints": 0,
+          "zeroDepthMatchedPoints": 0,
+          "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 1.0842021724855044e-18,
+          "maximumRelativeMatchedFluxError": 1.0842021724855044e-15
+        },
+        {
+          "thresholdMeters": 0.05,
+          "crossingCountDistribution": {
+            "1": 18
+          },
+          "discoveredCrossings": 18,
+          "maximumAbsoluteDiscoveredPositionErrorMeters": 5.684341886080802e-14,
+          "matchedPointObservations": 18,
+          "unresolvedMatchedPoints": 0,
+          "zeroDepthMatchedPoints": 0,
+          "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 7.632783294297951e-17,
+          "maximumRelativeMatchedFluxError": 1.52655665885959e-14
+        }
+      ]
+    },
+    {
+      "widthMeters": 1,
+      "cases": 18,
+      "ownerStatuses": {
+        "dry": 1784,
+        "two-moment-fit": 1816
+      },
+      "maximumRelativeLocalStockResidual": 3.0550017896717185e-15,
+      "maximumRelativePairMomentResidual": 1.018333929890573e-15,
+      "maximumAbsoluteFaceDepthJumpMeters": 4.1130539539225905e-9,
+      "maximumAbsoluteFaceFluxJumpSquareMetersPerSecond": 4.113053953922591e-10,
+      "dryOwnersNextToPositiveFaceDepth": 4,
+      "contours": [
+        {
+          "thresholdMeters": 0,
+          "crossingCountDistribution": {
+            "0": 4,
+            "1": 14
+          },
+          "discoveredCrossings": 14,
+          "maximumAbsoluteDiscoveredPositionErrorMeters": 1.2212453270876722e-15,
+          "matchedPointObservations": 22,
+          "unresolvedMatchedPoints": 0,
+          "zeroDepthMatchedPoints": 4,
+          "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 5.227855442501867e-10,
+          "maximumRelativeMatchedFluxError": null
+        },
+        {
+          "thresholdMeters": 0.001,
+          "crossingCountDistribution": {
+            "1": 18
+          },
+          "discoveredCrossings": 18,
+          "maximumAbsoluteDiscoveredPositionErrorMeters": 1.1102230246251565e-15,
+          "matchedPointObservations": 18,
+          "unresolvedMatchedPoints": 0,
+          "zeroDepthMatchedPoints": 0,
+          "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 1.8417884405097507e-17,
+          "maximumRelativeMatchedFluxError": 1.8417884405097507e-13
+        },
+        {
+          "thresholdMeters": 0.01,
+          "crossingCountDistribution": {
+            "1": 18
+          },
+          "discoveredCrossings": 18,
+          "maximumAbsoluteDiscoveredPositionErrorMeters": 7.771561172376096e-16,
+          "matchedPointObservations": 18,
+          "unresolvedMatchedPoints": 0,
+          "zeroDepthMatchedPoints": 0,
+          "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 6.505213034913027e-19,
+          "maximumRelativeMatchedFluxError": 6.505213034913027e-16
+        },
+        {
+          "thresholdMeters": 0.05,
+          "crossingCountDistribution": {
+            "1": 18
+          },
+          "discoveredCrossings": 18,
+          "maximumAbsoluteDiscoveredPositionErrorMeters": 6.750155989720952e-14,
+          "matchedPointObservations": 18,
+          "unresolvedMatchedPoints": 0,
+          "zeroDepthMatchedPoints": 0,
+          "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 4.102621020685149e-16,
+          "maximumRelativeMatchedFluxError": 8.205242041370296e-14
+        }
+      ]
+    },
+    {
+      "widthMeters": 0.5,
+      "cases": 18,
+      "ownerStatuses": {
+        "dry": 3584,
+        "two-moment-fit": 3616
+      },
+      "maximumRelativeLocalStockResidual": 2.741151664807573e-15,
+      "maximumRelativePairMomentResidual": 7.831861899450207e-16,
+      "maximumAbsoluteFaceDepthJumpMeters": 3.362671274357474e-9,
+      "maximumAbsoluteFaceFluxJumpSquareMetersPerSecond": 3.362671274357474e-10,
+      "dryOwnersNextToPositiveFaceDepth": 4,
+      "contours": [
+        {
+          "thresholdMeters": 0,
+          "crossingCountDistribution": {
+            "0": 4,
+            "1": 14
+          },
+          "discoveredCrossings": 14,
+          "maximumAbsoluteDiscoveredPositionErrorMeters": 5.551115123125783e-16,
+          "matchedPointObservations": 22,
+          "unresolvedMatchedPoints": 0,
+          "zeroDepthMatchedPoints": 5,
+          "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 3.635961145845931e-10,
+          "maximumRelativeMatchedFluxError": null
+        },
+        {
+          "thresholdMeters": 0.001,
+          "crossingCountDistribution": {
+            "1": 18
+          },
+          "discoveredCrossings": 18,
+          "maximumAbsoluteDiscoveredPositionErrorMeters": 5.551115123125783e-16,
+          "matchedPointObservations": 18,
+          "unresolvedMatchedPoints": 0,
+          "zeroDepthMatchedPoints": 0,
+          "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 8.294146619514109e-18,
+          "maximumRelativeMatchedFluxError": 8.294146619514109e-14
+        },
+        {
+          "thresholdMeters": 0.01,
+          "crossingCountDistribution": {
+            "1": 18
+          },
+          "discoveredCrossings": 18,
+          "maximumAbsoluteDiscoveredPositionErrorMeters": 6.661338147750939e-16,
+          "matchedPointObservations": 18,
+          "unresolvedMatchedPoints": 0,
+          "zeroDepthMatchedPoints": 0,
+          "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 8.673617379884035e-19,
+          "maximumRelativeMatchedFluxError": 8.673617379884035e-16
+        },
+        {
+          "thresholdMeters": 0.05,
+          "crossingCountDistribution": {
+            "1": 18
+          },
+          "discoveredCrossings": 18,
+          "maximumAbsoluteDiscoveredPositionErrorMeters": 3.055333763768431e-13,
+          "matchedPointObservations": 18,
+          "unresolvedMatchedPoints": 0,
+          "zeroDepthMatchedPoints": 0,
+          "maximumAbsoluteMatchedFluxErrorSquareMetersPerSecond": 1.8596235662471372e-15,
+          "maximumRelativeMatchedFluxError": 3.719247132494274e-13
+        }
+      ]
+    }
+  ],
+  "missingSupportCases": [
+    {
+      "widthMeters": 4,
+      "phase": 0,
+      "direction": -1,
+      "exactCoordinateMeters": 0,
+      "wetDryStockContacts": [
+        {
+          "coordinateMeters": 0,
+          "dryOwnerNextToPositiveFaceDepth": true,
+          "leftCell": 24,
+          "leftDepthMeters": 0,
+          "leftFluxSquareMetersPerSecond": 0,
+          "rightDepthMeters": 6.586352104273542e-9,
+          "rightFluxSquareMetersPerSecond": -6.586352104273545e-10,
+          "rightMinusLeftDepthMeters": 6.586352104273542e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": -6.586352104273545e-10
+        }
+      ]
+    },
+    {
+      "widthMeters": 4,
+      "phase": 0,
+      "direction": 1,
+      "exactCoordinateMeters": 0,
+      "wetDryStockContacts": [
+        {
+          "coordinateMeters": 0,
+          "dryOwnerNextToPositiveFaceDepth": true,
+          "leftCell": 24,
+          "leftDepthMeters": 6.586352104273542e-9,
+          "leftFluxSquareMetersPerSecond": 6.586352104273545e-10,
+          "rightDepthMeters": 0,
+          "rightFluxSquareMetersPerSecond": 0,
+          "rightMinusLeftDepthMeters": -6.586352104273542e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": -6.586352104273545e-10
+        }
+      ]
+    },
+    {
+      "widthMeters": 4,
+      "phase": 1,
+      "direction": -1,
+      "exactCoordinateMeters": -4,
+      "wetDryStockContacts": [
+        {
+          "coordinateMeters": -4,
+          "dryOwnerNextToPositiveFaceDepth": true,
+          "leftCell": 23,
+          "leftDepthMeters": 0,
+          "leftFluxSquareMetersPerSecond": 0,
+          "rightDepthMeters": 6.586352104273542e-9,
+          "rightFluxSquareMetersPerSecond": -6.586352104273545e-10,
+          "rightMinusLeftDepthMeters": 6.586352104273542e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": -6.586352104273545e-10
+        }
+      ]
+    },
+    {
+      "widthMeters": 4,
+      "phase": 1,
+      "direction": 1,
+      "exactCoordinateMeters": 4,
+      "wetDryStockContacts": [
+        {
+          "coordinateMeters": 4,
+          "dryOwnerNextToPositiveFaceDepth": true,
+          "leftCell": 25,
+          "leftDepthMeters": 6.586352104273542e-9,
+          "leftFluxSquareMetersPerSecond": 6.586352104273545e-10,
+          "rightDepthMeters": 0,
+          "rightFluxSquareMetersPerSecond": 0,
+          "rightMinusLeftDepthMeters": -6.586352104273542e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": -6.586352104273545e-10
+        }
+      ]
+    },
+    {
+      "widthMeters": 2,
+      "phase": 0,
+      "direction": -1,
+      "exactCoordinateMeters": 0,
+      "wetDryStockContacts": [
+        {
+          "coordinateMeters": 0,
+          "dryOwnerNextToPositiveFaceDepth": true,
+          "leftCell": 49,
+          "leftDepthMeters": 0,
+          "leftFluxSquareMetersPerSecond": 0,
+          "rightDepthMeters": 4.893640806597803e-9,
+          "rightFluxSquareMetersPerSecond": -4.893640806597803e-10,
+          "rightMinusLeftDepthMeters": 4.893640806597803e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": -4.893640806597803e-10
+        }
+      ]
+    },
+    {
+      "widthMeters": 2,
+      "phase": 0,
+      "direction": 1,
+      "exactCoordinateMeters": 0,
+      "wetDryStockContacts": [
+        {
+          "coordinateMeters": 0,
+          "dryOwnerNextToPositiveFaceDepth": true,
+          "leftCell": 49,
+          "leftDepthMeters": 4.893640806597803e-9,
+          "leftFluxSquareMetersPerSecond": 4.893640806597803e-10,
+          "rightDepthMeters": 0,
+          "rightFluxSquareMetersPerSecond": 0,
+          "rightMinusLeftDepthMeters": -4.893640806597803e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": -4.893640806597803e-10
+        }
+      ]
+    },
+    {
+      "widthMeters": 2,
+      "phase": 1,
+      "direction": -1,
+      "exactCoordinateMeters": -2,
+      "wetDryStockContacts": [
+        {
+          "coordinateMeters": -2,
+          "dryOwnerNextToPositiveFaceDepth": true,
+          "leftCell": 48,
+          "leftDepthMeters": 0,
+          "leftFluxSquareMetersPerSecond": 0,
+          "rightDepthMeters": 4.893640806597803e-9,
+          "rightFluxSquareMetersPerSecond": -4.893640806597803e-10,
+          "rightMinusLeftDepthMeters": 4.893640806597803e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": -4.893640806597803e-10
+        }
+      ]
+    },
+    {
+      "widthMeters": 2,
+      "phase": 1,
+      "direction": 1,
+      "exactCoordinateMeters": 2,
+      "wetDryStockContacts": [
+        {
+          "coordinateMeters": 2,
+          "dryOwnerNextToPositiveFaceDepth": true,
+          "leftCell": 50,
+          "leftDepthMeters": 4.893640806597803e-9,
+          "leftFluxSquareMetersPerSecond": 4.893640806597803e-10,
+          "rightDepthMeters": 0,
+          "rightFluxSquareMetersPerSecond": 0,
+          "rightMinusLeftDepthMeters": -4.893640806597803e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": -4.893640806597803e-10
+        }
+      ]
+    },
+    {
+      "widthMeters": 1,
+      "phase": 0,
+      "direction": -1,
+      "exactCoordinateMeters": 0,
+      "wetDryStockContacts": [
+        {
+          "coordinateMeters": 0,
+          "dryOwnerNextToPositiveFaceDepth": true,
+          "leftCell": 99,
+          "leftDepthMeters": 0,
+          "leftFluxSquareMetersPerSecond": 0,
+          "rightDepthMeters": 4.1130539539225905e-9,
+          "rightFluxSquareMetersPerSecond": -4.113053953922591e-10,
+          "rightMinusLeftDepthMeters": 4.1130539539225905e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": -4.113053953922591e-10
+        }
+      ]
+    },
+    {
+      "widthMeters": 1,
+      "phase": 0,
+      "direction": 1,
+      "exactCoordinateMeters": 0,
+      "wetDryStockContacts": [
+        {
+          "coordinateMeters": 0,
+          "dryOwnerNextToPositiveFaceDepth": true,
+          "leftCell": 99,
+          "leftDepthMeters": 4.1130539539225905e-9,
+          "leftFluxSquareMetersPerSecond": 4.113053953922591e-10,
+          "rightDepthMeters": 0,
+          "rightFluxSquareMetersPerSecond": 0,
+          "rightMinusLeftDepthMeters": -4.1130539539225905e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": -4.113053953922591e-10
+        }
+      ]
+    },
+    {
+      "widthMeters": 1,
+      "phase": 1,
+      "direction": -1,
+      "exactCoordinateMeters": -1,
+      "wetDryStockContacts": [
+        {
+          "coordinateMeters": -1,
+          "dryOwnerNextToPositiveFaceDepth": true,
+          "leftCell": 98,
+          "leftDepthMeters": 0,
+          "leftFluxSquareMetersPerSecond": 0,
+          "rightDepthMeters": 4.1130539539225905e-9,
+          "rightFluxSquareMetersPerSecond": -4.113053953922591e-10,
+          "rightMinusLeftDepthMeters": 4.1130539539225905e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": -4.113053953922591e-10
+        }
+      ]
+    },
+    {
+      "widthMeters": 1,
+      "phase": 1,
+      "direction": 1,
+      "exactCoordinateMeters": 1,
+      "wetDryStockContacts": [
+        {
+          "coordinateMeters": 1,
+          "dryOwnerNextToPositiveFaceDepth": true,
+          "leftCell": 100,
+          "leftDepthMeters": 4.1130539539225905e-9,
+          "leftFluxSquareMetersPerSecond": 4.113053953922591e-10,
+          "rightDepthMeters": 0,
+          "rightFluxSquareMetersPerSecond": 0,
+          "rightMinusLeftDepthMeters": -4.1130539539225905e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": -4.113053953922591e-10
+        }
+      ]
+    },
+    {
+      "widthMeters": 0.5,
+      "phase": 0,
+      "direction": -1,
+      "exactCoordinateMeters": 0,
+      "wetDryStockContacts": [
+        {
+          "coordinateMeters": 0,
+          "dryOwnerNextToPositiveFaceDepth": true,
+          "leftCell": 199,
+          "leftDepthMeters": 0,
+          "leftFluxSquareMetersPerSecond": 0,
+          "rightDepthMeters": 3.362671274357474e-9,
+          "rightFluxSquareMetersPerSecond": -3.362671274357474e-10,
+          "rightMinusLeftDepthMeters": 3.362671274357474e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": -3.362671274357474e-10
+        }
+      ]
+    },
+    {
+      "widthMeters": 0.5,
+      "phase": 0,
+      "direction": 1,
+      "exactCoordinateMeters": 0,
+      "wetDryStockContacts": [
+        {
+          "coordinateMeters": 0,
+          "dryOwnerNextToPositiveFaceDepth": true,
+          "leftCell": 199,
+          "leftDepthMeters": 3.362671274357474e-9,
+          "leftFluxSquareMetersPerSecond": 3.362671274357474e-10,
+          "rightDepthMeters": 0,
+          "rightFluxSquareMetersPerSecond": 0,
+          "rightMinusLeftDepthMeters": -3.362671274357474e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": -3.362671274357474e-10
+        }
+      ]
+    },
+    {
+      "widthMeters": 0.5,
+      "phase": 1,
+      "direction": -1,
+      "exactCoordinateMeters": -0.5,
+      "wetDryStockContacts": [
+        {
+          "coordinateMeters": -0.5,
+          "dryOwnerNextToPositiveFaceDepth": true,
+          "leftCell": 198,
+          "leftDepthMeters": 0,
+          "leftFluxSquareMetersPerSecond": 0,
+          "rightDepthMeters": 3.362671274357474e-9,
+          "rightFluxSquareMetersPerSecond": -3.362671274357474e-10,
+          "rightMinusLeftDepthMeters": 3.362671274357474e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": -3.362671274357474e-10
+        }
+      ]
+    },
+    {
+      "widthMeters": 0.5,
+      "phase": 1,
+      "direction": 1,
+      "exactCoordinateMeters": 0.5,
+      "wetDryStockContacts": [
+        {
+          "coordinateMeters": 0.5,
+          "dryOwnerNextToPositiveFaceDepth": true,
+          "leftCell": 200,
+          "leftDepthMeters": 3.362671274357474e-9,
+          "leftFluxSquareMetersPerSecond": 3.362671274357474e-10,
+          "rightDepthMeters": 0,
+          "rightFluxSquareMetersPerSecond": 0,
+          "rightMinusLeftDepthMeters": -3.362671274357474e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": -3.362671274357474e-10
+        }
+      ]
+    }
+  ],
+  "controls": {
+    "nonAffineFaceAtZero": {
+      "coordinateMeters": 0,
+      "dryOwnerNextToPositiveFaceDepth": false,
+      "leftCell": 3,
+      "leftDepthMeters": 0.02724672283542075,
+      "leftFluxSquareMetersPerSecond": 0.002791482903791826,
+      "rightDepthMeters": 0.02729476115099084,
+      "rightFluxSquareMetersPerSecond": 0.0027289312641914877,
+      "rightMinusLeftDepthMeters": 0.00004803831557008767,
+      "rightMinusLeftFluxSquareMetersPerSecond": -0.0000625516396003385
+    },
+    "nonAffineMaximumRelativeLocalResidual": 1.7624822118887618e-16,
+    "nonAffineMaximumRelativePairResidual": 4.348208542632657e-16,
+    "tinyPartial": {
+      "faces": [
+        {
+          "coordinateMeters": 1,
+          "dryOwnerNextToPositiveFaceDepth": false,
+          "leftCell": 0,
+          "leftDepthMeters": 0,
+          "leftFluxSquareMetersPerSecond": 0,
+          "rightDepthMeters": 1.4285714285714321e-9,
+          "rightFluxSquareMetersPerSecond": 3.544643226337682e-8,
+          "rightMinusLeftDepthMeters": 1.4285714285714321e-9,
+          "rightMinusLeftFluxSquareMetersPerSecond": 3.544643226337682e-8
+        },
+        {
+          "coordinateMeters": 2,
+          "dryOwnerNextToPositiveFaceDepth": false,
+          "leftCell": 1,
+          "leftDepthMeters": 0,
+          "leftFluxSquareMetersPerSecond": 0,
+          "rightDepthMeters": 0,
+          "rightFluxSquareMetersPerSecond": 0,
+          "rightMinusLeftDepthMeters": 0,
+          "rightMinusLeftFluxSquareMetersPerSecond": 0
+        }
+      ],
+      "owners": [
+        {
+          "cell": 0,
+          "inputMeanDepthMeters": 1,
+          "inputVolumePerUnitBreadthSquareMeters": 1,
+          "leftEndpointDepthMeters": 1.4285714285714284,
+          "maximumRelativePairMomentResidual": 3.3280838527714403e-15,
+          "neighborCell": 1,
+          "ownFitMinusPairPeakPressure": -4.440892098500626e-16,
+          "pressureAtWetEndpoint": 2.298465062129808,
+          "pressureSlope": -2.2984650621298086,
+          "relativeLocalStockResidual": 3.3306690738754696e-16,
+          "rightEndpointDepthMeters": 0,
+          "status": "two-moment-fit"
+        },
+        {
+          "cell": 1,
+          "inputMeanDepthMeters": 1e-30,
+          "inputVolumePerUnitBreadthSquareMeters": 1e-30,
+          "leftEndpointDepthMeters": 1.4285714285714321e-9,
+          "maximumRelativePairMomentResidual": 3.3280838527714403e-15,
+          "neighborCell": 0,
+          "ownFitMinusPairPeakPressure": 3.385423730368188e-36,
+          "pressureAtWetEndpoint": 2.2984650621298157e-21,
+          "pressureSlope": -2.2984650621298086,
+          "relativeLocalStockResidual": 5.430031549258666e-15,
+          "rightEndpointDepthMeters": 0,
+          "status": "two-moment-fit"
+        },
+        {
+          "cell": 2,
+          "inputMeanDepthMeters": 0,
+          "status": "dry"
+        }
+      ]
+    },
+    "uniformStatuses": {
+      "constant": 8
+    },
+    "dryStatuses": {
+      "dry": 8
+    },
+    "ambiguousStatuses": {
+      "dry": 2,
+      "unresolved": 4,
+      "constant": 2
+    }
+  },
+  "sourceFingerprints": [
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/moments.rs",
+      "bytes": 11751,
+      "sha256": "c96c549a6d1e0e07331078e98d4c0f249e7a4f93db3960d170dd67c98b5250cc"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/moment_controls.rs",
+      "bytes": 14999,
+      "sha256": "5df218a040116a067a6291ea21a82c61f2a5bbb7a0a3117ad12a116a8cfccb71"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/reconstruction.rs",
+      "bytes": 17597,
+      "sha256": "008b96a57aa3af40299f7beab6d024830b50d6364682569900aabce0bcef82dc"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/reference.rs",
+      "bytes": 11933,
+      "sha256": "b4abd46b67f010efc783b17ba00389cf387f18026fd51bc8dc76f6675a04bf39"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front.rs",
+      "bytes": 5060,
+      "sha256": "8958d957c2736c418359d3ec1ab6cd00a0cbc15dec1b8b3854b3db15e71f05d1"
+    },
+    {
+      "path": "native/examples/surface_moment_reconstruction_report.rs",
+      "bytes": 969,
+      "sha256": "dd8ef2f2476c736533a969a0a3fcacbdc6b8b8e62fd081fc8930644da0a155f8"
+    }
+  ],
+  "validation": {
+    "optimizedLibrary": {
+      "command": "cargo test --release --locked --manifest-path native/Cargo.toml --lib",
+      "passed": 144,
+      "failed": 0,
+      "ignored": 0,
+      "logPath": "artifacts/moment-reconstruction-release-tests-log.txt",
+      "logSha256": "61d716267b62fb40d6f1f0cf78d2815175149e9d24e3a2330568d7a9d5c2dc58"
+    },
+    "directed": {
+      "command": "cargo test --locked --manifest-path native/Cargo.toml --lib moment",
+      "passed": 7,
+      "newTests": 6,
+      "failed": 0,
+      "logPath": "artifacts/moment-reconstruction-directed-final-log.txt",
+      "logSha256": "2fb008e9378cb11a1f3f6d8013ac30b25cd52cf7c2bdf5cf1c9d5675776031d4"
+    },
+    "strictAllTargetClippy": {
+      "command": "cargo clippy --locked --manifest-path native/Cargo.toml --all-targets -- -D warnings",
+      "passed": true,
+      "logPath": "artifacts/moment-reconstruction-clippy-verified-log.txt",
+      "logSha256": "397934cd3daa0845de0e99d55763c0deaf7d4e4cf2a978b383f417e985044144"
+    },
+    "formatting": true,
+    "whitespace": true,
+    "cliRefusals": {
+      "noArgumentsExitCode": 1,
+      "existingOutputExitCode": 1,
+      "extraArgumentsExitCode": 1,
+      "existingOutputUnchanged": true,
+      "invalidExtraArgumentOutputAbsent": true
+    },
+    "retainedDevelopmentChecks": [
+      {
+        "logPath": "artifacts/moment-reconstruction-clippy-log.txt",
+        "result": "An existing test decimal triggered current Clippy's excessive-precision lint; normalized to the identical f64 value. Prior report remains byte-identical."
+      },
+      {
+        "logPath": "artifacts/moment-reconstruction-directed-tests-log.txt",
+        "result": "Initial tiny-face test asserted the wrong global flux sign; corrected the assertion and added the reflected sign test. Constitutive arithmetic was not changed."
+      }
+    ],
+    "fullNpm": {
+      "command": "npm test",
+      "passed": true,
+      "typecheck": true,
+      "releaseNativeBuild": true,
+      "rustPassed": 598,
+      "rustTargets": 111,
+      "rustFailed": 0,
+      "rustIgnored": 1,
+      "preexistingIgnored": "Existing annual snow-ledger qualification remains ignored.",
+      "nodeFiles": 18,
+      "nodeTests": 88,
+      "nodePassed": 88,
+      "nodeFailed": 0,
+      "logPath": "artifacts/moment-reconstruction-npm-test-log.txt",
+      "logSha256": "08e34e72ff884c3eb34edac33083cd3514a3e5f8c2ba17c5281e68f2bde35249",
+      "finalDelta": "This full run compiled 143 library tests before the last report-only tiny-partial control, its directed/reflected/plateau assertions and non-isolated-root documentation. Moment inference and constitutive arithmetic were unchanged. The final source independently passes all 144 optimized library tests, seven directed tests and strict all-target Clippy."
+    }
+  },
+  "decision": {
+    "affinePositiveContourRepresentation": "Passes this manufactured family with no truth-selected stencils or supplied slope.",
+    "productionReconstruction": "Not selected.",
+    "support": "56 discovered supports; all 16 phase-0/1 boundary support gaps retained.",
+    "sharedFace": "Local moment agreement is not face consistency or a paired conservative transfer.",
+    "nextGate": "Specify one shared face operator and test its frozen cell-average time derivative before short planar paired evolution.",
+    "unchanged": "Native initial stocks, physical laws, seasonal operators, protocol/model/checkpoint pins, defaults and desktop behavior."
+  },
+  "ownerRendererFiles": {
+    "untouchedAndExcluded": true,
+    "fingerprints": [
+      {
+        "path": "src/renderer/map.ts",
+        "sha256": "9c81dd0cd24b6c4da58e84263dd1b8fbb076de5cc8ec1c3271d70b307d7c9aaa"
+      },
+      {
+        "path": "src/renderer/style.css",
+        "sha256": "eb771462dfa08702874f7f06efc5b653364c7f56d54a43413724f87d167fe84d"
+      }
+    ]
+  }
+}
