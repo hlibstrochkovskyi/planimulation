@@ -1,8 +1,8 @@
 //! Frozen-state weak-work screening of the shared nonlinear surface stage.
 //! Not an evolving solution, seasonal checkpoint or wetting-front qualification.
 use super::{
-    Mass, ResolutionBudget, surface, surface_cotan, surface_flow, surface_gradient,
-    surface_verification,
+    Mass, ResolutionBudget, surface, surface_cotan, surface_element, surface_flow,
+    surface_gradient, surface_verification,
 };
 use crate::{Surface, dot, moisture_transport::total_mass, norm};
 use serde_json::{Value, json};
@@ -79,6 +79,18 @@ fn run_selected(
     full_gradient: bool,
     degree: u32,
 ) -> Result<Value, String> {
+    run_with_element(level, axis, cap, seconds, full_gradient, degree, None)
+}
+
+fn run_with_element(
+    level: u32,
+    axis: [f64; 3],
+    cap: f64,
+    seconds: f64,
+    full_gradient: bool,
+    degree: u32,
+    element: Option<u8>,
+) -> Result<Value, String> {
     let length = norm(axis);
     if !(2..=5).contains(&level)
         || !length.is_finite()
@@ -87,6 +99,7 @@ fn run_selected(
         || ![SECONDS, SECONDS / 2.].contains(&seconds)
         || !(1..=2).contains(&degree)
         || (!full_gradient && degree != 1)
+        || element.is_some_and(|q| q > 3 || !full_gradient)
     {
         return Err("Unsupported bounded constitutive control.".into());
     }
@@ -150,7 +163,10 @@ fn run_selected(
         transfers: &mut histories,
         resolution: &mut resolution,
     };
-    let count = if let Some(g) = &gradient {
+    let count = if let Some(q) = element {
+        surface_element::Prepared::new(gradient.as_ref().ok_or("Missing element geometry.")?, q)?
+            .advance(stocks, seconds)?
+    } else if let Some(g) = &gradient {
         surface::advance_full_gradient(g, stocks, seconds)?
     } else {
         surface::advance(&layout, stocks, seconds)?
@@ -235,7 +251,75 @@ fn run_selected(
             "Minimum analytic depth^(5/3) divided by roughness times square root of maximum reconstructed initial edge slope"
         );
     }
+    if let Some(q) = element {
+        let triangle_work = gradient.as_ref().unwrap().element_work(&heads, q)?;
+        let identity = (triangle_work - work).abs() / work;
+        if identity > 128. * f64::EPSILON {
+            return Err("Element/adjacency weak-work identity failed.".into());
+        }
+        result["quadratureSubdivisions"] = json!(q);
+        result["triangleReconstructedWorkMetersFourthPerSecond"] = json!(triangle_work);
+        result["relativeTriangleWorkIdentityDifference"] = json!(identity);
+        // The inherited averaged-edge bound is not a whole-triangle certificate.
+        result
+            .as_object_mut()
+            .unwrap()
+            .remove("minimumInitialUncappedEdgeMobilityBound");
+        result
+            .as_object_mut()
+            .unwrap()
+            .remove("fullyCappedEdgeRegimeCertified");
+        result
+            .as_object_mut()
+            .unwrap()
+            .remove("mobilityBoundMeaning");
+    }
     Ok(result)
+}
+
+/// Positive element integration checked before any costly evolving front cohort.
+/// Three fixed quadrature refinements; full stocks and histories remain retained.
+pub fn element_report() -> Result<Value, String> {
+    let mut cases = Vec::new();
+    let mut controls = Vec::new();
+    for degree in 1..=2 {
+        for cap in CAPS {
+            for axis in AXES {
+                for level in 2..=5 {
+                    for q in 0..=2 {
+                        cases.push(run_with_element(
+                            level,
+                            axis,
+                            cap,
+                            SECONDS,
+                            true,
+                            degree,
+                            Some(q),
+                        )?);
+                    }
+                }
+                controls.push(run_with_element(
+                    3,
+                    axis,
+                    cap,
+                    SECONDS / 2.,
+                    true,
+                    degree,
+                    Some(1),
+                )?);
+            }
+        }
+    }
+    Ok(json!({"reportVersion":"surface-element-work-report-1",
+        "surfaceModelVersion":surface_element::MODEL_VERSION,
+        "scope":"Standalone frozen flat closed-land weak-work and quadrature screen; not an evolving dry/wet PDE qualification, seasonal model or checkpoint",
+        "radiusMeters":RADIUS,"meanDepthMeters":MEAN,"amplitudeMeters":AMPLITUDE,
+        "roughness":ROUGHNESS,"quadratureIntervals":[16384,32768],
+        "quadratureSubdivisions":[0,1,2],"uncappedNodesPerTriangle":[6,24,96],"maximumNodesPerCapSplitTriangle":[12,48,192],
+        "initialization":"Unchanged continuous point depths times spherical region areas; no rescaling",
+        "profiles":"h=H+A*P_l(axis.s), l=1,2",
+        "coefficient":"Positive degree-four triangle cubature at affine depth with explicit cap intersections and exact capped pieces; constant chordal P1 gradient per triangle",
+        "cases":cases,"halfStepControls":controls,"analyticDryTriangleControls":surface_element::local_controls()?}))
 }
 
 /// Fixed meshes/inputs; each case starts afresh and measures one frozen stage.
@@ -293,6 +377,39 @@ pub fn full_gradient_report() -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn element_triangle_graph_and_stock_work_agree_without_changing_old_capped_transfers() {
+        for degree in 1..=2 {
+            for cap in CAPS {
+                let a = run_with_element(3, AXES[1], cap, SECONDS, true, degree, Some(1)).unwrap();
+                assert_eq!(
+                    a,
+                    run_with_element(3, AXES[1], cap, SECONDS, true, degree, Some(1)).unwrap()
+                );
+                let b =
+                    run_with_element(3, AXES[1], cap, SECONDS / 2., true, degree, Some(1)).unwrap();
+                let wa = a["completedAdjacencyWorkMetersFourthPerSecond"]
+                    .as_f64()
+                    .unwrap();
+                let wb = b["completedAdjacencyWorkMetersFourthPerSecond"]
+                    .as_f64()
+                    .unwrap();
+                assert!((wa / wb - 1.).abs() < 1e-12);
+                assert!(
+                    a["relativeTriangleWorkIdentityDifference"]
+                        .as_f64()
+                        .unwrap()
+                        < 1e-12
+                );
+                if cap == CAPS[0] {
+                    let old = run_selected(3, AXES[1], cap, SECONDS, true, degree).unwrap();
+                    for key in ["finalLiquid", "directedTransfers", "resolution"] {
+                        assert_eq!(a[key], old[key]);
+                    }
+                }
+            }
+        }
+    }
     #[test]
     fn independent_quadrature_matches_exact_capped_harmonic_work() {
         let exact = 8. * std::f64::consts::PI / 3. * CAPS[0] * AMPLITUDE.powi(2);

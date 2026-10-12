@@ -23,6 +23,7 @@ enum CoefficientRule {
     SourceDepth,
     CenteredDepth,
     IncidentMobility,
+    ElementMobility(u8),
 }
 
 // Callers own validation/atomic publication. Keep canonical face order, frozen
@@ -75,6 +76,21 @@ pub(super) fn advance_flat_incident(
     )
 }
 
+pub(super) fn advance_flat_element(
+    prepared: &surface_gradient::Prepared,
+    subdivisions: u8,
+    stocks: Stocks<'_>,
+    seconds: f64,
+) -> Result<usize, String> {
+    advance_with_gradient(
+        prepared.layout(),
+        Some(prepared),
+        CoefficientRule::ElementMobility(subdivisions),
+        stocks,
+        seconds,
+    )
+}
+
 fn advance_with_gradient(
     layout: &Layout,
     gradient: Option<&surface_gradient::Prepared>,
@@ -101,12 +117,23 @@ fn advance_with_gradient(
                 }
             })
             .collect();
-        let slopes = if coefficient == CoefficientRule::IncidentMobility {
+        let element = if let CoefficientRule::ElementMobility(q) = coefficient {
+            Some(q)
+        } else {
+            None
+        };
+        let slopes = if coefficient == CoefficientRule::IncidentMobility || element.is_some() {
             None
         } else {
             gradient.map(|g| g.edge_slopes(&depth)).transpose()?
         };
-        let mobilities = if coefficient == CoefficientRule::IncidentMobility {
+        let mobilities = if let Some(q) = element {
+            Some(
+                gradient
+                    .ok_or("Missing element-mobility geometry.")?
+                    .element_mobilities(&depth, q)?,
+            )
+        } else if coefficient == CoefficientRule::IncidentMobility {
             Some(
                 gradient
                     .ok_or("Missing incident-mobility geometry.")?

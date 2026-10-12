@@ -20,6 +20,7 @@ mod surface;
 mod surface_centered;
 pub mod surface_constitutive;
 mod surface_cotan;
+mod surface_element;
 pub mod surface_evolution;
 pub mod surface_front;
 mod surface_gradient;

@@ -189,6 +189,65 @@ impl Prepared {
             })
             .collect()
     }
+
+    fn element_coefficients(&self, depth: &[f64], subdivisions: u8) -> Result<Vec<f64>, String> {
+        if depth.len() != self.layout.beds.len() || depth.iter().any(|h| !h.is_finite() || *h < 0.)
+        {
+            return Err("Invalid element-mobility depths.".into());
+        }
+        self.triangles
+            .iter()
+            .map(|t| {
+                super::surface_element::mobility(
+                    t.ids.map(|i| depth[i]),
+                    t.slope(&self.layout.beds, depth)?,
+                    self.layout.settings.roughness,
+                    self.layout
+                        .settings
+                        .maximum_diffusivity_square_meters_per_second,
+                    subdivisions,
+                )
+            })
+            .collect()
+    }
+
+    pub fn element_mobilities(&self, depth: &[f64], subdivisions: u8) -> Result<Vec<f64>, String> {
+        if !self.has_positive_local_weights() {
+            return Err("Element assembly requires positive local weights.".into());
+        }
+        let beta = self.element_coefficients(depth, subdivisions)?;
+        self.incident
+            .iter()
+            .zip(&self.local_weights)
+            .map(|(&[a, b], &w)| {
+                let sum = w[0] + w[1];
+                if !sum.is_finite() {
+                    return Err("Unrepresentable element weight sum.".into());
+                }
+                Ok(super::surface_element::mix(beta[a], beta[b], w[1] / sum))
+            })
+            .collect()
+    }
+
+    // Independently sum triangle energy, not graph exchanges or stock differences.
+    pub fn element_work(&self, depth: &[f64], subdivisions: u8) -> Result<f64, String> {
+        let beta = self.element_coefficients(depth, subdivisions)?;
+        let terms = self
+            .triangles
+            .iter()
+            .zip(beta)
+            .map(|(t, b)| {
+                // The dual basis cross norm is the inverse parallelogram area.
+                let area = 0.5 / norm(crate::cross(t.dual[0], t.dual[1]));
+                Ok(area * b * t.slope(&self.layout.beds, depth)?.powi(2))
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        let work = crate::moisture_transport::total_mass(&terms);
+        if !work.is_finite() || work < 0. {
+            return Err("Unrepresentable element work.".into());
+        }
+        Ok(work)
+    }
 }
 
 #[cfg(test)]
@@ -445,6 +504,7 @@ mod tests {
             let prepared = Prepared::new(&mesh, layout.clone(), 100_000.).unwrap();
             assert!(prepared.has_positive_local_weights());
             assert!(super::super::surface_incident::Prepared::new(&prepared).is_ok());
+            assert!(super::super::surface_element::Prepared::new(&prepared, 0).is_ok());
             assert_eq!(prepared.layout.areas, layout.areas);
             assert!(
                 prepared
@@ -487,6 +547,7 @@ mod tests {
         prepared.local_weights[0] = [-0.1, total + 0.1];
         assert!(prepared.layout.faces[0].width_over_distance > 0.);
         assert!(super::super::surface_incident::Prepared::new(&prepared).is_err());
+        assert!(super::super::surface_element::Prepared::new(&prepared, 0).is_err());
         // Earlier full-gradient preparation still has its assembled-only contract.
         assert!(prepared.edge_slopes(&vec![1.; mesh.areas.len()]).is_ok());
     }

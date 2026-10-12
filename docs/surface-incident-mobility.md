@@ -83,6 +83,8 @@ The next proposed numerical step is a consistent elementwise coefficient/flux fo
 
 ## Retained evidence and final validation
 
+October 12 follow-up: [positive elementwise integration](surface-element-mobility.md) now implements a separate cap-split coefficient candidate and its local/frozen work checks. It does not change this incident stage or override its retained negative front result. Evolving front comparison remains the next independent gate.
+
 The [scalar record](data/surface-incident-validation.json) retains all sixty new/matched native trajectories, all thirty-two reference controls, independent spatial/time comparisons, previous-stage comparisons, numerical retention and source/report fingerprints. Full owner/history arrays remain in the ignored reports. The 79,542,597-byte dry and 43,184,193-byte wet reports both repeat byte-for-byte. All six complete centered controls and all initial/reference arrays are unchanged; rebuilt original wet and legacy seasonal reports retain their historic hashes. A complete historic dry report was not rerun in this increment; its preceding validation remains recorded rather than relabelled as a new result.
 
 Candidate dry/wet attempted-defer counts total 67,676,681/101,459; including matched controls they total 92,042,530/134,361. Maximum single requests are `1.338e-11`/`7.663e-8` kg, with maximum per-run summed attempt counters `5.272e-8`/`8.178e-5` kg. Deferred requests leave donors unchanged and can repeat; these are not completed exchanges or lost water. No accounting tolerance is widened.
