@@ -84,6 +84,8 @@ The `sigma=1` hypothesis is suitable for a **bounded short planar multi-step tri
 
 Next run a small, fixed moving-wave cohort with spatial/time refinement, rebuilding stocks and fluxes each step, recording any unresolved reconstruction or numerical refusal and comparing actual dry arrival and contours. Do not fit a final state, inject a film, silently fall back, or change roughness to hide an error. Triangle/spherical reconstruction, variable bed, barriers, initial sample-stock compatibility, seasonal coupling and calibration remain later gates. No expensive spherical rerun is justified yet.
 
+Follow-up: [bounded paired planar evolution](surface-paired-evolution.md) now rebuilds fluxes while preserving compensated owners and boundary ledgers. Short trajectories and a delayed face crossing are observed separately from baseline arithmetic refusals and worsening fixed-time spatial RMS. This does not close the general moving-front gate.
+
 ## Reproduction and validation
 
 ```bash

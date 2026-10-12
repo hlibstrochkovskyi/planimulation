@@ -189,12 +189,36 @@ pub(super) fn step(means: &[f64], width: f64, fluxes: &[f64], dt: f64) -> Result
     if !total_mass(&initial).is_finite() {
         return Err("Unrepresentable total frozen initial inventory.".into());
     }
-    let mut stocks: Vec<_> = initial
+    let stocks: Vec<_> = initial
         .iter()
         .map(|&v| Stock::new(v, 0., f64::MAX))
         .collect::<Result<_, _>>()?;
     if means.iter().zip(&initial).any(|(&h, &v)| h > 0. && v == 0.) {
         return Err("Positive frozen initial volume underflow.".into());
+    }
+    step_owned(&stocks, width, fluxes, dt)
+}
+
+/// Continue from normalized owned components without resetting their low parts.
+/// Only a complete accepted proposal is returned; inputs are never modified.
+pub(super) fn step_owned(
+    initial: &[Stock],
+    width: f64,
+    fluxes: &[f64],
+    dt: f64,
+) -> Result<Step, String> {
+    rhs(fluxes, width)?;
+    if initial.len() + 1 != fluxes.len() || !dt.is_finite() || dt <= 0. {
+        return Err("Invalid bounded owned explicit step.".into());
+    }
+    let mut stocks = initial
+        .iter()
+        .map(|s| Stock::new(s.high, s.low, f64::MAX))
+        .collect::<Result<Vec<_>, _>>()?;
+    let initial_components: Vec<_> = initial.iter().flat_map(|s| [s.high, s.low]).collect();
+    let initial_total = total_mass(&initial_components);
+    if !initial_total.is_finite() {
+        return Err("Unrepresentable total owned initial inventory.".into());
     }
     let amounts: Vec<_> = fluxes.iter().map(|q| q * dt).collect();
     if amounts
@@ -204,8 +228,8 @@ pub(super) fn step(means: &[f64], width: f64, fluxes: &[f64], dt: f64) -> Result
     {
         return Err("Frozen face transfer overflow or underflow.".into());
     }
-    let mut incoming = vec![Vec::new(); means.len()];
-    let mut outgoing = vec![Vec::new(); means.len()];
+    let mut incoming = vec![Vec::new(); initial.len()];
+    let mut outgoing = vec![Vec::new(); initial.len()];
     for (i, a) in amounts.iter().copied().enumerate() {
         if i > 0 {
             if a > 0. {
@@ -214,7 +238,7 @@ pub(super) fn step(means: &[f64], width: f64, fluxes: &[f64], dt: f64) -> Result
                 incoming[i - 1].push(-a);
             }
         }
-        if i < means.len() {
+        if i < initial.len() {
             if a > 0. {
                 incoming[i].push(a);
             } else {
@@ -237,16 +261,20 @@ pub(super) fn step(means: &[f64], width: f64, fluxes: &[f64], dt: f64) -> Result
         for &a in &incoming[i] {
             stock.credit(a)?;
         }
+        Stock::new(stock.high, stock.low, f64::MAX)?;
     }
-    let boundary_input = total_mass(&[amounts[0].max(0.), (-amounts[means.len()]).max(0.)]);
-    let boundary_output = total_mass(&[(-amounts[0]).max(0.), amounts[means.len()].max(0.)]);
+    let boundary_input = total_mass(&[amounts[0].max(0.), (-amounts[initial.len()]).max(0.)]);
+    let boundary_output = total_mass(&[(-amounts[0]).max(0.), amounts[initial.len()].max(0.)]);
     let mut local: f64 = 0.;
     let mut ledger = Vec::new();
     for (i, stock) in stocks.iter().enumerate() {
-        let mut terms = vec![stock.high, stock.low, -initial[i]];
+        let mut terms = vec![stock.high, stock.low, -initial[i].high];
+        if initial[i].low != 0. {
+            terms.push(-initial[i].low);
+        }
         terms.extend(incoming[i].iter().map(|a| -a));
         terms.extend(outgoing[i].iter().copied());
-        let scale = initial[i]
+        let scale = (initial[i].high + initial[i].low)
             .max(total_mass(&incoming[i]))
             .max(total_mass(&outgoing[i]));
         let residual = total_mass(&terms).abs();
@@ -255,12 +283,13 @@ pub(super) fn step(means: &[f64], width: f64, fluxes: &[f64], dt: f64) -> Result
         } else {
             residual / scale
         });
-        ledger.extend([stock.high, stock.low, -initial[i]]);
+        ledger.extend([stock.high, stock.low, -initial[i].high]);
+        if initial[i].low != 0. {
+            ledger.push(-initial[i].low);
+        }
     }
     ledger.extend([-boundary_input, boundary_output]);
-    let scale = total_mass(&initial)
-        .max(boundary_input)
-        .max(boundary_output);
+    let scale = initial_total.max(boundary_input).max(boundary_output);
     let residual = total_mass(&ledger).abs();
     let relative = if scale == 0. {
         residual
@@ -397,5 +426,51 @@ mod tests {
         assert_eq!(tiny.volume_low, vec![-1., 1.]);
         assert_eq!(tiny.relative_inventory_residual, 0.);
         assert!(step(&[f64::MAX, f64::MAX], 1., &[0.; 3], 1.).is_err());
+    }
+    #[test]
+    fn consecutive_owned_steps_retain_low_parts_and_refuse_transactionally() {
+        let large = 2_f64.powi(54);
+        let mut stocks = vec![Stock::new(large, 0., f64::MAX).unwrap(); 2];
+        for k in 1..=7 {
+            let result = step_owned(&stocks, 1., &[0., 1., 0.], 1.).unwrap();
+            stocks = result
+                .volume_high
+                .iter()
+                .zip(&result.volume_low)
+                .map(|(&high, &low)| Stock::new(high, low, f64::MAX).unwrap())
+                .collect();
+            assert_eq!(
+                stocks[0].high as i128 + stocks[0].low as i128,
+                large as i128 - k
+            );
+            assert_eq!(
+                stocks[1].high as i128 + stocks[1].low as i128,
+                large as i128 + k
+            );
+            // The independent integer oracle above is exact. This separate
+            // floating ledger observation can retain cancellation roundoff.
+            assert!(result.relative_inventory_residual <= f64::EPSILON);
+        }
+        let before: Vec<_> = stocks
+            .iter()
+            .map(|s| (s.high.to_bits(), s.low.to_bits()))
+            .collect();
+        assert!(step_owned(&stocks, 1., &[0., large * 2., 0.], 1.).is_err());
+        assert_eq!(
+            before,
+            stocks
+                .iter()
+                .map(|s| (s.high.to_bits(), s.low.to_bits()))
+                .collect::<Vec<_>>()
+        );
+        assert!(step_owned(&[Stock { high: 1., low: 0.1 }; 2], 1., &[0.; 3], 1.).is_err());
+        let negative_low = Stock::new(1., -2_f64.powi(-54), f64::MAX).unwrap();
+        assert!(step_owned(&[negative_low; 2], 1., &[0., 1., 0.], 1.).is_err());
+        let full = Stock::new(f64::MAX, 0., f64::MAX).unwrap();
+        assert!(step_owned(&[full, zero_stock()], 1., &[f64::MAX, 0., 0.], 1.).is_err());
+        assert_eq!((full.high, full.low), (f64::MAX, 0.));
+    }
+    fn zero_stock() -> Stock {
+        Stock::new(0., 0., f64::MAX).unwrap()
     }
 }

@@ -5,6 +5,7 @@ mod faces;
 mod moment_controls;
 mod moments;
 mod native;
+mod paired_evolution;
 mod reconstruction;
 mod reference;
 use serde_json::{Value, json};
@@ -130,4 +131,9 @@ pub fn moment_reconstruction_report() -> Result<Value, String> {
 /// Frozen shared-face derivatives and single-step accounting, not evolution.
 pub fn shared_face_report() -> Result<Value, String> {
     face_controls::report()
+}
+
+/// Bounded consecutive planar transfers; no native/seasonal model selection.
+pub fn paired_evolution_report() -> Result<Value, String> {
+    paired_evolution::report()
 }
