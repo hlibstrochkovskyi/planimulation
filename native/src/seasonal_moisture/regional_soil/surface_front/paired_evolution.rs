@@ -44,7 +44,10 @@ impl Config {
         self.initial_front + SPEED * time
     }
     pub fn mean(self, i: usize, time: f64) -> f64 {
-        let a = LEFT + i as f64 * self.width;
+        self.mean_at(LEFT, i, time)
+    }
+    pub fn mean_at(self, left: f64, i: usize, time: f64) -> f64 {
+        let a = left + i as f64 * self.width;
         let normal = if self.direction > 0. {
             a
         } else {
@@ -52,7 +55,7 @@ impl Config {
         };
         reference::wave_average(normal, normal + self.width, self.front(time) / SPEED)
     }
-    fn boundary(self, x: f64, time: f64) -> f64 {
+    pub fn boundary(self, x: f64, time: f64) -> f64 {
         let pressure = slope() * (self.front(time) - self.direction * x).max(0.);
         self.direction * SPEED * pressure.powf(POWER)
     }
@@ -72,18 +75,31 @@ pub(super) enum Method {
 }
 
 #[derive(Clone, Debug)]
-struct State {
-    stocks: Vec<Stock>,
-    input: Stock,
-    output: Stock,
-    accepted: usize,
+pub(super) struct State {
+    pub stocks: Vec<Stock>,
+    pub input: Stock,
+    pub output: Stock,
+    pub accepted: usize,
 }
 fn initialize(config: Config) -> Result<State, String> {
     let (n, _) = config.shape()?;
-    let stocks = (0..n)
-        .map(|i| {
-            let mean = config.mean(i, 0.);
-            let volume = mean * config.width;
+    initialize_means(
+        &(0..n).map(|i| config.mean(i, 0.)).collect::<Vec<_>>(),
+        config.width,
+    )
+}
+/// The caller owns the bounded geometry contract; exact means enter only here.
+pub(super) fn initialize_means(initial_means: &[f64], width: f64) -> Result<State, String> {
+    if initial_means.len() < 2 || initial_means.len() > 1024 || !width.is_finite() || width <= 0. {
+        return Err("Invalid planar initialization shape.".into());
+    }
+    let stocks = initial_means
+        .iter()
+        .map(|&mean| {
+            if !mean.is_finite() || mean < 0. {
+                return Err("Invalid initial planar mean.".into());
+            }
+            let volume = mean * width;
             if mean > 0. && volume == 0. {
                 return Err("Initial planar volume underflow.".into());
             }
@@ -186,14 +202,44 @@ fn advance(
     method: Method,
 ) -> Result<(State, f64, f64), String> {
     let time = state.accepted as f64 * config.step_seconds;
-    let observed = means(state, config.width)?;
-    let q = fluxes(
-        &observed,
+    advance_for(
+        state,
+        initial,
         config.width,
+        config.step_seconds,
         method,
         [config.boundary(LEFT, time), config.boundary(-LEFT, time)],
-    )?;
-    let step = faces::step_owned(&state.stocks, config.width, &q, config.step_seconds)?;
+    )
+}
+/// Shared transaction; interior inference receives no geometry, time or truth.
+pub(super) fn advance_for(
+    state: &State,
+    initial: &State,
+    width: f64,
+    step_seconds: f64,
+    method: Method,
+    boundary: [f64; 2],
+) -> Result<(State, f64, f64), String> {
+    if state.stocks.len() != initial.stocks.len()
+        || !(2..=1024).contains(&state.stocks.len())
+        || state.accepted == usize::MAX
+        || !width.is_finite()
+        || width <= 0.
+        || !step_seconds.is_finite()
+        || step_seconds <= 0.
+        || boundary.iter().any(|q| !q.is_finite())
+    {
+        return Err("Invalid planar transaction shape or clock.".into());
+    }
+    for stock in &initial.stocks {
+        Stock::new(stock.high, stock.low, f64::MAX)?;
+    }
+    for counter in [state.input, state.output, initial.input, initial.output] {
+        Stock::new(counter.high, counter.low, f64::MAX)?;
+    }
+    let observed = means(state, width)?;
+    let q = fluxes(&observed, width, method, boundary)?;
+    let step = faces::step_owned(&state.stocks, width, &q, step_seconds)?;
     let stocks = step
         .volume_high
         .iter()
@@ -206,10 +252,7 @@ fn advance(
         ..state.clone()
     };
     // Add the actual two exterior amounts separately, not their rounded sum.
-    for amount in [
-        q[0] * config.step_seconds,
-        -q[q.len() - 1] * config.step_seconds,
-    ] {
+    for amount in [q[0] * step_seconds, -q[q.len() - 1] * step_seconds] {
         if amount >= 0. {
             proposed.input.credit(amount)?;
         } else {
@@ -228,9 +271,32 @@ fn advance(
 }
 
 fn observe(state: &State, initial: &State, config: Config) -> Result<Value, String> {
+    observe_at(state, initial, config, LEFT)
+}
+pub(super) fn observe_at(
+    state: &State,
+    initial: &State,
+    config: Config,
+    left: f64,
+) -> Result<Value, String> {
     let time = state.accepted as f64 * config.step_seconds;
+    if state.stocks.len() != initial.stocks.len()
+        || !(2..=1024).contains(&state.stocks.len())
+        || !left.is_finite()
+        || !config.width.is_finite()
+        || config.width <= 0.
+        || !config.step_seconds.is_finite()
+        || config.step_seconds <= 0.
+        || !config.initial_front.is_finite()
+        || !time.is_finite()
+        || ![-1., 1.].contains(&config.direction)
+    {
+        return Err("Invalid planar observation geometry or shape.".into());
+    }
     let observed = means(state, config.width)?;
-    let exact: Vec<_> = (0..observed.len()).map(|i| config.mean(i, time)).collect();
+    let exact: Vec<_> = (0..observed.len())
+        .map(|i| config.mean_at(left, i, time))
+        .collect();
     let errors: Vec<_> = observed.iter().zip(&exact).map(|(a, b)| a - b).collect();
     let rms = (total_mass(&errors.iter().map(|e| e * e).collect::<Vec<_>>()) / errors.len() as f64)
         .sqrt();
@@ -268,7 +334,7 @@ fn observe(state: &State, initial: &State, config: Config) -> Result<Value, Stri
         .collect();
     let contours: Vec<_> = [0., 0.001, 0.01, 0.05].iter().map(|&threshold: &f64| {
         let positions: Vec<_> = cells.iter().enumerate().filter_map(|(i, c)| {
-            c.root(threshold, config.width).map(|x| LEFT + i as f64 * config.width + x)
+            c.root(threshold, config.width).map(|x| left + i as f64 * config.width + x)
         }).collect();
         let truth = config.direction * (config.front(time) - threshold.powf(1. / POWER) / slope());
         let error = if unresolved.is_empty() && positions.len() == 1 { Some(positions[0] - truth) } else { None };
@@ -431,6 +497,122 @@ mod tests {
                 s.accepted as u64,
             ])
             .collect()
+    }
+    #[test]
+    fn shared_transaction_matches_legacy_wrapper_and_refuses_malformed_inputs() {
+        let c = config(1.);
+        let initial = initialize(c).unwrap();
+        let mut state = initial.clone();
+        for _ in 0..3 {
+            let time = state.accepted as f64 * c.step_seconds;
+            let a = advance(&state, &initial, c, Method::PressurePenaltyOne).unwrap();
+            let b = advance_for(
+                &state,
+                &initial,
+                c.width,
+                c.step_seconds,
+                Method::PressurePenaltyOne,
+                [c.boundary(LEFT, time), c.boundary(-LEFT, time)],
+            )
+            .unwrap();
+            assert_eq!(bits(&a.0), bits(&b.0));
+            assert_eq!((a.1, a.2), (b.1, b.2));
+            state = a.0;
+        }
+        let before = bits(&state);
+        for bad in [vec![], vec![zero()], vec![zero(); 1025]] {
+            let invalid = State {
+                stocks: bad,
+                ..state.clone()
+            };
+            assert!(
+                advance_for(
+                    &invalid,
+                    &invalid,
+                    1.,
+                    0.001,
+                    Method::PressurePenaltyOne,
+                    [0., 0.]
+                )
+                .is_err()
+            );
+        }
+        let mut invalid = initial.clone();
+        invalid.stocks.pop();
+        assert!(observe_at(&state, &invalid, c, LEFT).is_err());
+        assert!(
+            advance_for(
+                &state,
+                &invalid,
+                1.,
+                0.001,
+                Method::PressurePenaltyOne,
+                [0., 0.]
+            )
+            .is_err()
+        );
+        invalid = initial.clone();
+        invalid.stocks[0].low = f64::NAN;
+        assert!(
+            advance_for(
+                &state,
+                &invalid,
+                1.,
+                0.001,
+                Method::PressurePenaltyOne,
+                [0., 0.]
+            )
+            .is_err()
+        );
+        for (width, dt, boundary) in [
+            (0., 0.001, [0., 0.]),
+            (1., f64::NAN, [0., 0.]),
+            (1., 0.001, [0., f64::INFINITY]),
+        ] {
+            assert!(
+                advance_for(
+                    &state,
+                    &initial,
+                    width,
+                    dt,
+                    Method::PressurePenaltyOne,
+                    boundary
+                )
+                .is_err()
+            );
+        }
+        assert_eq!(bits(&state), before);
+        assert!(observe_at(&state, &initial, c, f64::NAN).is_err());
+        assert!(observe_at(&state, &initial, Config { direction: 0., ..c }, LEFT).is_err());
+        for counter in [
+            Stock { high: 1., low: 1. },
+            Stock {
+                high: 0.,
+                low: f64::NAN,
+            },
+        ] {
+            for output in [false, true] {
+                let mut invalid = state.clone();
+                if output {
+                    invalid.output = counter;
+                } else {
+                    invalid.input = counter;
+                }
+                let bad_before = bits(&invalid);
+                assert!(
+                    advance_for(
+                        &invalid,
+                        &initial,
+                        1.,
+                        0.001,
+                        Method::PressurePenaltyOne,
+                        [0., 0.]
+                    )
+                    .is_err()
+                );
+                assert_eq!(bits(&invalid), bad_before);
+            }
+        }
     }
     #[test]
     fn owned_rebuilding_is_repeatable_and_in_memory_replay_is_exact() {

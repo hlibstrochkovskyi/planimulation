@@ -3,6 +3,7 @@ mod cadence_controls;
 mod element;
 mod face_controls;
 mod faces;
+mod full_cell;
 mod moment_controls;
 mod moments;
 mod native;
@@ -142,4 +143,9 @@ pub fn paired_evolution_report() -> Result<Value, String> {
 /// Temporal/grid conditioning observations; no physical-state extrapolation.
 pub fn cadence_conditioning_report() -> Result<Value, String> {
     cadence_controls::report()
+}
+
+/// Bounded full-cell propagation; no seasonal, spherical or desktop selection.
+pub fn full_cell_report() -> Result<Value, String> {
+    full_cell::report()
 }

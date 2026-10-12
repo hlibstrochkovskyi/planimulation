@@ -1,0 +1,1674 @@
+{
+  "recordVersion": "surface-full-cell-validation-1",
+  "date": "2026-10-12",
+  "reportVersion": "surface-full-cell-report-1",
+  "baselineCommit": "c8328e6",
+  "scope": "Bounded flat-line full-cell laboratory; no production selection",
+  "contract": {
+    "domainMeters": [
+      -32,
+      32
+    ],
+    "endSeconds": 11,
+    "speedMetersPerSecond": 0.1,
+    "roughness": 0.04,
+    "capSquareMetersPerSecond": 100,
+    "pressurePenalty": 1,
+    "maximumStepsPerTrial": 8800,
+    "maximumCellStepsPerTrial": 1126400,
+    "requestedCohortSteps": 39600,
+    "requestedCohortCellSteps": 4083200,
+    "ledgerRelativeArithmeticLimit": 5.684341886080802e-14
+  },
+  "results": {
+    "cases": 7,
+    "completed": 7,
+    "acceptedSteps": 39600,
+    "maximumLocalRelativeLedgerResidual": 1.1096503014754537e-16,
+    "maximumCumulativeRelativeInventoryResidual": 3.1320093730982663e-17,
+    "reflectedPhysicalArraysBitIdentical": true
+  },
+  "cases": [
+    {
+      "index": 0,
+      "config": {
+        "direction": 1,
+        "initialFront": 0,
+        "stepSeconds": 0.005,
+        "width": 1
+      },
+      "completed": true,
+      "refusal": null,
+      "requestedSteps": 2200,
+      "finalObservation": {
+        "acceptedSteps": 2200,
+        "commonFaceArrival": {
+          "actualVolumeSquareMeters": 0.0003288190159962039,
+          "exactVolumeSquareMeters": 0.00033025834308891453,
+          "normalFaceMeters": 1,
+          "signedVolumeErrorSquareMeters": -0.0000014393270927106076
+        },
+        "componentAwareMeanError": {
+          "l1VolumeSquareMeters": 0.0000026747681708196866,
+          "maximumMeters": 0.0000014393270927106108,
+          "rmsMeters": 1.862624458861521e-7,
+          "signedVolumeSquareMeters": -2.03886014601535e-7
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 1.1,
+            "positionsMeters": [
+              1.0996742063658
+            ],
+            "signedUniquePositionErrorMeters": -0.0003257936342000445,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 1.0973214285714286,
+            "positionsMeters": [
+              1.0969974723244564
+            ],
+            "signedUniquePositionErrorMeters": -0.00032395624697212355,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 0.522919279455746,
+            "positionsMeters": [
+              0.522937342472346
+            ],
+            "signedUniquePositionErrorMeters": 0.00001806301660001175,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": -23.569853785538292,
+            "positionsMeters": [
+              -23.56984710942718
+            ],
+            "signedUniquePositionErrorMeters": 0.000006676111112824401,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.0342165816218043e-17,
+        "exactInitiallyDryArrivalSquareMeters": 0.010152140830174313,
+        "initiallyDryArrivalSquareMeters": 0.010150830390599658,
+        "maximumMeanErrorMeters": 0.0000014393270927106076,
+        "rmsMeanErrorMeters": 1.8626244588614454e-7,
+        "signedDryArrivalErrorSquareMeters": -0.0000013104395746553477,
+        "timeSeconds": 11,
+        "unresolvedObservationCells": []
+      },
+      "crossings": [
+        {
+          "exactOnsetSeconds": 0,
+          "exactVolumeAtFirstArrivalSquareMeters": 1.7047790104096308e-7,
+          "firstRepresentableArrivalSeconds": 0.005,
+          "firstRepresentableArrivalVolumeSquareMeters": 1.4541841711024039e-12,
+          "normalFaceMeters": 0,
+          "signedArrivalLagSeconds": 0.005,
+          "terminalVolumeSquareMeters": 0.010150830390599658
+        },
+        {
+          "exactOnsetSeconds": 10,
+          "exactVolumeAtFirstArrivalSquareMeters": 4.5889247970125735e-7,
+          "firstRepresentableArrivalSeconds": 10.01,
+          "firstRepresentableArrivalVolumeSquareMeters": 1.5241229067924196e-7,
+          "normalFaceMeters": 1,
+          "signedArrivalLagSeconds": 0.009999999999999787,
+          "terminalVolumeSquareMeters": 0.0003288190159962039
+        }
+      ],
+      "arrivalHistory": [
+        {
+          "acceptedSteps": 0,
+          "timeSeconds": 0,
+          "initiallyDryArrivalSquareMeters": 0,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 1,
+          "timeSeconds": 0.005,
+          "initiallyDryArrivalSquareMeters": 1.4541841711024039e-12,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 1000,
+          "timeSeconds": 5,
+          "initiallyDryArrivalSquareMeters": 0.0032903407407935572,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 1980,
+          "timeSeconds": 9.9,
+          "initiallyDryArrivalSquareMeters": 0.008732293057259989,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 1999,
+          "timeSeconds": 9.995000000000001,
+          "initiallyDryArrivalSquareMeters": 0.00885225918777936,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 2000,
+          "timeSeconds": 10,
+          "initiallyDryArrivalSquareMeters": 0.008858586782821311,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 2001,
+          "timeSeconds": 10.005,
+          "initiallyDryArrivalSquareMeters": 0.00886491573395783,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 1.7047790104104442e-7,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -1.7047790104104442e-7
+          }
+        },
+        {
+          "acceptedSteps": 2020,
+          "timeSeconds": 10.1,
+          "initiallyDryArrivalSquareMeters": 0.008985421396872821,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0.00001161520102896935,
+            "exactVolumeSquareMeters": 0.000012310689257798549,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -6.954882288291991e-7
+          }
+        },
+        {
+          "acceptedSteps": 2200,
+          "timeSeconds": 11,
+          "initiallyDryArrivalSquareMeters": 0.010150830390599658,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0.0003288190159962039,
+            "exactVolumeSquareMeters": 0.00033025834308891453,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -0.0000014393270927106076
+          }
+        }
+      ],
+      "maximumLocalRelativeLedgerResidual": 1.1040231744376814e-16,
+      "maximumCumulativeRelativeInventoryResidual": 2.974658001509287e-17,
+      "boundaryInput": {
+        "high": 0.06193690791722914,
+        "low": -9.283481101907132e-19
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 1,
+      "config": {
+        "direction": 1,
+        "initialFront": 0,
+        "stepSeconds": 0.0025,
+        "width": 1
+      },
+      "completed": true,
+      "refusal": null,
+      "requestedSteps": 4400,
+      "finalObservation": {
+        "acceptedSteps": 4400,
+        "commonFaceArrival": {
+          "actualVolumeSquareMeters": 0.00032954425853629055,
+          "exactVolumeSquareMeters": 0.00033025834308891453,
+          "normalFaceMeters": 1,
+          "signedVolumeErrorSquareMeters": -7.140845526239833e-7
+        },
+        "componentAwareMeanError": {
+          "l1VolumeSquareMeters": 0.0000013262261724577025,
+          "maximumMeters": 7.140845526239875e-7,
+          "rmsMeters": 9.239541858324577e-8,
+          "signedVolumeSquareMeters": -1.0194293279027255e-7
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 1.1,
+            "positionsMeters": [
+              1.0998384367004532
+            ],
+            "signedUniquePositionErrorMeters": -0.000161563299546863,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 1.0973214285714286,
+            "positionsMeters": [
+              1.097160773697852
+            ],
+            "signedUniquePositionErrorMeters": -0.00016065487357663777,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 0.522919279455746,
+            "positionsMeters": [
+              0.522927779534959
+            ],
+            "signedUniquePositionErrorMeters": 0.000008500079212936384,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": -23.569853785538292,
+            "positionsMeters": [
+              -23.56985044748146
+            ],
+            "signedUniquePositionErrorMeters": 0.0000033380568318364112,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 7.1301954279786875e-19,
+        "exactInitiallyDryArrivalSquareMeters": 0.010152140830174313,
+        "initiallyDryArrivalSquareMeters": 0.010151486392804466,
+        "maximumMeanErrorMeters": 7.140845526239833e-7,
+        "rmsMeanErrorMeters": 9.239541858322882e-8,
+        "signedDryArrivalErrorSquareMeters": -6.5443736984791e-7,
+        "timeSeconds": 11,
+        "unresolvedObservationCells": []
+      },
+      "crossings": [
+        {
+          "exactOnsetSeconds": 0,
+          "exactVolumeAtFirstArrivalSquareMeters": 6.333229684273125e-8,
+          "firstRepresentableArrivalSeconds": 0.0025,
+          "firstRepresentableArrivalVolumeSquareMeters": 7.270920855512019e-13,
+          "normalFaceMeters": 0,
+          "signedArrivalLagSeconds": 0.0025,
+          "terminalVolumeSquareMeters": 0.010151486392804466
+        },
+        {
+          "exactOnsetSeconds": 10,
+          "exactVolumeAtFirstArrivalSquareMeters": 1.7047790104104442e-7,
+          "firstRepresentableArrivalSeconds": 10.005,
+          "firstRepresentableArrivalVolumeSquareMeters": 5.6421920139725326e-8,
+          "normalFaceMeters": 1,
+          "signedArrivalLagSeconds": 0.005000000000000782,
+          "terminalVolumeSquareMeters": 0.00032954425853629055
+        }
+      ],
+      "arrivalHistory": [
+        {
+          "acceptedSteps": 0,
+          "timeSeconds": 0,
+          "initiallyDryArrivalSquareMeters": 0,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 1,
+          "timeSeconds": 0.0025,
+          "initiallyDryArrivalSquareMeters": 7.270920855512019e-13,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 2000,
+          "timeSeconds": 5,
+          "initiallyDryArrivalSquareMeters": 0.0032908780378795716,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 3960,
+          "timeSeconds": 9.9,
+          "initiallyDryArrivalSquareMeters": 0.008732911798175147,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 3998,
+          "timeSeconds": 9.995000000000001,
+          "initiallyDryArrivalSquareMeters": 0.008852879580116746,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 4000,
+          "timeSeconds": 10,
+          "initiallyDryArrivalSquareMeters": 0.00885920726208715,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 4002,
+          "timeSeconds": 10.005,
+          "initiallyDryArrivalSquareMeters": 0.008865536295841296,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 5.6421920139725326e-8,
+            "exactVolumeSquareMeters": 1.7047790104104442e-7,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -1.140559809013191e-7
+          }
+        },
+        {
+          "acceptedSteps": 4040,
+          "timeSeconds": 10.1,
+          "initiallyDryArrivalSquareMeters": 0.008986044406633222,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0.000011971284776899647,
+            "exactVolumeSquareMeters": 0.000012310689257798549,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -3.394044808989017e-7
+          }
+        },
+        {
+          "acceptedSteps": 4400,
+          "timeSeconds": 11,
+          "initiallyDryArrivalSquareMeters": 0.010151486392804466,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0.00032954425853629055,
+            "exactVolumeSquareMeters": 0.00033025834308891453,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -7.140845526239833e-7
+          }
+        }
+      ],
+      "maximumLocalRelativeLedgerResidual": 1.1043783938329169e-16,
+      "maximumCumulativeRelativeInventoryResidual": 3.1320093730982663e-17,
+      "boundaryInput": {
+        "high": 0.06193700986031095,
+        "low": 8.927727264060326e-19
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 2,
+      "config": {
+        "direction": 1,
+        "initialFront": 0,
+        "stepSeconds": 0.00125,
+        "width": 1
+      },
+      "completed": true,
+      "refusal": null,
+      "requestedSteps": 8800,
+      "finalObservation": {
+        "acceptedSteps": 8800,
+        "commonFaceArrival": {
+          "actualVolumeSquareMeters": 0.0003299033054385884,
+          "exactVolumeSquareMeters": 0.00033025834308891453,
+          "normalFaceMeters": 1,
+          "signedVolumeErrorSquareMeters": -3.550376503261136e-7
+        },
+        "componentAwareMeanError": {
+          "l1VolumeSquareMeters": 6.591038528325827e-7,
+          "maximumMeters": 3.5503765032609284e-7,
+          "rmsMeters": 4.5934292664634705e-8,
+          "signedVolumeSquareMeters": -5.0971447819602944e-8
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 1.1,
+            "positionsMeters": [
+              1.099919693036025
+            ],
+            "signedUniquePositionErrorMeters": -0.00008030696397498538,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 1.0973214285714286,
+            "positionsMeters": [
+              1.09724157216278
+            ],
+            "signedUniquePositionErrorMeters": -0.00007985640864860422,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 0.522919279455746,
+            "positionsMeters": [
+              0.5229233391767069
+            ],
+            "signedUniquePositionErrorMeters": 0.0000040597209608472795,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": -23.569853785538292,
+            "positionsMeters": [
+              -23.569852116509633
+            ],
+            "signedUniquePositionErrorMeters": 0.0000016690286592790926,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.0106747599051385e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.010152140830174313,
+        "initiallyDryArrivalSquareMeters": 0.010151813899449644,
+        "maximumMeanErrorMeters": 3.550376503261136e-7,
+        "rmsMeanErrorMeters": 4.5934292664631264e-8,
+        "signedDryArrivalErrorSquareMeters": -3.2693072466935535e-7,
+        "timeSeconds": 11,
+        "unresolvedObservationCells": []
+      },
+      "crossings": [
+        {
+          "exactOnsetSeconds": 0,
+          "exactVolumeAtFirstArrivalSquareMeters": 2.3527857856556157e-8,
+          "firstRepresentableArrivalSeconds": 0.00125,
+          "firstRepresentableArrivalVolumeSquareMeters": 3.6354604277560097e-13,
+          "normalFaceMeters": 0,
+          "signedArrivalLagSeconds": 0.00125,
+          "terminalVolumeSquareMeters": 0.010151813899449644
+        },
+        {
+          "exactOnsetSeconds": 10,
+          "exactVolumeAtFirstArrivalSquareMeters": 6.333229684276147e-8,
+          "firstRepresentableArrivalSeconds": 10.0025,
+          "firstRepresentableArrivalVolumeSquareMeters": 2.0907788118942735e-8,
+          "normalFaceMeters": 1,
+          "signedArrivalLagSeconds": 0.0024999999999995026,
+          "terminalVolumeSquareMeters": 0.0003299033054385884
+        }
+      ],
+      "arrivalHistory": [
+        {
+          "acceptedSteps": 0,
+          "timeSeconds": 0,
+          "initiallyDryArrivalSquareMeters": 0,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 1,
+          "timeSeconds": 0.00125,
+          "initiallyDryArrivalSquareMeters": 3.6354604277560097e-13,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 4000,
+          "timeSeconds": 5,
+          "initiallyDryArrivalSquareMeters": 0.0032911459311272973,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 7920,
+          "timeSeconds": 9.9,
+          "initiallyDryArrivalSquareMeters": 0.00873322082854058,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 7996,
+          "timeSeconds": 9.995000000000001,
+          "initiallyDryArrivalSquareMeters": 0.008853189439978178,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 8000,
+          "timeSeconds": 10,
+          "initiallyDryArrivalSquareMeters": 0.008859517165609775,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 8004,
+          "timeSeconds": 10.005,
+          "initiallyDryArrivalSquareMeters": 0.008865846243014064,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 1.156065393173439e-7,
+            "exactVolumeSquareMeters": 1.7047790104104442e-7,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -5.487136172370052e-8
+          }
+        },
+        {
+          "acceptedSteps": 8080,
+          "timeSeconds": 10.1,
+          "initiallyDryArrivalSquareMeters": 0.008986355573429519,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0.000012144058798252718,
+            "exactVolumeSquareMeters": 0.000012310689257798549,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -1.666304595458313e-7
+          }
+        },
+        {
+          "acceptedSteps": 8800,
+          "timeSeconds": 11,
+          "initiallyDryArrivalSquareMeters": 0.010151813899449644,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0.0003299033054385884,
+            "exactVolumeSquareMeters": 0.00033025834308891453,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -3.550376503261136e-7
+          }
+        }
+      ],
+      "maximumLocalRelativeLedgerResidual": 1.1058127023288492e-16,
+      "maximumCumulativeRelativeInventoryResidual": 2.960248783044776e-17,
+      "boundaryInput": {
+        "high": 0.06193706083179592,
+        "low": 1.2654672231979247e-18
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 3,
+      "config": {
+        "direction": 1,
+        "initialFront": 0,
+        "stepSeconds": 0.005,
+        "width": 0.5
+      },
+      "completed": true,
+      "refusal": null,
+      "requestedSteps": 2200,
+      "finalObservation": {
+        "acceptedSteps": 2200,
+        "commonFaceArrival": {
+          "actualVolumeSquareMeters": 0.00032871644218962666,
+          "exactVolumeSquareMeters": 0.00033025834308891453,
+          "normalFaceMeters": 1,
+          "signedVolumeErrorSquareMeters": -0.000001541900899287873
+        },
+        "componentAwareMeanError": {
+          "l1VolumeSquareMeters": 0.000002943129136376781,
+          "maximumMeters": 0.000003083801798575743,
+          "rmsMeters": 2.793412386849045e-7,
+          "signedVolumeSquareMeters": -2.0388601461671384e-7
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 1.1,
+            "positionsMeters": [
+              1.0996386233998328
+            ],
+            "signedUniquePositionErrorMeters": -0.0003613766001673291,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 1.0973214285714286,
+            "positionsMeters": [
+              1.096963126260227
+            ],
+            "signedUniquePositionErrorMeters": -0.00035830231120148603,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 0.522919279455746,
+            "positionsMeters": [
+              0.5229421588925465
+            ],
+            "signedUniquePositionErrorMeters": 0.00002287943680046034,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": -23.569853785538292,
+            "positionsMeters": [
+              -23.569847113989265
+            ],
+            "signedUniquePositionErrorMeters": 0.0000066715490270041755,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.0342165816218043e-17,
+        "exactInitiallyDryArrivalSquareMeters": 0.010152140830174313,
+        "initiallyDryArrivalSquareMeters": 0.010150720047876956,
+        "maximumMeanErrorMeters": 0.000003083801798575746,
+        "rmsMeanErrorMeters": 2.793412386848805e-7,
+        "signedDryArrivalErrorSquareMeters": -0.0000014207822973573425,
+        "timeSeconds": 11,
+        "unresolvedObservationCells": []
+      },
+      "crossings": [
+        {
+          "exactOnsetSeconds": 0,
+          "exactVolumeAtFirstArrivalSquareMeters": 1.7047790104096308e-7,
+          "firstRepresentableArrivalSeconds": 0.005,
+          "firstRepresentableArrivalVolumeSquareMeters": 1.1888838304996907e-12,
+          "normalFaceMeters": 0,
+          "signedArrivalLagSeconds": 0.005,
+          "terminalVolumeSquareMeters": 0.010150720047876956
+        },
+        {
+          "exactOnsetSeconds": 5,
+          "exactVolumeAtFirstArrivalSquareMeters": 4.5889247970118456e-7,
+          "firstRepresentableArrivalSeconds": 5.01,
+          "firstRepresentableArrivalVolumeSquareMeters": 1.5317307892302227e-7,
+          "normalFaceMeters": 0.5,
+          "signedArrivalLagSeconds": 0.009999999999999787,
+          "terminalVolumeSquareMeters": 0.004269120357272572
+        },
+        {
+          "exactOnsetSeconds": 10,
+          "exactVolumeAtFirstArrivalSquareMeters": 4.5889247970125735e-7,
+          "firstRepresentableArrivalSeconds": 10.01,
+          "firstRepresentableArrivalVolumeSquareMeters": 1.3919631296865056e-7,
+          "normalFaceMeters": 1,
+          "signedArrivalLagSeconds": 0.009999999999999787,
+          "terminalVolumeSquareMeters": 0.00032871644218962666
+        }
+      ],
+      "arrivalHistory": [
+        {
+          "acceptedSteps": 0,
+          "timeSeconds": 0,
+          "initiallyDryArrivalSquareMeters": 0,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 1,
+          "timeSeconds": 0.005,
+          "initiallyDryArrivalSquareMeters": 1.1888838304996907e-12,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 1000,
+          "timeSeconds": 5,
+          "initiallyDryArrivalSquareMeters": 0.003290490639704024,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 1980,
+          "timeSeconds": 9.9,
+          "initiallyDryArrivalSquareMeters": 0.008732174098300176,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 1999,
+          "timeSeconds": 9.995000000000001,
+          "initiallyDryArrivalSquareMeters": 0.008852138271704203,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 2000,
+          "timeSeconds": 10,
+          "initiallyDryArrivalSquareMeters": 0.008858465765671108,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 2001,
+          "timeSeconds": 10.005,
+          "initiallyDryArrivalSquareMeters": 0.00886479461592292,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 1.7047790104104442e-7,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -1.7047790104104442e-7
+          }
+        },
+        {
+          "acceptedSteps": 2020,
+          "timeSeconds": 10.1,
+          "initiallyDryArrivalSquareMeters": 0.00898529991089373,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0.000011534189453560834,
+            "exactVolumeSquareMeters": 0.000012310689257798549,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -7.764998042377145e-7
+          }
+        },
+        {
+          "acceptedSteps": 2200,
+          "timeSeconds": 11,
+          "initiallyDryArrivalSquareMeters": 0.010150720047876956,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0.00032871644218962666,
+            "exactVolumeSquareMeters": 0.00033025834308891453,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -0.000001541900899287873
+          }
+        }
+      ],
+      "maximumLocalRelativeLedgerResidual": 1.1088094261923919e-16,
+      "maximumCumulativeRelativeInventoryResidual": 2.0332557284945677e-17,
+      "boundaryInput": {
+        "high": 0.06193690791722914,
+        "low": -9.283481101907132e-19
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 4,
+      "config": {
+        "direction": 1,
+        "initialFront": 0,
+        "stepSeconds": 0.0025,
+        "width": 0.5
+      },
+      "completed": true,
+      "refusal": null,
+      "requestedSteps": 4400,
+      "finalObservation": {
+        "acceptedSteps": 4400,
+        "commonFaceArrival": {
+          "actualVolumeSquareMeters": 0.00032949055893607775,
+          "exactVolumeSquareMeters": 0.00033025834308891453,
+          "normalFaceMeters": 1,
+          "signedVolumeErrorSquareMeters": -7.677841528367811e-7
+        },
+        "componentAwareMeanError": {
+          "l1VolumeSquareMeters": 0.0000014692539528263015,
+          "maximumMeters": 0.0000015355683056735842,
+          "rmsMeters": 1.3911485539870951e-7,
+          "signedVolumeSquareMeters": -1.0194293280545138e-7
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 1.1,
+            "positionsMeters": [
+              1.0998201318247065
+            ],
+            "signedUniquePositionErrorMeters": -0.0001798681752935849,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 1.0973214285714286,
+            "positionsMeters": [
+              1.0971430871723113
+            ],
+            "signedUniquePositionErrorMeters": -0.00017834139911721003,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 0.522919279455746,
+            "positionsMeters": [
+              0.5229304647580858
+            ],
+            "signedUniquePositionErrorMeters": 0.000011185302339788983,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": -23.569853785538292,
+            "positionsMeters": [
+              -23.569850449762576
+            ],
+            "signedUniquePositionErrorMeters": 0.000003335775716095668,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.0370578359669191e-17,
+        "exactInitiallyDryArrivalSquareMeters": 0.010152140830174313,
+        "initiallyDryArrivalSquareMeters": 0.01015143115857843,
+        "maximumMeanErrorMeters": 0.0000015355683056735622,
+        "rmsMeanErrorMeters": 1.391148553987373e-7,
+        "signedDryArrivalErrorSquareMeters": -7.09671595882852e-7,
+        "timeSeconds": 11,
+        "unresolvedObservationCells": []
+      },
+      "crossings": [
+        {
+          "exactOnsetSeconds": 0,
+          "exactVolumeAtFirstArrivalSquareMeters": 6.333229684273125e-8,
+          "firstRepresentableArrivalSeconds": 0.0025,
+          "firstRepresentableArrivalVolumeSquareMeters": 5.944419152498454e-13,
+          "normalFaceMeters": 0,
+          "signedArrivalLagSeconds": 0.0025,
+          "terminalVolumeSquareMeters": 0.01015143115857843
+        },
+        {
+          "exactOnsetSeconds": 5,
+          "exactVolumeAtFirstArrivalSquareMeters": 1.7047790104099037e-7,
+          "firstRepresentableArrivalSeconds": 5.005,
+          "firstRepresentableArrivalVolumeSquareMeters": 5.6620948462995996e-8,
+          "normalFaceMeters": 0.5,
+          "signedArrivalLagSeconds": 0.004999999999999893,
+          "terminalVolumeSquareMeters": 0.004269908266405253
+        },
+        {
+          "exactOnsetSeconds": 10,
+          "exactVolumeAtFirstArrivalSquareMeters": 1.7047790104104442e-7,
+          "firstRepresentableArrivalSeconds": 10.005,
+          "firstRepresentableArrivalVolumeSquareMeters": 5.149000298977327e-8,
+          "normalFaceMeters": 1,
+          "signedArrivalLagSeconds": 0.005000000000000782,
+          "terminalVolumeSquareMeters": 0.00032949055893607775
+        }
+      ],
+      "arrivalHistory": [
+        {
+          "acceptedSteps": 0,
+          "timeSeconds": 0,
+          "initiallyDryArrivalSquareMeters": 0,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 1,
+          "timeSeconds": 0.0025,
+          "initiallyDryArrivalSquareMeters": 5.944419152498454e-13,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 2000,
+          "timeSeconds": 5,
+          "initiallyDryArrivalSquareMeters": 0.003290952342277724,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 3960,
+          "timeSeconds": 9.9,
+          "initiallyDryArrivalSquareMeters": 0.008732852553801925,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 3998,
+          "timeSeconds": 9.995000000000001,
+          "initiallyDryArrivalSquareMeters": 0.008852819354302996,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 4000,
+          "timeSeconds": 10,
+          "initiallyDryArrivalSquareMeters": 0.008859146985584106,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 4002,
+          "timeSeconds": 10.005,
+          "initiallyDryArrivalSquareMeters": 0.008865475973055991,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 5.149000298977327e-8,
+            "exactVolumeSquareMeters": 1.7047790104104442e-7,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -1.1898789805127115e-7
+          }
+        },
+        {
+          "acceptedSteps": 4040,
+          "timeSeconds": 10.1,
+          "initiallyDryArrivalSquareMeters": 0.008985983876569192,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0.000011927629199213935,
+            "exactVolumeSquareMeters": 0.000012310689257798549,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -3.8306005858461403e-7
+          }
+        },
+        {
+          "acceptedSteps": 4400,
+          "timeSeconds": 11,
+          "initiallyDryArrivalSquareMeters": 0.01015143115857843,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0.00032949055893607775,
+            "exactVolumeSquareMeters": 0.00033025834308891453,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -7.677841528367811e-7
+          }
+        }
+      ],
+      "maximumLocalRelativeLedgerResidual": 1.1096503014754537e-16,
+      "maximumCumulativeRelativeInventoryResidual": 2.519651412813038e-17,
+      "boundaryInput": {
+        "high": 0.06193700986031095,
+        "low": 8.927727264060326e-19
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 5,
+      "config": {
+        "direction": 1,
+        "initialFront": 0,
+        "stepSeconds": 0.00125,
+        "width": 0.5
+      },
+      "completed": true,
+      "refusal": null,
+      "requestedSteps": 8800,
+      "finalObservation": {
+        "acceptedSteps": 8800,
+        "commonFaceArrival": {
+          "actualVolumeSquareMeters": 0.0003298755785757208,
+          "exactVolumeSquareMeters": 0.00033025834308891453,
+          "normalFaceMeters": 1,
+          "signedVolumeErrorSquareMeters": -3.82764513193743e-7
+        },
+        "componentAwareMeanError": {
+          "l1VolumeSquareMeters": 7.337830085152328e-7,
+          "maximumMeters": 7.655290263875369e-7,
+          "rmsMeters": 6.935959152723985e-8,
+          "signedVolumeSquareMeters": -5.0971447834781774e-8
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 1.1,
+            "positionsMeters": [
+              1.0999103536927595
+            ],
+            "signedUniquePositionErrorMeters": -0.00008964630724062062,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 1.0973214285714286,
+            "positionsMeters": [
+              1.0972325420228044
+            ],
+            "signedUniquePositionErrorMeters": -0.00008888654862415635,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 0.522919279455746,
+            "positionsMeters": [
+              0.5229247814670462
+            ],
+            "signedUniquePositionErrorMeters": 0.000005502011300229093,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": -23.569853785538292,
+            "positionsMeters": [
+              -23.56985211765014
+            ],
+            "signedUniquePositionErrorMeters": 0.0000016678881529230694,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.0106747599051385e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.010152140830174313,
+        "initiallyDryArrivalSquareMeters": 0.010151786255603642,
+        "maximumMeanErrorMeters": 7.65529026387486e-7,
+        "rmsMeanErrorMeters": 6.935959152723298e-8,
+        "signedDryArrivalErrorSquareMeters": -3.5457457067157583e-7,
+        "timeSeconds": 11,
+        "unresolvedObservationCells": []
+      },
+      "crossings": [
+        {
+          "exactOnsetSeconds": 0,
+          "exactVolumeAtFirstArrivalSquareMeters": 2.3527857856556157e-8,
+          "firstRepresentableArrivalSeconds": 0.00125,
+          "firstRepresentableArrivalVolumeSquareMeters": 2.972209576249227e-13,
+          "normalFaceMeters": 0,
+          "signedArrivalLagSeconds": 0.00125,
+          "terminalVolumeSquareMeters": 0.010151786255603642
+        },
+        {
+          "exactOnsetSeconds": 5,
+          "exactVolumeAtFirstArrivalSquareMeters": 6.333229684276147e-8,
+          "firstRepresentableArrivalSeconds": 5.0025,
+          "firstRepresentableArrivalVolumeSquareMeters": 2.0960662805976654e-8,
+          "normalFaceMeters": 0.5,
+          "signedArrivalLagSeconds": 0.002500000000000391,
+          "terminalVolumeSquareMeters": 0.004270301487619894
+        },
+        {
+          "exactOnsetSeconds": 10,
+          "exactVolumeAtFirstArrivalSquareMeters": 6.333229684276147e-8,
+          "firstRepresentableArrivalSeconds": 10.0025,
+          "firstRepresentableArrivalVolumeSquareMeters": 1.907067670145639e-8,
+          "normalFaceMeters": 1,
+          "signedArrivalLagSeconds": 0.0024999999999995026,
+          "terminalVolumeSquareMeters": 0.0003298755785757208
+        }
+      ],
+      "arrivalHistory": [
+        {
+          "acceptedSteps": 0,
+          "timeSeconds": 0,
+          "initiallyDryArrivalSquareMeters": 0,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 1,
+          "timeSeconds": 0.00125,
+          "initiallyDryArrivalSquareMeters": 2.972209576249227e-13,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 4000,
+          "timeSeconds": 5,
+          "initiallyDryArrivalSquareMeters": 0.003291182849437324,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 7920,
+          "timeSeconds": 9.9,
+          "initiallyDryArrivalSquareMeters": 0.008733191288322421,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 7996,
+          "timeSeconds": 9.995000000000001,
+          "initiallyDryArrivalSquareMeters": 0.008853159408063579,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 8000,
+          "timeSeconds": 10,
+          "initiallyDryArrivalSquareMeters": 0.00885948710829911,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 8004,
+          "timeSeconds": 10.005,
+          "initiallyDryArrivalSquareMeters": 0.008865816164675681,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 1.1117664667503967e-7,
+            "exactVolumeSquareMeters": 1.7047790104104442e-7,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -5.9301254366004754e-8
+          }
+        },
+        {
+          "acceptedSteps": 8080,
+          "timeSeconds": 10.1,
+          "initiallyDryArrivalSquareMeters": 0.008986325379013189,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0.000012121100225550652,
+            "exactVolumeSquareMeters": 0.000012310689257798549,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -1.8958903224789677e-7
+          }
+        },
+        {
+          "acceptedSteps": 8800,
+          "timeSeconds": 11,
+          "initiallyDryArrivalSquareMeters": 0.010151786255603642,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0.0003298755785757208,
+            "exactVolumeSquareMeters": 0.00033025834308891453,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -3.82764513193743e-7
+          }
+        }
+      ],
+      "maximumLocalRelativeLedgerResidual": 1.1055680618726044e-16,
+      "maximumCumulativeRelativeInventoryResidual": 2.4886005617557113e-17,
+      "boundaryInput": {
+        "high": 0.06193706083179592,
+        "low": 1.2654672231979247e-18
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 6,
+      "config": {
+        "direction": -1,
+        "initialFront": 0,
+        "stepSeconds": 0.00125,
+        "width": 0.5
+      },
+      "completed": true,
+      "refusal": null,
+      "requestedSteps": 8800,
+      "finalObservation": {
+        "acceptedSteps": 8800,
+        "commonFaceArrival": {
+          "actualVolumeSquareMeters": 0.0003298755785757208,
+          "exactVolumeSquareMeters": 0.00033025834308891453,
+          "normalFaceMeters": 1,
+          "signedVolumeErrorSquareMeters": -3.82764513193743e-7
+        },
+        "componentAwareMeanError": {
+          "l1VolumeSquareMeters": 7.337830085152328e-7,
+          "maximumMeters": 7.655290263875369e-7,
+          "rmsMeters": 6.935959152723985e-8,
+          "signedVolumeSquareMeters": -5.097144783478177e-8
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": -1.1,
+            "positionsMeters": [
+              -1.0999103536927595
+            ],
+            "signedUniquePositionErrorMeters": 0.00008964630724062062,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": -1.0973214285714286,
+            "positionsMeters": [
+              -1.0972325420228044
+            ],
+            "signedUniquePositionErrorMeters": 0.00008888654862415635,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": -0.522919279455746,
+            "positionsMeters": [
+              -0.5229247814670462
+            ],
+            "signedUniquePositionErrorMeters": -0.000005502011300229093,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 23.569853785538292,
+            "positionsMeters": [
+              23.56985211765014
+            ],
+            "signedUniquePositionErrorMeters": -0.0000016678881529230694,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.0106747599051385e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.010152140830174315,
+        "initiallyDryArrivalSquareMeters": 0.010151786255603642,
+        "maximumMeanErrorMeters": 7.65529026387486e-7,
+        "rmsMeanErrorMeters": 6.935959152723298e-8,
+        "signedDryArrivalErrorSquareMeters": -3.5457457067331055e-7,
+        "timeSeconds": 11,
+        "unresolvedObservationCells": []
+      },
+      "crossings": [
+        {
+          "exactOnsetSeconds": 0,
+          "exactVolumeAtFirstArrivalSquareMeters": 2.3527857856556157e-8,
+          "firstRepresentableArrivalSeconds": 0.00125,
+          "firstRepresentableArrivalVolumeSquareMeters": 2.972209576249227e-13,
+          "normalFaceMeters": 0,
+          "signedArrivalLagSeconds": 0.00125,
+          "terminalVolumeSquareMeters": 0.010151786255603642
+        },
+        {
+          "exactOnsetSeconds": 5,
+          "exactVolumeAtFirstArrivalSquareMeters": 6.333229684276147e-8,
+          "firstRepresentableArrivalSeconds": 5.0025,
+          "firstRepresentableArrivalVolumeSquareMeters": 2.0960662805976654e-8,
+          "normalFaceMeters": 0.5,
+          "signedArrivalLagSeconds": 0.002500000000000391,
+          "terminalVolumeSquareMeters": 0.004270301487619893
+        },
+        {
+          "exactOnsetSeconds": 10,
+          "exactVolumeAtFirstArrivalSquareMeters": 6.333229684276147e-8,
+          "firstRepresentableArrivalSeconds": 10.0025,
+          "firstRepresentableArrivalVolumeSquareMeters": 1.907067670145639e-8,
+          "normalFaceMeters": 1,
+          "signedArrivalLagSeconds": 0.0024999999999995026,
+          "terminalVolumeSquareMeters": 0.0003298755785757208
+        }
+      ],
+      "arrivalHistory": [
+        {
+          "acceptedSteps": 0,
+          "timeSeconds": 0,
+          "initiallyDryArrivalSquareMeters": 0,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 1,
+          "timeSeconds": 0.00125,
+          "initiallyDryArrivalSquareMeters": 2.972209576249227e-13,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 4000,
+          "timeSeconds": 5,
+          "initiallyDryArrivalSquareMeters": 0.003291182849437324,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 7920,
+          "timeSeconds": 9.9,
+          "initiallyDryArrivalSquareMeters": 0.008733191288322421,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 7996,
+          "timeSeconds": 9.995000000000001,
+          "initiallyDryArrivalSquareMeters": 0.008853159408063579,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 8000,
+          "timeSeconds": 10,
+          "initiallyDryArrivalSquareMeters": 0.008859487108299112,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0,
+            "exactVolumeSquareMeters": 0,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": 0
+          }
+        },
+        {
+          "acceptedSteps": 8004,
+          "timeSeconds": 10.005,
+          "initiallyDryArrivalSquareMeters": 0.00886581616467568,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 1.1117664667503967e-7,
+            "exactVolumeSquareMeters": 1.7047790104104442e-7,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -5.9301254366004754e-8
+          }
+        },
+        {
+          "acceptedSteps": 8080,
+          "timeSeconds": 10.1,
+          "initiallyDryArrivalSquareMeters": 0.008986325379013189,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0.000012121100225550652,
+            "exactVolumeSquareMeters": 0.000012310689257798549,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -1.8958903224789677e-7
+          }
+        },
+        {
+          "acceptedSteps": 8800,
+          "timeSeconds": 11,
+          "initiallyDryArrivalSquareMeters": 0.010151786255603642,
+          "commonFaceArrival": {
+            "actualVolumeSquareMeters": 0.0003298755785757208,
+            "exactVolumeSquareMeters": 0.00033025834308891453,
+            "normalFaceMeters": 1,
+            "signedVolumeErrorSquareMeters": -3.82764513193743e-7
+          }
+        }
+      ],
+      "maximumLocalRelativeLedgerResidual": 1.1055680618726044e-16,
+      "maximumCumulativeRelativeInventoryResidual": 2.4886005617557113e-17,
+      "boundaryInput": {
+        "high": 0.06193706083179592,
+        "low": 1.2654672231979247e-18
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    }
+  ],
+  "temporalComparisons": [
+    {
+      "cases": [
+        0,
+        1,
+        2
+      ],
+      "completedAtSameEndTime": true,
+      "fieldDifferences": [
+        {
+          "l1VolumeSquareMeters": 0.0000013485419983619842,
+          "maximumMeters": 7.252425400866233e-7,
+          "rmsMeters": 9.387030384672129e-8,
+          "signedVolumeSquareMeters": -1.0194308181126246e-7
+        },
+        {
+          "l1VolumeSquareMeters": 6.671223196251197e-7,
+          "maximumMeters": 3.5904690229789467e-7,
+          "rmsMeters": 4.646198433033589e-8,
+          "signedVolumeSquareMeters": -5.0971484970669604e-8
+        }
+      ],
+      "rmsDifferenceRatio": 2.0203679459603197
+    },
+    {
+      "cases": [
+        3,
+        4,
+        5
+      ],
+      "completedAtSameEndTime": true,
+      "fieldDifferences": [
+        {
+          "l1VolumeSquareMeters": 0.0000014738751835504796,
+          "maximumMeters": 0.000001548233492902159,
+          "rmsMeters": 1.4022737865665046e-7,
+          "signedVolumeSquareMeters": -1.0194308181126246e-7
+        },
+        {
+          "l1VolumeSquareMeters": 7.354709443110687e-7,
+          "maximumMeters": 7.700392792860472e-7,
+          "rmsMeters": 6.975551244374146e-8,
+          "signedVolumeSquareMeters": -5.0971484970669604e-8
+        }
+      ],
+      "rmsDifferenceRatio": 2.0102694933213385
+    }
+  ],
+  "tests": {
+    "rust": {
+      "library": 164,
+      "regionalSoil": 12,
+      "regionalSurfaceFlow": 5,
+      "total": 181,
+      "passed": true
+    },
+    "node": {
+      "files": 18,
+      "tests": 88,
+      "passed": true
+    },
+    "strictAllTargetClippy": true,
+    "typecheck": true,
+    "formatAndWhitespace": true,
+    "cliRefusals": {
+      "cases": 3,
+      "existingOutputUnchanged": true,
+      "invalidExtraArgumentOutputAbsent": true
+    },
+    "fullNpmTestAndAllNativeTargetsRerun": false,
+    "guiRerun": false,
+    "initialDirectedFailure": "An incorrect test expected the legacy width/cadence configuration to refuse. It validly represents 400 cells and 80 steps on the old .1 s domain; the new domain represents 128 cells and 8800 steps. The assertion was corrected before final-source validation."
+  },
+  "limitations": [
+    "Bounded full-cell manufactured wave only; not unrestricted long-time stability.",
+    "Affine pressure is semidiscrete-exact in the qualified fixture; spatial convergence remains open.",
+    "Initial face-zero tiny first-step traces are retained without a detection floor.",
+    "The narrower domain changes RMS normalization; do not compare directly with the old domain.",
+    "No model pins, spherical/seasonal integration, desktop selection or serialized checkpoint support changes."
+  ],
+  "fingerprints": {
+    "reports": [
+      {
+        "path": "artifacts/full-cell-final.json",
+        "bytes": 225845,
+        "sha256": "4cac6607331ac7b9535d86766f80cbb97afac56a3a3c3b9d914255ab5a0c5128"
+      },
+      {
+        "path": "artifacts/full-cell-release.json",
+        "bytes": 225845,
+        "sha256": "4cac6607331ac7b9535d86766f80cbb97afac56a3a3c3b9d914255ab5a0c5128"
+      },
+      {
+        "path": "artifacts/full-cell-repeat.json",
+        "bytes": 225845,
+        "sha256": "4cac6607331ac7b9535d86766f80cbb97afac56a3a3c3b9d914255ab5a0c5128"
+      }
+    ],
+    "legacyReports": [
+      {
+        "path": "artifacts/paired-after-full-cell.json",
+        "bytes": 1509746,
+        "sha256": "8684c711e4009578b6e0c76df67a0d06123531eb6ba02c9cbf57da11296aae58"
+      },
+      {
+        "path": "artifacts/cadence-after-full-cell.json",
+        "bytes": 667657,
+        "sha256": "3aaeb44851096be45d61f6970c2528c7ebe240cb010b76803a2d07ba4e01dc6e"
+      }
+    ],
+    "sources": [
+      {
+        "path": "native/src/seasonal_moisture/regional_soil/surface_front.rs",
+        "bytes": 5821,
+        "sha256": "b2459c01c380832346cb1ee00cb382ca79117c079ba1db8a97d182010d83454b"
+      },
+      {
+        "path": "native/src/seasonal_moisture/regional_soil/surface_front/paired_evolution.rs",
+        "bytes": 30030,
+        "sha256": "2fa0c4f7e53c276da8d14ba550abdc628eedc2a71d4e3d216b54540e6f02c3bf"
+      },
+      {
+        "path": "native/src/seasonal_moisture/regional_soil/surface_front/full_cell.rs",
+        "bytes": 18846,
+        "sha256": "cebeed22c4a8453514b1686d54be7c77d77dcf33c20fb65ccc01738a8e10136c"
+      },
+      {
+        "path": "native/examples/surface_full_cell_report.rs",
+        "bytes": 943,
+        "sha256": "33c4454855f554a79d93ee8b89810a82a65a28fba5b56720bcab11740804c795"
+      }
+    ],
+    "logs": [
+      {
+        "path": "artifacts/full-cell-release-tests-log.txt",
+        "bytes": 23819,
+        "sha256": "a9e71bad82554e4a0e1155960ef3e1dfedb65da35b1da605e839bcba34890ab5"
+      },
+      {
+        "path": "artifacts/full-cell-clippy-final-log.txt",
+        "bytes": 222,
+        "sha256": "a675a74034519e775aee46682742e7a6b1eef090e0e4e772aae03fb8bd6296fd"
+      },
+      {
+        "path": "artifacts/full-cell-typecheck-log.txt",
+        "bytes": 49,
+        "sha256": "02a012dd189d64b8797030f32b44fe1b1f0e498026792bb0e77299dba08ad712"
+      },
+      {
+        "path": "artifacts/full-cell-build-native-log.txt",
+        "bytes": 198,
+        "sha256": "621716dbd10826298ea570bd630aef9c7a4eaf8aa7d1246eec45c549ebe6ca0b"
+      },
+      {
+        "path": "artifacts/full-cell-node-log.txt",
+        "bytes": 9578,
+        "sha256": "1a53d567d08f9bef0a048673e918361979f7dc0cf219dcbed1e6070097c076aa"
+      },
+      {
+        "path": "artifacts/full-cell-cli-refusal-log.txt",
+        "bytes": 382,
+        "sha256": "b9d4a705033ac7f4a7fc636bcff0a619379cc422e37be604781e831a9ce404ca"
+      }
+    ],
+    "excludedOwnerFiles": [
+      {
+        "path": "src/renderer/map.ts",
+        "bytes": 30173,
+        "sha256": "9c81dd0cd24b6c4da58e84263dd1b8fbb076de5cc8ec1c3271d70b307d7c9aaa"
+      },
+      {
+        "path": "src/renderer/style.css",
+        "bytes": 17287,
+        "sha256": "eb771462dfa08702874f7f06efc5b653364c7f56d54a43413724f87d167fe84d"
+      }
+    ]
+  }
+}
