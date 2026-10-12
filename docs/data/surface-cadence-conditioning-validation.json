@@ -1,0 +1,2032 @@
+{
+  "recordVersion": "surface-cadence-conditioning-validation-1",
+  "date": "2026-10-12",
+  "baseCommit": "51f60a92e0851eaace49e4011cf2ba4da9bacba5",
+  "reportVersion": "surface-cadence-conditioning-report-1",
+  "scope": "Unchanged affine-pressure planar wave; temporal/grid conditioning, not genuine non-affine spatial convergence",
+  "contracts": {
+    "diagnostics": "Richardson acts on component-aware field differences only; never stock, flux input or physical-state correction",
+    "semidiscrete": "In exact arithmetic this wave is an exact reconstructed semidiscrete trajectory at tested widths with identifiable stencils and inactive cap; no nonzero spatial truncation order can be established from it",
+    "safety": "Existing donor and ledger refusal remain; cap*dt/width^2 is a scale proxy, not a reconstructed-operator stability theorem",
+    "reproducibility": "Same build/environment, not a cross-platform guarantee"
+  },
+  "counts": {
+    "completed": 18,
+    "acceptedSteps": 8400,
+    "temporalTriples": 8,
+    "intergridComparisons": 6
+  },
+  "maxima": {
+    "localLedger": 1.1092743484904516e-16,
+    "cumulativeLedger": 1.9885570915243325e-17
+  },
+  "decision": "Short affine-wave temporal conditioning explained; no physical operator replacement or independent spatial-order qualification. Full-cell propagation and non-affine evolving benchmark remain separate next gates.",
+  "verification": {
+    "optimized": "160 library tests, 12 regional-soil and 5 regional-surface integration tests pass",
+    "directed": "Four final-source cadence tests pass",
+    "node": "18 files, 88 tests pass against rebuilt release native binary",
+    "clippy": "Strict all-target Clippy passes",
+    "typecheck": "Passes",
+    "cli": {
+      "checks": [
+        {
+          "args": [],
+          "status": 1,
+          "error": "Error: \"Usage: surface_cadence_conditioning_report NEW_OUTPUT.json\""
+        },
+        {
+          "args": [
+            "artifacts/cadence-final.json"
+          ],
+          "status": 1,
+          "error": "Error: \"Report output already exists.\""
+        },
+        {
+          "args": [
+            "artifacts/cadence-cli-must-not-exist.json",
+            "unexpected"
+          ],
+          "status": 1,
+          "error": "Error: \"Usage: surface_cadence_conditioning_report NEW_OUTPUT.json\""
+        }
+      ],
+      "existingHashUnchanged": true,
+      "invalidOutputAbsent": true
+    },
+    "fullSuite": "Complete npm test/all-native-target suite not rerun in this increment",
+    "gui": "Not run; no desktop/default/save/model selector changes",
+    "independentReviewFixes": [
+      "Largest fine high component cancels first; asymmetric 2^54+1 and reflected witness",
+      "All four time/grid profiles must match physical problem; mixed-front refusal witness"
+    ]
+  },
+  "sources": [
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front.rs",
+      "bytes": 5646,
+      "sha256": "cb2a5aa61b8a88b7c31a7c60b9ea45595c773410db20fb6fcd89333fd5994ebd"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/paired_evolution.rs",
+      "bytes": 24066,
+      "sha256": "5aa4ede96c18dcaf696359de4ad58a671ea43d501478b4de970600148faf2df8"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/cadence_controls.rs",
+      "bytes": 20797,
+      "sha256": "ef236f1a3cc1145348fea144bbc2bd7d4179df27f0b0f48adf728ada459afd4e"
+    },
+    {
+      "path": "native/examples/surface_cadence_conditioning_report.rs",
+      "bytes": 958,
+      "sha256": "385b28b26e987df8822f00d77eaa078442f1fa383a88bbc51e55a8ad0f91a6c6"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "artifacts/cadence-final.json",
+      "bytes": 667657,
+      "sha256": "3aaeb44851096be45d61f6970c2528c7ebe240cb010b76803a2d07ba4e01dc6e"
+    },
+    {
+      "path": "artifacts/cadence-final-repeat.json",
+      "bytes": 667657,
+      "sha256": "3aaeb44851096be45d61f6970c2528c7ebe240cb010b76803a2d07ba4e01dc6e"
+    },
+    {
+      "path": "artifacts/cadence-release.json",
+      "bytes": 667657,
+      "sha256": "3aaeb44851096be45d61f6970c2528c7ebe240cb010b76803a2d07ba4e01dc6e"
+    },
+    {
+      "path": "artifacts/paired-after-cadence.json",
+      "bytes": 1509746,
+      "sha256": "8684c711e4009578b6e0c76df67a0d06123531eb6ba02c9cbf57da11296aae58"
+    },
+    {
+      "path": "artifacts/cadence-release-final-log.txt",
+      "bytes": 23257,
+      "sha256": "a1128708ab07a9aaacb7995932897942a7318f14da3899a3ef831b5f29279891"
+    },
+    {
+      "path": "artifacts/cadence-directed-final-log.txt",
+      "bytes": 987,
+      "sha256": "e7c65d844b45c0aa7e0d697a3279defcfc0e7c4a27f62c3912739b35c1595b57"
+    },
+    {
+      "path": "artifacts/cadence-clippy-final-log.txt",
+      "bytes": 221,
+      "sha256": "2bf58130d59a524d7083d125c8710fb30ab460c674be0eceb1d135fccd754055"
+    },
+    {
+      "path": "artifacts/cadence-typecheck-log.txt",
+      "bytes": 49,
+      "sha256": "02a012dd189d64b8797030f32b44fe1b1f0e498026792bb0e77299dba08ad712"
+    },
+    {
+      "path": "artifacts/cadence-native-final-build-log.txt",
+      "bytes": 198,
+      "sha256": "9bf38e57551088090c21779e3a611f10ad903e78e5b723404ac75cabfd85291d"
+    },
+    {
+      "path": "artifacts/cadence-node-final-log.txt",
+      "bytes": 9590,
+      "sha256": "f8524516fa401be70c1a82da0731e18a2a0971ebb9042d9569d1575811e56774"
+    },
+    {
+      "path": "artifacts/cadence-cli-refusal-log.txt",
+      "bytes": 594,
+      "sha256": "2d0552aaff77767303817290277cac8369540edfdc3cb47673fd345a1b2af705"
+    }
+  ],
+  "ownerRendererFilesPreserved": [
+    {
+      "path": "src/renderer/map.ts",
+      "bytes": 30173,
+      "sha256": "9c81dd0cd24b6c4da58e84263dd1b8fbb076de5cc8ec1c3271d70b307d7c9aaa"
+    },
+    {
+      "path": "src/renderer/style.css",
+      "bytes": 17287,
+      "sha256": "eb771462dfa08702874f7f06efc5b653364c7f56d54a43413724f87d167fe84d"
+    }
+  ],
+  "cases": [
+    {
+      "index": 0,
+      "config": {
+        "direction": 1,
+        "initialFront": 0,
+        "stepSeconds": 0.001,
+        "width": 1
+      },
+      "completed": true,
+      "requestedSteps": 100,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 100,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.00004834965449759289,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.00004792432859708311,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 0.000005975378126188424,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 1.1589985859927765e-8,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.1357907693691515e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.000012310689257798537,
+        "initiallyDryArrivalSquareMeters": 0.000012226578437611035,
+        "maximumMeanErrorMeters": 8.411082018750222e-8,
+        "rmsMeanErrorMeters": 8.264098860835923e-9,
+        "signedDryArrivalErrorSquareMeters": -8.411082018750222e-8,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.001,
+      "exactDryArrivalOnsetSeconds": 0,
+      "maximumLocalRelativeLedgerResidual": 1.0953666108650136e-16,
+      "maximumCumulativeRelativeInventoryResidual": 1.572625198140323e-17,
+      "boundaryInput": {
+        "high": 0.0009109179421923437,
+        "low": 2.202285662861181e-20
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 1,
+      "config": {
+        "direction": 1,
+        "initialFront": 0,
+        "stepSeconds": 0.0005,
+        "width": 1
+      },
+      "completed": true,
+      "requestedSteps": 200,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 200,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000023796198592258497,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000023586874929783924,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 0.0000029411230639819763,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 5.7950018117480795e-9,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 7.310374482941962e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.000012310689257798537,
+        "initiallyDryArrivalSquareMeters": 0.000012269271878344954,
+        "maximumMeanErrorMeters": 4.141737945358337e-8,
+        "rmsMeanErrorMeters": 4.068384715058422e-9,
+        "signedDryArrivalErrorSquareMeters": -4.141737945358337e-8,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.0005,
+      "exactDryArrivalOnsetSeconds": 0,
+      "maximumLocalRelativeLedgerResidual": 1.093513338271297e-16,
+      "maximumCumulativeRelativeInventoryResidual": 1.5538414771123935e-17,
+      "boundaryInput": {
+        "high": 0.0009109180397858499,
+        "low": -7.623296525288703e-21
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 2,
+      "config": {
+        "direction": 1,
+        "initialFront": 0,
+        "stepSeconds": 0.00025,
+        "width": 1
+      },
+      "completed": true,
+      "requestedSteps": 400,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 400,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.00001176089114892677,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000011657440097021313,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 0.0000014535073754595729,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 2.897515116728755e-9,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 4.9023652108537034e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.000012310689257798537,
+        "initiallyDryArrivalSquareMeters": 0.00001229021437836195,
+        "maximumMeanErrorMeters": 2.0474879436587133e-8,
+        "rmsMeanErrorMeters": 2.0108657365178014e-9,
+        "signedDryArrivalErrorSquareMeters": -2.0474879436587133e-8,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.00025,
+      "exactDryArrivalOnsetSeconds": 0,
+      "maximumLocalRelativeLedgerResidual": 1.0983384831809842e-16,
+      "maximumCumulativeRelativeInventoryResidual": 1.869471754073926e-17,
+      "boundaryInput": {
+        "high": 0.0009109180885825995,
+        "low": -3.3881317890172014e-20
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 3,
+      "config": {
+        "direction": 1,
+        "initialFront": 0,
+        "stepSeconds": 0.000125,
+        "width": 1
+      },
+      "completed": true,
+      "requestedSteps": 800,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 800,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000005830371545114191,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000005779088056233339,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 7.204867094046108e-7,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 1.4487788746464503e-9,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 5.721130872491922e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.000012310689257798537,
+        "initiallyDryArrivalSquareMeters": 0.000012300537770966193,
+        "maximumMeanErrorMeters": 1.0151486832343608e-8,
+        "rmsMeanErrorMeters": 9.9685846784028e-10,
+        "signedDryArrivalErrorSquareMeters": -1.0151486832343608e-8,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.000125,
+      "exactDryArrivalOnsetSeconds": 0,
+      "maximumLocalRelativeLedgerResidual": 1.0959556779533951e-16,
+      "maximumCumulativeRelativeInventoryResidual": 1.9885570915243325e-17,
+      "boundaryInput": {
+        "high": 0.0009109181129809735,
+        "low": -5.039846036163087e-20
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 4,
+      "config": {
+        "direction": 1,
+        "initialFront": 0.995,
+        "stepSeconds": 0.001,
+        "width": 1
+      },
+      "completed": true,
+      "requestedSteps": 100,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 100,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000055826817795923134,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.00005533284977810027,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 0.000004867831055244132,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 1.1589982307214086e-8,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 3.355850232006917e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.00000457340348310691,
+        "initiallyDryArrivalSquareMeters": 0.000004500985982890376,
+        "maximumMeanErrorMeters": 7.24175002165337e-8,
+        "rmsMeanErrorMeters": 7.102662361182738e-9,
+        "signedDryArrivalErrorSquareMeters": -7.24175002165337e-8,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.052000000000000005,
+      "exactDryArrivalOnsetSeconds": 0.050000000000000044,
+      "maximumLocalRelativeLedgerResidual": 1.0963942408239968e-16,
+      "maximumCumulativeRelativeInventoryResidual": 1.1779398425797131e-17,
+      "boundaryInput": {
+        "high": 0.0009147911797311719,
+        "low": 1.8634724839594607e-20
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 5,
+      "config": {
+        "direction": 1,
+        "initialFront": 0.995,
+        "stepSeconds": 0.0005,
+        "width": 1
+      },
+      "completed": true,
+      "requestedSteps": 200,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 200,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000026712474487045057,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000026476149084908585,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 0.000002328968080000937,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 5.794987600893364e-9,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 4.2242167544566036e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.00000457340348310691,
+        "initiallyDryArrivalSquareMeters": 0.0000045387102705637975,
+        "maximumMeanErrorMeters": 3.469321254311266e-8,
+        "rmsMeanErrorMeters": 3.399959998385547e-9,
+        "signedDryArrivalErrorSquareMeters": -3.469321254311266e-8,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.051000000000000004,
+      "exactDryArrivalOnsetSeconds": 0.050000000000000044,
+      "maximumLocalRelativeLedgerResidual": 1.0926596351758659e-16,
+      "maximumCumulativeRelativeInventoryResidual": 1.2786729786907319e-17,
+      "boundaryInput": {
+        "high": 0.0009147912767741178,
+        "low": -3.3881317890172014e-21
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 6,
+      "config": {
+        "direction": 1,
+        "initialFront": 0.995,
+        "stepSeconds": 0.00025,
+        "width": 1
+      },
+      "completed": true,
+      "requestedSteps": 400,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 400,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.00001292153263743323,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000012807229163414036,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 0.0000011260695248482833,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 2.8974866950193245e-9,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 6.894214604139572e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.00000457340348310691,
+        "initiallyDryArrivalSquareMeters": 0.000004556611777855741,
+        "maximumMeanErrorMeters": 1.6791705251169275e-8,
+        "rmsMeanErrorMeters": 1.6445622747330929e-9,
+        "signedDryArrivalErrorSquareMeters": -1.6791705251169275e-8,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.0505,
+      "exactDryArrivalOnsetSeconds": 0.050000000000000044,
+      "maximumLocalRelativeLedgerResidual": 1.096887656753119e-16,
+      "maximumCumulativeRelativeInventoryResidual": 1.8227969426221008e-17,
+      "boundaryInput": {
+        "high": 0.0009147913252955873,
+        "low": 2.498747194400186e-20
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 7,
+      "config": {
+        "direction": 1,
+        "initialFront": 0.995,
+        "stepSeconds": 0.000125,
+        "width": 1
+      },
+      "completed": true,
+      "requestedSteps": 800,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 800,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000006302095019616871,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000006246352181271675,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 5.48919555587446e-7,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 1.4487326893686259e-9,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 2.8010386801069364e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.00000457340348310691,
+        "initiallyDryArrivalSquareMeters": 0.000004565211560687912,
+        "maximumMeanErrorMeters": 8.191922418997877e-9,
+        "rmsMeanErrorMeters": 8.019159911113917e-10,
+        "signedDryArrivalErrorSquareMeters": -8.191922418997877e-9,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.05025,
+      "exactDryArrivalOnsetSeconds": 0.050000000000000044,
+      "maximumLocalRelativeLedgerResidual": 1.1065247244068267e-16,
+      "maximumCumulativeRelativeInventoryResidual": 1.6460162481253582e-17,
+      "boundaryInput": {
+        "high": 0.0009147913495563213,
+        "low": -8.470329472543003e-21
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 8,
+      "config": {
+        "direction": 1,
+        "initialFront": 0,
+        "stepSeconds": 0.001,
+        "width": 0.5
+      },
+      "completed": true,
+      "requestedSteps": 100,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 100,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000046609020665817555,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.00004580149174647236,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 6.711572775319752e-7,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 1.1585278514303354e-8,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 5.954731816110127e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.000012310689257798537,
+        "initiallyDryArrivalSquareMeters": 0.000012230381675847879,
+        "maximumMeanErrorMeters": 1.6061516390131658e-7,
+        "rmsMeanErrorMeters": 1.104295377755874e-8,
+        "signedDryArrivalErrorSquareMeters": -8.030758195065829e-8,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.001,
+      "exactDryArrivalOnsetSeconds": 0,
+      "maximumLocalRelativeLedgerResidual": 1.1000485033543446e-16,
+      "maximumCumulativeRelativeInventoryResidual": 8.457456739491976e-18,
+      "boundaryInput": {
+        "high": 0.0009109179421923437,
+        "low": 2.202285662861181e-20
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 9,
+      "config": {
+        "direction": 1,
+        "initialFront": 0,
+        "stepSeconds": 0.0005,
+        "width": 0.5
+      },
+      "completed": true,
+      "requestedSteps": 200,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 200,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.0000229453275101682,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000022547819854928236,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 3.3346027250580335e-7,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 5.792657020720071e-9,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.6311549540448901e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.000012310689257798537,
+        "initiallyDryArrivalSquareMeters": 0.000012271136343289623,
+        "maximumMeanErrorMeters": 7.910582901782801e-8,
+        "rmsMeanErrorMeters": 5.436899718689508e-9,
+        "signedDryArrivalErrorSquareMeters": -3.955291450891401e-8,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.0005,
+      "exactDryArrivalOnsetSeconds": 0,
+      "maximumLocalRelativeLedgerResidual": 1.1092743484904516e-16,
+      "maximumCumulativeRelativeInventoryResidual": 9.27974268831011e-18,
+      "boundaryInput": {
+        "high": 0.0009109180397858499,
+        "low": -7.623296525288703e-21
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 10,
+      "config": {
+        "direction": 1,
+        "initialFront": 0,
+        "stepSeconds": 0.00025,
+        "width": 0.5
+      },
+      "completed": true,
+      "requestedSteps": 400,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 400,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000011343299521611103,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000011146801484813486,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 1.659074686521933e-7,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 2.8963427212147508e-9,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 4.069186297931678e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.000012310689257798537,
+        "initiallyDryArrivalSquareMeters": 0.000012291131425937241,
+        "maximumMeanErrorMeters": 3.911566372259188e-8,
+        "rmsMeanErrorMeters": 2.6876863361417795e-9,
+        "signedDryArrivalErrorSquareMeters": -1.955783186129594e-8,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.00025,
+      "exactDryArrivalOnsetSeconds": 0,
+      "maximumLocalRelativeLedgerResidual": 1.1074224294550067e-16,
+      "maximumCumulativeRelativeInventoryResidual": 1.1595560288592265e-17,
+      "boundaryInput": {
+        "high": 0.0009109180885825995,
+        "low": -3.3881317890172014e-20
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 11,
+      "config": {
+        "direction": 1,
+        "initialFront": 0,
+        "stepSeconds": 0.000125,
+        "width": 0.5
+      },
+      "completed": true,
+      "requestedSteps": 800,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 800,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.00000562466062178045,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000005527231537955438,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 8.264051221118507e-8,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 1.448178466034733e-9,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 2.8657130259901776e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.000012310689257798537,
+        "initiallyDryArrivalSquareMeters": 0.000012300990286751865,
+        "maximumMeanErrorMeters": 1.9397942093344434e-8,
+        "rmsMeanErrorMeters": 1.3325961023135598e-9,
+        "signedDryArrivalErrorSquareMeters": -9.698971046672217e-9,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.000125,
+      "exactDryArrivalOnsetSeconds": 0,
+      "maximumLocalRelativeLedgerResidual": 1.1089814787816528e-16,
+      "maximumCumulativeRelativeInventoryResidual": 1.1424959201391991e-17,
+      "boundaryInput": {
+        "high": 0.0009109181129809735,
+        "low": -5.039846036163087e-20
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 12,
+      "config": {
+        "direction": 1,
+        "initialFront": 0.995,
+        "stepSeconds": 0.001,
+        "width": 0.5
+      },
+      "completed": true,
+      "requestedSteps": 100,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 100,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000054442824265921175,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000053488289835090796,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 5.400989940840262e-7,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 1.1585306936012785e-8,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.4724248032246413e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.00000457340348310691,
+        "initiallyDryArrivalSquareMeters": 0.000004503117912694899,
+        "maximumMeanErrorMeters": 1.4057114082402234e-7,
+        "rmsMeanErrorMeters": 9.64702700849991e-9,
+        "signedDryArrivalErrorSquareMeters": -7.028557041201117e-8,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.052000000000000005,
+      "exactDryArrivalOnsetSeconds": 0.050000000000000044,
+      "maximumLocalRelativeLedgerResidual": 1.1026528284054403e-16,
+      "maximumCumulativeRelativeInventoryResidual": 8.628393629855269e-18,
+      "boundaryInput": {
+        "high": 0.0009147911797311719,
+        "low": 1.8634724839594607e-20
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 13,
+      "config": {
+        "direction": 1,
+        "initialFront": 0.995,
+        "stepSeconds": 0.0005,
+        "width": 0.5
+      },
+      "completed": true,
+      "requestedSteps": 200,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 200,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000026059068380268613,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.0000256023084996837,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 2.676247229937978e-7,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 5.79266057343375e-9,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 3.0684903300077298e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.00000457340348310691,
+        "initiallyDryArrivalSquareMeters": 0.000004539722297656887,
+        "maximumMeanErrorMeters": 6.736237090004541e-8,
+        "rmsMeanErrorMeters": 4.617349575568704e-9,
+        "signedDryArrivalErrorSquareMeters": -3.368118545002271e-8,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.051000000000000004,
+      "exactDryArrivalOnsetSeconds": 0.050000000000000044,
+      "maximumLocalRelativeLedgerResidual": 1.1024223801624419e-16,
+      "maximumCumulativeRelativeInventoryResidual": 1.060258497116509e-17,
+      "boundaryInput": {
+        "high": 0.0009147912767741178,
+        "low": -3.3881317890172014e-21
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 14,
+      "config": {
+        "direction": 1,
+        "initialFront": 0.995,
+        "stepSeconds": 0.00025,
+        "width": 0.5
+      },
+      "completed": true,
+      "requestedSteps": 400,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 400,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000012611406839502237,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000012390407917672874,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 1.3286129496581367e-7,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 2.896321404932678e-9,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 3.768226098663454e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.00000457340348310691,
+        "initiallyDryArrivalSquareMeters": 0.000004557094378356531,
+        "maximumMeanErrorMeters": 3.261820950075804e-8,
+        "rmsMeanErrorMeters": 2.233721519815301e-9,
+        "signedDryArrivalErrorSquareMeters": -1.630910475037902e-8,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.0505,
+      "exactDryArrivalOnsetSeconds": 0.050000000000000044,
+      "maximumLocalRelativeLedgerResidual": 1.1050744366800546e-16,
+      "maximumCumulativeRelativeInventoryResidual": 1.1718167453060295e-17,
+      "boundaryInput": {
+        "high": 0.0009147913252955873,
+        "low": 2.498747194400186e-20
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 15,
+      "config": {
+        "direction": 1,
+        "initialFront": 0.995,
+        "stepSeconds": 0.000125,
+        "width": 0.5
+      },
+      "completed": true,
+      "requestedSteps": 800,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 800,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.0000061537869566752335,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.0000060459700845783004,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 6.606794744623556e-8,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 1.4481642551800178e-9,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 3.555456654361867e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.00000457340348310691,
+        "initiallyDryArrivalSquareMeters": 0.000004565443290673091,
+        "maximumMeanErrorMeters": 1.5920384867638257e-8,
+        "rmsMeanErrorMeters": 1.0894545654585118e-9,
+        "signedDryArrivalErrorSquareMeters": -7.960192433819129e-9,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.05025,
+      "exactDryArrivalOnsetSeconds": 0.050000000000000044,
+      "maximumLocalRelativeLedgerResidual": 1.106956018693726e-16,
+      "maximumCumulativeRelativeInventoryResidual": 1.130628274393908e-17,
+      "boundaryInput": {
+        "high": 0.0009147913495563213,
+        "low": -8.470329472543003e-21
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 16,
+      "config": {
+        "direction": 1,
+        "initialFront": 0,
+        "stepSeconds": 0.0000625,
+        "width": 0.25
+      },
+      "completed": true,
+      "requestedSteps": 1600,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 1600,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.0000026596572613672015,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.0000025703950676655637,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 3.230022582734193e-8,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 7.241354182951909e-10,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.0922853334664149e-19,
+        "exactInitiallyDryArrivalSquareMeters": 0.000012310689257798537,
+        "initiallyDryArrivalSquareMeters": 0.000012306187823283846,
+        "maximumMeanErrorMeters": 1.8005738058762843e-8,
+        "rmsMeanErrorMeters": 8.589175483580545e-10,
+        "signedDryArrivalErrorSquareMeters": -4.501434514690711e-9,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.0000625,
+      "exactDryArrivalOnsetSeconds": 0,
+      "maximumLocalRelativeLedgerResidual": 1.1086337280980482e-16,
+      "maximumCumulativeRelativeInventoryResidual": 8.74515719080908e-18,
+      "boundaryInput": {
+        "high": 0.0009109181251801601,
+        "low": 4.5951537388545793e-20
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    },
+    {
+      "index": 17,
+      "config": {
+        "direction": -1,
+        "initialFront": 0.995,
+        "stepSeconds": 0.000125,
+        "width": 0.5
+      },
+      "completed": true,
+      "requestedSteps": 800,
+      "refusal": null,
+      "finalObservation": {
+        "acceptedSteps": 800,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 0.0000061537869566752335,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 0.0000060459700845783004,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -6.606794744623556e-8,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -1.4481642551800178e-9,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 4.024872282787158e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.00000457340348310691,
+        "initiallyDryArrivalSquareMeters": 0.000004565443290673091,
+        "maximumMeanErrorMeters": 1.5920384867638257e-8,
+        "rmsMeanErrorMeters": 1.089454565458512e-9,
+        "signedDryArrivalErrorSquareMeters": -7.960192433819129e-9,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "firstRepresentableDryArrivalSeconds": 0.05025,
+      "exactDryArrivalOnsetSeconds": 0.050000000000000044,
+      "maximumLocalRelativeLedgerResidual": 1.106956018693726e-16,
+      "maximumCumulativeRelativeInventoryResidual": 1.165513556936061e-17,
+      "boundaryInput": {
+        "high": 0.0009147913495563213,
+        "low": -8.470329472543003e-21
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      }
+    }
+  ],
+  "temporalControls": [
+    {
+      "coarseMinusMiddle": {
+        "l1VolumeSquareMeters": 8.52892879616758e-8,
+        "maximumMeters": 4.2693440733919623e-8,
+        "rmsMeters": 4.195714462759256e-9,
+        "signedVolumeSquareMeters": -9.759350616344822e-11
+      },
+      "coarsePairRichardsonError": {
+        "l1VolumeSquareMeters": 2.5521355219619204e-9,
+        "maximumMeters": 1.276061280336963e-9,
+        "minimumSampleMeters": 0,
+        "negativeSampleCount": 0,
+        "rmsMeters": 1.2735031692098396e-10,
+        "signedVolumeSquareMeters": 1.277359565777375e-16
+      },
+      "completedAtSameEndTime": true,
+      "fineActualError": {
+        "l1VolumeSquareMeters": 4.0900962244348906e-8,
+        "maximumMeters": 2.0474879436587778e-8,
+        "rmsMeters": 2.01086573651771e-9,
+        "signedVolumeSquareMeters": -4.879662882664943e-11
+      },
+      "finePairRichardsonError": {
+        "l1VolumeSquareMeters": 9.35254033528406e-10,
+        "maximumMeters": 4.676205804071116e-10,
+        "minimumSampleMeters": 0,
+        "negativeSampleCount": 0,
+        "rmsMeters": 4.666090871111515e-11,
+        "signedVolumeSquareMeters": 1.2077419278425441e-16
+      },
+      "fineTemporalErrorEstimate": {
+        "l1VolumeSquareMeters": 4.183620328438894e-8,
+        "maximumMeters": 2.0942500016994893e-8,
+        "rmsMeters": 2.0575190654646617e-9,
+        "signedVolumeSquareMeters": -4.879674960084221e-11
+      },
+      "middleMinusFine": {
+        "l1VolumeSquareMeters": 4.183620328438894e-8,
+        "maximumMeters": 2.0942500016994893e-8,
+        "rmsMeters": 2.0575190654646617e-9,
+        "signedVolumeSquareMeters": -4.879674960084221e-11
+      },
+      "richardsonErrorRmsRatio": 2.7292721131821356,
+      "successiveFieldDifferenceRmsRatio": 2.039210490529143,
+      "trials": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "coarseMinusMiddle": {
+        "l1VolumeSquareMeters": 4.183620328438894e-8,
+        "maximumMeters": 2.0942500016994893e-8,
+        "rmsMeters": 2.0575190654646617e-9,
+        "signedVolumeSquareMeters": -4.879674960084221e-11
+      },
+      "coarsePairRichardsonError": {
+        "l1VolumeSquareMeters": 9.35254033528406e-10,
+        "maximumMeters": 4.676205804071116e-10,
+        "minimumSampleMeters": 0,
+        "negativeSampleCount": 0,
+        "rmsMeters": 4.666090871111515e-11,
+        "signedVolumeSquareMeters": 1.2077419278425441e-16
+      },
+      "completedAtSameEndTime": true,
+      "fineActualError": {
+        "l1VolumeSquareMeters": 2.0278575409789976e-8,
+        "maximumMeters": 1.0151486832343477e-8,
+        "rmsMeters": 9.968584678722458e-10,
+        "signedVolumeSquareMeters": -2.439825489697819e-11
+      },
+      "finePairRichardsonError": {
+        "l1VolumeSquareMeters": 3.438244546445934e-10,
+        "maximumMeters": 1.7190577190082305e-10,
+        "minimumSampleMeters": 0,
+        "negativeSampleCount": 0,
+        "rmsMeters": 1.7151629744201124e-11,
+        "signedVolumeSquareMeters": 1.1903269304469957e-16
+      },
+      "fineTemporalErrorEstimate": {
+        "l1VolumeSquareMeters": 2.062238683455893e-8,
+        "maximumMeters": 1.03233926042443e-8,
+        "rmsMeters": 1.0140072925690898e-9,
+        "signedVolumeSquareMeters": -2.4398373929671236e-11
+      },
+      "middleMinusFine": {
+        "l1VolumeSquareMeters": 2.062238683455893e-8,
+        "maximumMeters": 1.03233926042443e-8,
+        "rmsMeters": 1.0140072925690898e-9,
+        "signedVolumeSquareMeters": -2.4398373929671236e-11
+      },
+      "richardsonErrorRmsRatio": 2.7204941691847657,
+      "successiveFieldDifferenceRmsRatio": 2.029096911375982,
+      "trials": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "coarseMinusMiddle": {
+        "l1VolumeSquareMeters": 8.141174137732515e-8,
+        "maximumMeters": 8.15093348834886e-8,
+        "rmsMeters": 5.6060550459398915e-9,
+        "signedVolumeSquareMeters": -9.759350616344822e-11
+      },
+      "coarsePairRichardsonError": {
+        "l1VolumeSquareMeters": 2.4035348298744717e-9,
+        "maximumMeters": 2.4035058656616144e-9,
+        "minimumSampleMeters": 0,
+        "negativeSampleCount": 0,
+        "rmsMeters": 1.6921975268532436e-10,
+        "signedVolumeSquareMeters": 1.3250644613667373e-16
+      },
+      "completedAtSameEndTime": true,
+      "fineActualError": {
+        "l1VolumeSquareMeters": 3.9066867098534994e-8,
+        "maximumMeters": 3.9115663722591154e-8,
+        "rmsMeters": 2.687686336150298e-9,
+        "signedVolumeSquareMeters": -4.879662405615987e-11
+      },
+      "finePairRichardsonError": {
+        "l1VolumeSquareMeters": 8.745306592194868e-10,
+        "maximumMeters": 8.745015726446734e-10,
+        "minimumSampleMeters": 0,
+        "negativeSampleCount": 0,
+        "rmsMeters": 6.155072508068464e-11,
+        "signedVolumeSquareMeters": 1.2554468234319063e-16
+      },
+      "fineTemporalErrorEstimate": {
+        "l1VolumeSquareMeters": 3.994136854563499e-8,
+        "maximumMeters": 3.9990165295235834e-8,
+        "rmsMeters": 2.7492136475492514e-9,
+        "signedVolumeSquareMeters": -4.879674960084221e-11
+      },
+      "middleMinusFine": {
+        "l1VolumeSquareMeters": 3.994136854563499e-8,
+        "maximumMeters": 3.9990165295235834e-8,
+        "rmsMeters": 2.7492136475492514e-9,
+        "signedVolumeSquareMeters": -4.879674960084221e-11
+      },
+      "richardsonErrorRmsRatio": 2.7492730989521283,
+      "successiveFieldDifferenceRmsRatio": 2.039148558329518,
+      "trials": [
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "coarseMinusMiddle": {
+        "l1VolumeSquareMeters": 3.994136854563499e-8,
+        "maximumMeters": 3.9990165295235834e-8,
+        "rmsMeters": 2.7492136475492514e-9,
+        "signedVolumeSquareMeters": -4.879674960084221e-11
+      },
+      "coarsePairRichardsonError": {
+        "l1VolumeSquareMeters": 8.745306592194868e-10,
+        "maximumMeters": 8.745015726446734e-10,
+        "minimumSampleMeters": 0,
+        "negativeSampleCount": 0,
+        "rmsMeters": 6.155072508068464e-11,
+        "signedVolumeSquareMeters": 1.2554468234319063e-16
+      },
+      "completedAtSameEndTime": true,
+      "fineActualError": {
+        "l1VolumeSquareMeters": 1.9373543843217456e-8,
+        "maximumMeters": 1.9397942093343945e-8,
+        "rmsMeters": 1.3325961023186023e-9,
+        "signedVolumeSquareMeters": -2.4398250126488633e-11
+      },
+      "finePairRichardsonError": {
+        "l1VolumeSquareMeters": 3.198087237006328e-10,
+        "maximumMeters": 3.197795359032647e-10,
+        "minimumSampleMeters": 0,
+        "negativeSampleCount": 0,
+        "rmsMeters": 2.250278144300782e-11,
+        "signedVolumeSquareMeters": 1.238031826036358e-16
+      },
+      "fineTemporalErrorEstimate": {
+        "l1VolumeSquareMeters": 1.9693323255317538e-8,
+        "maximumMeters": 1.971772162924721e-8,
+        "rmsMeters": 1.3550903056387467e-9,
+        "signedVolumeSquareMeters": -2.4398373929671236e-11
+      },
+      "middleMinusFine": {
+        "l1VolumeSquareMeters": 1.9693323255317538e-8,
+        "maximumMeters": 1.971772162924721e-8,
+        "rmsMeters": 1.3550903056387467e-9,
+        "signedVolumeSquareMeters": -2.4398373929671236e-11
+      },
+      "richardsonErrorRmsRatio": 2.735249650651964,
+      "successiveFieldDifferenceRmsRatio": 2.0288047491073735,
+      "trials": [
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "coarseMinusMiddle": {
+        "l1VolumeSquareMeters": 7.535153240092058e-8,
+        "maximumMeters": 3.772428767342161e-8,
+        "rmsMeters": 3.7027052924296096e-9,
+        "signedVolumeSquareMeters": -9.70429459226386e-11
+      },
+      "coarsePairRichardsonError": {
+        "l1VolumeSquareMeters": 6.0621679577301366e-9,
+        "maximumMeters": 3.0310751303091268e-9,
+        "minimumSampleMeters": 0,
+        "negativeSampleCount": 0,
+        "rmsMeters": 3.0281401721692894e-10,
+        "signedVolumeSquareMeters": 8.013617777712957e-16
+      },
+      "completedAtSameEndTime": true,
+      "fineActualError": {
+        "l1VolumeSquareMeters": 3.353488982730948e-8,
+        "maximumMeters": 1.679170525116954e-8,
+        "rmsMeters": 1.6445622746942756e-9,
+        "signedVolumeSquareMeters": -4.8520675029601446e-11
+      },
+      "finePairRichardsonError": {
+        "l1VolumeSquareMeters": 2.219621767992853e-9,
+        "maximumMeters": 1.1098020407734044e-9,
+        "minimumSampleMeters": 0,
+        "negativeSampleCount": 0,
+        "rmsMeters": 1.1086346462563786e-10,
+        "signedVolumeSquareMeters": 7.945016579314831e-16
+      },
+      "fineTemporalErrorEstimate": {
+        "l1VolumeSquareMeters": 3.575449311435463e-8,
+        "maximumMeters": 1.7901507291942944e-8,
+        "rmsMeters": 1.755398608260651e-9,
+        "signedVolumeSquareMeters": -4.852146953125938e-11
+      },
+      "middleMinusFine": {
+        "l1VolumeSquareMeters": 3.575449311435463e-8,
+        "maximumMeters": 1.7901507291942944e-8,
+        "rmsMeters": 1.755398608260651e-9,
+        "signedVolumeSquareMeters": -4.852146953125938e-11
+      },
+      "richardsonErrorRmsRatio": 2.7314139806063875,
+      "successiveFieldDifferenceRmsRatio": 2.1093245004326744,
+      "trials": [
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "coarseMinusMiddle": {
+        "l1VolumeSquareMeters": 3.575449311435463e-8,
+        "maximumMeters": 1.7901507291942944e-8,
+        "rmsMeters": 1.755398608260651e-9,
+        "signedVolumeSquareMeters": -4.852146953125938e-11
+      },
+      "coarsePairRichardsonError": {
+        "l1VolumeSquareMeters": 2.219621767992853e-9,
+        "maximumMeters": 1.1098020407734044e-9,
+        "minimumSampleMeters": 0,
+        "negativeSampleCount": 0,
+        "rmsMeters": 1.1086346462563786e-10,
+        "signedVolumeSquareMeters": 7.945016579314831e-16
+      },
+      "completedAtSameEndTime": true,
+      "fineActualError": {
+        "l1VolumeSquareMeters": 1.6359584896870462e-8,
+        "maximumMeters": 8.191922418997616e-9,
+        "rmsMeters": 8.019159910699167e-10,
+        "signedVolumeSquareMeters": -2.425994112476899e-11
+      },
+      "finePairRichardsonError": {
+        "l1VolumeSquareMeters": 8.15738581757754e-10,
+        "maximumMeters": 4.0786041317430833e-10,
+        "minimumSampleMeters": 0,
+        "negativeSampleCount": 0,
+        "rmsMeters": 4.074113738965321e-11,
+        "signedVolumeSquareMeters": 7.927800634661888e-16
+      },
+      "fineTemporalErrorEstimate": {
+        "l1VolumeSquareMeters": 1.7175304930439015e-8,
+        "maximumMeters": 8.599782832171924e-9,
+        "rmsMeters": 8.426465457581009e-10,
+        "signedVolumeSquareMeters": -2.4260733904832456e-11
+      },
+      "middleMinusFine": {
+        "l1VolumeSquareMeters": 1.7175304930439015e-8,
+        "maximumMeters": 8.599782832171924e-9,
+        "rmsMeters": 8.426465457581009e-10,
+        "signedVolumeSquareMeters": -2.4260733904832456e-11
+      },
+      "richardsonErrorRmsRatio": 2.7211676386284007,
+      "successiveFieldDifferenceRmsRatio": 2.0831968244542884,
+      "trials": [
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "coarseMinusMiddle": {
+        "l1VolumeSquareMeters": 7.311172697805526e-8,
+        "maximumMeters": 7.32087699239779e-8,
+        "rmsMeters": 5.029686794167511e-9,
+        "signedVolumeSquareMeters": -9.70429459226386e-11
+      },
+      "coarsePairRichardsonError": {
+        "l1VolumeSquareMeters": 5.846430597270787e-9,
+        "maximumMeters": 5.846399023933025e-9,
+        "minimumSampleMeters": 0,
+        "negativeSampleCount": 0,
+        "rmsMeters": 4.125561755592053e-10,
+        "signedVolumeSquareMeters": 6.487061118853367e-16
+      },
+      "completedAtSameEndTime": true,
+      "fineActualError": {
+        "l1VolumeSquareMeters": 3.256968867307308e-8,
+        "maximumMeters": 3.2618209500758346e-8,
+        "rmsMeters": 2.233721519820303e-9,
+        "signedVolumeSquareMeters": -4.852082768526733e-11
+      },
+      "finePairRichardsonError": {
+        "l1VolumeSquareMeters": 2.1259834795349776e-9,
+        "maximumMeters": 2.125951898528179e-9,
+        "minimumSampleMeters": 0,
+        "negativeSampleCount": 0,
+        "rmsMeters": 1.499949128014112e-10,
+        "signedVolumeSquareMeters": 6.418459920455241e-16
+      },
+      "fineTemporalErrorEstimate": {
+        "l1VolumeSquareMeters": 3.4695639929755266e-8,
+        "maximumMeters": 3.4744161399286525e-8,
+        "rmsMeters": 2.3836308355671887e-9,
+        "signedVolumeSquareMeters": -4.852146953125938e-11
+      },
+      "middleMinusFine": {
+        "l1VolumeSquareMeters": 3.4695639929755266e-8,
+        "maximumMeters": 3.4744161399286525e-8,
+        "rmsMeters": 2.3836308355671887e-9,
+        "signedVolumeSquareMeters": -4.852146953125938e-11
+      },
+      "richardsonErrorRmsRatio": 2.7504677849002612,
+      "successiveFieldDifferenceRmsRatio": 2.1100947005372537,
+      "trials": [
+        12,
+        13,
+        14
+      ]
+    },
+    {
+      "coarseMinusMiddle": {
+        "l1VolumeSquareMeters": 3.4695639929755266e-8,
+        "maximumMeters": 3.4744161399286525e-8,
+        "rmsMeters": 2.3836308355671887e-9,
+        "signedVolumeSquareMeters": -4.852146953125938e-11
+      },
+      "coarsePairRichardsonError": {
+        "l1VolumeSquareMeters": 2.1259834795349776e-9,
+        "maximumMeters": 2.125951898528179e-9,
+        "minimumSampleMeters": 0,
+        "negativeSampleCount": 0,
+        "rmsMeters": 1.499949128014112e-10,
+        "signedVolumeSquareMeters": 6.418459920455241e-16
+      },
+      "completedAtSameEndTime": true,
+      "fineActualError": {
+        "l1VolumeSquareMeters": 1.5896124773858474e-8,
+        "maximumMeters": 1.592038486763891e-8,
+        "rmsMeters": 1.0894545654644956e-9,
+        "signedVolumeSquareMeters": -2.4260093780434876e-11
+      },
+      "finePairRichardsonError": {
+        "l1VolumeSquareMeters": 7.774714005248517e-10,
+        "maximumMeters": 7.774397654805277e-10,
+        "minimumSampleMeters": 0,
+        "negativeSampleCount": 0,
+        "rmsMeters": 5.4846355530121093e-11,
+        "signedVolumeSquareMeters": 6.401243975802298e-16
+      },
+      "fineTemporalErrorEstimate": {
+        "l1VolumeSquareMeters": 1.66735638992146e-8,
+        "maximumMeters": 1.6697824633119434e-8,
+        "rmsMeters": 1.144267768138296e-9,
+        "signedVolumeSquareMeters": -2.4260733904832456e-11
+      },
+      "middleMinusFine": {
+        "l1VolumeSquareMeters": 1.66735638992146e-8,
+        "maximumMeters": 1.6697824633119434e-8,
+        "rmsMeters": 1.144267768138296e-9,
+        "signedVolumeSquareMeters": -2.4260733904832456e-11
+      },
+      "richardsonErrorRmsRatio": 2.7348200505143034,
+      "successiveFieldDifferenceRmsRatio": 2.083105809617722,
+      "trials": [
+        13,
+        14,
+        15
+      ]
+    }
+  ],
+  "spatialConditioningControls": [
+    {
+      "coarseTimeIntergridDifference": {
+        "l1VolumeSquareMeters": 7.606478780376564e-9,
+        "maximumMeters": 3.803238236844504e-9,
+        "rmsMeters": 3.6800120679402546e-10,
+        "signedVolumeSquareMeters": -1.0842021724855044e-17
+      },
+      "coarseTrials": [
+        0,
+        1
+      ],
+      "completedAtSameEndTime": true,
+      "finalExactMeanRestrictionDifference": {
+        "l1VolumeSquareMeters": 2.983724378680108e-16,
+        "maximumMeters": 1.3877787807814457e-17,
+        "rmsMeters": 4.119739996032822e-18,
+        "signedVolumeSquareMeters": 5.551115123125783e-17
+      },
+      "fineTimeIntergridDifference": {
+        "l1VolumeSquareMeters": 3.728932256665846e-9,
+        "maximumMeters": 1.8644649446691774e-9,
+        "rmsMeters": 1.804039564477002e-10,
+        "signedVolumeSquareMeters": -1.0842021724855044e-17
+      },
+      "fineTrials": [
+        8,
+        9
+      ],
+      "initialExactMeanRestrictionDifference": {
+        "l1VolumeSquareMeters": 4.0419056990259605e-16,
+        "maximumMeters": 1.3877787807814457e-17,
+        "rmsMeters": 4.956879373015625e-18,
+        "signedVolumeSquareMeters": 1.5612511283791264e-17
+      },
+      "richardsonIntergridDifference": {
+        "l1VolumeSquareMeters": 1.4862036949882165e-10,
+        "maximumMeters": 7.430834750614911e-11,
+        "rmsMeters": 7.19329583805114e-12,
+        "signedVolumeSquareMeters": -1.0842021724855044e-17
+      }
+    },
+    {
+      "coarseTimeIntergridDifference": {
+        "l1VolumeSquareMeters": 3.728932256665846e-9,
+        "maximumMeters": 1.8644649446691774e-9,
+        "rmsMeters": 1.804039564477002e-10,
+        "signedVolumeSquareMeters": -1.0842021724855044e-17
+      },
+      "coarseTrials": [
+        1,
+        2
+      ],
+      "completedAtSameEndTime": true,
+      "finalExactMeanRestrictionDifference": {
+        "l1VolumeSquareMeters": 2.983724378680108e-16,
+        "maximumMeters": 1.3877787807814457e-17,
+        "rmsMeters": 4.119739996032822e-18,
+        "signedVolumeSquareMeters": 5.551115123125783e-17
+      },
+      "fineTimeIntergridDifference": {
+        "l1VolumeSquareMeters": 1.8340975710987833e-9,
+        "maximumMeters": 9.170475752921995e-10,
+        "rmsMeters": 8.873033026146601e-11,
+        "signedVolumeSquareMeters": -1.0842021724855044e-17
+      },
+      "fineTrials": [
+        9,
+        10
+      ],
+      "initialExactMeanRestrictionDifference": {
+        "l1VolumeSquareMeters": 4.0419056990259605e-16,
+        "maximumMeters": 1.3877787807814457e-17,
+        "rmsMeters": 4.956879373015625e-18,
+        "signedVolumeSquareMeters": 1.5612511283791264e-17
+      },
+      "richardsonIntergridDifference": {
+        "l1VolumeSquareMeters": 6.074225501467455e-11,
+        "maximumMeters": 3.0369794084778405e-11,
+        "rmsMeters": 2.943310125962786e-12,
+        "signedVolumeSquareMeters": -1.0842021518059891e-17
+      }
+    },
+    {
+      "coarseTimeIntergridDifference": {
+        "l1VolumeSquareMeters": 1.8340975710987833e-9,
+        "maximumMeters": 9.170475752921995e-10,
+        "rmsMeters": 8.873033026146601e-11,
+        "signedVolumeSquareMeters": -1.0842021724855044e-17
+      },
+      "coarseTrials": [
+        2,
+        3
+      ],
+      "completedAtSameEndTime": true,
+      "finalExactMeanRestrictionDifference": {
+        "l1VolumeSquareMeters": 2.983724378680108e-16,
+        "maximumMeters": 1.3877787807814457e-17,
+        "rmsMeters": 4.119739996032822e-18,
+        "signedVolumeSquareMeters": 5.551115123125783e-17
+      },
+      "fineTimeIntergridDifference": {
+        "l1VolumeSquareMeters": 9.050340245333819e-10,
+        "maximumMeters": 4.5251578567150377e-10,
+        "rmsMeters": 4.378238492139045e-11,
+        "signedVolumeSquareMeters": -1.0842021724855044e-17
+      },
+      "fineTrials": [
+        10,
+        11
+      ],
+      "initialExactMeanRestrictionDifference": {
+        "l1VolumeSquareMeters": 4.0419056990259605e-16,
+        "maximumMeters": 1.3877787807814457e-17,
+        "rmsMeters": 4.956879373015625e-18,
+        "signedVolumeSquareMeters": 1.5612511283791264e-17
+      },
+      "richardsonIntergridDifference": {
+        "l1VolumeSquareMeters": 2.4034580593036905e-11,
+        "maximumMeters": 1.201600394919195e-11,
+        "rmsMeters": 1.165574735997809e-12,
+        "signedVolumeSquareMeters": -1.0842021724855044e-17
+      }
+    },
+    {
+      "coarseTimeIntergridDifference": {
+        "l1VolumeSquareMeters": 4.263861648353478e-9,
+        "maximumMeters": 2.131929804522712e-9,
+        "rmsMeters": 2.0829935845796343e-10,
+        "signedVolumeSquareMeters": 3.642919299551295e-17
+      },
+      "coarseTrials": [
+        4,
+        5
+      ],
+      "completedAtSameEndTime": true,
+      "finalExactMeanRestrictionDifference": {
+        "l1VolumeSquareMeters": 3.209238430557093e-16,
+        "maximumMeters": 1.3877787807814457e-17,
+        "rmsMeters": 4.250957487004647e-18,
+        "signedVolumeSquareMeters": -1.6479873021779667e-16
+      },
+      "fineTimeIntergridDifference": {
+        "l1VolumeSquareMeters": 2.0240562689273923e-9,
+        "maximumMeters": 1.0120270930900506e-9,
+        "rmsMeters": 9.889506400341206e-11,
+        "signedVolumeSquareMeters": 3.642919299551295e-17
+      },
+      "fineTrials": [
+        12,
+        13
+      ],
+      "initialExactMeanRestrictionDifference": {
+        "l1VolumeSquareMeters": 3.3480163086352377e-16,
+        "maximumMeters": 1.3877787807814457e-17,
+        "rmsMeters": 4.307217436166611e-18,
+        "signedVolumeSquareMeters": 1.5612511283791264e-17
+      },
+      "richardsonIntergridDifference": {
+        "l1VolumeSquareMeters": 2.1575461828215195e-10,
+        "maximumMeters": 1.0787561834261106e-10,
+        "rmsMeters": 1.0509413992669555e-11,
+        "signedVolumeSquareMeters": 3.642919299551295e-17
+      }
+    },
+    {
+      "coarseTimeIntergridDifference": {
+        "l1VolumeSquareMeters": 2.0240562689273923e-9,
+        "maximumMeters": 1.0120270930900506e-9,
+        "rmsMeters": 9.889506400341206e-11,
+        "signedVolumeSquareMeters": 3.642919299551295e-17
+      },
+      "coarseTrials": [
+        5,
+        6
+      ],
+      "completedAtSameEndTime": true,
+      "finalExactMeanRestrictionDifference": {
+        "l1VolumeSquareMeters": 3.209238430557093e-16,
+        "maximumMeters": 1.3877787807814457e-17,
+        "rmsMeters": 4.250957487004647e-18,
+        "signedVolumeSquareMeters": -1.6479873021779667e-16
+      },
+      "fineTimeIntergridDifference": {
+        "l1VolumeSquareMeters": 9.652031303020123e-10,
+        "maximumMeters": 4.826005007903687e-10,
+        "rmsMeters": 4.716162920818534e-11,
+        "signedVolumeSquareMeters": 3.642919299551295e-17
+      },
+      "fineTrials": [
+        13,
+        14
+      ],
+      "initialExactMeanRestrictionDifference": {
+        "l1VolumeSquareMeters": 3.3480163086352377e-16,
+        "maximumMeters": 1.3877787807814457e-17,
+        "rmsMeters": 4.307217436166611e-18,
+        "signedVolumeSquareMeters": 1.5612511283791264e-17
+      },
+      "richardsonIntergridDifference": {
+        "l1VolumeSquareMeters": 9.365467952795961e-11,
+        "maximumMeters": 4.682609150931313e-11,
+        "rmsMeters": 4.571813786519204e-12,
+        "signedVolumeSquareMeters": 3.642919299551295e-17
+      }
+    },
+    {
+      "coarseTimeIntergridDifference": {
+        "l1VolumeSquareMeters": 9.652031303020123e-10,
+        "maximumMeters": 4.826005007903687e-10,
+        "rmsMeters": 4.716162920818534e-11,
+        "signedVolumeSquareMeters": 3.642919299551295e-17
+      },
+      "coarseTrials": [
+        6,
+        7
+      ],
+      "completedAtSameEndTime": true,
+      "finalExactMeanRestrictionDifference": {
+        "l1VolumeSquareMeters": 3.209238430557093e-16,
+        "maximumMeters": 1.3877787807814457e-17,
+        "rmsMeters": 4.250957487004647e-18,
+        "signedVolumeSquareMeters": -1.6479873021779667e-16
+      },
+      "fineTimeIntergridDifference": {
+        "l1VolumeSquareMeters": 4.634621224294496e-10,
+        "maximumMeters": 2.317299851781617e-10,
+        "rmsMeters": 2.264512266999901e-11,
+        "signedVolumeSquareMeters": 3.642919299551295e-17
+      },
+      "fineTrials": [
+        14,
+        15
+      ],
+      "initialExactMeanRestrictionDifference": {
+        "l1VolumeSquareMeters": 3.3480163086352377e-16,
+        "maximumMeters": 1.3877787807814457e-17,
+        "rmsMeters": 4.307217436166611e-18,
+        "signedVolumeSquareMeters": 1.5612511283791264e-17
+      },
+      "richardsonIntergridDifference": {
+        "l1VolumeSquareMeters": 3.828334509910896e-11,
+        "maximumMeters": 1.9140530434045326e-11,
+        "rmsMeters": 1.8713844553079217e-12,
+        "signedVolumeSquareMeters": 3.642919299551295e-17
+      }
+    }
+  ],
+  "coupledDiagonal": [
+    {
+      "capDiffusionScale": 0.1,
+      "completed": true,
+      "observation": {
+        "acceptedSteps": 100,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.00004834965449759289,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.00004792432859708311,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 0.000005975378126188424,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 1.1589985859927765e-8,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.1357907693691515e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.000012310689257798537,
+        "initiallyDryArrivalSquareMeters": 0.000012226578437611035,
+        "maximumMeanErrorMeters": 8.411082018750222e-8,
+        "rmsMeanErrorMeters": 8.264098860835923e-9,
+        "signedDryArrivalErrorSquareMeters": -8.411082018750222e-8,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "trial": 0
+    },
+    {
+      "capDiffusionScale": 0.1,
+      "completed": true,
+      "observation": {
+        "acceptedSteps": 400,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000011343299521611103,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.000011146801484813486,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 1.659074686521933e-7,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 2.8963427212147508e-9,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 4.069186297931678e-18,
+        "exactInitiallyDryArrivalSquareMeters": 0.000012310689257798537,
+        "initiallyDryArrivalSquareMeters": 0.000012291131425937241,
+        "maximumMeanErrorMeters": 3.911566372259188e-8,
+        "rmsMeanErrorMeters": 2.6876863361417795e-9,
+        "signedDryArrivalErrorSquareMeters": -1.955783186129594e-8,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "trial": 10
+    },
+    {
+      "capDiffusionScale": 0.1,
+      "completed": true,
+      "observation": {
+        "acceptedSteps": 1600,
+        "contours": [
+          {
+            "thresholdMeters": 0,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.0000026596572613672015,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.001,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": -0.0000025703950676655637,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.01,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 3.230022582734193e-8,
+            "completeReconstruction": true
+          },
+          {
+            "thresholdMeters": 0.05,
+            "rootCount": 1,
+            "signedUniquePositionErrorMeters": 7.241354182951909e-10,
+            "completeReconstruction": true
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.0922853334664149e-19,
+        "exactInitiallyDryArrivalSquareMeters": 0.000012310689257798537,
+        "initiallyDryArrivalSquareMeters": 0.000012306187823283846,
+        "maximumMeanErrorMeters": 1.8005738058762843e-8,
+        "rmsMeanErrorMeters": 8.589175483580545e-10,
+        "signedDryArrivalErrorSquareMeters": -4.501434514690711e-9,
+        "timeSeconds": 0.1,
+        "unresolvedObservationCells": []
+      },
+      "trial": 16
+    }
+  ]
+}

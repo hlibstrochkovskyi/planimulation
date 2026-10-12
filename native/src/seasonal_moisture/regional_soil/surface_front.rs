@@ -1,4 +1,5 @@
 //! Standalone moving wet/dry verification; no seasonal or rendering selection.
+mod cadence_controls;
 mod element;
 mod face_controls;
 mod faces;
@@ -136,4 +137,9 @@ pub fn shared_face_report() -> Result<Value, String> {
 /// Bounded consecutive planar transfers; no native/seasonal model selection.
 pub fn paired_evolution_report() -> Result<Value, String> {
     paired_evolution::report()
+}
+
+/// Temporal/grid conditioning observations; no physical-state extrapolation.
+pub fn cadence_conditioning_report() -> Result<Value, String> {
+    cadence_controls::report()
 }

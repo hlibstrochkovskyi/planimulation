@@ -49,6 +49,8 @@ The pressure hypothesis passes this bounded rebuilding/ownership check and demon
 
 Next separate temporal error from spatial error using matched time refinement tied to grid width, then a bounded full-cell crossing with explicit stability/cost limits. Diagnose the stock baseline's arithmetic tail separately if retaining it as a longer comparison; do not insert a film, clamp or fallback. Keep the expensive spherical witness deferred until planar propagation and representation gates justify it.
 
+Follow-up: [time/grid conditioning](surface-cadence-conditioning.md) now explains the fixed-time RMS warning using four temporal levels and conservative intergrid observations. The affine-pressure fixture is semidiscrete-exact under its identified stencils and inactive cap, so it cannot determine a nonzero spatial truncation order. This resolves that diagnostic interpretation, not sustained propagation or general spatial accuracy.
+
 ## Reproduction and validation
 
 ```bash

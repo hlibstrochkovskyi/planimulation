@@ -12,14 +12,14 @@ const LIMIT: f64 = 256. * f64::EPSILON;
 
 #[derive(Clone, Copy, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct Config {
-    width: f64,
-    step_seconds: f64,
-    initial_front: f64,
-    direction: f64,
+pub(super) struct Config {
+    pub width: f64,
+    pub step_seconds: f64,
+    pub initial_front: f64,
+    pub direction: f64,
 }
 impl Config {
-    fn shape(self) -> Result<(usize, usize), String> {
+    pub fn shape(self) -> Result<(usize, usize), String> {
         let cells = 200. / self.width;
         let steps = END / self.step_seconds;
         if !self.width.is_finite()
@@ -43,7 +43,7 @@ impl Config {
     fn front(self, time: f64) -> f64 {
         self.initial_front + SPEED * time
     }
-    fn mean(self, i: usize, time: f64) -> f64 {
+    pub fn mean(self, i: usize, time: f64) -> f64 {
         let a = LEFT + i as f64 * self.width;
         let normal = if self.direction > 0. {
             a
@@ -66,7 +66,7 @@ fn zero() -> Stock {
 
 #[derive(Clone, Copy, Serialize)]
 #[serde(rename_all = "camelCase")]
-enum Method {
+pub(super) enum Method {
     PressurePenaltyOne,
     StockBaseline,
 }
@@ -284,7 +284,7 @@ fn observe(state: &State, initial: &State, config: Config) -> Result<Value, Stri
     )
 }
 
-fn trial(config: Config, method: Method) -> Result<Value, String> {
+pub(super) fn trial(config: Config, method: Method) -> Result<Value, String> {
     let (_, steps) = config.shape()?;
     let initial = initialize(config)?;
     let mut state = initial.clone();
