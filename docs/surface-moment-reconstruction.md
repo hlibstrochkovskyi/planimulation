@@ -53,7 +53,7 @@ Independent source review identifies two bounded next candidates, not implementa
 
 The uncapped flat law belongs to doubly nonlinear diffusion with diffusion parameters `p=3/2`, `m=13/3` (distinct from the integral exponent `p=10/7` above). [Andreianov–Bendahmane–Karlsen](https://arxiv.org/pdf/0901.0816) provide a relevant finite-volume framework, not a drop-in solver: their convergence theorem concerns their own discretization, and a depth-dependent mobility cap is not their gradient-only constitutive assumption.
 
-Next, specify and measure one face operator's frozen cell-average time derivative against the exact wave, including dry arrival and smooth non-affine controls. Only then attempt short paired planar evolution with stock accounting and spatial/time refinement. Donor-budget time-step bounds protect inventory algebraically, not diffusion stability. Triangle/spherical geometry, variable bed, barriers, initial sample-stock compatibility and seasonal integration remain subsequent gates. Do not rerun the expensive sphere merely because these local fits work.
+Follow-up: [shared-face frozen divergence and one-step accounting](surface-shared-face.md) now specify that operator and retain all 72 cases, smooth interior/global refinement and singular dry-arrival truncation separately. Short paired planar evolution with stock accounting and spatial/time refinement is the next gate, not an implemented trajectory. Donor-budget time-step bounds protect inventory algebraically, not diffusion stability. Triangle/spherical geometry, variable bed, barriers, initial sample-stock compatibility and seasonal integration remain subsequent gates. Do not rerun the expensive sphere merely because these local fits work.
 
 ## Reproduction
 

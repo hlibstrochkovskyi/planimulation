@@ -1,5 +1,7 @@
 //! Standalone moving wet/dry verification; no seasonal or rendering selection.
 mod element;
+mod face_controls;
+mod faces;
 mod moment_controls;
 mod moments;
 mod native;
@@ -123,4 +125,9 @@ pub fn reconstruction_report() -> Result<Value, String> {
 /// Frozen all-cell moment reconstruction and face diagnostics, not evolution.
 pub fn moment_reconstruction_report() -> Result<Value, String> {
     moment_controls::report()
+}
+
+/// Frozen shared-face derivatives and single-step accounting, not evolution.
+pub fn shared_face_report() -> Result<Value, String> {
+    face_controls::report()
 }

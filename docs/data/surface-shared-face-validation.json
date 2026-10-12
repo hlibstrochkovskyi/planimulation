@@ -1,0 +1,2215 @@
+{
+  "record": "surface-shared-face-validation-1",
+  "date": "2026-10-12",
+  "sourceBaseCommit": "b66fb661f2cead83450370a760c3c930b34cde38",
+  "report": {
+    "path": "artifacts/shared-face-complete.json",
+    "bytes": 28439953,
+    "sha256": "74ef32915c5a922c79fd7b1300c522d028f63e653b7182a1ef3bf95604044016",
+    "version": "surface-shared-face-report-1",
+    "repeatPath": "artifacts/shared-face-complete-repeat.json",
+    "byteIdenticalCompleteRepeat": true,
+    "releasePath": "artifacts/shared-face-release.json",
+    "byteIdenticalDebugRelease": true
+  },
+  "scope": "Frozen one-dimensional shared flux/divergence and independently initialized one-step transfers; no evolving trajectory, native/seasonal integration or production selection",
+  "parameters": {
+    "roughness": 0.04,
+    "capSquareMetersPerSecond": 100,
+    "penalties": [
+      0,
+      1,
+      2
+    ],
+    "stepSeconds": [
+      0.001,
+      0.0005
+    ],
+    "widthsMeters": [
+      4,
+      2,
+      1,
+      0.5
+    ],
+    "phases": [
+      0,
+      9.5367431640625e-7,
+      0.001,
+      0.05,
+      0.2,
+      0.5,
+      0.8,
+      0.95,
+      1
+    ],
+    "directions": [
+      -1,
+      1
+    ],
+    "separateRelativeAccountingLimit": 5.684341886080802e-14
+  },
+  "contracts": {
+    "pressureFaceHypothesis": "G=(sLeft+sRight)/2+sigma*(vRight-vLeft)/width; use zero slope at a dry physical trace, one upwind trace and the original capped pressure flux evaluated at G",
+    "sourceDistinction": "New adaptation, not the published DG scheme: its friction denominator uses the unpenalized averaged gradient, whereas this hypothesis uses G",
+    "stockBaseline": "Depth secant of cell means with larger/upwind depth, original cap; not an unbiased point reconstruction",
+    "truthContract": "Integrated manufactured means, explicit TWO exterior fluxes and post-compute observers only; no interior exact gradient/speed or fitted penalty",
+    "oneStepContract": "Frozen forward Euler including frozen exterior fluxes, not exact time-integrated exterior forcing; error against future wave includes boundary/time truncation",
+    "accountingContract": "One computed volume per face applied with opposite signs, compensated stocks, complete old-stock outgoing budget before credits; no resizing, clipping, film or repair",
+    "alignedFrontContract": "Zero instantaneous dry influx can coexist with positive O(dt^(10/7)) future exact arrival; frozen consistency is not a wetting or stability certificate",
+    "nonAffineProfile": "v=S*(6-x+0.025*x*x); exact instantaneous flux from original depth-gradient law; no future analytic solution claimed"
+  },
+  "waveSummary": [
+    {
+      "method": "stock-depth-upwind",
+      "penalty": null,
+      "cases": 72,
+      "independentOneSteps": 144,
+      "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.0016170385597614756,
+      "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.0013265139026000083,
+      "maximumRmsMeanDepthRateErrorMetersPerSecond": 0.00007388669499676124,
+      "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0.0013265139026000083,
+      "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+      "maximumLocalRelativeLedgerResidual": 1.088552926176507e-16,
+      "maximumRelativeInventoryResidual": 3.072440230117929e-17,
+      "perStep": [
+        {
+          "seconds": 0.001,
+          "steps": 72,
+          "maximumRmsDepthErrorMeters": 7.171508774215452e-8,
+          "maximumAbsoluteDepthErrorMeters": 0.000001292302608087336,
+          "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 0.0000015999329125051936
+        },
+        {
+          "seconds": 0.0005,
+          "steps": 72,
+          "maximumRmsDepthErrorMeters": 3.6135719323250676e-8,
+          "maximumAbsoluteDepthErrorMeters": 6.505475042325508e-7,
+          "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 8.021645563470313e-7
+        }
+      ]
+    },
+    {
+      "method": "pressure-jump-upwind",
+      "penalty": 0,
+      "cases": 72,
+      "independentOneSteps": 144,
+      "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 4.65725423621411e-10,
+      "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 4.755535325338262e-10,
+      "maximumRmsMeanDepthRateErrorMetersPerSecond": 3.3626715431828374e-11,
+      "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 4.755535321998759e-10,
+      "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+      "maximumLocalRelativeLedgerResidual": 1.0966395721318212e-16,
+      "maximumRelativeInventoryResidual": 2.2878401092138637e-17,
+      "perStep": [
+        {
+          "seconds": 0.001,
+          "steps": 72,
+          "maximumRmsDepthErrorMeters": 2.416222615768641e-9,
+          "maximumAbsoluteDepthErrorMeters": 3.421081895914549e-8,
+          "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 1.7105409479572745e-8
+        },
+        {
+          "seconds": 0.0005,
+          "steps": 72,
+          "maximumRmsDepthErrorMeters": 8.97964719613999e-10,
+          "maximumAbsoluteDepthErrorMeters": 1.2709209290689217e-8,
+          "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 6.354604645344609e-9
+        }
+      ]
+    },
+    {
+      "method": "pressure-jump-upwind",
+      "penalty": 1,
+      "cases": 72,
+      "independentOneSteps": 144,
+      "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 4.657254236214113e-10,
+      "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 4.755535338348688e-10,
+      "maximumRmsMeanDepthRateErrorMetersPerSecond": 3.362673335774764e-11,
+      "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 4.755535321998763e-10,
+      "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+      "maximumLocalRelativeLedgerResidual": 1.0987791341356435e-16,
+      "maximumRelativeInventoryResidual": 2.2878401092138637e-17,
+      "perStep": [
+        {
+          "seconds": 0.001,
+          "steps": 72,
+          "maximumRmsDepthErrorMeters": 2.4162226157686335e-9,
+          "maximumAbsoluteDepthErrorMeters": 3.421081895914549e-8,
+          "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 1.7105409479572745e-8
+        },
+        {
+          "seconds": 0.0005,
+          "steps": 72,
+          "maximumRmsDepthErrorMeters": 8.97964719613993e-10,
+          "maximumAbsoluteDepthErrorMeters": 1.2709209290689217e-8,
+          "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 6.354604645344609e-9
+        }
+      ]
+    },
+    {
+      "method": "pressure-jump-upwind",
+      "penalty": 2,
+      "cases": 72,
+      "independentOneSteps": 144,
+      "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 4.657254236214116e-10,
+      "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 4.755535349190709e-10,
+      "maximumRmsMeanDepthRateErrorMetersPerSecond": 3.3626786511198365e-11,
+      "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 4.755535321998767e-10,
+      "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+      "maximumLocalRelativeLedgerResidual": 1.0948479971742685e-16,
+      "maximumRelativeInventoryResidual": 2.6837438167350005e-17,
+      "perStep": [
+        {
+          "seconds": 0.001,
+          "steps": 72,
+          "maximumRmsDepthErrorMeters": 2.4162226157686244e-9,
+          "maximumAbsoluteDepthErrorMeters": 3.421081895914549e-8,
+          "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 1.7105409479572745e-8
+        },
+        {
+          "seconds": 0.0005,
+          "steps": 72,
+          "maximumRmsDepthErrorMeters": 8.979647196139886e-10,
+          "maximumAbsoluteDepthErrorMeters": 1.2709209290689217e-8,
+          "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 6.354604645344609e-9
+        }
+      ]
+    }
+  ],
+  "perWidth": [
+    {
+      "widthMeters": 4,
+      "methods": [
+        {
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "cases": 18,
+          "independentOneSteps": 36,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.0016170385597614756,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.0004042596399403689,
+          "maximumRmsMeanDepthRateErrorMetersPerSecond": 0.00006384547149472313,
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0.0004042596399403689,
+          "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 1.0551624443340193e-16,
+          "maximumRelativeInventoryResidual": 3.072440230117929e-17,
+          "perStep": [
+            {
+              "seconds": 0.001,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 6.307772281279342e-8,
+              "maximumAbsoluteDepthErrorMeters": 3.999832281262984e-7,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 0.0000015999329125051936
+            },
+            {
+              "seconds": 0.0005,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 3.163739627481161e-8,
+              "maximumAbsoluteDepthErrorMeters": 2.0054113908675782e-7,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 8.021645563470313e-7
+            }
+          ]
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "cases": 18,
+          "independentOneSteps": 36,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 4.65725423621411e-10,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 1.1643135590535274e-10,
+          "maximumRmsMeanDepthRateErrorMetersPerSecond": 2.3286271145656806e-11,
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 1.1643135590535274e-10,
+          "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 1.0063001474751956e-16,
+          "maximumRelativeInventoryResidual": 2.2878401092138637e-17,
+          "perStep": [
+            {
+              "seconds": 0.001,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 8.549520870043017e-10,
+              "maximumAbsoluteDepthErrorMeters": 4.276295382728806e-9,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 1.7105181530915224e-8
+            },
+            {
+              "seconds": 0.0005,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 3.1764778007153517e-10,
+              "maximumAbsoluteDepthErrorMeters": 1.588622667753962e-9,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 6.354490671015848e-9
+            }
+          ]
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "cases": 18,
+          "independentOneSteps": 36,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 4.657254236214113e-10,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 1.1643135590535282e-10,
+          "maximumRmsMeanDepthRateErrorMetersPerSecond": 2.328627115656582e-11,
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 1.1643135590535282e-10,
+          "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 1.011416132366744e-16,
+          "maximumRelativeInventoryResidual": 2.2878401092138637e-17,
+          "perStep": [
+            {
+              "seconds": 0.001,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 8.549520870042968e-10,
+              "maximumAbsoluteDepthErrorMeters": 4.276295382728806e-9,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 1.7105181530915224e-8
+            },
+            {
+              "seconds": 0.0005,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 3.1764778007153517e-10,
+              "maximumAbsoluteDepthErrorMeters": 1.588622667753962e-9,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 6.354490671015848e-9
+            }
+          ]
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "cases": 18,
+          "independentOneSteps": 36,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 4.657254236214116e-10,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 1.164313559053529e-10,
+          "maximumRmsMeanDepthRateErrorMetersPerSecond": 2.3286271167600406e-11,
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 1.164313559053529e-10,
+          "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 1.0165321172582924e-16,
+          "maximumRelativeInventoryResidual": 2.2878401092138637e-17,
+          "perStep": [
+            {
+              "seconds": 0.001,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 8.549520870042968e-10,
+              "maximumAbsoluteDepthErrorMeters": 4.276295382728806e-9,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 1.7105181530915224e-8
+            },
+            {
+              "seconds": 0.0005,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 3.1764778007153517e-10,
+              "maximumAbsoluteDepthErrorMeters": 1.588622667753962e-9,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 6.354490671015848e-9
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "widthMeters": 2,
+      "methods": [
+        {
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "cases": 18,
+          "independentOneSteps": 36,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.0012014550325598944,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.0006007275162799472,
+          "maximumRmsMeanDepthRateErrorMetersPerSecond": 0.0000669852297928348,
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0.0006007275162799472,
+          "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 1.0583604545993991e-16,
+          "maximumRelativeInventoryResidual": 1.3962948629517128e-17,
+          "perStep": [
+            {
+              "seconds": 0.001,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 6.589844487929018e-8,
+              "maximumAbsoluteDepthErrorMeters": 5.921746926517778e-7,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 0.0000011843493853035556
+            },
+            {
+              "seconds": 0.0005,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 3.3088641898317464e-8,
+              "maximumAbsoluteDepthErrorMeters": 2.971863963731204e-7,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 5.943727927462407e-7
+            }
+          ]
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "cases": 18,
+          "independentOneSteps": 36,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 3.460326599036513e-10,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 1.7301632995182565e-10,
+          "maximumRmsMeanDepthRateErrorMetersPerSecond": 2.4468204030314393e-11,
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 1.7301632995182565e-10,
+          "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 1.0832165382168764e-16,
+          "maximumRelativeInventoryResidual": 1.6552026210700605e-17,
+          "perStep": [
+            {
+              "seconds": 0.001,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 1.2088823806336168e-9,
+              "maximumAbsoluteDepthErrorMeters": 8.552650611865254e-9,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 1.7105301223730508e-8
+            },
+            {
+              "seconds": 0.0005,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 4.4917329027790434e-10,
+              "maximumAbsoluteDepthErrorMeters": 3.177275258698853e-9,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 6.354550517397706e-9
+            }
+          ]
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "cases": 18,
+          "independentOneSteps": 36,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 3.460326599036515e-10,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 1.7301633010394918e-10,
+          "maximumRmsMeanDepthRateErrorMetersPerSecond": 2.4468204053118073e-11,
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 1.7301632995182575e-10,
+          "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 1.0755885343706019e-16,
+          "maximumRelativeInventoryResidual": 2.0400193398433566e-17,
+          "perStep": [
+            {
+              "seconds": 0.001,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 1.2088823806336196e-9,
+              "maximumAbsoluteDepthErrorMeters": 8.552650611865254e-9,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 1.7105301223730508e-8
+            },
+            {
+              "seconds": 0.0005,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 4.4917329027790144e-10,
+              "maximumAbsoluteDepthErrorMeters": 3.177275258698853e-9,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 6.354550517397706e-9
+            }
+          ]
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "cases": 18,
+          "independentOneSteps": 36,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 3.4603265990365166e-10,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 1.7301633042920983e-10,
+          "maximumRmsMeanDepthRateErrorMetersPerSecond": 2.4468204097684865e-11,
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 1.7301632995182583e-10,
+          "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 1.0848413557020388e-16,
+          "maximumRelativeInventoryResidual": 2.6837438167350005e-17,
+          "perStep": [
+            {
+              "seconds": 0.001,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 1.208882380633616e-9,
+              "maximumAbsoluteDepthErrorMeters": 8.552650611865254e-9,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 1.7105301223730508e-8
+            },
+            {
+              "seconds": 0.0005,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 4.4917329027790506e-10,
+              "maximumAbsoluteDepthErrorMeters": 3.177275258698853e-9,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 6.354550517397706e-9
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "widthMeters": 1,
+      "methods": [
+        {
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "cases": 18,
+          "independentOneSteps": 36,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.0008926776585194247,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.0008926776585194247,
+          "maximumRmsMeanDepthRateErrorMetersPerSecond": 0.00007033847698922541,
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0.0008926776585194247,
+          "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 1.0551541216469984e-16,
+          "maximumRelativeInventoryResidual": 1.3233601103896765e-17,
+          "perStep": [
+            {
+              "seconds": 0.001,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 6.880171157216859e-8,
+              "maximumAbsoluteDepthErrorMeters": 8.755720112630886e-7,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 8.755720112630886e-7
+            },
+            {
+              "seconds": 0.0005,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 3.459787995206973e-8,
+              "maximumAbsoluteDepthErrorMeters": 4.399841057259847e-7,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 4.399841057259847e-7
+            }
+          ]
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "cases": 18,
+          "independentOneSteps": 36,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 2.9083683422048057e-10,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 2.9083683422048057e-10,
+          "maximumRmsMeanDepthRateErrorMetersPerSecond": 2.9083683449090272e-11,
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 2.9083683422048057e-10,
+          "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 1.0941792651945628e-16,
+          "maximumRelativeInventoryResidual": 5.4864003132083465e-18,
+          "perStep": [
+            {
+              "seconds": 0.001,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 1.709180261092282e-9,
+              "maximumAbsoluteDepthErrorMeters": 1.7105356419504625e-8,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 1.7105356419504625e-8
+            },
+            {
+              "seconds": 0.0005,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 6.351189065594007e-10,
+              "maximumAbsoluteDepthErrorMeters": 6.354578115329706e-9,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 6.354578115329706e-9
+            }
+          ]
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "cases": 18,
+          "independentOneSteps": 36,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 2.908368342204808e-10,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 2.908368342204808e-10,
+          "maximumRmsMeanDepthRateErrorMetersPerSecond": 2.9083683745688108e-11,
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 2.908368342204808e-10,
+          "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 1.0953161095600625e-16,
+          "maximumRelativeInventoryResidual": 5.7060533383410215e-18,
+          "perStep": [
+            {
+              "seconds": 0.001,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 1.7091802610922819e-9,
+              "maximumAbsoluteDepthErrorMeters": 1.7105356419504625e-8,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 1.7105356419504625e-8
+            },
+            {
+              "seconds": 0.0005,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 6.351189065594011e-10,
+              "maximumAbsoluteDepthErrorMeters": 6.354578115329706e-9,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 6.354578115329706e-9
+            }
+          ]
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "cases": 18,
+          "independentOneSteps": 36,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 2.90836834220481e-10,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 2.9083683465019883e-10,
+          "maximumRmsMeanDepthRateErrorMetersPerSecond": 2.9083684578532862e-11,
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 2.90836834220481e-10,
+          "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 1.0948479971742685e-16,
+          "maximumRelativeInventoryResidual": 1.1703546981869759e-17,
+          "perStep": [
+            {
+              "seconds": 0.001,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 1.7091802610922788e-9,
+              "maximumAbsoluteDepthErrorMeters": 1.7105356419504625e-8,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 1.7105356419504625e-8
+            },
+            {
+              "seconds": 0.0005,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 6.351189065593995e-10,
+              "maximumAbsoluteDepthErrorMeters": 6.354578115329706e-9,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 6.354578115329706e-9
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "widthMeters": 0.5,
+      "methods": [
+        {
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "cases": 18,
+          "independentOneSteps": 36,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.0006632569513000041,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.0013265139026000083,
+          "maximumRmsMeanDepthRateErrorMetersPerSecond": 0.00007388669499676124,
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0.0013265139026000083,
+          "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 1.088552926176507e-16,
+          "maximumRelativeInventoryResidual": 8.49539892185351e-18,
+          "perStep": [
+            {
+              "seconds": 0.001,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 7.171508774215452e-8,
+              "maximumAbsoluteDepthErrorMeters": 0.000001292302608087336,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 6.46151304043668e-7
+            },
+            {
+              "seconds": 0.0005,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 3.6135719323250676e-8,
+              "maximumAbsoluteDepthErrorMeters": 6.505475042325508e-7,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 3.252737521162754e-7
+            }
+          ]
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "cases": 18,
+          "independentOneSteps": 36,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 2.3777676609993793e-10,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 4.755535325338262e-10,
+          "maximumRmsMeanDepthRateErrorMetersPerSecond": 3.3626715431828374e-11,
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 4.755535321998759e-10,
+          "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 1.0966395721318212e-16,
+          "maximumRelativeInventoryResidual": 6.620988839794468e-18,
+          "perStep": [
+            {
+              "seconds": 0.001,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 2.416222615768641e-9,
+              "maximumAbsoluteDepthErrorMeters": 3.421081895914549e-8,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 1.7105409479572745e-8
+            },
+            {
+              "seconds": 0.0005,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 8.97964719613999e-10,
+              "maximumAbsoluteDepthErrorMeters": 1.2709209290689217e-8,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 6.354604645344609e-9
+            }
+          ]
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "cases": 18,
+          "independentOneSteps": 36,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 2.3777676609993814e-10,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 4.755535338348688e-10,
+          "maximumRmsMeanDepthRateErrorMetersPerSecond": 3.362673335774764e-11,
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 4.755535321998763e-10,
+          "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 1.0987791341356435e-16,
+          "maximumRelativeInventoryResidual": 8.51149358464451e-18,
+          "perStep": [
+            {
+              "seconds": 0.001,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 2.4162226157686335e-9,
+              "maximumAbsoluteDepthErrorMeters": 3.421081895914549e-8,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 1.7105409479572745e-8
+            },
+            {
+              "seconds": 0.0005,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 8.97964719613993e-10,
+              "maximumAbsoluteDepthErrorMeters": 1.2709209290689217e-8,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 6.354604645344609e-9
+            }
+          ]
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "cases": 18,
+          "independentOneSteps": 36,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 2.3777676609993835e-10,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 4.755535349190709e-10,
+          "maximumRmsMeanDepthRateErrorMetersPerSecond": 3.3626786511198365e-11,
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 4.755535321998767e-10,
+          "maximumAbsoluteDivergenceTelescopingResidualSquareMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 1.0588438014989537e-16,
+          "maximumRelativeInventoryResidual": 8.534958177987495e-18,
+          "perStep": [
+            {
+              "seconds": 0.001,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 2.4162226157686244e-9,
+              "maximumAbsoluteDepthErrorMeters": 3.421081895914549e-8,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 1.7105409479572745e-8
+            },
+            {
+              "seconds": 0.0005,
+              "steps": 18,
+              "maximumRmsDepthErrorMeters": 8.979647196139886e-10,
+              "maximumAbsoluteDepthErrorMeters": 1.2709209290689217e-8,
+              "maximumAbsoluteInitiallyDryArrivalErrorSquareMeters": 6.354604645344609e-9
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "smoothNonAffine": [
+    {
+      "widthMeters": 1,
+      "methods": [
+        {
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "signedRelativeFaceFluxErrorAtZero": 0.05983462052579668,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.00018276555770358068,
+          "rmsMeanDepthRateErrorMetersPerSecond": 0.00008536654873739143,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00018276555770358068,
+          "fixedInteriorWindow": {
+            "cells": 4,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.000006095261714571254,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.00000404213772468954
+          },
+          "remainingCells": {
+            "cells": 4,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00018276555770358068,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.00012065884306291644
+          },
+          "maximumLocalRelativeLedgerResidual": 9.799472728249731e-17
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "signedRelativeFaceFluxErrorAtZero": 0.011056572475932338,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.00003346096283112984,
+          "rmsMeanDepthRateErrorMetersPerSecond": 0.000014250604267165875,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.000032553944391410395,
+          "fixedInteriorWindow": {
+            "cells": 4,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.000002250038027268482,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.0000018942623836682908
+          },
+          "remainingCells": {
+            "cells": 4,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.000032553944391410395,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.00002006417738110765
+          },
+          "maximumLocalRelativeLedgerResidual": 8.38046601898088e-17
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "signedRelativeFaceFluxErrorAtZero": -0.001176843358470494,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.000004208181383443541,
+          "rmsMeanDepthRateErrorMetersPerSecond": 0.000002030724901618064,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.000004208181383443541,
+          "fixedInteriorWindow": {
+            "cells": 4,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 3.192573051974748e-7,
+            "rmsMeanDepthRateErrorMetersPerSecond": 2.4146202419240293e-7
+          },
+          "remainingCells": {
+            "cells": 4,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.000004208181383443541,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.00000286170986352151
+          },
+          "maximumLocalRelativeLedgerResidual": 8.726141167099717e-17
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "signedRelativeFaceFluxErrorAtZero": -0.013561961530315692,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.000039551394155186,
+          "rmsMeanDepthRateErrorMetersPerSecond": 0.000018303135912601273,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.000040458412594883766,
+          "fixedInteriorWindow": {
+            "cells": 4,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.0000016158739196453671,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.0000014153351751545016
+          },
+          "remainingCells": {
+            "cells": 4,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.000040458412594883766,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.000025845819677701833
+          },
+          "maximumLocalRelativeLedgerResidual": 7.083850478502655e-17
+        }
+      ]
+    },
+    {
+      "widthMeters": 0.5,
+      "methods": [
+        {
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "signedRelativeFaceFluxErrorAtZero": 0.029832594966827854,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.00009420030841095976,
+          "rmsMeanDepthRateErrorMetersPerSecond": 0.00006129234227849315,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00018840061682191952,
+          "fixedInteriorWindow": {
+            "cells": 8,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.0000032980535611005363,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.000001997471474996367
+          },
+          "remainingCells": {
+            "cells": 8,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00018840061682191952,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.00008665744371763164
+          },
+          "maximumLocalRelativeLedgerResidual": 9.750119316953227e-17
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "signedRelativeFaceFluxErrorAtZero": 0.005886482277045215,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.00001827565350142387,
+          "rmsMeanDepthRateErrorMetersPerSecond": 0.000010929146588352974,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.000036108309315751805,
+          "fixedInteriorWindow": {
+            "cells": 8,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.0000010751808604443636,
+            "rmsMeanDepthRateErrorMetersPerSecond": 8.811617759483178e-7
+          },
+          "remainingCells": {
+            "cells": 8,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.000036108309315751805,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.00001543100917710901
+          },
+          "maximumLocalRelativeLedgerResidual": 8.684046342340239e-17
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "signedRelativeFaceFluxErrorAtZero": -0.00029572577400601634,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.000001127905045708805,
+          "rmsMeanDepthRateErrorMetersPerSecond": 7.32815928741484e-7,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00000225581009141761,
+          "fixedInteriorWindow": {
+            "cells": 8,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 8.579202105066935e-8,
+            "rmsMeanDepthRateErrorMetersPerSecond": 6.097619024234844e-8
+          },
+          "remainingCells": {
+            "cells": 8,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00000225581009141761,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.0000010345628424885636
+          },
+          "maximumLocalRelativeLedgerResidual": 8.93013093284849e-17
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "signedRelativeFaceFluxErrorAtZero": -0.006516403465183215,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.000019733142956697772,
+          "rmsMeanDepthRateErrorMetersPerSecond": 0.00001237120639145431,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.0000399092836004377,
+          "fixedInteriorWindow": {
+            "cells": 8,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 9.047423514393568e-7,
+            "rmsMeanDepthRateErrorMetersPerSecond": 7.60110075124421e-7
+          },
+          "remainingCells": {
+            "cells": 8,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.0000399092836004377,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.000017479008205090307
+          },
+          "maximumLocalRelativeLedgerResidual": 9.682382770018821e-17
+        }
+      ]
+    },
+    {
+      "widthMeters": 0.25,
+      "methods": [
+        {
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "signedRelativeFaceFluxErrorAtZero": 0.014897758647849204,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.00004798524604997527,
+          "rmsMeanDepthRateErrorMetersPerSecond": 0.00004376996101480007,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00019194098419990108,
+          "fixedInteriorWindow": {
+            "cells": 16,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.0000017257437729210207,
+            "rmsMeanDepthRateErrorMetersPerSecond": 9.952501979148368e-7
+          },
+          "remainingCells": {
+            "cells": 16,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00019194098419990108,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.0000618920709906995
+          },
+          "maximumLocalRelativeLedgerResidual": 1.0367836586222569e-16
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "signedRelativeFaceFluxErrorAtZero": 0.0030337357854788973,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.000009500930093941495,
+          "rmsMeanDepthRateErrorMetersPerSecond": 0.000008024103301030073,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00003778475460532692,
+          "fixedInteriorWindow": {
+            "cells": 16,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 5.228644742120286e-7,
+            "rmsMeanDepthRateErrorMetersPerSecond": 4.2348106337797355e-7
+          },
+          "remainingCells": {
+            "cells": 16,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00003778475460532692,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.000011339891152923986
+          },
+          "maximumLocalRelativeLedgerResidual": 9.530152432764989e-17
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "signedRelativeFaceFluxErrorAtZero": -0.00007415566911860456,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 2.9335464410006236e-7,
+          "rmsMeanDepthRateErrorMetersPerSecond": 2.6303186456408596e-7,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.0000011734185764002494,
+          "fixedInteriorWindow": {
+            "cells": 16,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 2.2346940900183632e-8,
+            "rmsMeanDepthRateErrorMetersPerSecond": 1.53499512225833e-8
+          },
+          "remainingCells": {
+            "cells": 16,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.0000011734185764002494,
+            "rmsMeanDepthRateErrorMetersPerSecond": 3.716663860905148e-7
+          },
+          "maximumLocalRelativeLedgerResidual": 9.690592709410864e-17
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "signedRelativeFaceFluxErrorAtZero": -0.0031917369935789987,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.000009858063291966462,
+          "rmsMeanDepthRateErrorMetersPerSecond": 0.000008537398103520323,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00003965121893852348,
+          "fixedInteriorWindow": {
+            "cells": 16,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 4.784588941968843e-7,
+            "rmsMeanDepthRateErrorMetersPerSecond": 3.929906983302981e-7
+          },
+          "remainingCells": {
+            "cells": 16,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00003965121893852348,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.000012067306703113612
+          },
+          "maximumLocalRelativeLedgerResidual": 9.968080568359515e-17
+        }
+      ]
+    },
+    {
+      "widthMeters": 0.125,
+      "methods": [
+        {
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "signedRelativeFaceFluxErrorAtZero": 0.007444569871043539,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.0000242429615580058,
+          "rmsMeanDepthRateErrorMetersPerSecond": 0.00003112432945490253,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.0001939436924640464,
+          "fixedInteriorWindow": {
+            "cells": 32,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 8.841388906485892e-7,
+            "rmsMeanDepthRateErrorMetersPerSecond": 4.970446232072867e-7
+          },
+          "remainingCells": {
+            "cells": 32,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.0001939436924640464,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.000044013642370033034
+          },
+          "maximumLocalRelativeLedgerResidual": 1.0865179400043051e-16
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "signedRelativeFaceFluxErrorAtZero": 0.0015396322209725033,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.000004838663011970477,
+          "rmsMeanDepthRateErrorMetersPerSecond": 0.000005778397954105911,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00003860044287085085,
+          "fixedInteriorWindow": {
+            "cells": 32,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 2.5737513448947924e-7,
+            "rmsMeanDepthRateErrorMetersPerSecond": 2.0736882559832333e-7
+          },
+          "remainingCells": {
+            "cells": 32,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00003860044287085085,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.000008169257249113944
+          },
+          "maximumLocalRelativeLedgerResidual": 1.0058913890123768e-16
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "signedRelativeFaceFluxErrorAtZero": -0.000018569253171507736,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 7.491476345430209e-8,
+          "rmsMeanDepthRateErrorMetersPerSecond": 9.383171589159441e-8,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 5.993181076344167e-7,
+          "fixedInteriorWindow": {
+            "cells": 32,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 5.710756114524207e-9,
+            "rmsMeanDepthRateErrorMetersPerSecond": 3.852745442524352e-9
+          },
+          "remainingCells": {
+            "cells": 32,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 5.993181076344167e-7,
+            "rmsMeanDepthRateErrorMetersPerSecond": 1.326421432534807e-7
+          },
+          "maximumLocalRelativeLedgerResidual": 1.0038592851961902e-16
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "signedRelativeFaceFluxErrorAtZero": -0.0015792025565434969,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.000004927089267161861,
+          "rmsMeanDepthRateErrorMetersPerSecond": 0.000005960678214361312,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00003952557536249582,
+          "fixedInteriorWindow": {
+            "cells": 32,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 2.460254548281027e-7,
+            "rmsMeanDepthRateErrorMetersPerSecond": 1.997135624766785e-7
+          },
+          "remainingCells": {
+            "cells": 32,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00003952557536249582,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.000008427305859127578
+          },
+          "maximumLocalRelativeLedgerResidual": 1.0810950245535212e-16
+        }
+      ]
+    },
+    {
+      "widthMeters": 0.0625,
+      "methods": [
+        {
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "signedRelativeFaceFluxErrorAtZero": 0.003721248046535261,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.000012188240049677617,
+          "rmsMeanDepthRateErrorMetersPerSecond": 0.00002207432540755283,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00019501184079484188,
+          "fixedInteriorWindow": {
+            "cells": 64,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 4.4767248764260303e-7,
+            "rmsMeanDepthRateErrorMetersPerSecond": 2.4841312181584157e-7
+          },
+          "remainingCells": {
+            "cells": 64,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00019501184079484188,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.0000312168219926048
+          },
+          "maximumLocalRelativeLedgerResidual": 1.0827815693089514e-16
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "signedRelativeFaceFluxErrorAtZero": 0.0007755263490583851,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.0000024410760877803354,
+          "rmsMeanDepthRateErrorMetersPerSecond": 0.000004122951419232539,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.000039002940804167,
+          "fixedInteriorWindow": {
+            "cells": 64,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 1.2761861392651674e-7,
+            "rmsMeanDepthRateErrorMetersPerSecond": 1.0257783946956752e-7
+          },
+          "remainingCells": {
+            "cells": 64,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.000039002940804167,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.000005829831438176661
+          },
+          "maximumLocalRelativeLedgerResidual": 1.0077693829057798e-16
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "signedRelativeFaceFluxErrorAtZero": -0.0000046462551368558546,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 1.8936853351256625e-8,
+          "rmsMeanDepthRateErrorMetersPerSecond": 3.333602086041228e-8,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 3.02989653620106e-7,
+          "fixedInteriorWindow": {
+            "cells": 64,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 1.444013075779793e-9,
+            "rmsMeanDepthRateErrorMetersPerSecond": 9.65227533154883e-10
+          },
+          "remainingCells": {
+            "cells": 64,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 3.02989653620106e-7,
+            "rmsMeanDepthRateErrorMetersPerSecond": 4.7134370786305445e-8
+          },
+          "maximumLocalRelativeLedgerResidual": 1.0613491660582305e-16
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "signedRelativeFaceFluxErrorAtZero": -0.0007854280068801406,
+          "maximumAbsoluteFaceFluxErrorSquareMetersPerSecond": 0.000002463078290503278,
+          "rmsMeanDepthRateErrorMetersPerSecond": 0.000004187558544903663,
+          "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00003946352924485974,
+          "fixedInteriorWindow": {
+            "cells": 64,
+            "domainMeters": [
+              -2,
+              2
+            ],
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 1.2474847847776527e-7,
+            "rmsMeanDepthRateErrorMetersPerSecond": 1.006596593875217e-7
+          },
+          "remainingCells": {
+            "cells": 64,
+            "maximumAbsoluteMeanDepthRateErrorMetersPerSecond": 0.00003946352924485974,
+            "rmsMeanDepthRateErrorMetersPerSecond": 0.000005921246555157398
+          },
+          "maximumLocalRelativeLedgerResidual": 1.0790854082147463e-16
+        }
+      ]
+    }
+  ],
+  "smoothRefinement": [
+    {
+      "fineWidthMeters": 0.5,
+      "coarseWidthMeters": 1,
+      "methods": [
+        {
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "faceAtZeroRatio": 2.0056793782883915,
+          "globalRmsRateRatio": 1.3927767411712322,
+          "fixedInteriorRmsRateRatio": 2.0236272584052255,
+          "globalMaximumRateRatio": 0.970090017679373
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "faceAtZeroRatio": 1.8782987793997583,
+          "globalRmsRateRatio": 1.3039082376617153,
+          "fixedInteriorRmsRateRatio": 2.1497328133981535,
+          "globalMaximumRateRatio": 0.9015637953785097
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "faceAtZeroRatio": 3.9795089299404522,
+          "globalRmsRateRatio": 2.7711254927353584,
+          "fixedInteriorRmsRateRatio": 3.9599394982323064,
+          "globalMaximumRateRatio": 1.8654856627576348
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "faceAtZeroRatio": 2.081203474090655,
+          "globalRmsRateRatio": 1.4794948312595104,
+          "fixedInteriorRmsRateRatio": 1.862013439201984,
+          "globalMaximumRateRatio": 1.0137594300099149
+        }
+      ]
+    },
+    {
+      "fineWidthMeters": 0.25,
+      "coarseWidthMeters": 0.5,
+      "methods": [
+        {
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "faceAtZeroRatio": 2.002488808686319,
+          "globalRmsRateRatio": 1.4003289209640417,
+          "fixedInteriorRmsRateRatio": 2.0070043484354976,
+          "globalMaximumRateRatio": 0.9815549170348404
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "faceAtZeroRatio": 1.940341115142956,
+          "globalRmsRateRatio": 1.362039617180648,
+          "fixedInteriorRmsRateRatio": 2.080758390752047,
+          "globalMaximumRateRatio": 0.9556317010104713
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "faceAtZeroRatio": 3.987905139565697,
+          "globalRmsRateRatio": 2.7860348021178183,
+          "fixedInteriorRmsRateRatio": 3.9724028668337703,
+          "globalMaximumRateRatio": 1.9224257539350222
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "faceAtZeroRatio": 2.041648004924165,
+          "globalRmsRateRatio": 1.4490605031471062,
+          "fixedInteriorRmsRateRatio": 1.9341681071687071,
+          "globalMaximumRateRatio": 1.0065083664215804
+        }
+      ]
+    },
+    {
+      "fineWidthMeters": 0.125,
+      "coarseWidthMeters": 0.25,
+      "methods": [
+        {
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "faceAtZeroRatio": 2.0011577439545096,
+          "globalRmsRateRatio": 1.4062941043668225,
+          "fixedInteriorRmsRateRatio": 2.002335708799689,
+          "globalMaximumRateRatio": 0.9896737643864515
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "faceAtZeroRatio": 1.9704288752560977,
+          "globalRmsRateRatio": 1.388638055869525,
+          "fixedInteriorRmsRateRatio": 2.042163580548327,
+          "globalMaximumRateRatio": 0.9788684220993771
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "faceAtZeroRatio": 3.993465350151369,
+          "globalRmsRateRatio": 2.803229825488556,
+          "fixedInteriorRmsRateRatio": 3.9841592058378716,
+          "globalMaximumRateRatio": 1.9579227816624443
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "faceAtZeroRatio": 2.0211067797185946,
+          "globalRmsRateRatio": 1.4322863601243918,
+          "fixedInteriorRmsRateRatio": 1.9677717099267582,
+          "globalMaximumRateRatio": 1.0031787918297297
+        }
+      ]
+    },
+    {
+      "fineWidthMeters": 0.0625,
+      "coarseWidthMeters": 0.125,
+      "methods": [
+        {
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "faceAtZeroRatio": 2.000557280231547,
+          "globalRmsRateRatio": 1.4099787368475232,
+          "fixedInteriorRmsRateRatio": 2.0008790983906457,
+          "globalMaximumRateRatio": 0.9945226488481836
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "faceAtZeroRatio": 1.9852739018369483,
+          "globalRmsRateRatio": 1.4015197771070325,
+          "fixedInteriorRmsRateRatio": 2.021575290244292,
+          "globalMaximumRateRatio": 0.9896803183294028
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "faceAtZeroRatio": 3.9966064334714186,
+          "globalRmsRateRatio": 2.8147245372954197,
+          "fixedInteriorRmsRateRatio": 3.9915411757179227,
+          "globalMaximumRateRatio": 1.9780150921782063
+        },
+        {
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "faceAtZeroRatio": 2.010626744539413,
+          "globalRmsRateRatio": 1.4234256429956231,
+          "fixedInteriorRmsRateRatio": 1.9840476680714463,
+          "globalMaximumRateRatio": 1.0015722394530682
+        }
+      ]
+    }
+  ],
+  "alignedFrontOneSteps": [
+    {
+      "method": "stock-depth-upwind",
+      "penalty": null,
+      "steps": [
+        {
+          "seconds": 0.001,
+          "rmsDepthErrorMeters": 6.880171157216859e-8,
+          "exactArrivalInInitiallyDryOwnersSquareMeters": 1.7105647256338846e-8,
+          "computedArrivalInInitiallyDryOwnersSquareMeters": 8.926776585194247e-7,
+          "arrivalErrorSquareMeters": 8.755720112630859e-7
+        },
+        {
+          "seconds": 0.0005,
+          "rmsDepthErrorMeters": 3.459787995206973e-8,
+          "exactArrivalInInitiallyDryOwnersSquareMeters": 6.354723533727658e-9,
+          "computedArrivalInInitiallyDryOwnersSquareMeters": 4.4633882925971237e-7,
+          "arrivalErrorSquareMeters": 4.399841057259847e-7
+        }
+      ]
+    },
+    {
+      "method": "pressure-jump-upwind",
+      "penalty": 0,
+      "steps": [
+        {
+          "seconds": 0.001,
+          "rmsDepthErrorMeters": 1.7091802610921373e-9,
+          "exactArrivalInInitiallyDryOwnersSquareMeters": 1.7105647256338846e-8,
+          "computedArrivalInInitiallyDryOwnersSquareMeters": 2.908368342204806e-13,
+          "arrivalErrorSquareMeters": -1.7105356419504625e-8
+        },
+        {
+          "seconds": 0.0005,
+          "rmsDepthErrorMeters": 6.351189065583987e-10,
+          "exactArrivalInInitiallyDryOwnersSquareMeters": 6.354723533727658e-9,
+          "computedArrivalInInitiallyDryOwnersSquareMeters": 1.454184171102403e-13,
+          "arrivalErrorSquareMeters": -6.354578115310548e-9
+        }
+      ]
+    },
+    {
+      "method": "pressure-jump-upwind",
+      "penalty": 1,
+      "steps": [
+        {
+          "seconds": 0.001,
+          "rmsDepthErrorMeters": 1.7091802610921371e-9,
+          "exactArrivalInInitiallyDryOwnersSquareMeters": 1.7105647256338846e-8,
+          "computedArrivalInInitiallyDryOwnersSquareMeters": 2.908368342204808e-13,
+          "arrivalErrorSquareMeters": -1.7105356419504625e-8
+        },
+        {
+          "seconds": 0.0005,
+          "rmsDepthErrorMeters": 6.35118906558399e-10,
+          "exactArrivalInInitiallyDryOwnersSquareMeters": 6.354723533727658e-9,
+          "computedArrivalInInitiallyDryOwnersSquareMeters": 1.454184171102404e-13,
+          "arrivalErrorSquareMeters": -6.354578115310548e-9
+        }
+      ]
+    },
+    {
+      "method": "pressure-jump-upwind",
+      "penalty": 2,
+      "steps": [
+        {
+          "seconds": 0.001,
+          "rmsDepthErrorMeters": 1.7091802610921338e-9,
+          "exactArrivalInInitiallyDryOwnersSquareMeters": 1.7105647256338846e-8,
+          "computedArrivalInInitiallyDryOwnersSquareMeters": 2.90836834220481e-13,
+          "arrivalErrorSquareMeters": -1.7105356419504625e-8
+        },
+        {
+          "seconds": 0.0005,
+          "rmsDepthErrorMeters": 6.351189065583975e-10,
+          "exactArrivalInInitiallyDryOwnersSquareMeters": 6.354723533727658e-9,
+          "computedArrivalInInitiallyDryOwnersSquareMeters": 1.454184171102405e-13,
+          "arrivalErrorSquareMeters": -6.354578115310548e-9
+        }
+      ]
+    }
+  ],
+  "controls": [
+    {
+      "name": "uniform",
+      "meansMeters": [
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.02
+      ],
+      "comparisonScope": "Closed exterior fluxes; no arbitrary interior truth claimed",
+      "methods": [
+        {
+          "status": "accepted",
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "interiorFaces": [
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 0
+        },
+        {
+          "status": "accepted",
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "interiorFaces": [
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 0
+        },
+        {
+          "status": "accepted",
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "interiorFaces": [
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 0
+        },
+        {
+          "status": "accepted",
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "interiorFaces": [
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 0
+        }
+      ]
+    },
+    {
+      "name": "dry",
+      "meansMeters": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "comparisonScope": "Closed exterior fluxes; no arbitrary interior truth claimed",
+      "methods": [
+        {
+          "status": "accepted",
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "interiorFaces": [
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 0
+        },
+        {
+          "status": "accepted",
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "interiorFaces": [
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 0
+        },
+        {
+          "status": "accepted",
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "interiorFaces": [
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 0
+        },
+        {
+          "status": "accepted",
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "interiorFaces": [
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 0
+        }
+      ]
+    },
+    {
+      "name": "tiny-partial",
+      "meansMeters": [
+        1,
+        1e-30,
+        0
+      ],
+      "comparisonScope": "Closed exterior fluxes; no arbitrary interior truth claimed",
+      "methods": [
+        {
+          "status": "accepted",
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "interiorFaces": [
+            {
+              "donor": "left",
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 25,
+              "gradient": -1
+            },
+            {
+              "donor": "left",
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 2.4999999999999877e-64,
+              "gradient": -1e-30
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 2.4999999999999877e-64,
+          "maximumLocalRelativeLedgerResidual": 4.5102810375396984e-17
+        },
+        {
+          "status": "accepted",
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "interiorFaces": [
+            {
+              "donor": "left",
+              "donorBlockedPositiveOppositeTrace": true,
+              "flux": 0,
+              "gradient": -1.1492325310649043
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 0
+        },
+        {
+          "status": "accepted",
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "interiorFaces": [
+            {
+              "donor": "left",
+              "donorBlockedPositiveOppositeTrace": true,
+              "flux": 0,
+              "gradient": -1.1492325310649043
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 0
+        },
+        {
+          "status": "accepted",
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "interiorFaces": [
+            {
+              "donor": "left",
+              "donorBlockedPositiveOppositeTrace": true,
+              "flux": 0,
+              "gradient": -1.1492325310649043
+            },
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 0
+        }
+      ]
+    },
+    {
+      "name": "tiny-partial-reflected",
+      "meansMeters": [
+        0,
+        1e-30,
+        1
+      ],
+      "comparisonScope": "Closed exterior fluxes; no arbitrary interior truth claimed",
+      "methods": [
+        {
+          "status": "accepted",
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "interiorFaces": [
+            {
+              "donor": "right",
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": -2.4999999999999877e-64,
+              "gradient": 1e-30
+            },
+            {
+              "donor": "right",
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": -25,
+              "gradient": 1
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 2.4999999999999877e-64,
+          "maximumLocalRelativeLedgerResidual": 4.5102810375396984e-17
+        },
+        {
+          "status": "accepted",
+          "method": "pressure-jump-upwind",
+          "penalty": 0,
+          "interiorFaces": [
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": "right",
+              "donorBlockedPositiveOppositeTrace": true,
+              "flux": 0,
+              "gradient": 1.1492325310649043
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 0
+        },
+        {
+          "status": "accepted",
+          "method": "pressure-jump-upwind",
+          "penalty": 1,
+          "interiorFaces": [
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": "right",
+              "donorBlockedPositiveOppositeTrace": true,
+              "flux": 0,
+              "gradient": 1.1492325310649043
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 0
+        },
+        {
+          "status": "accepted",
+          "method": "pressure-jump-upwind",
+          "penalty": 2,
+          "interiorFaces": [
+            {
+              "donor": null,
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0,
+              "gradient": 0
+            },
+            {
+              "donor": "right",
+              "donorBlockedPositiveOppositeTrace": true,
+              "flux": 0,
+              "gradient": 1.1492325310649043
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0,
+          "maximumLocalRelativeLedgerResidual": 0
+        }
+      ]
+    },
+    {
+      "name": "ambiguous-extremum",
+      "meansMeters": [
+        0,
+        0.01,
+        0
+      ],
+      "comparisonScope": "Closed exterior fluxes; no arbitrary interior truth claimed",
+      "methods": [
+        {
+          "status": "accepted",
+          "method": "stock-depth-upwind",
+          "penalty": null,
+          "interiorFaces": [
+            {
+              "donor": "right",
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": -0.0011603972084031943,
+              "gradient": 0.01
+            },
+            {
+              "donor": "left",
+              "donorBlockedPositiveOppositeTrace": false,
+              "flux": 0.0011603972084031943,
+              "gradient": -0.01
+            }
+          ],
+          "maximumAbsoluteInitiallyDryOwnerRateMetersPerSecond": 0.0011603972084031943,
+          "maximumLocalRelativeLedgerResidual": 3.5405977195229754e-17
+        },
+        {
+          "penalty": 0,
+          "reason": "Unresolved owner refuses the complete pressure face operator.",
+          "status": "refused"
+        },
+        {
+          "penalty": 1,
+          "reason": "Unresolved owner refuses the complete pressure face operator.",
+          "status": "refused"
+        },
+        {
+          "penalty": 2,
+          "reason": "Unresolved owner refuses the complete pressure face operator.",
+          "status": "refused"
+        }
+      ]
+    }
+  ],
+  "sourceFingerprints": [
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/faces.rs",
+      "bytes": 13906,
+      "sha256": "dac79bbb966970ade1fe625a92827248e015bf36e2785fd0b533b9ab25bccfd4"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/face_controls.rs",
+      "bytes": 21019,
+      "sha256": "ef0dd2846f3d503c2b3e2fb83c76982616b5bbd3605d157fe5216adfb9c8cb9e"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/moments.rs",
+      "bytes": 11751,
+      "sha256": "c96c549a6d1e0e07331078e98d4c0f249e7a4f93db3960d170dd67c98b5250cc"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/reference.rs",
+      "bytes": 11933,
+      "sha256": "b4abd46b67f010efc783b17ba00389cf387f18026fd51bc8dc76f6675a04bf39"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front.rs",
+      "bytes": 5254,
+      "sha256": "a501d8c05812db3bd0a6a3de65f87fae12a7dc4bb8bee2862d206ad78f6028fc"
+    },
+    {
+      "path": "native/examples/surface_shared_face_report.rs",
+      "bytes": 949,
+      "sha256": "9ff856ac747736dc9a9cf568aa90e3bfdae3e14ce111492d75c057da6b0215b1"
+    }
+  ],
+  "priorMomentReport": {
+    "path": "artifacts/moment-after-shared-face.json",
+    "sha256": "9f0af5e4bfcac7e49500bc166f3dc1a6dd05ad9e2e7c308b366a1c335b3f21ad",
+    "unchangedFromPriorFinal": true
+  },
+  "validation": {
+    "optimizedNative": {
+      "command": "cargo test --release --locked --manifest-path native/Cargo.toml --lib --test regional_soil --test regional_surface_flow",
+      "libraryPassed": 151,
+      "regionalSoilPassed": 12,
+      "regionalSurfaceFlowPassed": 5,
+      "failed": 0,
+      "ignored": 0
+    },
+    "directed": {
+      "command": "cargo test --locked --manifest-path native/Cargo.toml --lib surface_front::face",
+      "passed": 7,
+      "failed": 0
+    },
+    "strictAllTargetClippy": true,
+    "formatting": true,
+    "whitespace": true,
+    "typecheck": true,
+    "releaseNativeBuild": true,
+    "node": {
+      "command": "node --import tsx --test tests/*.test.ts",
+      "files": 18,
+      "passed": 88,
+      "failed": 0,
+      "usedRebuiltNativeBinary": true
+    },
+    "currentFullNpmSuiteRerun": false,
+    "previousFullSuite": {
+      "sourceIncrementCommit": "b66fb661f2cead83450370a760c3c930b34cde38",
+      "record": "docs/data/surface-moment-reconstruction-validation.json",
+      "nativePassed": 598,
+      "nodePassed": 88,
+      "ignored": 1,
+      "note": "Prior full-run/final-source delta retained in that record; not a current-step full-suite claim."
+    },
+    "cliRefusals": {
+      "noArgumentsExitCode": 1,
+      "existingOutputExitCode": 1,
+      "extraArgumentsExitCode": 1,
+      "existingOutputUnchanged": true,
+      "invalidExtraArgumentOutputAbsent": true
+    },
+    "logFingerprints": [
+      {
+        "path": "artifacts/shared-face-release-complete-log.txt",
+        "bytes": 21966,
+        "sha256": "6347d44bf9fddfb079b8e3a1c10af8d68e701ae0437f1520a516c059d1d64011"
+      },
+      {
+        "path": "artifacts/shared-face-directed-latest-log.txt",
+        "bytes": 1396,
+        "sha256": "d91b60e0a027186e8ed4498f038f2e89b2e6054d56018a1c42fa7eb2bdcc5e66"
+      },
+      {
+        "path": "artifacts/shared-face-clippy-latest-log.txt",
+        "bytes": 221,
+        "sha256": "5ad249568c942d7a3cabfae64a21c13dd43f1e1b7b421fa40d51291c98bbf490"
+      },
+      {
+        "path": "artifacts/shared-face-node-latest-log.txt",
+        "bytes": 9572,
+        "sha256": "83710e4fe06d678c1a51d54cc43f8d80b7a1571b4c52ffe73c5bb42abffac66b"
+      },
+      {
+        "path": "artifacts/shared-face-typecheck-log.txt",
+        "bytes": 49,
+        "sha256": "02a012dd189d64b8797030f32b44fe1b1f0e498026792bb0e77299dba08ad712"
+      },
+      {
+        "path": "artifacts/shared-face-native-build-log.txt",
+        "bytes": 143,
+        "sha256": "91979fc785723e36e3445d262f9bb7d89e8af5e64c524cb232010db004862257"
+      }
+    ],
+    "reviewedNumericFailure": {
+      "input": {
+        "cap": "Smallest positive f64",
+        "pressure": 1e-300,
+        "gradient": 10000000000
+      },
+      "initialIssue": "A nonfinite capped-flux intermediate could be hidden by f64::min and incorrectly select the Manning branch.",
+      "resolution": "Positive capped and Manning branch magnitudes must both be finite and representable; otherwise the bounded operator refuses. Directed extreme-value regression passes."
+    }
+  },
+  "decision": {
+    "frozenSharedOperator": "Sigma 1 supports a bounded short planar evolving trial, not production selection.",
+    "accounting": "All 576 independent wave steps pass local and global accounting.",
+    "smoothAccuracy": "Interior approximately second order, global RMS approximately order 1.5, global maximum approximately first order in this fixed smooth control; no global second-order claim.",
+    "retainedLimits": [
+      "Aligned support one-sided roundoff still gives tiny false dry-owner derivative.",
+      "Tiny endpoint mismatch can select a zero donor and block an opposite positive trace.",
+      "Unresolved extrema and plateau reconstruction refuse the pressure operator.",
+      "Almost all exact initial dry arrival remains missing in the aligned one-step temporal control.",
+      "Neither donor-budget safety nor frozen accuracy certifies multi-step diffusion stability."
+    ],
+    "nextGate": "Short rebuilt moving-wave trajectories with paired accounting, spatial/time refinement and explicit refusal records.",
+    "unchanged": "Physical laws, native initial stocks, seasonal operators, protocol/model/checkpoint pins, defaults and desktop behavior."
+  },
+  "ownerRendererFiles": {
+    "untouchedAndExcluded": true,
+    "files": [
+      {
+        "path": "src/renderer/map.ts",
+        "sha256": "9c81dd0cd24b6c4da58e84263dd1b8fbb076de5cc8ec1c3271d70b307d7c9aaa"
+      },
+      {
+        "path": "src/renderer/style.css",
+        "sha256": "eb771462dfa08702874f7f06efc5b653364c7f56d54a43413724f87d167fe84d"
+      }
+    ]
+  }
+}
