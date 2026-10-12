@@ -1,4 +1,5 @@
 //! Standalone moving wet/dry verification; no seasonal or rendering selection.
+mod barenblatt_reference;
 mod cadence_controls;
 mod element;
 mod face_controls;
@@ -7,6 +8,7 @@ mod full_cell;
 mod moment_controls;
 mod moments;
 mod native;
+mod non_affine;
 mod paired_evolution;
 mod reconstruction;
 mod reference;
@@ -148,4 +150,14 @@ pub fn cadence_conditioning_report() -> Result<Value, String> {
 /// Bounded full-cell propagation; no seasonal, spherical or desktop selection.
 pub fn full_cell_report() -> Result<Value, String> {
     full_cell::report()
+}
+
+/// Integrated non-affine reference controls; no physical operator selection.
+pub fn barenblatt_reference_report() -> Result<Value, String> {
+    barenblatt_reference::report()
+}
+
+/// Curved-pressure spatial/temporal laboratory; no seasonal model selection.
+pub fn non_affine_report() -> Result<Value, String> {
+    non_affine::report()
 }

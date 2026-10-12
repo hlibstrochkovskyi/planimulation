@@ -1,0 +1,2596 @@
+{
+  "recordVersion": "surface-non-affine-validation-1",
+  "date": "2026-10-12",
+  "baselineCommit": "7cd9a1f",
+  "scope": "Bounded cubic-pressure laboratory, not production/spherical/seasonal selection",
+  "decision": "Pass the bounded monotone non-affine evolving spatial-refinement gate only; no production, spherical, seasonal or universal-order qualification.",
+  "unchanged": [
+    "Physical face law and owned transaction",
+    "No floor, film, snapping, fallback, mass adjustment or resized request",
+    "Product/model/save pins and desktop selections"
+  ],
+  "contract": {
+    "domainNormalMeters": [
+      2,
+      14
+    ],
+    "fixedInteriorNormalMeters": [
+      3,
+      9
+    ],
+    "endSeconds": 1,
+    "roughness": 0.04,
+    "capSquareMetersPerSecond": 100,
+    "pressurePenalty": 1,
+    "stateContract": "Unchanged owned transaction; no floor, film, snapping, fallback or resized request",
+    "boundaryContract": "Exact instantaneous exterior flux at old time; no analytic interior pressure or slope",
+    "maximumStepsPerTrial": 4000,
+    "maximumCellStepsPerTrial": 192000,
+    "requestedCohortSteps": 25000,
+    "requestedCohortCellSteps": 780000,
+    "ledgerRelativeArithmeticLimit": 5.684341886080802e-14
+  },
+  "results": {
+    "completedCases": 10,
+    "acceptedSteps": 25000,
+    "maximumLocalRelativeLedgerResidual": 1.1091033601851795e-16,
+    "maximumCumulativeRelativeInventoryResidual": 5.859804999982652e-17,
+    "reflectedFinestOwnersBitIdentical": true,
+    "reflectedBoundaryCountersIdentical": true
+  },
+  "cases": [
+    {
+      "index": 0,
+      "config": {
+        "direction": 1,
+        "stepSeconds": 0.001,
+        "width": 1
+      },
+      "domainMeters": [
+        2,
+        14
+      ],
+      "completed": true,
+      "requestedSteps": 1000,
+      "requestedEndSeconds": 1,
+      "refusal": null,
+      "boundaryInput": {
+        "high": 0.004608058978883873,
+        "low": 3.6507120026660345e-19
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      },
+      "firstRepresentableDryArrival": {
+        "actualVolumeSquareMeters": 0.0000025117252071936378,
+        "referenceVolumeSquareMeters": 3.508845319415292e-7,
+        "timeSeconds": 0.001
+      },
+      "maximumLocalRelativeLedgerResidual": 1.1069615359020754e-16,
+      "maximumCumulativeRelativeInventoryResidual": 4.4660461360586655e-17,
+      "finalObservation": {
+        "acceptedSteps": 1000,
+        "commonInitiallyDryArrival": {
+          "actualVolumeSquareMeters": 0.006541067980794891,
+          "normalFaceMeters": 10,
+          "referenceVolumeSquareMeters": 0.006112423918614559,
+          "signedVolumeErrorSquareMeters": 0.0004286440621803318
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.36387716370636,
+            "positionsMeters": [
+              10.394996143565184
+            ],
+            "signedUniquePositionErrorMeters": 0.031118979858824503,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.363662583062046,
+            "positionsMeters": [
+              10.39475028157163
+            ],
+            "signedUniquePositionErrorMeters": 0.031087698509583817,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.317440366696674,
+            "positionsMeters": [
+              10.34202678277775
+            ],
+            "signedUniquePositionErrorMeters": 0.02458641608107648,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 7.809960797863782,
+            "positionsMeters": [
+              7.841411732713136
+            ],
+            "signedUniquePositionErrorMeters": 0.031450934849353906,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 4.843524530269242e-18,
+        "meanError": {
+          "fixedWetInterior": {
+            "l1VolumeSquareMeters": 0.0002625431345472511,
+            "maximumMeters": 0.00010034676149784279,
+            "rmsMeters": 0.000051712325794402255,
+            "signedVolumeSquareMeters": -0.0002625431345472511
+          },
+          "fullDomain": {
+            "l1VolumeSquareMeters": 0.000856986683763272,
+            "maximumMeters": 0.0004286440621803314,
+            "rmsMeters": 0.00013497601042514288,
+            "signedVolumeSquareMeters": 3.01440597390843e-7
+          }
+        },
+        "timeSeconds": 1,
+        "unresolvedObservationCells": []
+      }
+    },
+    {
+      "index": 1,
+      "config": {
+        "direction": 1,
+        "stepSeconds": 0.0005,
+        "width": 1
+      },
+      "domainMeters": [
+        2,
+        14
+      ],
+      "completed": true,
+      "requestedSteps": 2000,
+      "requestedEndSeconds": 1,
+      "refusal": null,
+      "boundaryInput": {
+        "high": 0.004607908255745169,
+        "low": -1.334076891925523e-19
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      },
+      "firstRepresentableDryArrival": {
+        "actualVolumeSquareMeters": 0.0000012558626035968189,
+        "referenceVolumeSquareMeters": 1.3036011978565767e-7,
+        "timeSeconds": 0.0005
+      },
+      "maximumLocalRelativeLedgerResidual": 1.1089153901989219e-16,
+      "maximumCumulativeRelativeInventoryResidual": 5.579138481719975e-17,
+      "finalObservation": {
+        "acceptedSteps": 2000,
+        "commonInitiallyDryArrival": {
+          "actualVolumeSquareMeters": 0.0065417578710628005,
+          "normalFaceMeters": 10,
+          "referenceVolumeSquareMeters": 0.006112423918614559,
+          "signedVolumeErrorSquareMeters": 0.00042933395244824143
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.36387716370636,
+            "positionsMeters": [
+              10.395037169945091
+            ],
+            "signedUniquePositionErrorMeters": 0.031160006238732052,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.363662583062046,
+            "positionsMeters": [
+              10.394791283335948
+            ],
+            "signedUniquePositionErrorMeters": 0.0311287002739018,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.317440366696674,
+            "positionsMeters": [
+              10.342062505889917
+            ],
+            "signedUniquePositionErrorMeters": 0.02462213919324263,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 7.809960797863782,
+            "positionsMeters": [
+              7.841392186047658
+            ],
+            "signedUniquePositionErrorMeters": 0.0314313881838757,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.56979821857395e-17,
+        "meanError": {
+          "fixedWetInterior": {
+            "l1VolumeSquareMeters": 0.00026271836892554105,
+            "maximumMeters": 0.0001005720999987732,
+            "rmsMeters": 0.000051788529402638114,
+            "signedVolumeSquareMeters": -0.00026271836892554105
+          },
+          "fullDomain": {
+            "l1VolumeSquareMeters": 0.0008585171874377962,
+            "maximumMeters": 0.0004293339524482411,
+            "rmsMeters": 0.00013523179042863352,
+            "signedVolumeSquareMeters": 1.5071745868602522e-7
+          }
+        },
+        "timeSeconds": 1,
+        "unresolvedObservationCells": []
+      }
+    },
+    {
+      "index": 2,
+      "config": {
+        "direction": 1,
+        "stepSeconds": 0.00025,
+        "width": 1
+      },
+      "domainMeters": [
+        2,
+        14
+      ],
+      "completed": true,
+      "requestedSteps": 4000,
+      "requestedEndSeconds": 1,
+      "refusal": null,
+      "boundaryInput": {
+        "high": 0.004607832896305824,
+        "low": 3.502481236896532e-19
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      },
+      "firstRepresentableDryArrival": {
+        "actualVolumeSquareMeters": 6.279313017984094e-7,
+        "referenceVolumeSquareMeters": 4.842990190710833e-8,
+        "timeSeconds": 0.00025
+      },
+      "maximumLocalRelativeLedgerResidual": 1.107463451869869e-16,
+      "maximumCumulativeRelativeInventoryResidual": 5.859804999982652e-17,
+      "finalObservation": {
+        "acceptedSteps": 4000,
+        "commonInitiallyDryArrival": {
+          "actualVolumeSquareMeters": 0.006542102699354191,
+          "normalFaceMeters": 10,
+          "referenceVolumeSquareMeters": 0.006112423918614559,
+          "signedVolumeErrorSquareMeters": 0.000429678780739632
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.36387716370636,
+            "positionsMeters": [
+              10.395057677010767
+            ],
+            "signedUniquePositionErrorMeters": 0.031180513304407853,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.363662583062046,
+            "positionsMeters": [
+              10.394811778096287
+            ],
+            "signedUniquePositionErrorMeters": 0.031149195034240407,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.317440366696674,
+            "positionsMeters": [
+              10.342080361851128
+            ],
+            "signedUniquePositionErrorMeters": 0.024639995154453587,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 7.809960797863782,
+            "positionsMeters": [
+              7.841382415560241
+            ],
+            "signedUniquePositionErrorMeters": 0.03142161769645835,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.7198517417384024e-17,
+        "meanError": {
+          "fixedWetInterior": {
+            "l1VolumeSquareMeters": 0.00026280594641163457,
+            "maximumMeters": 0.00010068472961110451,
+            "rmsMeters": 0.0000518266503267086,
+            "signedVolumeSquareMeters": -0.00026280594641163457
+          },
+          "fullDomain": {
+            "l1VolumeSquareMeters": 0.0008592822034599226,
+            "maximumMeters": 0.00042967878073963203,
+            "rmsMeters": 0.0001353597053158789,
+            "signedVolumeSquareMeters": 7.535801934148347e-8
+          }
+        },
+        "timeSeconds": 1,
+        "unresolvedObservationCells": []
+      }
+    },
+    {
+      "index": 3,
+      "config": {
+        "direction": 1,
+        "stepSeconds": 0.001,
+        "width": 0.5
+      },
+      "domainMeters": [
+        2,
+        14
+      ],
+      "completed": true,
+      "requestedSteps": 1000,
+      "requestedEndSeconds": 1,
+      "refusal": null,
+      "boundaryInput": {
+        "high": 0.004608058978883873,
+        "low": 3.6507120026660345e-19
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      },
+      "firstRepresentableDryArrival": {
+        "actualVolumeSquareMeters": 0.0000014101424614134948,
+        "referenceVolumeSquareMeters": 3.508845319415292e-7,
+        "timeSeconds": 0.001
+      },
+      "maximumLocalRelativeLedgerResidual": 1.1036694975026677e-16,
+      "maximumCumulativeRelativeInventoryResidual": 4.6219611249717296e-17,
+      "finalObservation": {
+        "acceptedSteps": 1000,
+        "commonInitiallyDryArrival": {
+          "actualVolumeSquareMeters": 0.006227133534434489,
+          "normalFaceMeters": 10,
+          "referenceVolumeSquareMeters": 0.006112423918614559,
+          "signedVolumeErrorSquareMeters": 0.00011470961581992994
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.36387716370636,
+            "positionsMeters": [
+              10.375671497559967
+            ],
+            "signedUniquePositionErrorMeters": 0.011794333853607952,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.363662583062046,
+            "positionsMeters": [
+              10.375438196257612
+            ],
+            "signedUniquePositionErrorMeters": 0.011775613195565526,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.317440366696674,
+            "positionsMeters": [
+              10.32540825565751
+            ],
+            "signedUniquePositionErrorMeters": 0.007967888960836333,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 7.809960797863782,
+            "positionsMeters": [
+              7.808481620144538
+            ],
+            "signedUniquePositionErrorMeters": -0.00147917771924444,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 8.844951814654641e-18,
+        "meanError": {
+          "fixedWetInterior": {
+            "l1VolumeSquareMeters": 0.00006708602111515075,
+            "maximumMeters": 0.00003097333249842852,
+            "rmsMeters": 0.000013530310057342606,
+            "signedVolumeSquareMeters": -0.00006708602111515075
+          },
+          "fullDomain": {
+            "l1VolumeSquareMeters": 0.00022911779104254102,
+            "maximumMeters": 0.00022941923163986074,
+            "rmsMeters": 0.00004914366801645912,
+            "signedVolumeSquareMeters": 3.014405973197058e-7
+          }
+        },
+        "timeSeconds": 1,
+        "unresolvedObservationCells": []
+      }
+    },
+    {
+      "index": 4,
+      "config": {
+        "direction": 1,
+        "stepSeconds": 0.0005,
+        "width": 0.5
+      },
+      "domainMeters": [
+        2,
+        14
+      ],
+      "completed": true,
+      "requestedSteps": 2000,
+      "requestedEndSeconds": 1,
+      "refusal": null,
+      "boundaryInput": {
+        "high": 0.004607908255745169,
+        "low": -1.334076891925523e-19
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      },
+      "firstRepresentableDryArrival": {
+        "actualVolumeSquareMeters": 7.050712307067474e-7,
+        "referenceVolumeSquareMeters": 1.3036011978565767e-7,
+        "timeSeconds": 0.0005
+      },
+      "maximumLocalRelativeLedgerResidual": 1.104280639364437e-16,
+      "maximumCumulativeRelativeInventoryResidual": 3.5899523888328776e-17,
+      "finalObservation": {
+        "acceptedSteps": 2000,
+        "commonInitiallyDryArrival": {
+          "actualVolumeSquareMeters": 0.006227687905209583,
+          "normalFaceMeters": 10,
+          "referenceVolumeSquareMeters": 0.006112423918614559,
+          "signedVolumeErrorSquareMeters": 0.00011526398659502356
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.36387716370636,
+            "positionsMeters": [
+              10.375708484175446
+            ],
+            "signedUniquePositionErrorMeters": 0.011831320469086748,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.363662583062046,
+            "positionsMeters": [
+              10.375475154770195
+            ],
+            "signedUniquePositionErrorMeters": 0.011812571708148312,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.317440366696674,
+            "positionsMeters": [
+              10.325439187687588
+            ],
+            "signedUniquePositionErrorMeters": 0.007998820990913202,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 7.809960797863782,
+            "positionsMeters": [
+              7.808464631483012
+            ],
+            "signedUniquePositionErrorMeters": -0.001496166380769992,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.36972685435468e-17,
+        "meanError": {
+          "fixedWetInterior": {
+            "l1VolumeSquareMeters": 0.00006724645804712174,
+            "maximumMeters": 0.00003124384252515506,
+            "rmsMeters": 0.000013606559451506932,
+            "signedVolumeSquareMeters": -0.00006724645804712174
+          },
+          "fullDomain": {
+            "l1VolumeSquareMeters": 0.00023037725573143246,
+            "maximumMeters": 0.00023052797319004739,
+            "rmsMeters": 0.00004940732818488456,
+            "signedVolumeSquareMeters": 1.5071745861492867e-7
+          }
+        },
+        "timeSeconds": 1,
+        "unresolvedObservationCells": []
+      }
+    },
+    {
+      "index": 5,
+      "config": {
+        "direction": 1,
+        "stepSeconds": 0.00025,
+        "width": 0.5
+      },
+      "domainMeters": [
+        2,
+        14
+      ],
+      "completed": true,
+      "requestedSteps": 4000,
+      "requestedEndSeconds": 1,
+      "refusal": null,
+      "boundaryInput": {
+        "high": 0.004607832896305824,
+        "low": 3.502481236896532e-19
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      },
+      "firstRepresentableDryArrival": {
+        "actualVolumeSquareMeters": 3.525356153533737e-7,
+        "referenceVolumeSquareMeters": 4.842990190710833e-8,
+        "timeSeconds": 0.00025
+      },
+      "maximumLocalRelativeLedgerResidual": 1.1086710641363901e-16,
+      "maximumCumulativeRelativeInventoryResidual": 4.67603314650267e-17,
+      "finalObservation": {
+        "acceptedSteps": 4000,
+        "commonInitiallyDryArrival": {
+          "actualVolumeSquareMeters": 0.006227965010563075,
+          "normalFaceMeters": 10,
+          "referenceVolumeSquareMeters": 0.006112423918614559,
+          "signedVolumeErrorSquareMeters": 0.0001155410919485159
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.36387716370636,
+            "positionsMeters": [
+              10.375726973778912
+            ],
+            "signedUniquePositionErrorMeters": 0.011849810072552813,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.363662583062046,
+            "positionsMeters": [
+              10.375493630322824
+            ],
+            "signedUniquePositionErrorMeters": 0.011831047260777439,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.317440366696674,
+            "positionsMeters": [
+              10.325454650130006
+            ],
+            "signedUniquePositionErrorMeters": 0.008014283433331215,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 7.809960797863782,
+            "positionsMeters": [
+              7.808456139753645
+            ],
+            "signedUniquePositionErrorMeters": -0.0015046581101376688,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.6813614499891875e-17,
+        "meanError": {
+          "fixedWetInterior": {
+            "l1VolumeSquareMeters": 0.00006732663647491876,
+            "maximumMeters": 0.00003137904456044236,
+            "rmsMeters": 0.00001364478789944084,
+            "signedVolumeSquareMeters": -0.00006732663647491876
+          },
+          "fullDomain": {
+            "l1VolumeSquareMeters": 0.00023100682587776227,
+            "maximumMeters": 0.00023108218389703266,
+            "rmsMeters": 0.00004953926624661725,
+            "signedVolumeSquareMeters": 7.535801927038691e-8
+          }
+        },
+        "timeSeconds": 1,
+        "unresolvedObservationCells": []
+      }
+    },
+    {
+      "index": 6,
+      "config": {
+        "direction": 1,
+        "stepSeconds": 0.001,
+        "width": 0.25
+      },
+      "domainMeters": [
+        2,
+        14
+      ],
+      "completed": true,
+      "requestedSteps": 1000,
+      "requestedEndSeconds": 1,
+      "refusal": null,
+      "boundaryInput": {
+        "high": 0.004608058978883873,
+        "low": 3.6507120026660345e-19
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      },
+      "firstRepresentableDryArrival": {
+        "actualVolumeSquareMeters": 7.806406216167064e-7,
+        "referenceVolumeSquareMeters": 3.508845319415292e-7,
+        "timeSeconds": 0.001
+      },
+      "maximumLocalRelativeLedgerResidual": 1.1066226842356541e-16,
+      "maximumCumulativeRelativeInventoryResidual": 2.227943131047203e-17,
+      "finalObservation": {
+        "acceptedSteps": 1000,
+        "commonInitiallyDryArrival": {
+          "actualVolumeSquareMeters": 0.006147440835187191,
+          "normalFaceMeters": 10,
+          "referenceVolumeSquareMeters": 0.00611242391861456,
+          "signedVolumeErrorSquareMeters": 0.000035016916572630855
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.36387716370636,
+            "positionsMeters": [
+              10.36743322601019
+            ],
+            "signedUniquePositionErrorMeters": 0.003556062303831098,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.363662583062046,
+            "positionsMeters": [
+              10.36720993563078
+            ],
+            "signedUniquePositionErrorMeters": 0.0035473525687343965,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.317440366696674,
+            "positionsMeters": [
+              10.31932677207533
+            ],
+            "signedUniquePositionErrorMeters": 0.0018864053786558088,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 7.809960797863782,
+            "positionsMeters": [
+              7.807056577960704
+            ],
+            "signedUniquePositionErrorMeters": -0.002904219903077987,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 8.420972458838416e-19,
+        "meanError": {
+          "fixedWetInterior": {
+            "l1VolumeSquareMeters": 0.000017026718904975832,
+            "maximumMeters": 0.000008770494184536025,
+            "rmsMeters": 0.00000343363347375264,
+            "signedVolumeSquareMeters": -0.000017026718904975832
+          },
+          "fullDomain": {
+            "l1VolumeSquareMeters": 0.00007008478300746223,
+            "maximumMeters": 0.00014077244720955693,
+            "rmsMeters": 0.000020967004653251008,
+            "signedVolumeSquareMeters": 3.0144059731623634e-7
+          }
+        },
+        "timeSeconds": 1,
+        "unresolvedObservationCells": []
+      }
+    },
+    {
+      "index": 7,
+      "config": {
+        "direction": 1,
+        "stepSeconds": 0.0005,
+        "width": 0.25
+      },
+      "domainMeters": [
+        2,
+        14
+      ],
+      "completed": true,
+      "requestedSteps": 2000,
+      "requestedEndSeconds": 1,
+      "refusal": null,
+      "boundaryInput": {
+        "high": 0.004607908255745169,
+        "low": -1.334076891925523e-19
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      },
+      "firstRepresentableDryArrival": {
+        "actualVolumeSquareMeters": 3.903203108083532e-7,
+        "referenceVolumeSquareMeters": 1.3036011978565767e-7,
+        "timeSeconds": 0.0005
+      },
+      "maximumLocalRelativeLedgerResidual": 1.108442590289476e-16,
+      "maximumCumulativeRelativeInventoryResidual": 2.5190625965615706e-17,
+      "finalObservation": {
+        "acceptedSteps": 2000,
+        "commonInitiallyDryArrival": {
+          "actualVolumeSquareMeters": 0.006148018693932296,
+          "normalFaceMeters": 10,
+          "referenceVolumeSquareMeters": 0.00611242391861456,
+          "signedVolumeErrorSquareMeters": 0.00003559477531773613
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.36387716370636,
+            "positionsMeters": [
+              10.367508871507841
+            ],
+            "signedUniquePositionErrorMeters": 0.0036317078014818094,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.363662583062046,
+            "positionsMeters": [
+              10.367285476859136
+            ],
+            "signedUniquePositionErrorMeters": 0.003622893797089688,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.317440366696674,
+            "positionsMeters": [
+              10.319379953434241
+            ],
+            "signedUniquePositionErrorMeters": 0.0019395867375671116,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 7.809960797863782,
+            "positionsMeters": [
+              7.807040878775266
+            ],
+            "signedUniquePositionErrorMeters": -0.0029199190885167425,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 1.6929866903906003e-18,
+        "meanError": {
+          "fixedWetInterior": {
+            "l1VolumeSquareMeters": 0.000017180743987424844,
+            "maximumMeters": 0.000009070113983960162,
+            "rmsMeters": 0.0000035087314506244834,
+            "signedVolumeSquareMeters": -0.000017180743987424844
+          },
+          "fullDomain": {
+            "l1VolumeSquareMeters": 0.00007197100507190566,
+            "maximumMeters": 0.00014424344506103423,
+            "rmsMeters": 0.00002150075655556223,
+            "signedVolumeSquareMeters": 1.5071745861145922e-7
+          }
+        },
+        "timeSeconds": 1,
+        "unresolvedObservationCells": []
+      }
+    },
+    {
+      "index": 8,
+      "config": {
+        "direction": 1,
+        "stepSeconds": 0.00025,
+        "width": 0.25
+      },
+      "domainMeters": [
+        2,
+        14
+      ],
+      "completed": true,
+      "requestedSteps": 4000,
+      "requestedEndSeconds": 1,
+      "refusal": null,
+      "boundaryInput": {
+        "high": 0.004607832896305824,
+        "low": 3.502481236896532e-19
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      },
+      "firstRepresentableDryArrival": {
+        "actualVolumeSquareMeters": 1.951601554041766e-7,
+        "referenceVolumeSquareMeters": 4.842990190710833e-8,
+        "timeSeconds": 0.00025
+      },
+      "maximumLocalRelativeLedgerResidual": 1.1091033601851795e-16,
+      "maximumCumulativeRelativeInventoryResidual": 2.5605813122809016e-17,
+      "finalObservation": {
+        "acceptedSteps": 4000,
+        "commonInitiallyDryArrival": {
+          "actualVolumeSquareMeters": 0.006148310319240084,
+          "normalFaceMeters": 10,
+          "referenceVolumeSquareMeters": 0.00611242391861456,
+          "signedVolumeErrorSquareMeters": 0.000035886400625523805
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.36387716370636,
+            "positionsMeters": [
+              10.367547369895622
+            ],
+            "signedUniquePositionErrorMeters": 0.0036702061892626148,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.363662583062046,
+            "positionsMeters": [
+              10.36732392196357
+            ],
+            "signedUniquePositionErrorMeters": 0.0036613389015229814,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 10.317440366696674,
+            "positionsMeters": [
+              10.319406972272805
+            ],
+            "signedUniquePositionErrorMeters": 0.001966605576130931,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": 7.809960797863782,
+            "positionsMeters": [
+              7.807033031216125
+            ],
+            "signedUniquePositionErrorMeters": -0.0029277666476570374,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 7.194949206420525e-18,
+        "meanError": {
+          "fixedWetInterior": {
+            "l1VolumeSquareMeters": 0.000017257764551207023,
+            "maximumMeters": 0.000009219982367248824,
+            "rmsMeters": 0.000003546734988535564,
+            "signedVolumeSquareMeters": -0.000017257764551207023
+          },
+          "fullDomain": {
+            "l1VolumeSquareMeters": 0.00007292862657227138,
+            "maximumMeters": 0.0001460079691830766,
+            "rmsMeters": 0.00002177255281789446,
+            "signedVolumeSquareMeters": 7.535801926691747e-8
+          }
+        },
+        "timeSeconds": 1,
+        "unresolvedObservationCells": []
+      }
+    },
+    {
+      "index": 9,
+      "config": {
+        "direction": -1,
+        "stepSeconds": 0.00025,
+        "width": 0.25
+      },
+      "domainMeters": [
+        -14,
+        -2
+      ],
+      "completed": true,
+      "requestedSteps": 4000,
+      "requestedEndSeconds": 1,
+      "refusal": null,
+      "boundaryInput": {
+        "high": 0.004607832896305824,
+        "low": 3.502481236896532e-19
+      },
+      "boundaryOutput": {
+        "high": 0,
+        "low": 0
+      },
+      "firstRepresentableDryArrival": {
+        "actualVolumeSquareMeters": 1.951601554041766e-7,
+        "referenceVolumeSquareMeters": 4.842990190710833e-8,
+        "timeSeconds": 0.00025
+      },
+      "maximumLocalRelativeLedgerResidual": 1.1091033601851795e-16,
+      "maximumCumulativeRelativeInventoryResidual": 3.5529274635208163e-17,
+      "finalObservation": {
+        "acceptedSteps": 4000,
+        "commonInitiallyDryArrival": {
+          "actualVolumeSquareMeters": 0.006148310319240083,
+          "normalFaceMeters": 10,
+          "referenceVolumeSquareMeters": 0.00611242391861456,
+          "signedVolumeErrorSquareMeters": 0.00003588640062552294
+        },
+        "contours": [
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": -10.36387716370636,
+            "positionsMeters": [
+              -10.367547369895622
+            ],
+            "signedUniquePositionErrorMeters": -0.0036702061892626148,
+            "thresholdMeters": 0
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": -10.363662583062046,
+            "positionsMeters": [
+              -10.36732392196357
+            ],
+            "signedUniquePositionErrorMeters": -0.0036613389015229814,
+            "thresholdMeters": 0.001
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": -10.317440366696674,
+            "positionsMeters": [
+              -10.319406972272805
+            ],
+            "signedUniquePositionErrorMeters": -0.001966605576130931,
+            "thresholdMeters": 0.01
+          },
+          {
+            "completeReconstruction": true,
+            "exactPositionMeters": -7.809960797863782,
+            "positionsMeters": [
+              -7.807033031216125
+            ],
+            "signedUniquePositionErrorMeters": 0.0029277666476570374,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "cumulativeRelativeInventoryResidual": 8.079053623502749e-19,
+        "meanError": {
+          "fixedWetInterior": {
+            "l1VolumeSquareMeters": 0.000017257764551207023,
+            "maximumMeters": 0.000009219982367248824,
+            "rmsMeters": 0.000003546734988535564,
+            "signedVolumeSquareMeters": -0.000017257764551207023
+          },
+          "fullDomain": {
+            "l1VolumeSquareMeters": 0.00007292862657227138,
+            "maximumMeters": 0.0001460079691830766,
+            "rmsMeters": 0.00002177255281789446,
+            "signedVolumeSquareMeters": 7.535801926691662e-8
+          }
+        },
+        "timeSeconds": 1,
+        "unresolvedObservationCells": []
+      }
+    }
+  ],
+  "temporalComparisons": [
+    {
+      "cases": [
+        0,
+        1,
+        2
+      ],
+      "completedAtSameEndTime": true,
+      "fieldDifferences": [
+        {
+          "fixedWetInterior": {
+            "l1VolumeSquareMeters": 4.349707629690151e-7,
+            "maximumMeters": 2.2533850093041115e-7,
+            "rmsMeters": 1.0177735584851655e-7,
+            "signedVolumeSquareMeters": 1.7523437828986485e-7
+          },
+          "fullDomain": {
+            "l1VolumeSquareMeters": 0.0000019101175033272247,
+            "maximumMeters": 7.253177503865594e-7,
+            "rmsMeters": 2.9829778915342863e-7,
+            "signedVolumeSquareMeters": 1.5072313870477415e-7
+          }
+        },
+        {
+          "fixedWetInterior": {
+            "l1VolumeSquareMeters": 2.1742497594748798e-7,
+            "maximumMeters": 1.1262961233131126e-7,
+            "rmsMeters": 5.087211474249835e-8,
+            "signedVolumeSquareMeters": 8.757748609354852e-8
+          },
+          "fullDomain": {
+            "l1VolumeSquareMeters": 9.547938136036732e-7,
+            "maximumMeters": 3.6257539545359136e-7,
+            "rmsMeters": 1.491065643942002e-7,
+            "signedVolumeSquareMeters": 7.535943934454599e-8
+          }
+        }
+      ],
+      "rmsDifferenceRatios": [
+        [
+          "fullDomain",
+          2.000567784291538
+        ],
+        [
+          "fixedWetInterior",
+          2.000651169382038
+        ]
+      ]
+    },
+    {
+      "cases": [
+        3,
+        4,
+        5
+      ],
+      "completedAtSameEndTime": true,
+      "fieldDifferences": [
+        {
+          "fixedWetInterior": {
+            "l1VolumeSquareMeters": 4.2477547779097676e-7,
+            "maximumMeters": 2.705100267265484e-7,
+            "rmsMeters": 1.006388241078912e-7,
+            "signedVolumeSquareMeters": 1.6043693197099326e-7
+          },
+          "fullDomain": {
+            "l1VolumeSquareMeters": 0.0000016412226907143999,
+            "maximumMeters": 0.0000011087415501866554,
+            "rmsMeters": 2.9762852829310014e-7,
+            "signedVolumeSquareMeters": 1.5072313870477415e-7
+          }
+        },
+        {
+          "fixedWetInterior": {
+            "l1VolumeSquareMeters": 2.1232786569088966e-7,
+            "maximumMeters": 1.3520203528729056e-7,
+            "rmsMeters": 5.030198806003366e-8,
+            "signedVolumeSquareMeters": 8.017842779701828e-8
+          },
+          "fullDomain": {
+            "l1VolumeSquareMeters": 8.20421301867858e-7,
+            "maximumMeters": 5.542107069852622e-7,
+            "rmsMeters": 1.4877991430519255e-7,
+            "signedVolumeSquareMeters": 7.535943934454599e-8
+          }
+        }
+      ],
+      "rmsDifferenceRatios": [
+        [
+          "fullDomain",
+          2.000461753745698
+        ],
+        [
+          "fixedWetInterior",
+          2.0006927755575443
+        ]
+      ]
+    },
+    {
+      "cases": [
+        6,
+        7,
+        8
+      ],
+      "completedAtSameEndTime": true,
+      "fieldDifferences": [
+        {
+          "fixedWetInterior": {
+            "l1VolumeSquareMeters": 4.18487723848483e-7,
+            "maximumMeters": 2.9961979942413734e-7,
+            "rmsMeters": 9.952908933458345e-8,
+            "signedVolumeSquareMeters": 1.5402508244901286e-7
+          },
+          "fullDomain": {
+            "l1VolumeSquareMeters": 0.0000022673423859637416,
+            "maximumMeters": 0.0000034709978514773126,
+            "rmsMeters": 5.665709702739669e-7,
+            "signedVolumeSquareMeters": 1.5072313870477415e-7
+          }
+        },
+        {
+          "fixedWetInterior": {
+            "l1VolumeSquareMeters": 2.0923245509952546e-7,
+            "maximumMeters": 1.4986838328866228e-7,
+            "rmsMeters": 4.976790690033032e-8,
+            "signedVolumeSquareMeters": 7.702056378217798e-8
+          },
+          "fullDomain": {
+            "l1VolumeSquareMeters": 0.0000011481543119841092,
+            "maximumMeters": 0.0000017645241220423502,
+            "rmsMeters": 2.8809930095156787e-7,
+            "signedVolumeSquareMeters": 7.535943934454599e-8
+          }
+        }
+      ],
+      "rmsDifferenceRatios": [
+        [
+          "fullDomain",
+          1.9665822457834172
+        ],
+        [
+          "fixedWetInterior",
+          1.9998648834862462
+        ]
+      ]
+    }
+  ],
+  "spatialComparisons": [
+    {
+      "cases": [
+        0,
+        3
+      ],
+      "completedAtSameEndTime": true,
+      "errorRatios": [
+        {
+          "coarseOverFineRmsError": 2.746559544149959,
+          "window": "fullDomain"
+        },
+        {
+          "coarseOverFineRmsError": 3.821961623587413,
+          "window": "fixedWetInterior"
+        }
+      ],
+      "restrictedDifference": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.00019545711343220794,
+          "maximumMeters": 0.00007393551368685663,
+          "rmsMeters": 0.000038347157581998994,
+          "signedVolumeSquareMeters": -0.00019545711343220794
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.0006278688927208021,
+          "maximumMeters": 0.00031393444636040104,
+          "rmsMeters": 0.00009872664252984615,
+          "signedVolumeSquareMeters": 0
+        }
+      }
+    },
+    {
+      "cases": [
+        1,
+        4
+      ],
+      "completedAtSameEndTime": true,
+      "errorRatios": [
+        {
+          "coarseOverFineRmsError": 2.7370796073527752,
+          "window": "fullDomain"
+        },
+        {
+          "coarseOverFineRmsError": 3.8061443517157834,
+          "window": "fixedWetInterior"
+        }
+      ],
+      "restrictedDifference": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.0001954719108785268,
+          "maximumMeters": 0.00007394597135132218,
+          "rmsMeters": 0.000038351210484920115,
+          "signedVolumeSquareMeters": -0.0001954719108785268
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.0006281399317064349,
+          "maximumMeters": 0.00031406996585321744,
+          "rmsMeters": 0.00009877310499402472,
+          "signedVolumeSquareMeters": 0
+        }
+      }
+    },
+    {
+      "cases": [
+        2,
+        5
+      ],
+      "completedAtSameEndTime": true,
+      "errorRatios": [
+        {
+          "coarseOverFineRmsError": 2.732372026707639,
+          "window": "fullDomain"
+        },
+        {
+          "coarseOverFineRmsError": 3.7982745286082786,
+          "window": "fixedWetInterior"
+        }
+      ],
+      "restrictedDifference": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.00019547930993682336,
+          "maximumMeters": 0.00007395120081344329,
+          "rmsMeters": 0.00003835323707449666,
+          "signedVolumeSquareMeters": -0.00019547930993682336
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.0006282753775822314,
+          "maximumMeters": 0.0003141376887911157,
+          "rmsMeters": 0.00009879632585414038,
+          "signedVolumeSquareMeters": 0
+        }
+      }
+    },
+    {
+      "cases": [
+        3,
+        6
+      ],
+      "completedAtSameEndTime": true,
+      "errorRatios": [
+        {
+          "coarseOverFineRmsError": 2.343857352501671,
+          "window": "fullDomain"
+        },
+        {
+          "coarseOverFineRmsError": 3.9405225283277674,
+          "window": "fixedWetInterior"
+        }
+      ],
+      "restrictedDifference": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.00005005930221012461,
+          "maximumMeters": 0.00002302490034241264,
+          "rmsMeters": 0.000010110987277753304,
+          "signedVolumeSquareMeters": -0.00005005930221012461
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.00015938539849453208,
+          "maximumMeters": 0.00015938539849459757,
+          "rmsMeters": 0.00003408155815370392,
+          "signedVolumeSquareMeters": 6.548581121812447e-17
+        }
+      }
+    },
+    {
+      "cases": [
+        4,
+        7
+      ],
+      "completedAtSameEndTime": true,
+      "errorRatios": [
+        {
+          "coarseOverFineRmsError": 2.2979344032479134,
+          "window": "fullDomain"
+        },
+        {
+          "coarseOverFineRmsError": 3.8779141815157265,
+          "window": "fixedWetInterior"
+        }
+      ],
+      "restrictedDifference": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.00005006571405964659,
+          "maximumMeters": 0.00002303068549074422,
+          "rmsMeters": 0.000010112838045698359,
+          "signedVolumeSquareMeters": -0.00005006571405964659
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.0001593384225545079,
+          "maximumMeters": 0.0001593384225545734,
+          "rmsMeters": 0.00003407162961588977,
+          "signedVolumeSquareMeters": 6.54722586909684e-17
+        }
+      }
+    },
+    {
+      "cases": [
+        5,
+        8
+      ],
+      "completedAtSameEndTime": true,
+      "errorRatios": [
+        {
+          "coarseOverFineRmsError": 2.275308121237021,
+          "window": "fullDomain"
+        },
+        {
+          "coarseOverFineRmsError": 3.847140523198417,
+          "window": "fixedWetInterior"
+        }
+      ],
+      "restrictedDifference": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.00005006887192366143,
+          "maximumMeters": 0.00002303349676422831,
+          "rmsMeters": 0.000010113746145841394,
+          "signedVolumeSquareMeters": -0.00005006887192366143
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.00015930938264591843,
+          "maximumMeters": 0.0001593093826459839,
+          "rmsMeters": 0.000034065466074332645,
+          "signedVolumeSquareMeters": 6.548581121812447e-17
+        }
+      }
+    }
+  ],
+  "richardsonRestrictionComparisons": [
+    {
+      "cases": [
+        0,
+        1,
+        3,
+        4
+      ],
+      "coarseExtrapolatedError": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.0002628936033038309,
+          "maximumMeters": 0.00010079743849970362,
+          "rmsMeters": 0.000051864820770631714,
+          "signedVolumeSquareMeters": -0.0002628936033038309
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.0008600476911123204,
+          "maximumMeters": 0.0004300238427161508,
+          "rmsMeters": 0.00013548774430892802,
+          "signedVolumeSquareMeters": -5.68001884675845e-12
+        }
+      },
+      "completedAtSameEndTime": true,
+      "contract": "Observer-only 2*error(dt/2)-error(dt); never an owned state or solver input",
+      "fineExtrapolatedError": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.00006740689497909273,
+          "maximumMeters": 0.000031514352551881606,
+          "rmsMeters": 0.00001368312414300164,
+          "signedVolumeSquareMeters": -0.00006740689497909273
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.0002316367204203239,
+          "maximumMeters": 0.00023163671474023403,
+          "rmsMeters": 0.000049671372198757884,
+          "signedVolumeSquareMeters": -5.680089848448221e-12
+        }
+      },
+      "restrictedExtrapolatedErrorDifference": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.00019548670832473817,
+          "maximumMeters": 0.00007395642901576346,
+          "rmsMeters": 0.00003835526349319093,
+          "signedVolumeSquareMeters": -0.00019548670832473817
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.0006284109706919965,
+          "maximumMeters": 0.0003142054853460338,
+          "rmsMeters": 0.00009881957374641078,
+          "signedVolumeSquareMeters": 7.101524229780054e-17
+        }
+      }
+    },
+    {
+      "cases": [
+        1,
+        2,
+        4,
+        5
+      ],
+      "coarseExtrapolatedError": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.0002628935238977281,
+          "maximumMeters": 0.00010079735922343582,
+          "rmsMeters": 0.00005186479313011914,
+          "signedVolumeSquareMeters": -0.0002628935238977281
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.0008600472194820489,
+          "maximumMeters": 0.00043002360903102296,
+          "rmsMeters": 0.00013548766353216218,
+          "signedVolumeSquareMeters": -1.4200030040711908e-12
+        }
+      },
+      "completedAtSameEndTime": true,
+      "contract": "Observer-only 2*error(dt/2)-error(dt); never an owned state or solver input",
+      "fineExtrapolatedError": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.00006740681490271578,
+          "maximumMeters": 0.00003151424659572965,
+          "rmsMeters": 0.000013683094464121313,
+          "signedVolumeSquareMeters": -0.00006740681490271578
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.0002316363960240921,
+          "maximumMeters": 0.00023163639460401793,
+          "rmsMeters": 0.000049671299490383535,
+          "signedVolumeSquareMeters": -1.4200741548387602e-12
+        }
+      },
+      "restrictedExtrapolatedErrorDifference": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.00019548670899501234,
+          "maximumMeters": 0.00007395643027554011,
+          "rmsMeters": 0.00003835526369040086,
+          "signedVolumeSquareMeters": -0.00019548670899501234
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.0006284108234579568,
+          "maximumMeters": 0.00031420541172901397,
+          "rmsMeters": 0.00009881954828314097,
+          "signedVolumeSquareMeters": 7.112366251504909e-17
+        }
+      }
+    },
+    {
+      "cases": [
+        3,
+        4,
+        6,
+        7
+      ],
+      "coarseExtrapolatedError": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.00006740689497909273,
+          "maximumMeters": 0.000031514352551881606,
+          "rmsMeters": 0.00001368312414300164,
+          "signedVolumeSquareMeters": -0.00006740689497909273
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.0002316367204203239,
+          "maximumMeters": 0.00023163671474023403,
+          "rmsMeters": 0.000049671372198757884,
+          "signedVolumeSquareMeters": -5.680089848448221e-12
+        }
+      },
+      "completedAtSameEndTime": true,
+      "contract": "Observer-only 2*error(dt/2)-error(dt); never an owned state or solver input",
+      "fineExtrapolatedError": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.00001733476906987386,
+          "maximumMeters": 0.0000093697337833843,
+          "rmsMeters": 0.0000035850196697334463,
+          "signedVolumeSquareMeters": -0.00001733476906987386
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.00007385722713634908,
+          "maximumMeters": 0.00014771444291251153,
+          "rmsMeters": 0.0000220361472613152,
+          "signedVolumeSquareMeters": -5.680093317895173e-12
+        }
+      },
+      "restrictedExtrapolatedErrorDifference": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.000050072125909218874,
+          "maximumMeters": 0.000023036470639054974,
+          "rmsMeters": 0.000010114688885847128,
+          "signedVolumeSquareMeters": -0.000050072125909218874
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.00015929144661454837,
+          "maximumMeters": 0.00015929144661455184,
+          "rmsMeters": 0.00003406170619525926,
+          "signedVolumeSquareMeters": 3.469446951953614e-18
+        }
+      }
+    },
+    {
+      "cases": [
+        4,
+        5,
+        7,
+        8
+      ],
+      "coarseExtrapolatedError": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.00006740681490271578,
+          "maximumMeters": 0.00003151424659572965,
+          "rmsMeters": 0.000013683094464121313,
+          "signedVolumeSquareMeters": -0.00006740681490271578
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.0002316363960240921,
+          "maximumMeters": 0.00023163639460401793,
+          "rmsMeters": 0.000049671299490383535,
+          "signedVolumeSquareMeters": -1.4200741548387602e-12
+        }
+      },
+      "completedAtSameEndTime": true,
+      "contract": "Observer-only 2*error(dt/2)-error(dt); never an owned state or solver input",
+      "fineExtrapolatedError": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.0000173347851149892,
+          "maximumMeters": 0.000009369850750537487,
+          "rmsMeters": 0.000003585026562567956,
+          "signedVolumeSquareMeters": -0.0000173347851149892
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.0000738862480726371,
+          "maximumMeters": 0.00014777249330511896,
+          "rmsMeters": 0.000022044763150663998,
+          "signedVolumeSquareMeters": -1.4200776242857122e-12
+        }
+      },
+      "restrictedExtrapolatedErrorDifference": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMeters": 0.00005007202978772658,
+          "maximumMeters": 0.00002303630803769159,
+          "rmsMeters": 0.000010114654262984544,
+          "signedVolumeSquareMeters": -0.00005007202978772658
+        },
+        "fullDomain": {
+          "l1VolumeSquareMeters": 0.00015928034273739354,
+          "maximumMeters": 0.00015928034273739704,
+          "rmsMeters": 0.00003405930418597054,
+          "signedVolumeSquareMeters": 3.496552006265752e-18
+        }
+      }
+    }
+  ],
+  "exactIntegratedMeanContourControls": [
+    {
+      "contours": [
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 10,
+          "positionsMeters": [],
+          "signedUniquePositionErrorMeters": null,
+          "thresholdMeters": 0
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 9.99980952018129,
+          "positionsMeters": [],
+          "signedUniquePositionErrorMeters": null,
+          "thresholdMeters": 0.001
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 9.958793585122592,
+          "positionsMeters": [
+            9.999271763628606
+          ],
+          "signedUniquePositionErrorMeters": 0.04047817850601376,
+          "thresholdMeters": 0.01
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 7.795382901463554,
+          "positionsMeters": [
+            7.835729817643308
+          ],
+          "signedUniquePositionErrorMeters": 0.04034691617975472,
+          "thresholdMeters": 0.05
+        }
+      ],
+      "contract": "Identical observer on independent exact integrated means; not evolved owners or a state/contour correction",
+      "timeSeconds": 0,
+      "unresolvedObservationCells": [],
+      "widthMeters": 1
+    },
+    {
+      "contours": [
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 10,
+          "positionsMeters": [],
+          "signedUniquePositionErrorMeters": null,
+          "thresholdMeters": 0
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 9.99980952018129,
+          "positionsMeters": [],
+          "signedUniquePositionErrorMeters": null,
+          "thresholdMeters": 0.001
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 9.958793585122592,
+          "positionsMeters": [
+            9.965928614127272
+          ],
+          "signedUniquePositionErrorMeters": 0.0071350290046794385,
+          "thresholdMeters": 0.01
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 7.795382901463554,
+          "positionsMeters": [
+            7.795534518827544
+          ],
+          "signedUniquePositionErrorMeters": 0.00015161736398994208,
+          "thresholdMeters": 0.05
+        }
+      ],
+      "contract": "Identical observer on independent exact integrated means; not evolved owners or a state/contour correction",
+      "timeSeconds": 0,
+      "unresolvedObservationCells": [],
+      "widthMeters": 0.5
+    },
+    {
+      "contours": [
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 10,
+          "positionsMeters": [],
+          "signedUniquePositionErrorMeters": null,
+          "thresholdMeters": 0
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 9.99980952018129,
+          "positionsMeters": [],
+          "signedUniquePositionErrorMeters": null,
+          "thresholdMeters": 0.001
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 9.958793585122592,
+          "positionsMeters": [
+            9.959611921778743
+          ],
+          "signedUniquePositionErrorMeters": 0.0008183366561507199,
+          "thresholdMeters": 0.01
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 7.795382901463554,
+          "positionsMeters": [
+            7.792940431873554
+          ],
+          "signedUniquePositionErrorMeters": -0.0024424695900000515,
+          "thresholdMeters": 0.05
+        }
+      ],
+      "contract": "Identical observer on independent exact integrated means; not evolved owners or a state/contour correction",
+      "timeSeconds": 0,
+      "unresolvedObservationCells": [],
+      "widthMeters": 0.25
+    },
+    {
+      "contours": [
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 10.36387716370636,
+          "positionsMeters": [
+            10.372585215991979
+          ],
+          "signedUniquePositionErrorMeters": 0.008708052285619772,
+          "thresholdMeters": 0
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 10.363662583062046,
+          "positionsMeters": [
+            10.372348179033514
+          ],
+          "signedUniquePositionErrorMeters": 0.008685595971467563,
+          "thresholdMeters": 0.001
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 10.317440366696674,
+          "positionsMeters": [
+            10.321517151378325
+          ],
+          "signedUniquePositionErrorMeters": 0.004076784681650736,
+          "thresholdMeters": 0.01
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 7.809960797863782,
+          "positionsMeters": [
+            7.854212206580954
+          ],
+          "signedUniquePositionErrorMeters": 0.04425140871717126,
+          "thresholdMeters": 0.05
+        }
+      ],
+      "contract": "Identical observer on independent exact integrated means; not evolved owners or a state/contour correction",
+      "timeSeconds": 1,
+      "unresolvedObservationCells": [],
+      "widthMeters": 1
+    },
+    {
+      "contours": [
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 10.36387716370636,
+          "positionsMeters": [
+            10.369345297209112
+          ],
+          "signedUniquePositionErrorMeters": 0.005468133502752437,
+          "thresholdMeters": 0
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 10.363662583062046,
+          "positionsMeters": [
+            10.369115061552565
+          ],
+          "signedUniquePositionErrorMeters": 0.005452478490518331,
+          "thresholdMeters": 0.001
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 10.317440366696674,
+          "positionsMeters": [
+            10.31974252867443
+          ],
+          "signedUniquePositionErrorMeters": 0.002302161977755901,
+          "thresholdMeters": 0.01
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 7.809960797863782,
+          "positionsMeters": [
+            7.8113415556703085
+          ],
+          "signedUniquePositionErrorMeters": 0.0013807578065261339,
+          "thresholdMeters": 0.05
+        }
+      ],
+      "contract": "Identical observer on independent exact integrated means; not evolved owners or a state/contour correction",
+      "timeSeconds": 1,
+      "unresolvedObservationCells": [],
+      "widthMeters": 0.5
+    },
+    {
+      "contours": [
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 10.36387716370636,
+          "positionsMeters": [
+            10.364588631315211
+          ],
+          "signedUniquePositionErrorMeters": 0.00071146760885199,
+          "thresholdMeters": 0
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 10.363662583062046,
+          "positionsMeters": [
+            10.364368131745788
+          ],
+          "signedUniquePositionErrorMeters": 0.0007055486837419522,
+          "thresholdMeters": 0.001
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 10.317440366696674,
+          "positionsMeters": [
+            10.31708343916511
+          ],
+          "signedUniquePositionErrorMeters": -0.000356927531564466,
+          "thresholdMeters": 0.01
+        },
+        {
+          "completeReconstruction": true,
+          "exactPositionMeters": 7.809960797863782,
+          "positionsMeters": [
+            7.807713915588146
+          ],
+          "signedUniquePositionErrorMeters": -0.002246882275636075,
+          "thresholdMeters": 0.05
+        }
+      ],
+      "contract": "Identical observer on independent exact integrated means; not evolved owners or a state/contour correction",
+      "timeSeconds": 1,
+      "unresolvedObservationCells": [],
+      "widthMeters": 0.25
+    }
+  ],
+  "frozenControls": [
+    {
+      "derivativeErrorMetersPerSecond": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMetersPerSecond": 0.0003443539259452939,
+          "maximumMetersPerSecond": 0.0001959689983811741,
+          "rmsMetersPerSecond": 0.00008618049780445446,
+          "signedVolumeSquareMetersPerSecond": -0.0003443539259452939
+        },
+        "fullDomain": {
+          "l1VolumeSquareMetersPerSecond": 0.005023450414387276,
+          "maximumMetersPerSecond": 0.0025117252071936375,
+          "rmsMetersPerSecond": 0.0009484095068557244,
+          "signedVolumeSquareMetersPerSecond": -8.673617379884035e-19
+        }
+      },
+      "refusal": null,
+      "widthMeters": 1
+    },
+    {
+      "derivativeErrorMetersPerSecond": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMetersPerSecond": 0.0000707999296128475,
+          "maximumMetersPerSecond": 0.00004633747059686749,
+          "rmsMetersPerSecond": 0.000017468491057583942,
+          "signedVolumeSquareMetersPerSecond": -0.00006923811162511551
+        },
+        "fullDomain": {
+          "l1VolumeSquareMetersPerSecond": 0.0028218467408147223,
+          "maximumMetersPerSecond": 0.0028202849228269895,
+          "rmsMetersPerSecond": 0.0007686199503424016,
+          "signedVolumeSquareMetersPerSecond": -8.673617379884035e-19
+        }
+      },
+      "refusal": null,
+      "widthMeters": 0.5
+    },
+    {
+      "derivativeErrorMetersPerSecond": {
+        "fixedWetInterior": {
+          "l1VolumeSquareMetersPerSecond": 0.000017895820010439302,
+          "maximumMetersPerSecond": 0.000013301011663802154,
+          "rmsMetersPerSecond": 0.000004426043308999125,
+          "signedVolumeSquareMetersPerSecond": -0.000017515217886981092
+        },
+        "fullDomain": {
+          "l1VolumeSquareMetersPerSecond": 0.0015626730370070468,
+          "maximumMetersPerSecond": 0.0031225624864668258,
+          "rmsMetersPerSecond": 0.000611837064687957,
+          "signedVolumeSquareMetersPerSecond": -4.336808689942018e-19
+        }
+      },
+      "refusal": null,
+      "widthMeters": 0.25
+    }
+  ],
+  "reference": {
+    "reportVersion": "surface-barenblatt-reference-report-1",
+    "scope": "Independent bounded integrated cubic-pressure oracle; no reconstruction or evolution selection",
+    "integrationContract": "Support-clipped analytic integral with R-x=z^7 and stable narrow-interval span; bounded Simpson doubling; successive agreement is empirical, not a certified error bound",
+    "oracleContract": "Integrated means only; analytic pressure and slope never enter interior inference",
+    "independentFixtureContract": "Incomplete-beta integrals independently evaluated at 80/100 decimal digits; rounded values are validation observations only",
+    "maximumPanelsPerIntegral": 16384,
+    "observedMaximumCellPanels": 16384,
+    "observedMaximumSuccessiveCellVolumeDifferenceSquareMeters": 7.7021722333370235e-16,
+    "independentMaximumAbsoluteMeanDifferenceLimitMeters": 2e-14,
+    "analyticDiffusivityUpperBoundSquareMetersPerSecond": 16.23392642891891,
+    "independentIncompleteBetaFixtures": [
+      {
+        "independentRoundedMeanMeters": 0.06537230960763588,
+        "intervalMeters": [
+          2,
+          3
+        ],
+        "observedMeanMeters": 0.06537230960763588,
+        "signedMeanDifferenceMeters": 0,
+        "timeSeconds": 0
+      },
+      {
+        "independentRoundedMeanMeters": 0.026816590816971075,
+        "intervalMeters": [
+          9,
+          10
+        ],
+        "observedMeanMeters": 0.02681659081697109,
+        "signedMeanDifferenceMeters": 1.3877787807814457e-17,
+        "timeSeconds": 0
+      },
+      {
+        "independentRoundedMeanMeters": 0,
+        "intervalMeters": [
+          10,
+          11
+        ],
+        "observedMeanMeters": 0,
+        "signedMeanDifferenceMeters": 0,
+        "timeSeconds": 0
+      },
+      {
+        "independentRoundedMeanMeters": 0.023535552771155335,
+        "intervalMeters": [
+          9.5,
+          10
+        ],
+        "observedMeanMeters": 0.02353555277115531,
+        "signedMeanDifferenceMeters": -2.42861286636753e-17,
+        "timeSeconds": 0.25
+      },
+      {
+        "independentRoundedMeanMeters": 0.0018210155660216623,
+        "intervalMeters": [
+          10,
+          10.5
+        ],
+        "observedMeanMeters": 0.0018210155660216265,
+        "signedMeanDifferenceMeters": -3.5778671692021646e-17,
+        "timeSeconds": 0.25
+      },
+      {
+        "independentRoundedMeanMeters": 0.02269754462076316,
+        "intervalMeters": [
+          9.75,
+          10
+        ],
+        "observedMeanMeters": 0.02269754462076315,
+        "signedMeanDifferenceMeters": -1.0408340855860843e-17,
+        "timeSeconds": 0.5
+      },
+      {
+        "independentRoundedMeanMeters": 0.00955191203244104,
+        "intervalMeters": [
+          10,
+          10.25
+        ],
+        "observedMeanMeters": 0.009551912032441006,
+        "signedMeanDifferenceMeters": -3.469446951953614e-17,
+        "timeSeconds": 0.5
+      },
+      {
+        "independentRoundedMeanMeters": 0,
+        "intervalMeters": [
+          10.25,
+          10.5
+        ],
+        "observedMeanMeters": 0,
+        "signedMeanDifferenceMeters": 0,
+        "timeSeconds": 0.5
+      },
+      {
+        "independentRoundedMeanMeters": 0.006112423918614549,
+        "intervalMeters": [
+          10,
+          11
+        ],
+        "observedMeanMeters": 0.006112423918614559,
+        "signedMeanDifferenceMeters": 1.0408340855860843e-17,
+        "timeSeconds": 1
+      },
+      {
+        "independentRoundedMeanMeters": 0.012224847837229097,
+        "intervalMeters": [
+          10,
+          10.5
+        ],
+        "observedMeanMeters": 0.012224847837229118,
+        "signedMeanDifferenceMeters": 2.0816681711721685e-17,
+        "timeSeconds": 1
+      },
+      {
+        "independentRoundedMeanMeters": 0.00467934937155234,
+        "intervalMeters": [
+          10.25,
+          10.5
+        ],
+        "observedMeanMeters": 0.004679349371552366,
+        "signedMeanDifferenceMeters": 2.6020852139652106e-17,
+        "timeSeconds": 1
+      },
+      {
+        "independentRoundedMeanMeters": 0,
+        "intervalMeters": [
+          10.5,
+          10.75
+        ],
+        "observedMeanMeters": 0,
+        "signedMeanDifferenceMeters": 0,
+        "timeSeconds": 1
+      }
+    ],
+    "contours": [
+      {
+        "contours": [
+          {
+            "positionMeters": 10,
+            "thresholdMeters": 0
+          },
+          {
+            "positionMeters": 9.99980952018129,
+            "thresholdMeters": 0.001
+          },
+          {
+            "positionMeters": 9.958793585122592,
+            "thresholdMeters": 0.01
+          },
+          {
+            "positionMeters": 7.795382901463554,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "frontMeters": 10,
+        "leftBoundaryDiffusivitySquareMetersPerSecond": 14.466666666666665,
+        "timeSeconds": 0
+      },
+      {
+        "contours": [
+          {
+            "positionMeters": 10.093027336510804,
+            "thresholdMeters": 0
+          },
+          {
+            "positionMeters": 10.092830885629489,
+            "thresholdMeters": 0.001
+          },
+          {
+            "positionMeters": 10.050525375470809,
+            "thresholdMeters": 0.01
+          },
+          {
+            "positionMeters": 7.803740110774089,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "frontMeters": 10.093027336510804,
+        "leftBoundaryDiffusivitySquareMetersPerSecond": 14.514594309063607,
+        "timeSeconds": 0.25
+      },
+      {
+        "contours": [
+          {
+            "positionMeters": 10.184647145553093,
+            "thresholdMeters": 0
+          },
+          {
+            "positionMeters": 10.184444687081603,
+            "thresholdMeters": 0.001
+          },
+          {
+            "positionMeters": 10.140841513005757,
+            "thresholdMeters": 0.01
+          },
+          {
+            "positionMeters": 7.808954843303879,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "frontMeters": 10.184647145553093,
+        "leftBoundaryDiffusivitySquareMetersPerSecond": 14.561434391409465,
+        "timeSeconds": 0.5
+      },
+      {
+        "contours": [
+          {
+            "positionMeters": 10.36387716370636,
+            "thresholdMeters": 0
+          },
+          {
+            "positionMeters": 10.363662583062046,
+            "thresholdMeters": 0.001
+          },
+          {
+            "positionMeters": 10.317440366696674,
+            "thresholdMeters": 0.01
+          },
+          {
+            "positionMeters": 7.809960797863782,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "frontMeters": 10.36387716370636,
+        "leftBoundaryDiffusivitySquareMetersPerSecond": 14.65205432932022,
+        "timeSeconds": 1
+      }
+    ],
+    "cases": [
+      {
+        "inventorySquareMeters": 0.43352617770817553,
+        "signedPartitionDifferenceSquareMeters": -4.440892098500626e-16,
+        "timeSeconds": 0,
+        "wholeDomainIntegralSquareMeters": 0.433526177708176,
+        "widthMeters": 1,
+        "meansCount": 12,
+        "maximumPanels": 16384,
+        "maximumSuccessiveVolumeDifferenceSquareMeters": 4.996003610813204e-16
+      },
+      {
+        "inventorySquareMeters": 0.43352617770817553,
+        "signedPartitionDifferenceSquareMeters": -4.440892098500626e-16,
+        "timeSeconds": 0,
+        "wholeDomainIntegralSquareMeters": 0.433526177708176,
+        "widthMeters": 0.5,
+        "meansCount": 24,
+        "maximumPanels": 16384,
+        "maximumSuccessiveVolumeDifferenceSquareMeters": 3.885780586188048e-16
+      },
+      {
+        "inventorySquareMeters": 0.4335261777081755,
+        "signedPartitionDifferenceSquareMeters": -4.996003610813204e-16,
+        "timeSeconds": 0,
+        "wholeDomainIntegralSquareMeters": 0.433526177708176,
+        "widthMeters": 0.25,
+        "meansCount": 48,
+        "maximumPanels": 16384,
+        "maximumSuccessiveVolumeDifferenceSquareMeters": 1.8214596497756474e-16
+      },
+      {
+        "inventorySquareMeters": 0.4347356324928725,
+        "signedPartitionDifferenceSquareMeters": -3.885780586188048e-16,
+        "timeSeconds": 0.25,
+        "wholeDomainIntegralSquareMeters": 0.4347356324928729,
+        "widthMeters": 1,
+        "meansCount": 12,
+        "maximumPanels": 16384,
+        "maximumSuccessiveVolumeDifferenceSquareMeters": 4.579669976578771e-16
+      },
+      {
+        "inventorySquareMeters": 0.4347356324928726,
+        "signedPartitionDifferenceSquareMeters": -2.7755575615628914e-16,
+        "timeSeconds": 0.25,
+        "wholeDomainIntegralSquareMeters": 0.4347356324928729,
+        "widthMeters": 0.5,
+        "meansCount": 24,
+        "maximumPanels": 16384,
+        "maximumSuccessiveVolumeDifferenceSquareMeters": 3.608224830031759e-16
+      },
+      {
+        "inventorySquareMeters": 0.43473563249287256,
+        "signedPartitionDifferenceSquareMeters": -3.3306690738754696e-16,
+        "timeSeconds": 0.25,
+        "wholeDomainIntegralSquareMeters": 0.4347356324928729,
+        "widthMeters": 0.25,
+        "meansCount": 48,
+        "maximumPanels": 16384,
+        "maximumSuccessiveVolumeDifferenceSquareMeters": 1.8735013540549517e-16
+      },
+      {
+        "inventorySquareMeters": 0.4359053002447158,
+        "signedPartitionDifferenceSquareMeters": -3.3306690738754696e-16,
+        "timeSeconds": 0.5,
+        "wholeDomainIntegralSquareMeters": 0.43590530024471613,
+        "widthMeters": 1,
+        "meansCount": 12,
+        "maximumPanels": 16384,
+        "maximumSuccessiveVolumeDifferenceSquareMeters": 4.371503159461554e-16
+      },
+      {
+        "inventorySquareMeters": 0.4359053002447155,
+        "signedPartitionDifferenceSquareMeters": -6.106226635438361e-16,
+        "timeSeconds": 0.5,
+        "wholeDomainIntegralSquareMeters": 0.43590530024471613,
+        "widthMeters": 0.5,
+        "meansCount": 24,
+        "maximumPanels": 16384,
+        "maximumSuccessiveVolumeDifferenceSquareMeters": 3.3306690738754696e-16
+      },
+      {
+        "inventorySquareMeters": 0.4359053002447156,
+        "signedPartitionDifferenceSquareMeters": -5.551115123125783e-16,
+        "timeSeconds": 0.5,
+        "wholeDomainIntegralSquareMeters": 0.43590530024471613,
+        "widthMeters": 0.25,
+        "meansCount": 48,
+        "maximumPanels": 16384,
+        "maximumSuccessiveVolumeDifferenceSquareMeters": 1.7520707107365752e-16
+      },
+      {
+        "inventorySquareMeters": 0.438133935246462,
+        "signedPartitionDifferenceSquareMeters": -5.551115123125783e-16,
+        "timeSeconds": 1,
+        "wholeDomainIntegralSquareMeters": 0.43813393524646255,
+        "widthMeters": 1,
+        "meansCount": 12,
+        "maximumPanels": 16384,
+        "maximumSuccessiveVolumeDifferenceSquareMeters": 7.7021722333370235e-16
+      },
+      {
+        "inventorySquareMeters": 0.4381339352464621,
+        "signedPartitionDifferenceSquareMeters": -4.440892098500626e-16,
+        "timeSeconds": 1,
+        "wholeDomainIntegralSquareMeters": 0.43813393524646255,
+        "widthMeters": 0.5,
+        "meansCount": 24,
+        "maximumPanels": 16384,
+        "maximumSuccessiveVolumeDifferenceSquareMeters": 3.5735303605122226e-16
+      },
+      {
+        "inventorySquareMeters": 0.43813393524646205,
+        "signedPartitionDifferenceSquareMeters": -4.996003610813204e-16,
+        "timeSeconds": 1,
+        "wholeDomainIntegralSquareMeters": 0.43813393524646255,
+        "widthMeters": 0.25,
+        "meansCount": 48,
+        "maximumPanels": 16384,
+        "maximumSuccessiveVolumeDifferenceSquareMeters": 1.717376241217039e-16
+      }
+    ],
+    "restriction": [
+      {
+        "coarseWidthMeters": 1,
+        "maximumAbsoluteMeanRestrictionDifferenceMeters": 9.020562075079397e-17,
+        "timeSeconds": 0
+      },
+      {
+        "coarseWidthMeters": 0.5,
+        "maximumAbsoluteMeanRestrictionDifferenceMeters": 9.71445146547012e-17,
+        "timeSeconds": 0
+      },
+      {
+        "coarseWidthMeters": 1,
+        "maximumAbsoluteMeanRestrictionDifferenceMeters": 7.632783294297951e-17,
+        "timeSeconds": 0.25
+      },
+      {
+        "coarseWidthMeters": 0.5,
+        "maximumAbsoluteMeanRestrictionDifferenceMeters": 7.632783294297951e-17,
+        "timeSeconds": 0.25
+      },
+      {
+        "coarseWidthMeters": 1,
+        "maximumAbsoluteMeanRestrictionDifferenceMeters": 1.0408340855860843e-16,
+        "timeSeconds": 0.5
+      },
+      {
+        "coarseWidthMeters": 0.5,
+        "maximumAbsoluteMeanRestrictionDifferenceMeters": 7.28583859910259e-17,
+        "timeSeconds": 0.5
+      },
+      {
+        "coarseWidthMeters": 1,
+        "maximumAbsoluteMeanRestrictionDifferenceMeters": 6.245004513516506e-17,
+        "timeSeconds": 1
+      },
+      {
+        "coarseWidthMeters": 0.5,
+        "maximumAbsoluteMeanRestrictionDifferenceMeters": 9.71445146547012e-17,
+        "timeSeconds": 1
+      }
+    ],
+    "independentComparison": {
+      "method": "mpmath1.3.0 unregularized incomplete beta at100decimaldigits; Rust JSON decoded to binary f64 before high-precision comparison",
+      "meansCompared": 336,
+      "maximumAbsoluteDifferenceMeters": "1.0804792305640943076e-16",
+      "maximumRelativeDifference": "1.9672564213512058579e-14",
+      "cases": [
+        {
+          "timeSeconds": 0,
+          "widthMeters": 1,
+          "meansCompared": 12,
+          "maximumAbsoluteDifferenceMeters": "7.4123049259162382362e-17",
+          "maximumRelativeDifference": "1.1736616332189099006e-15",
+          "independentlyDryMeansExactlyZero": true
+        },
+        {
+          "timeSeconds": 0,
+          "widthMeters": 0.5,
+          "meansCompared": 24,
+          "maximumAbsoluteDifferenceMeters": "7.0429134989625629643e-17",
+          "maximumRelativeDifference": "1.524813601741721377e-15",
+          "independentlyDryMeansExactlyZero": true
+        },
+        {
+          "timeSeconds": 0,
+          "widthMeters": 0.25,
+          "meansCompared": 48,
+          "maximumAbsoluteDifferenceMeters": "9.0923160431064874868e-17",
+          "maximumRelativeDifference": "1.9204516633146469021e-15",
+          "independentlyDryMeansExactlyZero": true
+        },
+        {
+          "timeSeconds": 0.25,
+          "widthMeters": 1,
+          "meansCompared": 12,
+          "maximumAbsoluteDifferenceMeters": "9.0154508295234931575e-17",
+          "maximumRelativeDifference": "1.9672564213512058579e-14",
+          "independentlyDryMeansExactlyZero": true
+        },
+        {
+          "timeSeconds": 0.25,
+          "widthMeters": 0.5,
+          "meansCompared": 24,
+          "maximumAbsoluteDifferenceMeters": "5.3773091691941889754e-17",
+          "maximumRelativeDifference": "1.9672564213512058579e-14",
+          "independentlyDryMeansExactlyZero": true
+        },
+        {
+          "timeSeconds": 0.25,
+          "widthMeters": 0.25,
+          "meansCompared": 48,
+          "maximumAbsoluteDifferenceMeters": "8.7206048920357168645e-17",
+          "maximumRelativeDifference": "1.9672564213512058579e-14",
+          "independentlyDryMeansExactlyZero": true
+        },
+        {
+          "timeSeconds": 0.5,
+          "widthMeters": 1,
+          "meansCompared": 12,
+          "maximumAbsoluteDifferenceMeters": "7.1971756871227853658e-17",
+          "maximumRelativeDifference": "3.7244322430615593829e-15",
+          "independentlyDryMeansExactlyZero": true
+        },
+        {
+          "timeSeconds": 0.5,
+          "widthMeters": 0.5,
+          "meansCompared": 24,
+          "maximumAbsoluteDifferenceMeters": "1.0804792305640943076e-16",
+          "maximumRelativeDifference": "3.7244322430615593829e-15",
+          "independentlyDryMeansExactlyZero": true
+        },
+        {
+          "timeSeconds": 0.5,
+          "widthMeters": 0.25,
+          "meansCompared": 48,
+          "maximumAbsoluteDifferenceMeters": "9.602136626783895455e-17",
+          "maximumRelativeDifference": "3.7244322430615593829e-15",
+          "independentlyDryMeansExactlyZero": true
+        },
+        {
+          "timeSeconds": 1,
+          "widthMeters": 1,
+          "meansCompared": 12,
+          "maximumAbsoluteDifferenceMeters": "9.0604490897753595918e-17",
+          "maximumRelativeDifference": "1.7686062235779734145e-15",
+          "independentlyDryMeansExactlyZero": true
+        },
+        {
+          "timeSeconds": 1,
+          "widthMeters": 0.5,
+          "meansCompared": 24,
+          "maximumAbsoluteDifferenceMeters": "1.0447753386833718169e-16",
+          "maximumRelativeDifference": "1.6671181631718413227e-15",
+          "independentlyDryMeansExactlyZero": true
+        },
+        {
+          "timeSeconds": 1,
+          "widthMeters": 0.25,
+          "meansCompared": 48,
+          "maximumAbsoluteDifferenceMeters": "7.9717871858416882201e-17",
+          "maximumRelativeDifference": "5.5806949139123477419e-15",
+          "independentlyDryMeansExactlyZero": true
+        }
+      ]
+    },
+    "independentHighPrecisionValidation": {
+      "method": "mpmath 1.3.0 unregularized incomplete beta, 80 and 100 decimal digits",
+      "cohortMeansCompared": 336,
+      "maximumRelative80vs100Difference": "1.0173695636486268179e-79",
+      "validation": [
+        {
+          "dps": 80,
+          "maximumAbsoluteConservativeRestrictionResidual": "1.317774742903815e-82",
+          "maximumAbsoluteContinuityResidual": "0.0",
+          "maximumAbsolutePhysicalFluxIdentityResidual": "4.941655285889308e-83",
+          "maximumAbsoluteIntegratedRateResidual": "6.860229463712404e-39",
+          "betaMaxAtTimes": [
+            "14.466666666666666666666666666666667",
+            "14.514594309063610692844059067833456",
+            "14.561434391409472235444568112284597",
+            "14.652054329320221210504646414938367"
+          ],
+          "conservativeCapApplicabilityBound": "16.117259762252243331555111056432204",
+          "frontAtOneSecond": "10.363877163706358785349806414823085"
+        },
+        {
+          "dps": 100,
+          "maximumAbsoluteConservativeRestrictionResidual": "8.929588994392773e-103",
+          "maximumAbsoluteContinuityResidual": "0.0",
+          "maximumAbsolutePhysicalFluxIdentityResidual": "2.232397248598193e-103",
+          "maximumAbsoluteIntegratedRateResidual": "1.557676752515373e-47",
+          "betaMaxAtTimes": [
+            "14.466666666666666666666666666666667",
+            "14.514594309063610692844059067833456",
+            "14.561434391409472235444568112284597",
+            "14.652054329320221210504646414938367"
+          ],
+          "conservativeCapApplicabilityBound": "16.117259762252243331555111056432204",
+          "frontAtOneSecond": "10.363877163706358785349806414823085"
+        }
+      ],
+      "fixtures": [
+        {
+          "time": "0",
+          "left": "2",
+          "right": "3",
+          "mean": "0.065372309607635878537502367032436663823073926594719466506906587896"
+        },
+        {
+          "time": "0",
+          "left": "9",
+          "right": "10",
+          "mean": "0.026816590816971077321309877544990760475742393078787429100425225815"
+        },
+        {
+          "time": "0",
+          "left": "10",
+          "right": "11",
+          "mean": "0.0"
+        },
+        {
+          "time": "0.25",
+          "left": "9.5",
+          "right": "10",
+          "mean": "0.023535552771155338467316419377586651764857779168169277607676714651"
+        },
+        {
+          "time": "0.25",
+          "left": "10",
+          "right": "10.5",
+          "mean": "0.001821015566021662358397163775486469030688336645097692644440108223"
+        },
+        {
+          "time": "0.5",
+          "left": "9.75",
+          "right": "10",
+          "mean": "0.022697544620763159686721166904598678788044976974089309977001831871"
+        },
+        {
+          "time": "0.5",
+          "left": "10",
+          "right": "10.25",
+          "mean": "0.0095519120324410412625936317002290078394589364861713143712033947234"
+        },
+        {
+          "time": "0.5",
+          "left": "10.25",
+          "right": "10.5",
+          "mean": "0.0"
+        },
+        {
+          "time": "1",
+          "left": "10",
+          "right": "11",
+          "mean": "0.0061124239186145492186118912886338025458712526967053755899164340553"
+        },
+        {
+          "time": "1",
+          "left": "10",
+          "right": "10.5",
+          "mean": "0.012224847837229098437223782577267605091742505393410751179832868111"
+        },
+        {
+          "time": "1",
+          "left": "10.25",
+          "right": "10.5",
+          "mean": "0.0046793493715523401988773249531812048322623447641485039960307172555"
+        },
+        {
+          "time": "1",
+          "left": "10.5",
+          "right": "10.75",
+          "mean": "0.0"
+        }
+      ]
+    },
+    "capBoundNote": "The Rust bound drops the negative cubic term (16.2339); the independent tighter bound retains the left-endpoint cubic (16.1173). Both are conservative and below cap 100; neither is an explicit-stability bound.",
+    "initialRefusals": [
+      "The unchanged quadrature agreement criterion refused the initial 4096-panel work cap; reference-only work increased to 16384 panels.",
+      "A centered derivative probe near a recently crossed face used three probe sizes (two halvings) before satisfying its original fine-probe bound. No fixture tolerance or physical law changed."
+    ]
+  },
+  "limitations": [
+    "Full-domain total RMS need not decrease with time refinement because temporal and spatial errors can cancel; temporal field differences remain separate.",
+    "The 5 cm contour is nonmonotonic under grid refinement, including on independent exact integrated means. Control errors are not subtracted from physical errors.",
+    "At initial aligned support the three exact-mean controls lack isolated support and 1 mm roots: six null observations, never snapped.",
+    "Variable bed, extrema/plateaus, wet/rest/barrier controls and spherical/seasonal assembly remain unqualified."
+  ],
+  "validation": {
+    "rustOptimized": {
+      "libraryTests": 173,
+      "regionalSoilTests": 12,
+      "regionalSurfaceTests": 5,
+      "total": 190,
+      "passed": true
+    },
+    "node": {
+      "files": 18,
+      "tests": 88,
+      "passed": true
+    },
+    "strictAllTargetClippy": "passed",
+    "typecheck": "passed",
+    "format": "passed",
+    "whitespace": "passed",
+    "nativeReleaseRebuilt": true,
+    "cliRefusalChecks": {
+      "count": 6,
+      "passed": true,
+      "existingOutputPreserved": true,
+      "invalidExtraArgumentPathsAbsent": true
+    },
+    "completeNpmTestRerun": false,
+    "allNativeTargetTestsRerun": false,
+    "guiRerun": false,
+    "completeReportBytes": 294303,
+    "debugReleaseRepeatedReleaseByteIdentical": true,
+    "standaloneOracleMatchesEmbedded": true,
+    "oldFullCellOutputUnchanged": true
+  },
+  "fingerprints": [
+    {
+      "path": "artifacts/non-affine-final.json",
+      "sha256": "637bbf678092f9fca352c9de5c1548d3baf5a4e0eb979cdb3f2c352912577bba"
+    },
+    {
+      "path": "artifacts/non-affine-release.json",
+      "sha256": "637bbf678092f9fca352c9de5c1548d3baf5a4e0eb979cdb3f2c352912577bba"
+    },
+    {
+      "path": "artifacts/non-affine-repeat.json",
+      "sha256": "637bbf678092f9fca352c9de5c1548d3baf5a4e0eb979cdb3f2c352912577bba"
+    },
+    {
+      "path": "artifacts/barenblatt-oracle-final.json",
+      "sha256": "d4a6dce300a814fd9c986db385551e1480bd3deba97f590045e4ea0ff7f8bfda"
+    },
+    {
+      "path": "artifacts/full-cell-after-non-affine.json",
+      "sha256": "4cac6607331ac7b9535d86766f80cbb97afac56a3a3c3b9d914255ab5a0c5128"
+    },
+    {
+      "path": "artifacts/nonaffine-beta-oracle.py",
+      "sha256": "39037545a488f0ea2fa41802415d772137cad5746e551f06f1681d1089a18d8b"
+    },
+    {
+      "path": "artifacts/compare-barenblatt-beta-oracle.py",
+      "sha256": "25b853883ec6b36e55985cac4056e7e7190f2d056b55ace214481a6d8a7d637d"
+    },
+    {
+      "path": "artifacts/nonaffine-beta-oracle-validation.json",
+      "sha256": "6cd8d5c23485512c7cfd49dfd2b49943e0c6afab06578280b81020f8d2e907fb"
+    },
+    {
+      "path": "artifacts/barenblatt-independent-final-comparison.json",
+      "sha256": "be3e1c2801d1ac0782ebd4d5257d0c06b82859b09e3e197f42e281c5d60c6793"
+    },
+    {
+      "path": "artifacts/non-affine-rust-final-log.txt",
+      "sha256": "63fda0817f6e2df786113a6cbc99eeed09ec5796f2826d266b218db35df50f6f"
+    },
+    {
+      "path": "artifacts/non-affine-node-final-log.txt",
+      "sha256": "968e536f490e5c266a6ae51d4f970d8e015e177b9c724f1b91e9642d981f95be"
+    },
+    {
+      "path": "artifacts/non-affine-clippy-final-log.txt",
+      "sha256": "de87f5e5c2d0dee7d71dbf3fc5f5cca37d77c7f92fe7044a6bde0ba8cd25ad93"
+    },
+    {
+      "path": "artifacts/non-affine-typecheck-final-log.txt",
+      "sha256": "02a012dd189d64b8797030f32b44fe1b1f0e498026792bb0e77299dba08ad712"
+    },
+    {
+      "path": "artifacts/non-affine-build-native-final-log.txt",
+      "sha256": "e19f1dc3dbab966e23bf672a2b30588643ade7ade087726c98497fe55c1d57ef"
+    },
+    {
+      "path": "artifacts/non-affine-cli-final-log.txt",
+      "sha256": "1dff275a8f9fa7c951a20168bfc7efd1684ab7a557b5a8fe14f5cf2061bcc590"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front.rs",
+      "sha256": "8b97ea8e6c33ca30c8000c0a3d37ec341c308e53c955a85c8dbc7247da65ca76"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/paired_evolution.rs",
+      "sha256": "27bdfc9bf09453b5262f11b07161375e9323c9d9b715093cb0eec2f26d4cb4c4"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/barenblatt_reference.rs",
+      "sha256": "0f5eb83be0ad47fc04d6defd0b738966c1fe552e3ccfe9ffd736d13124451876"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/non_affine.rs",
+      "sha256": "3fda8363d24478fc0e7563237472edf5ebed9acd611a5987a7aed86be8e86aeb"
+    },
+    {
+      "path": "native/examples/surface_barenblatt_reference_report.rs",
+      "sha256": "0be5e3f08f101ee52b8036fc9b000d9013bfb74733865fde0c2a7af2767606bb"
+    },
+    {
+      "path": "native/examples/surface_non_affine_report.rs",
+      "sha256": "9266b4f680cc21cdeb0e33b13635817372d8e641e840e762ca9befa77da3480d"
+    }
+  ],
+  "excludedOwnerEdits": [
+    {
+      "path": "src/renderer/map.ts",
+      "sha256": "9c81dd0cd24b6c4da58e84263dd1b8fbb076de5cc8ec1c3271d70b307d7c9aaa",
+      "includedInCommit": false
+    },
+    {
+      "path": "src/renderer/style.css",
+      "sha256": "eb771462dfa08702874f7f06efc5b653364c7f56d54a43413724f87d167fe84d",
+      "includedInCommit": false
+    }
+  ],
+  "artifactRetention": "Complete physical arrays and independent Python execution artifacts are ignored local files; this tracked record retains summaries and fingerprints, not a claim of portable artifact availability."
+}

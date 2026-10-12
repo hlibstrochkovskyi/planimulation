@@ -43,6 +43,8 @@ On the exact wave, maximum physical diffusivity coefficient `beta=(7/3)*c*(front
 
 General extrema/plateaus, non-affine evolving accuracy, variable bed/rest/barriers, spherical assembly, seasonal coupling and calibration remain open. No product/save/model pins or desktop selection change.
 
+Follow-up: [integrated non-affine evolution](surface-non-affine-evolution.md) now supplies genuine curved-pressure spatial-refinement evidence on a separate bounded monotone problem. It does not retroactively turn this affine-pressure fixture into a spatial-order test or qualify the remaining geometry/rest/barrier gates.
+
 ## Reproduction and validation
 
 ```bash

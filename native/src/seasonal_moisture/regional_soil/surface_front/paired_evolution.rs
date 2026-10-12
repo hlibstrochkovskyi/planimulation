@@ -114,7 +114,7 @@ pub(super) fn initialize_means(initial_means: &[f64], width: f64) -> Result<Stat
     })
 }
 /// Project owned components for inference, never replace the physical stock.
-fn means(state: &State, width: f64) -> Result<Vec<f64>, String> {
+pub(super) fn means(state: &State, width: f64) -> Result<Vec<f64>, String> {
     state
         .stocks
         .iter()
@@ -137,7 +137,7 @@ fn fitted(means: &[f64], width: f64) -> Result<Vec<moments::Cell>, String> {
     }
     Ok(cells)
 }
-fn fluxes(
+pub(super) fn fluxes(
     means: &[f64],
     width: f64,
     method: Method,
@@ -163,7 +163,7 @@ fn fluxes(
     result.push(boundary[1]);
     Ok(result)
 }
-fn inventory_residual(state: &State, initial: &State) -> f64 {
+pub(super) fn inventory_residual(state: &State, initial: &State) -> f64 {
     let mut terms: Vec<_> = state
         .stocks
         .iter()

@@ -1,6 +1,6 @@
 # Proposed non-affine evolving benchmark
 
-October 12, 2026. **Proposal only: no reference implementation, evolving cohort or accuracy result exists yet.** This follows the completed [bounded full-cell gate](surface-full-cell-propagation.md). It preserves the current capped physical law rather than proposing a new solver.
+October 12, 2026. This records the original proposal following the [bounded full-cell gate](surface-full-cell-propagation.md). The [subsequent implemented reference and evolving laboratory](surface-non-affine-evolution.md) now exercise this cohort and record its bounded qualification and remaining limitations. The proposal preserves the current capped physical law rather than proposing a new solver.
 
 ## Why another exact family
 
@@ -23,7 +23,7 @@ h = max(v,0)^alpha
 q = b*x*h/tau
 ```
 
-Wet pressure has `v_x=-3*k*x²/tau²`. The uncapped Manning pressure flux gives `q/h=sqrt(3*alpha*k)*x/(n*tau)=b*x/tau`, fixing `k` in the original physical law. Also `v_tau+b*x*v_x/tau=-(7/8)*v/tau`. Hence `h_tau+b*(h+x*h_x)/tau=0`, because `alpha*(7/8)=b`. This verifies continuity on wet support. Both depth and flux vanish at the front; their singular derivatives are locally integrable. A future oracle must verify these identities independently in code rather than infer truth using reconstructed moments.
+Wet pressure has `v_x=-3*k*x²/tau²`. The uncapped Manning pressure flux gives `q/h=sqrt(3*alpha*k)*x/(n*tau)=b*x/tau`, fixing `k` in the original physical law. Also `v_tau+b*x*v_x/tau=-(7/8)*v/tau`. Hence `h_tau+b*(h+x*h_x)/tau=0`, because `alpha*(7/8)=b`. This verifies continuity on wet support. Both depth and flux vanish at the front; their singular derivatives are locally integrable. The oracle must verify these identities independently in code rather than infer truth using reconstructed moments.
 
 Pressure is cubic, not affine. The full symmetric solution has an extremum at zero, where the cap changes the uncapped fixture. Restricting to a positive monotone half-profile avoids this issue without claiming qualification of extrema or of a capped whole-line solution.
 
