@@ -1,6 +1,7 @@
 //! Standalone moving wet/dry verification; no seasonal or rendering selection.
 mod element;
 mod native;
+mod reconstruction;
 mod reference;
 use serde_json::{Value, json};
 
@@ -110,4 +111,9 @@ pub fn incident_report() -> Result<Value, String> {
 /// This report does not select or qualify a seasonal model.
 pub fn element_report() -> Result<Value, String> {
     element::report(reference_report()?)
+}
+
+/// Frozen interval reconstruction controls; no time evolution or model selection.
+pub fn reconstruction_report() -> Result<Value, String> {
+    reconstruction::report()
 }

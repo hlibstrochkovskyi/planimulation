@@ -1,0 +1,687 @@
+{
+  "record": "surface-planar-reconstruction-validation-1",
+  "date": "2026-10-12",
+  "sourceBaseCommit": "faedcbcb9f3a4181f72f2c82dfc8812772098676",
+  "report": {
+    "path": "artifacts/planar-reconstruction-final.json",
+    "version": "surface-planar-reconstruction-report-1",
+    "bytes": 953529,
+    "sha256": "1fe17f60c05faa09840977f9e627f1b1fdfa4fde8be992b9da6539655bd354ea",
+    "byteIdenticalCompleteRepeat": true,
+    "repeatPath": "artifacts/planar-reconstruction-final-repeat.json"
+  },
+  "parameters": {
+    "speedMetersPerSecond": 0.1,
+    "roughness": 0.04,
+    "capSquareMetersPerSecond": 100,
+    "pressureSlopeMagnitude": 0.00003733333333333334,
+    "stockFitRelativeResidualLimit": 5.684341886080802e-14,
+    "widthsMeters": [
+      4,
+      2,
+      1,
+      0.5
+    ],
+    "phases": [
+      0,
+      9.5367431640625e-7,
+      0.001,
+      0.05,
+      0.2,
+      0.5,
+      0.8,
+      0.95,
+      1
+    ],
+    "directions": [
+      -1,
+      1
+    ],
+    "thresholdsMeters": [
+      0,
+      0.001,
+      0.01,
+      0.05
+    ]
+  },
+  "scope": "Frozen one-dimensional interval representations; no time evolution, triangles, native spherical integration or production selection",
+  "caseCount": 72,
+  "coverage": {
+    "positiveStockFits": 560,
+    "zeroStockUnderdeterminedFits": 16,
+    "activeCapAtMatchedPoints": 0,
+    "knownBoundaryRoundoffOutOfCellCrossings": 8,
+    "dataOutOfCellCrossings": 0
+  },
+  "sourceFingerprints": [
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/reconstruction.rs",
+      "sha256": "4efad522cac69fefe9f3e77e1ea5cc6e2f13e86760092050006298ffaf01ff0b"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front.rs",
+      "sha256": "4f6d1e1405fd3198d5ad48fbe8be0b2c3f0eb07bc575cc203b39350e84e7a53f"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/reference.rs",
+      "sha256": "b4abd46b67f010efc783b17ba00389cf387f18026fd51bc8dc76f6675a04bf39"
+    },
+    {
+      "path": "native/examples/surface_planar_reconstruction_report.rs",
+      "sha256": "9cff23eef59f3dd4951c25ff83cbef7132462646e0776a6f068a3db7eb6829d9"
+    }
+  ],
+  "summary": [
+    {
+      "thresholdMeters": 0,
+      "controls": 72,
+      "knownPositiveStockFits": 64,
+      "dataPositiveStockFits": 64,
+      "maximumKnownSlopeAffineErrorMeters": 2.6645352591003757e-15,
+      "maximumDataSlopeAffineErrorMeters": 0.008000272489783633,
+      "maximumPointDepthLinearErrorMeters": 3.9999961853027344,
+      "maximumPointPressureLinearErrorMeters": 3.9999961853027344,
+      "maximumLocalStockRelativeResidual": 2.8102998936104428e-15,
+      "maximumDataSlopeRatio": 1.0487311972938267,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0,
+      "knownOutOfCellCrossings": 8,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "thresholdMeters": 0.001,
+      "controls": 72,
+      "knownPositiveStockFits": 72,
+      "dataPositiveStockFits": 72,
+      "maximumKnownSlopeAffineErrorMeters": 3.1086244689504383e-15,
+      "maximumDataSlopeAffineErrorMeters": 0.007978015337188449,
+      "maximumPointDepthLinearErrorMeters": 3.1727498963998735,
+      "maximumPointPressureLinearErrorMeters": 3.749107142857143,
+      "maximumLocalStockRelativeResidual": 1.7832067568040884e-15,
+      "maximumDataSlopeRatio": 1.0483435951440276,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0.0001,
+      "knownOutOfCellCrossings": 0,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "thresholdMeters": 0.01,
+      "controls": 72,
+      "knownPositiveStockFits": 72,
+      "dataPositiveStockFits": 72,
+      "maximumKnownSlopeAffineErrorMeters": 2.6645352591003757e-15,
+      "maximumDataSlopeAffineErrorMeters": 0.007742512343928254,
+      "maximumPointDepthLinearErrorMeters": 1.167564377314568,
+      "maximumPointPressureLinearErrorMeters": 1.4229192794557455,
+      "maximumLocalStockRelativeResidual": 1.4527621832500219e-15,
+      "maximumDataSlopeRatio": 1.0236505277987828,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0.000017688155628093607,
+      "knownOutOfCellCrossings": 0,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "thresholdMeters": 0.05,
+      "controls": 72,
+      "knownPositiveStockFits": 72,
+      "dataPositiveStockFits": 72,
+      "maximumKnownSlopeAffineErrorMeters": 2.3447910280083306e-13,
+      "maximumDataSlopeAffineErrorMeters": 0.0008802674435202107,
+      "maximumPointDepthLinearErrorMeters": 0.042686687569830184,
+      "maximumPointPressureLinearErrorMeters": 3.552713678800501e-15,
+      "maximumLocalStockRelativeResidual": 1.435911308979674e-16,
+      "maximumDataSlopeRatio": 1.000462698647566,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0.0000012331263676826007,
+      "knownOutOfCellCrossings": 0,
+      "dataOutOfCellCrossings": 0
+    }
+  ],
+  "widthComparisons": [
+    {
+      "widthMeters": 4,
+      "thresholdMeters": 0,
+      "controls": 18,
+      "knownPositiveStockFits": 16,
+      "dataPositiveStockFits": 16,
+      "maximumKnownSlopeAffineErrorMeters": 2.6645352591003757e-15,
+      "maximumDataSlopeAffineErrorMeters": 0.008000272489783633,
+      "maximumPointDepthLinearErrorMeters": 3.9999961853027344,
+      "maximumPointPressureLinearErrorMeters": 3.9999961853027344,
+      "maximumLocalStockRelativeResidual": 2.5699012877952564e-15,
+      "maximumDataSlopeRatio": 1.0487311972938267,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0,
+      "knownOutOfCellCrossings": 2,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "widthMeters": 4,
+      "thresholdMeters": 0.001,
+      "controls": 18,
+      "knownPositiveStockFits": 18,
+      "dataPositiveStockFits": 18,
+      "maximumKnownSlopeAffineErrorMeters": 3.1086244689504383e-15,
+      "maximumDataSlopeAffineErrorMeters": 0.007978015337188449,
+      "maximumPointDepthLinearErrorMeters": 3.1727498963998735,
+      "maximumPointPressureLinearErrorMeters": 3.749107142857143,
+      "maximumLocalStockRelativeResidual": 1.7832067568040884e-15,
+      "maximumDataSlopeRatio": 1.0483435951440276,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0.0001,
+      "knownOutOfCellCrossings": 0,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "widthMeters": 4,
+      "thresholdMeters": 0.01,
+      "controls": 18,
+      "knownPositiveStockFits": 18,
+      "dataPositiveStockFits": 18,
+      "maximumKnownSlopeAffineErrorMeters": 2.6645352591003757e-15,
+      "maximumDataSlopeAffineErrorMeters": 0.007742512343928254,
+      "maximumPointDepthLinearErrorMeters": 1.167564377314568,
+      "maximumPointPressureLinearErrorMeters": 1.4229192794557455,
+      "maximumLocalStockRelativeResidual": 1.1893568595807828e-15,
+      "maximumDataSlopeRatio": 1.0236505277987828,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0.000017688155628093607,
+      "knownOutOfCellCrossings": 0,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "widthMeters": 4,
+      "thresholdMeters": 0.05,
+      "controls": 18,
+      "knownPositiveStockFits": 18,
+      "dataPositiveStockFits": 18,
+      "maximumKnownSlopeAffineErrorMeters": 2.4868995751603507e-14,
+      "maximumDataSlopeAffineErrorMeters": 0.0008802674435202107,
+      "maximumPointDepthLinearErrorMeters": 0.042686687569830184,
+      "maximumPointPressureLinearErrorMeters": 3.552713678800501e-15,
+      "maximumLocalStockRelativeResidual": 1.435911308979674e-16,
+      "maximumDataSlopeRatio": 1.000462698647566,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0.0000012331263676826007,
+      "knownOutOfCellCrossings": 0,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "widthMeters": 2,
+      "thresholdMeters": 0,
+      "controls": 18,
+      "knownPositiveStockFits": 16,
+      "dataPositiveStockFits": 16,
+      "maximumKnownSlopeAffineErrorMeters": 1.5543122344752192e-15,
+      "maximumDataSlopeAffineErrorMeters": 0.004000136244890706,
+      "maximumPointDepthLinearErrorMeters": 1.9999980926513672,
+      "maximumPointPressureLinearErrorMeters": 1.9999980926513672,
+      "maximumLocalStockRelativeResidual": 2.8102998936104428e-15,
+      "maximumDataSlopeRatio": 1.0487311972938267,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0,
+      "knownOutOfCellCrossings": 2,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "widthMeters": 2,
+      "thresholdMeters": 0.001,
+      "controls": 18,
+      "knownPositiveStockFits": 18,
+      "dataPositiveStockFits": 18,
+      "maximumKnownSlopeAffineErrorMeters": 1.5543122344752192e-15,
+      "maximumDataSlopeAffineErrorMeters": 0.003999808785074435,
+      "maximumPointDepthLinearErrorMeters": 1.478768008895687,
+      "maximumPointPressureLinearErrorMeters": 1.8491071428571428,
+      "maximumLocalStockRelativeResidual": 1.6414455458489491e-15,
+      "maximumDataSlopeRatio": 1.0377327728300996,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0.0001,
+      "knownOutOfCellCrossings": 0,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "widthMeters": 2,
+      "thresholdMeters": 0.01,
+      "controls": 18,
+      "knownPositiveStockFits": 18,
+      "dataPositiveStockFits": 18,
+      "maximumKnownSlopeAffineErrorMeters": 1.5543122344752192e-15,
+      "maximumDataSlopeAffineErrorMeters": 0.003523420636924457,
+      "maximumPointDepthLinearErrorMeters": 0.5969783660973882,
+      "maximumPointPressureLinearErrorMeters": 0.4229192794557456,
+      "maximumLocalStockRelativeResidual": 1.4527621832500219e-15,
+      "maximumDataSlopeRatio": 1.0129279518620355,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0.000009102879589377444,
+      "knownOutOfCellCrossings": 0,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "widthMeters": 2,
+      "thresholdMeters": 0.05,
+      "controls": 18,
+      "knownPositiveStockFits": 18,
+      "dataPositiveStockFits": 18,
+      "maximumKnownSlopeAffineErrorMeters": 5.684341886080802e-14,
+      "maximumDataSlopeAffineErrorMeters": 0.00008872255163794307,
+      "maximumPointDepthLinearErrorMeters": 0.011544135949378642,
+      "maximumPointPressureLinearErrorMeters": 3.552713678800501e-15,
+      "maximumLocalStockRelativeResidual": 1.3895600438804707e-16,
+      "maximumDataSlopeRatio": 1.0001309160668972,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 3.349875233836508e-7,
+      "knownOutOfCellCrossings": 0,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "widthMeters": 1,
+      "thresholdMeters": 0,
+      "controls": 18,
+      "knownPositiveStockFits": 16,
+      "dataPositiveStockFits": 16,
+      "maximumKnownSlopeAffineErrorMeters": 6.661338147750939e-16,
+      "maximumDataSlopeAffineErrorMeters": 0.0020000681224457972,
+      "maximumPointDepthLinearErrorMeters": 0.9999990463256836,
+      "maximumPointPressureLinearErrorMeters": 0.9999990463256836,
+      "maximumLocalStockRelativeResidual": 2.764049238274412e-15,
+      "maximumDataSlopeRatio": 1.0487311972938256,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0,
+      "knownOutOfCellCrossings": 2,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "widthMeters": 1,
+      "thresholdMeters": 0.001,
+      "controls": 18,
+      "knownPositiveStockFits": 18,
+      "dataPositiveStockFits": 18,
+      "maximumKnownSlopeAffineErrorMeters": 6.72639027810007e-16,
+      "maximumDataSlopeAffineErrorMeters": 0.0019911275407332655,
+      "maximumPointDepthLinearErrorMeters": 0.6674079175426215,
+      "maximumPointPressureLinearErrorMeters": 0.8991071428571429,
+      "maximumLocalStockRelativeResidual": 1.5464553134475365e-15,
+      "maximumDataSlopeRatio": 1.0377327728301002,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0.00004444866198948276,
+      "knownOutOfCellCrossings": 0,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "widthMeters": 1,
+      "thresholdMeters": 0.01,
+      "controls": 18,
+      "knownPositiveStockFits": 18,
+      "dataPositiveStockFits": 18,
+      "maximumKnownSlopeAffineErrorMeters": 6.661338147750939e-16,
+      "maximumDataSlopeAffineErrorMeters": 0.002795090042769316,
+      "maximumPointDepthLinearErrorMeters": 0.2130024548921231,
+      "maximumPointPressureLinearErrorMeters": 0.05572981986393638,
+      "maximumLocalStockRelativeResidual": 1.3686910315996446e-15,
+      "maximumDataSlopeRatio": 1.008378960575698,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0.000006279744686168943,
+      "knownOutOfCellCrossings": 0,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "widthMeters": 1,
+      "thresholdMeters": 0.05,
+      "controls": 18,
+      "knownPositiveStockFits": 18,
+      "dataPositiveStockFits": 18,
+      "maximumKnownSlopeAffineErrorMeters": 7.460698725481052e-14,
+      "maximumDataSlopeAffineErrorMeters": 0.000013306685112013383,
+      "maximumPointDepthLinearErrorMeters": 0.002883397285398104,
+      "maximumPointPressureLinearErrorMeters": 3.552713678800501e-15,
+      "maximumLocalStockRelativeResidual": 1.3919176565213374e-16,
+      "maximumDataSlopeRatio": 1.0000357898664174,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 9.062976417430202e-8,
+      "knownOutOfCellCrossings": 0,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "widthMeters": 0.5,
+      "thresholdMeters": 0,
+      "controls": 18,
+      "knownPositiveStockFits": 16,
+      "dataPositiveStockFits": 16,
+      "maximumKnownSlopeAffineErrorMeters": 4.440892098500626e-16,
+      "maximumDataSlopeAffineErrorMeters": 0.001000034061222732,
+      "maximumPointDepthLinearErrorMeters": 0.4999995231628418,
+      "maximumPointPressureLinearErrorMeters": 0.4999995231628418,
+      "maximumLocalStockRelativeResidual": 2.741151664807573e-15,
+      "maximumDataSlopeRatio": 1.0487311972938251,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0,
+      "knownOutOfCellCrossings": 2,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "widthMeters": 0.5,
+      "thresholdMeters": 0.001,
+      "controls": 18,
+      "knownPositiveStockFits": 18,
+      "dataPositiveStockFits": 18,
+      "maximumKnownSlopeAffineErrorMeters": 4.505944228849756e-16,
+      "maximumDataSlopeAffineErrorMeters": 0.0009867869185625142,
+      "maximumPointDepthLinearErrorMeters": 0.2967009307953503,
+      "maximumPointPressureLinearErrorMeters": 0.4241071428571429,
+      "maximumLocalStockRelativeResidual": 1.635365681923577e-15,
+      "maximumDataSlopeRatio": 1.0377327728301,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0.000017740652802588884,
+      "knownOutOfCellCrossings": 0,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "widthMeters": 0.5,
+      "thresholdMeters": 0.01,
+      "controls": 18,
+      "knownPositiveStockFits": 18,
+      "dataPositiveStockFits": 18,
+      "maximumKnownSlopeAffineErrorMeters": 7.771561172376096e-16,
+      "maximumDataSlopeAffineErrorMeters": 0.001423607043814612,
+      "maximumPointDepthLinearErrorMeters": 0.031453575591453675,
+      "maximumPointPressureLinearErrorMeters": 2.220446049250313e-16,
+      "maximumLocalStockRelativeResidual": 1.557645570183409e-16,
+      "maximumDataSlopeRatio": 1.005352914441193,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 0.0000037378790033449055,
+      "knownOutOfCellCrossings": 0,
+      "dataOutOfCellCrossings": 0
+    },
+    {
+      "widthMeters": 0.5,
+      "thresholdMeters": 0.05,
+      "controls": 18,
+      "knownPositiveStockFits": 18,
+      "dataPositiveStockFits": 18,
+      "maximumKnownSlopeAffineErrorMeters": 2.3447910280083306e-13,
+      "maximumDataSlopeAffineErrorMeters": 0.000001632069611900988,
+      "maximumPointDepthLinearErrorMeters": 0.0007195692053549863,
+      "maximumPointPressureLinearErrorMeters": 3.552713678800501e-15,
+      "maximumLocalStockRelativeResidual": 1.3882635370313446e-16,
+      "maximumDataSlopeRatio": 1.000009337548002,
+      "maximumDataMatchedPointFluxErrorSquareMetersPerSecond": 2.3481973933890676e-8,
+      "knownOutOfCellCrossings": 0,
+      "dataOutOfCellCrossings": 0
+    }
+  ],
+  "supportPhases": [
+    {
+      "phase": 0,
+      "inputMeanDepthMeters": 0,
+      "fit": {
+        "crossingMeters": null,
+        "status": "zero-stock-underdetermined"
+      }
+    },
+    {
+      "phase": 9.5367431640625e-7,
+      "inputMeanDepthMeters": 2.2211004868439704e-11,
+      "fit": {
+        "affineExtensionCrossingMeters": 9.401579666385789e-7,
+        "affineExtensionSupportMeters": 9.401579666385789e-7,
+        "atExactContour": {
+          "depthMeters": 0,
+          "exactFluxSquareMetersPerSecond": 0,
+          "mobilityCapActive": false,
+          "normalSignedFluxErrorSquareMetersPerSecond": 0,
+          "originalLawFluxSquareMetersPerSecond": 0,
+          "pressureFluxSquareMetersPerSecond": 0
+        },
+        "crossingInsideSelectedCell": true,
+        "crossingMeters": 9.401579666385789e-7,
+        "normalSignedAffineCrossingErrorMeters": -1.3516349767671117e-8,
+        "pressureAtCenter": -0.000019576278873159784,
+        "pressureAtWetEndpoint": 3.6809658293266336e-11,
+        "pressureSlope": -0.00003915263136563616,
+        "reconstructedWetFraction": 9.401579666385789e-7,
+        "recoveredMeanDepthMeters": 2.2211004868439766e-11,
+        "relativeLocalStockResidual": 2.764049238274412e-15,
+        "slopeMagnitudeOverExact": 1.0487311972938256,
+        "status": "positive-stock-fit",
+        "uncappedPlanarSpeedMetersPerSecond": 0.10240757771248304,
+        "wetEndpointMeters": 0
+      }
+    },
+    {
+      "phase": 0.001,
+      "inputMeanDepthMeters": 4.58892479701184e-7,
+      "fit": {
+        "affineExtensionCrossingMeters": 0.0009859364122891058,
+        "affineExtensionSupportMeters": 0.0009859364122891058,
+        "atExactContour": {
+          "depthMeters": 0,
+          "exactFluxSquareMetersPerSecond": 0,
+          "mobilityCapActive": false,
+          "normalSignedFluxErrorSquareMetersPerSecond": 0,
+          "originalLawFluxSquareMetersPerSecond": 0,
+          "pressureFluxSquareMetersPerSecond": 0
+        },
+        "crossingInsideSelectedCell": true,
+        "crossingMeters": 0.0009859364122891058,
+        "normalSignedAffineCrossingErrorMeters": -0.000014063587710894197,
+        "pressureAtCenter": -0.000019530492704761614,
+        "pressureAtWetEndpoint": 3.858773792692248e-8,
+        "pressureSlope": -0.00003913816088537707,
+        "reconstructedWetFraction": 0.0009859364122891058,
+        "recoveredMeanDepthMeters": 4.588924797011849e-7,
+        "relativeLocalStockResidual": 1.9611838203226324e-15,
+        "slopeMagnitudeOverExact": 1.0483435951440285,
+        "status": "positive-stock-fit",
+        "uncappedPlanarSpeedMetersPerSecond": 0.10238865147778971,
+        "wetEndpointMeters": 0
+      }
+    },
+    {
+      "phase": 0.05,
+      "inputMeanDepthMeters": 0.00012269050294248937,
+      "fit": {
+        "affineExtensionCrossingMeters": 0.0494475006211125,
+        "affineExtensionSupportMeters": 0.0494475006211125,
+        "atExactContour": {
+          "depthMeters": 0,
+          "exactFluxSquareMetersPerSecond": 0,
+          "mobilityCapActive": false,
+          "normalSignedFluxErrorSquareMetersPerSecond": 0,
+          "originalLawFluxSquareMetersPerSecond": 0,
+          "pressureFluxSquareMetersPerSecond": 0
+        },
+        "crossingInsideSelectedCell": true,
+        "crossingMeters": 0.0494475006211125,
+        "normalSignedAffineCrossingErrorMeters": -0.0005524993788875027,
+        "pressureAtCenter": -0.000017455315527476774,
+        "pressureAtWetEndpoint": 0.0000019156962320184336,
+        "pressureSlope": -0.000038742023518990415,
+        "reconstructedWetFraction": 0.0494475006211125,
+        "recoveredMeanDepthMeters": 0.00012269050294248953,
+        "relativeLocalStockResidual": 1.325533125812174e-15,
+        "slopeMagnitudeOverExact": 1.0377327728301002,
+        "status": "positive-stock-fit",
+        "uncappedPlanarSpeedMetersPerSecond": 0.10186916966531631,
+        "wetEndpointMeters": 0
+      }
+    },
+    {
+      "phase": 0.2,
+      "inputMeanDepthMeters": 0.0008889895351636248,
+      "fit": {
+        "affineExtensionCrossingMeters": 0.19860239490416515,
+        "affineExtensionSupportMeters": 0.19860239490416515,
+        "atExactContour": {
+          "depthMeters": 0,
+          "exactFluxSquareMetersPerSecond": 0,
+          "mobilityCapActive": false,
+          "normalSignedFluxErrorSquareMetersPerSecond": 0,
+          "originalLawFluxSquareMetersPerSecond": 0,
+          "pressureFluxSquareMetersPerSecond": 0
+        },
+        "crossingInsideSelectedCell": true,
+        "crossingMeters": 0.19860239490416515,
+        "normalSignedAffineCrossingErrorMeters": -0.001397605095834864,
+        "pressureAtCenter": -0.000011518297187922573,
+        "pressureAtWetEndpoint": 0.000007589845997654699,
+        "pressureSlope": -0.00003821628637115455,
+        "reconstructedWetFraction": 0.19860239490416515,
+        "recoveredMeanDepthMeters": 0.000888989535163626,
+        "relativeLocalStockResidual": 1.3415482888834506e-15,
+        "slopeMagnitudeOverExact": 1.0236505277987824,
+        "status": "positive-stock-fit",
+        "uncappedPlanarSpeedMetersPerSecond": 0.10117561602475086,
+        "wetEndpointMeters": 0
+      }
+    },
+    {
+      "phase": 0.5,
+      "inputMeanDepthMeters": 0.00329141296364571,
+      "fit": {
+        "affineExtensionCrossingMeters": 0.4980769427780875,
+        "affineExtensionSupportMeters": 0.4980769427780875,
+        "atExactContour": {
+          "depthMeters": 0,
+          "exactFluxSquareMetersPerSecond": 0,
+          "mobilityCapActive": false,
+          "normalSignedFluxErrorSquareMetersPerSecond": 0,
+          "originalLawFluxSquareMetersPerSecond": 0,
+          "pressureFluxSquareMetersPerSecond": 0
+        },
+        "crossingInsideSelectedCell": true,
+        "crossingMeters": 0.4980769427780875,
+        "normalSignedAffineCrossingErrorMeters": -0.0019230572219124942,
+        "pressureAtCenter": -7.272228742259937e-8,
+        "pressureAtWetEndpoint": 0.000018835266147335407,
+        "pressureSlope": -0.00003781597686951601,
+        "reconstructedWetFraction": 0.4980769427780875,
+        "recoveredMeanDepthMeters": 0.003291412963645714,
+        "relativeLocalStockResidual": 1.1858517494032545e-15,
+        "slopeMagnitudeOverExact": 1.012927951862036,
+        "status": "positive-stock-fit",
+        "uncappedPlanarSpeedMetersPerSecond": 0.10064432183993471,
+        "wetEndpointMeters": 0
+      }
+    },
+    {
+      "phase": 0.8,
+      "inputMeanDepthMeters": 0.0064414308742453226,
+      "fit": {
+        "affineExtensionCrossingMeters": 0.7979999318775542,
+        "affineExtensionSupportMeters": 0.7979999318775542,
+        "atExactContour": {
+          "depthMeters": 0,
+          "exactFluxSquareMetersPerSecond": 0,
+          "mobilityCapActive": false,
+          "normalSignedFluxErrorSquareMetersPerSecond": 0,
+          "originalLawFluxSquareMetersPerSecond": 0,
+          "pressureFluxSquareMetersPerSecond": 0
+        },
+        "crossingInsideSelectedCell": true,
+        "crossingMeters": 0.7979999318775542,
+        "normalSignedAffineCrossingErrorMeters": -0.0020000681224457972,
+        "pressureAtCenter": 0.000011218549498177168,
+        "pressureAtWetEndpoint": 0.000030041623428923536,
+        "pressureSlope": -0.000037646147861492735,
+        "reconstructedWetFraction": 0.7979999318775542,
+        "recoveredMeanDepthMeters": 0.0064414308742453295,
+        "relativeLocalStockResidual": 1.0772286529769193e-15,
+        "slopeMagnitudeOverExact": 1.008378960575698,
+        "status": "positive-stock-fit",
+        "uncappedPlanarSpeedMetersPerSecond": 0.10041807409902355,
+        "wetEndpointMeters": 0
+      }
+    },
+    {
+      "phase": 0.95,
+      "inputMeanDepthMeters": 0.008233828278171195,
+      "fit": {
+        "affineExtensionCrossingMeters": 0.9480173190878067,
+        "affineExtensionSupportMeters": 0.9480173190878067,
+        "atExactContour": {
+          "depthMeters": 0,
+          "exactFluxSquareMetersPerSecond": 0,
+          "mobilityCapActive": false,
+          "normalSignedFluxErrorSquareMetersPerSecond": 0,
+          "originalLawFluxSquareMetersPerSecond": 0,
+          "pressureFluxSquareMetersPerSecond": 0
+        },
+        "crossingInsideSelectedCell": true,
+        "crossingMeters": 0.9480173190878067,
+        "normalSignedAffineCrossingErrorMeters": -0.0019826809121932243,
+        "pressureAtCenter": 0.000016842866916056864,
+        "pressureAtWetEndpoint": 0.000035639982784646574,
+        "pressureSlope": -0.00003759423173717942,
+        "reconstructedWetFraction": 0.9480173190878067,
+        "recoveredMeanDepthMeters": 0.008233828278171203,
+        "relativeLocalStockResidual": 1.0534124694923225e-15,
+        "slopeMagnitudeOverExact": 1.0069883501030201,
+        "status": "positive-stock-fit",
+        "uncappedPlanarSpeedMetersPerSecond": 0.10034880916597964,
+        "wetEndpointMeters": 0
+      }
+    },
+    {
+      "phase": 1,
+      "inputMeanDepthMeters": 0.00885982668360679,
+      "fit": {
+        "affineExtensionCrossingMeters": 0.9980272730952584,
+        "affineExtensionSupportMeters": 0.9980272730952584,
+        "atExactContour": {
+          "depthMeters": 0,
+          "exactFluxSquareMetersPerSecond": 0,
+          "mobilityCapActive": false,
+          "normalSignedFluxErrorSquareMetersPerSecond": 0,
+          "originalLawFluxSquareMetersPerSecond": 0,
+          "pressureFluxSquareMetersPerSecond": 0
+        },
+        "crossingInsideSelectedCell": true,
+        "crossingMeters": 0.9980272730952584,
+        "normalSignedAffineCrossingErrorMeters": -0.001972726904741595,
+        "pressureAtCenter": 0.00001871580577375622,
+        "pressureAtWetEndpoint": 0.00003750574639029794,
+        "pressureSlope": -0.000037579881233083434,
+        "reconstructedWetFraction": 0.9980272730952584,
+        "recoveredMeanDepthMeters": 0.008859826683606799,
+        "relativeLocalStockResidual": 9.789827374312755e-16,
+        "slopeMagnitudeOverExact": 1.006603961600449,
+        "status": "positive-stock-fit",
+        "uncappedPlanarSpeedMetersPerSecond": 0.10032965471885413,
+        "wetEndpointMeters": 0
+      }
+    }
+  ],
+  "validation": {
+    "native": {
+      "passed": 593,
+      "failed": 0,
+      "ignored": 1,
+      "targets": 110
+    },
+    "nodeFiles": 18,
+    "nodeSummary": [
+      "ℹ Finest-grid checkpoint bytes including newline: 32071164; display body bytes: 12125040.",
+      "ℹ tests 88",
+      "ℹ suites 0",
+      "ℹ pass 88",
+      "ℹ fail 0",
+      "ℹ cancelled 0",
+      "ℹ skipped 0",
+      "ℹ todo 0",
+      "ℹ duration_ms 19710.714281"
+    ],
+    "cliRefusals": 3,
+    "completeReportRepeat": true,
+    "dryReconstructionAtTruePositiveContours": 30,
+    "dryReconstructionThresholds": [
+      0.001
+    ],
+    "logs": [
+      {
+        "path": "artifacts/planar-reconstruction-npm-test-log.txt",
+        "sha256": "22be0a4695c7516bedcb2ba487eda7f069d465e23c0ca6c7e5f36e5ea9b44fb9"
+      },
+      {
+        "path": "artifacts/planar-reconstruction-final-clippy-log.txt",
+        "sha256": "bd6583b084874467afe0158b45df3ae0229e0e424a57ed71994645e8da5f789b"
+      },
+      {
+        "path": "artifacts/planar-reconstruction-final-release-tests.txt",
+        "sha256": "23888430ff23b1fd981ed78f128efe33eba6fe8ec62a6f884c92623daa5bd091"
+      }
+    ],
+    "finalReleaseLibraryPassed": 138,
+    "fullPackageRunScope": "Full package regression preceded final report-only wet-fraction/cap fields and golden assertions; unchanged reconstruction arithmetic and physics. Final library suite and strict all-target Clippy cover the final source."
+  },
+  "limitations": [
+    "Frozen intervals and manufactured exact averages, not native sample stocks or PDE evolution.",
+    "The exact contour selects each tested interval; orientation and fully-wet upstream stencil are prescribed.",
+    "Known-slope fits are algebra oracles, not a deployable slope inference.",
+    "Data mean-power slope is biased and can produce zero flux at true positive-depth contours.",
+    "Null cell-local crossings are not zero errors; affine extension error remains separate.",
+    "Support width/phase scaling is self-similar, not general convergence.",
+    "No production pairing, neighboring-face consistency, 2D geometry, seasonal selection or GUI changes."
+  ]
+}

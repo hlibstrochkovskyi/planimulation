@@ -1,0 +1,1525 @@
+{
+  "record": "surface-front-observation-audit-1",
+  "date": "2026-10-12",
+  "sourceCommit": "faedcbcb9f3a4181f72f2c82dfc8812772098676",
+  "scope": "Read-only analysis of retained endpoints; no new evolution or solver change.",
+  "radiusMeters": 1000,
+  "reference": {
+    "bands": 4096,
+    "timeStepSeconds": 0.125,
+    "selectedReportIndex": 7
+  },
+  "inputs": [
+    {
+      "path": "artifacts/element-front-v1.json",
+      "bytes": 95137928,
+      "sha256": "c0ebc9d0a9249360f940ae04d1eb8e64a60a292b927f62018f6259ce43d59651"
+    },
+    {
+      "path": "artifacts/incident-dry-final.json",
+      "bytes": 79542597,
+      "sha256": "c872e47fe5b1132ad2b4949debb153dc07dcd574619808f7aaf539c692e35535"
+    }
+  ],
+  "helpers": [
+    {
+      "temporaryPath": "/tmp/planimulation-front-observable-z3sL2T/mesh.rs",
+      "sha256": "dc7088301bc0d13444dc75298e33479abc1297945f8b3e1b6a008a372b453d84"
+    },
+    {
+      "temporaryPath": "/tmp/planimulation-front-observable-z3sL2T/audit.mjs",
+      "sha256": "0347bcb69d80c35a5fddc89fdd13d80f5ee2dcb521b9027e815aef00f3f28bbb"
+    }
+  ],
+  "outputs": [
+    {
+      "temporaryPath": "/tmp/planimulation-front-observable-z3sL2T/results.json",
+      "sha256": "24b7b52fe405fd01cec5189d627f72171a405a3508e3cd1d21f88e2f820b98b6"
+    },
+    {
+      "temporaryPath": "/tmp/planimulation-front-observable-z3sL2T/secondary.json",
+      "sha256": "df078dcd69dc623fba5ea60ec696c130a48ebb67f68a5aec03b07ebf98e58e00"
+    },
+    {
+      "temporaryPath": "/tmp/planimulation-front-observable-z3sL2T/endpoint-diagnostics.json",
+      "sha256": "116dea7246b6902b8ee2eff98f7e8f5d2c7354a56973d21ca8a0df6444c0e638"
+    }
+  ],
+  "assertions": {
+    "independentReferenceSampleArraysExactlyEqual": 6,
+    "elementNativeCrossingArraysExactlyEqual": 18,
+    "incidentNativeCrossingArraysExactlyEqual": 18,
+    "incidentReferenceSampleArraysExactlyEqual": 6,
+    "meshEdgeCountEqualsThreeRegionsMinusSix": true
+  },
+  "statistics": "Unweighted edge-crossing distributions. Values min, max, maxAbs, rms and median are metres; count is an edge count. Median is the sorted upper middle entry.",
+  "limitations": [
+    "Reference observation error is not a rigorous lower bound on native error.",
+    "Do not subtract extrema to estimate state or whole-boundary displacement.",
+    "Same-edge displacement covers only shared crossings; unmatched crossings have no correspondence here.",
+    "Original depth-linear measurements and negative remedy decision remain retained.",
+    "Pressure interpolation control is only an observer; no pressure-based conservative reconstruction was evolved.",
+    "Temporary helpers and large input artifacts are not part of an installed product or stable report API.",
+    "The main reviewer recompiled the geometry helper and reran analysis; no full PDE cohort or package regression suite was rerun."
+  ],
+  "cases": [
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "subdivision": 3,
+      "regions": 642,
+      "thresholdMeters": 0.001,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 90,
+        "min": 3.8349728077200496,
+        "max": 123.00393489788507,
+        "maxAbs": 123.00393489788507,
+        "rms": 75.58014186820057,
+        "median": 68.52205682193846
+      },
+      "nativeObservationErrorMeters": {
+        "count": 90,
+        "min": 112.63809520384504,
+        "max": 208.53377245328454,
+        "maxAbs": 208.53377245328454,
+        "rms": 147.13379314584327,
+        "median": 139.42267151352206
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 90,
+          "min": 4.22071456348716,
+          "max": 123.92724950511358,
+          "maxAbs": 123.92724950511358,
+          "rms": 76.11018147228476,
+          "median": 69.07496555982573
+        },
+        "nativeErrorMeters": {
+          "count": 90,
+          "min": 113.12895394661071,
+          "max": 229.60998158435507,
+          "maxAbs": 229.60998158435507,
+          "rms": 156.75488238838122,
+          "median": 150.8205560224789
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 22,
+        "min": -0.11154478077091134,
+        "max": 0.5495323437600952,
+        "maxAbs": 0.5495323437600952,
+        "rms": 0.38546547536307935,
+        "median": 0.29996633771345316
+      },
+      "nativeUnmatchedEdges": 68,
+      "referenceUnmatchedEdges": 68,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "level": 3,
+        "threshold": 0.001,
+        "worstEdge": [
+          52,
+          196
+        ],
+        "endpointDepth": [
+          0,
+          0.15214393391843045
+        ],
+        "endpointP": [
+          -0.27326652891267167,
+          -0.13795224212763368
+        ],
+        "referenceP": -0.15226420843148336,
+        "zeroEndpointCount": 90,
+        "tinyEndpointCount": 90,
+        "referenceCrossings": 90
+      }
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "subdivision": 3,
+      "regions": 642,
+      "thresholdMeters": 0.01,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 90,
+        "min": 0.76260773895509,
+        "max": 115.09402337464958,
+        "maxAbs": 115.09402337464958,
+        "rms": 71.13984723070635,
+        "median": 63.942221882487885
+      },
+      "nativeObservationErrorMeters": {
+        "count": 90,
+        "min": 60.84743356964406,
+        "max": 135.33852886921994,
+        "maxAbs": 135.33852886921994,
+        "rms": 91.54056574170481,
+        "median": 85.75822301736235
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 90,
+          "min": 4.592984768615027,
+          "max": 124.08254837299171,
+          "maxAbs": 124.08254837299171,
+          "rms": 76.32107985605232,
+          "median": 69.32819706020221
+        },
+        "nativeErrorMeters": {
+          "count": 90,
+          "min": 61.96291754775785,
+          "max": 159.23398035372193,
+          "maxAbs": 159.23398035372193,
+          "rms": 102.62219551540586,
+          "median": 88.46389545474808
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 54,
+        "min": -10.396711315585394,
+        "max": 3.7516274282087814,
+        "maxAbs": 10.396711315585394,
+        "rms": 6.78956000953137,
+        "median": -4.650072466549249
+      },
+      "nativeUnmatchedEdges": 36,
+      "referenceUnmatchedEdges": 36,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "level": 3,
+        "threshold": 0.01,
+        "worstEdge": [
+          52,
+          196
+        ],
+        "endpointDepth": [
+          0,
+          0.15214393391843045
+        ],
+        "endpointP": [
+          -0.27326652891267167,
+          -0.13795224212763368
+        ],
+        "referenceP": -0.15186945517639472,
+        "zeroEndpointCount": 90,
+        "tinyEndpointCount": 90,
+        "referenceCrossings": 90
+      }
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "subdivision": 3,
+      "regions": 642,
+      "thresholdMeters": 0.05,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 90,
+        "min": -13.516368996282058,
+        "max": 79.51189169834372,
+        "maxAbs": 79.51189169834372,
+        "rms": 51.45863625025535,
+        "median": 43.00542248548056
+      },
+      "nativeObservationErrorMeters": {
+        "count": 90,
+        "min": 17.75303409810647,
+        "max": 56.48295631801892,
+        "maxAbs": 56.48295631801892,
+        "rms": 32.15689440276063,
+        "median": 27.02548304392005
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 90,
+          "min": 4.584424324679759,
+          "max": 114.98822752475913,
+          "maxAbs": 114.98822752475913,
+          "rms": 72.76724843195956,
+          "median": 64.33085693898755
+        },
+        "nativeErrorMeters": {
+          "count": 90,
+          "min": 24.26031151928698,
+          "max": 84.49248704549217,
+          "maxAbs": 84.49248704549217,
+          "rms": 57.750911194216236,
+          "median": 58.93116757177719
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 54,
+        "min": -56.73444726714072,
+        "max": -3.2701890779534004,
+        "maxAbs": 56.73444726714072,
+        "rms": 37.02452283209235,
+        "median": -30.113385050446695
+      },
+      "nativeUnmatchedEdges": 36,
+      "referenceUnmatchedEdges": 36,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "level": 3,
+        "threshold": 0.05,
+        "worstEdge": [
+          52,
+          196
+        ],
+        "endpointDepth": [
+          0,
+          0.15214393391843045
+        ],
+        "endpointP": [
+          -0.27326652891267167,
+          -0.13795224212763368
+        ],
+        "referenceP": -0.15075326389829835,
+        "zeroEndpointCount": 90,
+        "tinyEndpointCount": 90,
+        "referenceCrossings": 90
+      }
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "subdivision": 4,
+      "regions": 2562,
+      "thresholdMeters": 0.001,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 182,
+        "min": 3.9632634508630638,
+        "max": 65.9342158366072,
+        "maxAbs": 65.9342158366072,
+        "rms": 35.805638258023144,
+        "median": 35.37156845830536
+      },
+      "nativeObservationErrorMeters": {
+        "count": 178,
+        "min": 54.051563369520885,
+        "max": 105.88417094091595,
+        "maxAbs": 105.88417094091595,
+        "rms": 81.10054840571284,
+        "median": 81.1652136379426
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 182,
+          "min": 4.220710015895968,
+          "max": 69.02578435843299,
+          "maxAbs": 69.02578435843299,
+          "rms": 36.284680483440454,
+          "median": 35.687961317823365
+        },
+        "nativeErrorMeters": {
+          "count": 178,
+          "min": 54.67841223496306,
+          "max": 122.38948096765023,
+          "maxAbs": 122.38948096765023,
+          "rms": 91.92977555452443,
+          "median": 86.54141797224612
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 10,
+        "min": 0.06784905373713457,
+        "max": 2.2535348177188386,
+        "maxAbs": 2.2535348177188386,
+        "rms": 1.4302619557375011,
+        "median": 0.24940122818883914
+      },
+      "nativeUnmatchedEdges": 168,
+      "referenceUnmatchedEdges": 172,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "level": 4,
+        "threshold": 0.001,
+        "worstEdge": [
+          197,
+          771
+        ],
+        "endpointDepth": [
+          0,
+          0.022367945562315656
+        ],
+        "endpointP": [
+          -0.22011702747329243,
+          -0.15154889513217457
+        ],
+        "referenceP": -0.15226420843148336,
+        "zeroEndpointCount": 182,
+        "tinyEndpointCount": 182,
+        "referenceCrossings": 182
+      }
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "subdivision": 4,
+      "regions": 2562,
+      "thresholdMeters": 0.01,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 182,
+        "min": 2.0449329310665565,
+        "max": 54.99316140157351,
+        "maxAbs": 54.99316140157351,
+        "rms": 32.085207851775785,
+        "median": 31.708523474724082
+      },
+      "nativeObservationErrorMeters": {
+        "count": 182,
+        "min": 29.795487471311112,
+        "max": 68.09693812628859,
+        "maxAbs": 68.09693812628859,
+        "rms": 44.17476680957601,
+        "median": 41.25230823150194
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 182,
+          "min": 4.592005024111945,
+          "max": 61.83918357760665,
+          "maxAbs": 61.83918357760665,
+          "rms": 35.93279645274879,
+          "median": 35.863595728636625
+        },
+        "nativeErrorMeters": {
+          "count": 182,
+          "min": 31.624984939798708,
+          "max": 85.15263301360343,
+          "maxAbs": 85.15263301360343,
+          "rms": 51.23440454981531,
+          "median": 46.84028215211211
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 98,
+        "min": -3.199726322465235,
+        "max": 19.261885490508448,
+        "maxAbs": 19.261885490508448,
+        "rms": 5.187909325111524,
+        "median": -1.4703656244050567
+      },
+      "nativeUnmatchedEdges": 84,
+      "referenceUnmatchedEdges": 84,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "level": 4,
+        "threshold": 0.01,
+        "worstEdge": [
+          181,
+          706
+        ],
+        "endpointDepth": [
+          0,
+          0.09299537868821763
+        ],
+        "endpointP": [
+          -0.21302286564912976,
+          -0.14741351351799614
+        ],
+        "referenceP": -0.15186945517639472,
+        "zeroEndpointCount": 182,
+        "tinyEndpointCount": 182,
+        "referenceCrossings": 182
+      }
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "subdivision": 4,
+      "regions": 2562,
+      "thresholdMeters": 0.05,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 182,
+        "min": -7.116956850751421,
+        "max": 33.425034384893635,
+        "maxAbs": 33.425034384893635,
+        "rms": 20.466099817276636,
+        "median": 15.350834243875955
+      },
+      "nativeObservationErrorMeters": {
+        "count": 182,
+        "min": 3.537263106845101,
+        "max": 25.745794765192453,
+        "maxAbs": 25.745794765192453,
+        "rms": 12.453321211565138,
+        "median": 9.952936443906824
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 182,
+          "min": -0.10569497142531858,
+          "max": 51.07224885529216,
+          "maxAbs": 51.07224885529216,
+          "rms": 32.1605798947406,
+          "median": 27.46718396317216
+        },
+        "nativeErrorMeters": {
+          "count": 182,
+          "min": 5.081254127963897,
+          "max": 44.938634945905335,
+          "maxAbs": 44.938634945905335,
+          "rms": 25.327297120558413,
+          "median": 19.769982356881542
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 170,
+        "min": -19.47806753615433,
+        "max": 11.033264089216788,
+        "maxAbs": 19.47806753615433,
+        "rms": 11.377320657507369,
+        "median": -5.031994191912581
+      },
+      "nativeUnmatchedEdges": 12,
+      "referenceUnmatchedEdges": 12,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "level": 4,
+        "threshold": 0.05,
+        "worstEdge": [
+          196,
+          769
+        ],
+        "endpointDepth": [
+          0.15214393391843045,
+          0
+        ],
+        "endpointP": [
+          -0.13795224212763368,
+          -0.20610261857508727
+        ],
+        "referenceP": -0.15075326389829835,
+        "zeroEndpointCount": 170,
+        "tinyEndpointCount": 170,
+        "referenceCrossings": 182
+      }
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "subdivision": 5,
+      "regions": 10242,
+      "thresholdMeters": 0.001,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 366,
+        "min": 1.9856538758049602,
+        "max": 32.61114782613017,
+        "maxAbs": 32.61114782613017,
+        "rms": 14.845588660595606,
+        "median": 11.870522078580414
+      },
+      "nativeObservationErrorMeters": {
+        "count": 362,
+        "min": 27.365710250632613,
+        "max": 47.50627903012084,
+        "maxAbs": 47.50627903012084,
+        "rms": 39.236395211161174,
+        "median": 41.290961816644824
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 366,
+          "min": 2.1433667717518645,
+          "max": 34.151174485855805,
+          "maxAbs": 34.151174485855805,
+          "rms": 15.219878737890916,
+          "median": 12.054819578921405
+        },
+        "nativeErrorMeters": {
+          "count": 362,
+          "min": 27.689513619612693,
+          "max": 58.98213139019725,
+          "maxAbs": 58.98213139019725,
+          "rms": 43.670020876717004,
+          "median": 44.64943574782798
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 16,
+        "min": 0.08733024391727184,
+        "max": 4.2597828871182575,
+        "maxAbs": 4.2597828871182575,
+        "rms": 2.186046428745441,
+        "median": 0.9516519178114358
+      },
+      "nativeUnmatchedEdges": 346,
+      "referenceUnmatchedEdges": 350,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "level": 5,
+        "threshold": 0.001,
+        "worstEdge": [
+          771,
+          3048
+        ],
+        "endpointDepth": [
+          0.022367945562315656,
+          0
+        ],
+        "endpointP": [
+          -0.15154889513217457,
+          -0.185946229584957
+        ],
+        "referenceP": -0.15226420843148336,
+        "zeroEndpointCount": 354,
+        "tinyEndpointCount": 366,
+        "referenceCrossings": 366
+      }
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "subdivision": 5,
+      "regions": 10242,
+      "thresholdMeters": 0.01,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 366,
+        "min": -0.426216068832419,
+        "max": 27.382164536617903,
+        "maxAbs": 27.382164536617903,
+        "rms": 12.73559903675506,
+        "median": 10.46080015013895
+      },
+      "nativeObservationErrorMeters": {
+        "count": 366,
+        "min": 12.543968330717803,
+        "max": 30.23506720328872,
+        "maxAbs": 30.23506720328872,
+        "rms": 19.683660655140482,
+        "median": 18.694567573764864
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 366,
+          "min": 0.07515512773514921,
+          "max": 30.418331286106604,
+          "maxAbs": 30.418331286106604,
+          "rms": 14.747965031781662,
+          "median": 12.261278468744363
+        },
+        "nativeErrorMeters": {
+          "count": 366,
+          "min": 12.548102670819627,
+          "max": 41.475106675777916,
+          "maxAbs": 41.475106675777916,
+          "rms": 24.412467834948018,
+          "median": 23.25644258807591
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 166,
+        "min": -1.8824076242245358,
+        "max": 7.790634444999167,
+        "maxAbs": 7.790634444999167,
+        "rms": 2.1288673230663115,
+        "median": 1.1653488626020003
+      },
+      "nativeUnmatchedEdges": 200,
+      "referenceUnmatchedEdges": 200,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "level": 5,
+        "threshold": 0.01,
+        "worstEdge": [
+          3005,
+          3291
+        ],
+        "endpointDepth": [
+          0,
+          0.12687809842273978
+        ],
+        "endpointP": [
+          -0.18196450534075204,
+          -0.14274881525288144
+        ],
+        "referenceP": -0.15186945517639472,
+        "zeroEndpointCount": 342,
+        "tinyEndpointCount": 354,
+        "referenceCrossings": 366
+      }
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "subdivision": 5,
+      "regions": 10242,
+      "thresholdMeters": 0.05,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 366,
+        "min": -5.57448640933611,
+        "max": 15.959421204470026,
+        "maxAbs": 15.959421204470026,
+        "rms": 6.53814621449052,
+        "median": 3.9856371711848304
+      },
+      "nativeObservationErrorMeters": {
+        "count": 366,
+        "min": -1.1228045822897492,
+        "max": 9.555393446813998,
+        "maxAbs": 9.555393446813998,
+        "rms": 3.8667297511290015,
+        "median": 2.699399132879199
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 366,
+          "min": -0.08647275494078066,
+          "max": 27.114829224476942,
+          "maxAbs": 27.114829224476942,
+          "rms": 13.097461836306964,
+          "median": 11.4497221544958
+        },
+        "nativeErrorMeters": {
+          "count": 366,
+          "min": -0.09239104376401741,
+          "max": 21.254870979113385,
+          "maxAbs": 21.254870979113385,
+          "rms": 10.452546742304605,
+          "median": 8.829359567952277
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 366,
+        "min": -10.60294048297794,
+        "max": 4.6063059738308265,
+        "maxAbs": 10.60294048297794,
+        "rms": 3.343722373251028,
+        "median": -1.4838052566112925
+      },
+      "nativeUnmatchedEdges": 0,
+      "referenceUnmatchedEdges": 0,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "level": 5,
+        "threshold": 0.05,
+        "worstEdge": [
+          3005,
+          3291
+        ],
+        "endpointDepth": [
+          0,
+          0.12687809842273978
+        ],
+        "endpointP": [
+          -0.18196450534075204,
+          -0.14274881525288144
+        ],
+        "referenceP": -0.15075326389829835,
+        "zeroEndpointCount": 330,
+        "tinyEndpointCount": 342,
+        "referenceCrossings": 366
+      }
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "subdivision": 3,
+      "regions": 642,
+      "thresholdMeters": 0.001,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 90,
+        "min": 0.18623613377499737,
+        "max": 152.00135718431972,
+        "maxAbs": 152.00135718431972,
+        "rms": 77.16140065814318,
+        "median": 60.76956816280044
+      },
+      "nativeObservationErrorMeters": {
+        "count": 89,
+        "min": 116.89432609123473,
+        "max": 233.94863776780616,
+        "maxAbs": 233.94863776780616,
+        "rms": 172.7901672159118,
+        "median": 168.73010382383825
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 90,
+          "min": 0.515293352582713,
+          "max": 153.51548796467495,
+          "maxAbs": 153.51548796467495,
+          "rms": 77.82760490329844,
+          "median": 61.208703501052895
+        },
+        "nativeErrorMeters": {
+          "count": 89,
+          "min": 117.08464389959428,
+          "max": 255.9091482177196,
+          "maxAbs": 255.9091482177196,
+          "rms": 184.48352755557354,
+          "median": 174.0722347296133
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 4,
+        "min": 0.23683312228328646,
+        "max": 1.3338267648337343,
+        "maxAbs": 1.3338267648337343,
+        "rms": 0.7343984209341619,
+        "median": 0.5134485822331225
+      },
+      "nativeUnmatchedEdges": 85,
+      "referenceUnmatchedEdges": 86,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "level": 3,
+        "threshold": 0.001,
+        "worstEdge": [
+          475,
+          477
+        ],
+        "endpointDepth": [
+          0.10782320370490146,
+          0
+        ],
+        "endpointP": [
+          -0.14560933682835903,
+          -0.3016065627816723
+        ],
+        "referenceP": -0.15226420843148336,
+        "zeroEndpointCount": 84,
+        "tinyEndpointCount": 87,
+        "referenceCrossings": 90
+      }
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "subdivision": 3,
+      "regions": 642,
+      "thresholdMeters": 0.01,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 90,
+        "min": -2.3821141595659068,
+        "max": 138.77900291238876,
+        "maxAbs": 138.77900291238876,
+        "rms": 71.55893891054869,
+        "median": 57.21681114677324
+      },
+      "nativeObservationErrorMeters": {
+        "count": 89,
+        "min": 71.87115809912514,
+        "max": 156.52438491655695,
+        "maxAbs": 156.52438491655695,
+        "rms": 115.5121097765266,
+        "median": 112.14883139248788
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 90,
+          "min": 0.8871809968706845,
+          "max": 153.28086954170783,
+          "maxAbs": 153.28086954170783,
+          "rms": 77.90243733973152,
+          "median": 61.564983289034814
+        },
+        "nativeErrorMeters": {
+          "count": 89,
+          "min": 75.32538228161334,
+          "max": 193.9367693949936,
+          "maxAbs": 193.9367693949936,
+          "rms": 134.12184271209557,
+          "median": 129.83765634161747
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 32,
+        "min": -5.215278326607731,
+        "max": 16.15308761431722,
+        "maxAbs": 16.15308761431722,
+        "rms": 5.040461631951469,
+        "median": 2.4110157078793826
+      },
+      "nativeUnmatchedEdges": 57,
+      "referenceUnmatchedEdges": 58,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "level": 3,
+        "threshold": 0.01,
+        "worstEdge": [
+          475,
+          477
+        ],
+        "endpointDepth": [
+          0.10782320370490146,
+          0
+        ],
+        "endpointP": [
+          -0.14560933682835903,
+          -0.3016065627816723
+        ],
+        "referenceP": -0.15186945517639472,
+        "zeroEndpointCount": 84,
+        "tinyEndpointCount": 87,
+        "referenceCrossings": 90
+      }
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "subdivision": 3,
+      "regions": 642,
+      "thresholdMeters": 0.05,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 90,
+        "min": -14.775722894197818,
+        "max": 94.38144488032107,
+        "maxAbs": 94.38144488032107,
+        "rms": 48.20324658344481,
+        "median": 36.809200176504795
+      },
+      "nativeObservationErrorMeters": {
+        "count": 88,
+        "min": 18.09109439888679,
+        "max": 80.14752860362529,
+        "maxAbs": 80.14752860362529,
+        "rms": 49.39410736985298,
+        "median": 45.757442537963655
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 90,
+          "min": -0.01624064234051481,
+          "max": 134.58926814251205,
+          "maxAbs": 134.58926814251205,
+          "rms": 70.41200343518479,
+          "median": 55.89890395622166
+        },
+        "nativeErrorMeters": {
+          "count": 88,
+          "min": 24.605439549156173,
+          "max": 127.45515684993913,
+          "maxAbs": 127.45515684993913,
+          "rms": 72.13204326081228,
+          "median": 71.31576775048165
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 72,
+        "min": -29.05819405950183,
+        "max": 20.316645821404133,
+        "maxAbs": 29.05819405950183,
+        "rms": 11.932316144939037,
+        "median": 2.0759493776263405
+      },
+      "nativeUnmatchedEdges": 16,
+      "referenceUnmatchedEdges": 18,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "level": 3,
+        "threshold": 0.05,
+        "worstEdge": [
+          114,
+          452
+        ],
+        "endpointDepth": [
+          0.1575122566171724,
+          0
+        ],
+        "endpointP": [
+          -0.13677699595517082,
+          -0.2927617845375164
+        ],
+        "referenceP": -0.15075326389829835,
+        "zeroEndpointCount": 81,
+        "tinyEndpointCount": 84,
+        "referenceCrossings": 90
+      }
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "subdivision": 4,
+      "regions": 2562,
+      "thresholdMeters": 0.001,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 180,
+        "min": 0.29702038863499425,
+        "max": 74.110866567344,
+        "maxAbs": 74.110866567344,
+        "rms": 38.265133201877745,
+        "median": 31.88887392904638
+      },
+      "nativeObservationErrorMeters": {
+        "count": 177,
+        "min": 57.90745593069735,
+        "max": 116.60059789318522,
+        "maxAbs": 116.60059789318522,
+        "rms": 86.54498631929553,
+        "median": 86.80855265876785
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 180,
+          "min": 0.5152670406591842,
+          "max": 75.5360716189113,
+          "maxAbs": 75.5360716189113,
+          "rms": 38.71564241630485,
+          "median": 32.19814096801588
+        },
+        "nativeErrorMeters": {
+          "count": 177,
+          "min": 57.92685471166514,
+          "max": 130.02885600613047,
+          "maxAbs": 130.02885600613047,
+          "rms": 93.48260836806199,
+          "median": 93.42504333746105
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 13,
+        "min": 0.2712871685637275,
+        "max": 1.4898437169981182,
+        "maxAbs": 1.4898437169981182,
+        "rms": 0.7797418622141631,
+        "median": 0.5793589963465351
+      },
+      "nativeUnmatchedEdges": 164,
+      "referenceUnmatchedEdges": 167,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "level": 4,
+        "threshold": 0.001,
+        "worstEdge": [
+          1759,
+          1760
+        ],
+        "endpointDepth": [
+          0,
+          0.0543912702124002
+        ],
+        "endpointP": [
+          -0.22642113289374552,
+          -0.15053478112427338
+        ],
+        "referenceP": -0.15226420843148336,
+        "zeroEndpointCount": 163,
+        "tinyEndpointCount": 171,
+        "referenceCrossings": 180
+      }
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "subdivision": 4,
+      "regions": 2562,
+      "thresholdMeters": 0.01,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 180,
+        "min": -1.3809589510038744,
+        "max": 66.34734697657207,
+        "maxAbs": 66.34734697657207,
+        "rms": 34.59085237810314,
+        "median": 29.539120501938854
+      },
+      "nativeObservationErrorMeters": {
+        "count": 178,
+        "min": 29.957230554445992,
+        "max": 75.11458420321992,
+        "maxAbs": 75.11458420321992,
+        "rms": 53.538598830804915,
+        "median": 52.51920063943039
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 180,
+          "min": 0.8815122886340898,
+          "max": 74.44521511027568,
+          "maxAbs": 74.44521511027568,
+          "rms": 38.793036910038616,
+          "median": 32.543882897894115
+        },
+        "nativeErrorMeters": {
+          "count": 178,
+          "min": 30.12832406403487,
+          "max": 95.51580071739974,
+          "maxAbs": 95.51580071739974,
+          "rms": 63.21511217104868,
+          "median": 59.92505537984671
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 72,
+        "min": -2.3304278779547882,
+        "max": 8.819729057186976,
+        "maxAbs": 8.819729057186976,
+        "rms": 2.77290543308111,
+        "median": 1.128611973249427
+      },
+      "nativeUnmatchedEdges": 106,
+      "referenceUnmatchedEdges": 108,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "level": 4,
+        "threshold": 0.01,
+        "worstEdge": [
+          475,
+          1849
+        ],
+        "endpointDepth": [
+          0.10782320370490146,
+          0
+        ],
+        "endpointP": [
+          -0.14560933682835903,
+          -0.22436953780736874
+        ],
+        "referenceP": -0.15186945517639472,
+        "zeroEndpointCount": 163,
+        "tinyEndpointCount": 171,
+        "referenceCrossings": 180
+      }
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "subdivision": 4,
+      "regions": 2562,
+      "thresholdMeters": 0.05,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 180,
+        "min": -10.382305200305586,
+        "max": 40.3310617819681,
+        "maxAbs": 40.3310617819681,
+        "rms": 19.74485778576496,
+        "median": 17.3249101082964
+      },
+      "nativeObservationErrorMeters": {
+        "count": 178,
+        "min": 5.785187900838817,
+        "max": 30.96083539114103,
+        "maxAbs": 30.96083539114103,
+        "rms": 19.130419505557263,
+        "median": 19.055943387160433
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 180,
+          "min": -0.05332903717936155,
+          "max": 61.53405865958117,
+          "maxAbs": 61.53405865958117,
+          "rms": 32.21356715091111,
+          "median": 29.92252187090849
+        },
+        "nativeErrorMeters": {
+          "count": 178,
+          "min": 7.75839167209913,
+          "max": 54.54276126287794,
+          "maxAbs": 54.54276126287794,
+          "rms": 31.77003391852169,
+          "median": 31.564287378445634
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 151,
+        "min": -17.061521079311028,
+        "max": 23.273681111030122,
+        "maxAbs": 23.273681111030122,
+        "rms": 6.846710545214083,
+        "median": 0.04387632311209089
+      },
+      "nativeUnmatchedEdges": 27,
+      "referenceUnmatchedEdges": 29,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "level": 4,
+        "threshold": 0.05,
+        "worstEdge": [
+          114,
+          1752
+        ],
+        "endpointDepth": [
+          0.1575122566171724,
+          0
+        ],
+        "endpointP": [
+          -0.13677699595517082,
+          -0.21546994515773235
+        ],
+        "referenceP": -0.15075326389829835,
+        "zeroEndpointCount": 154,
+        "tinyEndpointCount": 162,
+        "referenceCrossings": 180
+      }
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "subdivision": 5,
+      "regions": 10242,
+      "thresholdMeters": 0.001,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 358,
+        "min": 0.003037392024118901,
+        "max": 37.09723068778392,
+        "maxAbs": 37.09723068778392,
+        "rms": 17.60147589452521,
+        "median": 13.244354417135007
+      },
+      "nativeObservationErrorMeters": {
+        "count": 358,
+        "min": 27.288197076968945,
+        "max": 54.73630873688617,
+        "maxAbs": 54.73630873688617,
+        "rms": 41.07992671805514,
+        "median": 39.85009307277387
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 358,
+          "min": 0.0062157738995871625,
+          "max": 37.90476120703823,
+          "maxAbs": 37.90476120703823,
+          "rms": 17.913167508590284,
+          "median": 13.434292079632426
+        },
+        "nativeErrorMeters": {
+          "count": 358,
+          "min": 27.309536281630464,
+          "max": 63.93164878261448,
+          "maxAbs": 63.93164878261448,
+          "rms": 44.737069405277836,
+          "median": 43.33784991748879
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 22,
+        "min": 0.09988669640281778,
+        "max": 5.53608334525002,
+        "maxAbs": 5.53608334525002,
+        "rms": 1.275807614599392,
+        "median": 0.3955850548604811
+      },
+      "nativeUnmatchedEdges": 336,
+      "referenceUnmatchedEdges": 336,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "level": 5,
+        "threshold": 0.001,
+        "worstEdge": [
+          476,
+          7236
+        ],
+        "endpointDepth": [
+          0,
+          0.0486555942674734
+        ],
+        "endpointP": [
+          -0.18961314130439605,
+          -0.15081357459557404
+        ],
+        "referenceP": -0.15226420843148336,
+        "zeroEndpointCount": 302,
+        "tinyEndpointCount": 337,
+        "referenceCrossings": 358
+      }
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "subdivision": 5,
+      "regions": 10242,
+      "thresholdMeters": 0.01,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 358,
+        "min": -1.1105485631270895,
+        "max": 30.829399768814937,
+        "maxAbs": 30.829399768814937,
+        "rms": 15.427847606547251,
+        "median": 11.880536456444046
+      },
+      "nativeObservationErrorMeters": {
+        "count": 356,
+        "min": 13.506291591291797,
+        "max": 33.85922774161676,
+        "maxAbs": 33.85922774161676,
+        "rms": 24.22527290180784,
+        "median": 23.76606940687487
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 358,
+          "min": 0.07988018038518341,
+          "max": 37.32375318288184,
+          "maxAbs": 37.32375318288184,
+          "rms": 17.86104863756003,
+          "median": 13.73959917642864
+        },
+        "nativeErrorMeters": {
+          "count": 356,
+          "min": 13.750533498125384,
+          "max": 44.50464242537411,
+          "maxAbs": 44.50464242537411,
+          "rms": 29.390716110023146,
+          "median": 28.480294999036147
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 156,
+        "min": -1.8472263715152426,
+        "max": 8.802111221408948,
+        "maxAbs": 8.802111221408948,
+        "rms": 1.5498408480054866,
+        "median": 0.6190931798260024
+      },
+      "nativeUnmatchedEdges": 200,
+      "referenceUnmatchedEdges": 202,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "level": 5,
+        "threshold": 0.01,
+        "worstEdge": [
+          1598,
+          6318
+        ],
+        "endpointDepth": [
+          0,
+          0.08105678937331981
+        ],
+        "endpointP": [
+          -0.18699971965980755,
+          -0.1486155865375155
+        ],
+        "referenceP": -0.15186945517639472,
+        "zeroEndpointCount": 299,
+        "tinyEndpointCount": 334,
+        "referenceCrossings": 358
+      }
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "subdivision": 5,
+      "regions": 10242,
+      "thresholdMeters": 0.05,
+      "sampleMaxDeltaMeters": 0,
+      "nativeReconstructionMaxPDelta": 0,
+      "referenceObservationErrorMeters": {
+        "count": 358,
+        "min": -6.7015580905038785,
+        "max": 16.26558688510915,
+        "maxAbs": 16.26558688510915,
+        "rms": 7.380445314962852,
+        "median": 3.4381884033658494
+      },
+      "nativeObservationErrorMeters": {
+        "count": 358,
+        "min": -0.7269265198217578,
+        "max": 11.733541133252867,
+        "maxAbs": 11.733541133252867,
+        "rms": 5.477972219953859,
+        "median": 4.542160830752318
+      },
+      "pressureInterpolationControl": {
+        "referenceErrorMeters": {
+          "count": 358,
+          "min": -0.094925488026254,
+          "max": 28.19850538018054,
+          "maxAbs": 28.19850538018054,
+          "rms": 13.873359868078495,
+          "median": 10.635337498118291
+        },
+        "nativeErrorMeters": {
+          "count": 358,
+          "min": -0.19049923438330119,
+          "max": 22.535497608663356,
+          "maxAbs": 22.535497608663356,
+          "rms": 11.477196293017643,
+          "median": 9.354333078856802
+        }
+      },
+      "sharedEdgeNativeMinusReferenceMeters": {
+        "count": 328,
+        "min": -10.45925733132158,
+        "max": 8.414599678757684,
+        "maxAbs": 10.45925733132158,
+        "rms": 4.077578955330935,
+        "median": 0.17910976999835349
+      },
+      "nativeUnmatchedEdges": 30,
+      "referenceUnmatchedEdges": 30,
+      "referenceEndpointDiagnostics": {
+        "axis": [
+          1,
+          2,
+          3
+        ],
+        "level": 5,
+        "threshold": 0.05,
+        "worstEdge": [
+          475,
+          7275
+        ],
+        "endpointDepth": [
+          0.10782320370490146,
+          0
+        ],
+        "endpointP": [
+          -0.14560933682835903,
+          -0.1851466169890063
+        ],
+        "referenceP": -0.15075326389829835,
+        "zeroEndpointCount": 277,
+        "tinyEndpointCount": 311,
+        "referenceCrossings": 358
+      }
+    }
+  ]
+}

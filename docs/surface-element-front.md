@@ -54,7 +54,7 @@ Maximum native local/global inventory residuals are `4.369e-16`/`1.249e-17` unde
 
 **Do not select this candidate as the dry-front remedy or promote it to a seasonal model.** This is a negative front-remedy result despite better smooth frozen work and lower evolving RMS. It does not reject all element methods or identify the exact cause of the remaining contour error.
 
-Next, measure the unchanged graph-edge contour observable on independently sampled reference depths. This separates an observation/mesh contribution from state-evolution error before changing reconstruction or constitutive arithmetic. It is a proposed control, not a completed diagnosis; original contour results must remain retained. Smooth evolving wet comparisons and terrain/rest/disconnected-water/barrier checks are not replaced by that control.
+The [subsequent observation audit](surface-front-observation.md) now measures the unchanged graph-edge contour observable on independently sampled reference depths. Its substantial mesh/observation contribution does not qualify this evolving state or change the retained negative remedy decision. Original contour results remain retained. Smooth evolving wet comparisons and terrain/rest/disconnected-water/barrier checks are not replaced by that control.
 
 ## Validation and reproduction limits
 
