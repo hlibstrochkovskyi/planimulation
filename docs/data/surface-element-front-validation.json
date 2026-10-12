@@ -1,0 +1,2334 @@
+{
+  "recordVersion": "surface-element-front-validation-1",
+  "date": "2026-10-12",
+  "scope": "Unchanged dry-cap witness. Eighteen q=0 trajectories; q=1 at levels 3/5 and q=2 at level 3, finest caller cadence. No fine-mesh q=2 certificate, wet evolution, terrain barriers, seasonal selection or calibration.",
+  "modelVersion": "regional-surface-flat-element-mobility-candidate-1",
+  "reportVersion": "surface-flat-element-front-report-1",
+  "resolvedControls": {
+    "radiusMeters": 1000,
+    "roughness": 0.04,
+    "capSquareMetersPerSecond": 1000,
+    "endSeconds": 300,
+    "baseSteps": 2836,
+    "thresholdsMeters": [
+      0.001,
+      0.01,
+      0.05
+    ]
+  },
+  "exactControls": {
+    "unchangedReferenceControls": 16,
+    "unchangedInitialAndReferenceArrays": 24,
+    "unchangedCompleteIncidentControls": 2
+  },
+  "spatialComparisons": [
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "coarseSubdivision": 3,
+      "fineOverCoarseRmsError": 0.5251681497430253,
+      "fineSubdivision": 4
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "coarseSubdivision": 4,
+      "fineOverCoarseRmsError": 0.46995493202718014,
+      "fineSubdivision": 5
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "coarseSubdivision": 3,
+      "fineOverCoarseRmsError": 0.5590104019266802,
+      "fineSubdivision": 4
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "coarseSubdivision": 4,
+      "fineOverCoarseRmsError": 0.541984452216106,
+      "fineSubdivision": 5
+    }
+  ],
+  "timeComparisons": [
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "lastTimeDifferenceOverFineRmsError": 0.00015933452090315087,
+      "quadratureSubdivisions": 0,
+      "subdivision": 3,
+      "successiveTimeDifferenceRatio": 0.4999315748049468,
+      "timeRefinementRmsDifferencesMeters": [
+        0.000007255553492784263,
+        0.000003627280283729169
+      ]
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "lastTimeDifferenceOverFineRmsError": 0.000436223531477645,
+      "quadratureSubdivisions": 0,
+      "subdivision": 4,
+      "successiveTimeDifferenceRatio": 0.4998616488922712,
+      "timeRefinementRmsDifferencesMeters": [
+        0.000010433472783611856,
+        0.000005215292909288857
+      ]
+    },
+    {
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "lastTimeDifferenceOverFineRmsError": 0.00127359408224048,
+      "quadratureSubdivisions": 0,
+      "subdivision": 5,
+      "successiveTimeDifferenceRatio": 0.4996799652145072,
+      "timeRefinementRmsDifferencesMeters": [
+        0.000014320722299945993,
+        0.0000071557780206836315
+      ]
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "lastTimeDifferenceOverFineRmsError": 0.00024620221100794804,
+      "quadratureSubdivisions": 0,
+      "subdivision": 3,
+      "successiveTimeDifferenceRatio": 0.499931747439969,
+      "timeRefinementRmsDifferencesMeters": [
+        0.000006985179880544838,
+        0.0000034921131838632948
+      ]
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "lastTimeDifferenceOverFineRmsError": 0.000636944471355987,
+      "quadratureSubdivisions": 0,
+      "subdivision": 4,
+      "successiveTimeDifferenceRatio": 0.49987005665671747,
+      "timeRefinementRmsDifferencesMeters": [
+        0.00001010324074584005,
+        0.000005050307524039522
+      ]
+    },
+    {
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "lastTimeDifferenceOverFineRmsError": 0.0016327527515155112,
+      "quadratureSubdivisions": 0,
+      "subdivision": 5,
+      "successiveTimeDifferenceRatio": 0.49974822938182634,
+      "timeRefinementRmsDifferencesMeters": [
+        0.000014040165921998093,
+        0.000007016548059745605
+      ]
+    }
+  ],
+  "quadratureComparisons": [
+    {
+      "areaWeightedEndpointDifferenceRmsMeters": 0.0000010214048293276685,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "contourExtremaDifferences": [
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.005783591218147421,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.005783591218147421,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.0006423092713276901,
+          "thresholdMeters": 0.001
+        },
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.0018019026391016268,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.0018019026391016268,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.0019444112246986833,
+          "thresholdMeters": 0.01
+        },
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.0011488765381244548,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.0011488765381244548,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.003885992659657944,
+          "thresholdMeters": 0.05
+        }
+      ],
+      "endpointDifferenceOverSecondReferenceRmsError": 0.000044867438978050954,
+      "firstQuadratureSubdivisions": 0,
+      "secondOverFirstReferenceRmsError": 0.9999893843832037,
+      "secondQuadratureSubdivisions": 1,
+      "subdivision": 3
+    },
+    {
+      "areaWeightedEndpointDifferenceRmsMeters": 8.315712930689327e-8,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "contourExtremaDifferences": [
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.0004978246523990038,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.0004978246523990038,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.00007581385075638991,
+          "thresholdMeters": 0.001
+        },
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.00014485879916037447,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.00014485879916037447,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.0001641431661667525,
+          "thresholdMeters": 0.01
+        },
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.00010158511631885858,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.00010158511631885858,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.0003076367296479532,
+          "thresholdMeters": 0.05
+        }
+      ],
+      "endpointDifferenceOverSecondReferenceRmsError": 0.0000036528623263978956,
+      "firstQuadratureSubdivisions": 1,
+      "secondOverFirstReferenceRmsError": 0.9999989825159825,
+      "secondQuadratureSubdivisions": 2,
+      "subdivision": 3
+    },
+    {
+      "areaWeightedEndpointDifferenceRmsMeters": 2.425797690772886e-7,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "contourExtremaDifferences": [
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.0002561868783743648,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.0002561868783743648,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.0006865642374620506,
+          "thresholdMeters": 0.001
+        },
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.0013242064058616165,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.0013242064058616165,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.0021992427223782585,
+          "thresholdMeters": 0.01
+        },
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.00033363203200131863,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.00033363203200131863,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.0003474656877777704,
+          "thresholdMeters": 0.05
+        }
+      ],
+      "endpointDifferenceOverSecondReferenceRmsError": 0.00004317476818052079,
+      "firstQuadratureSubdivisions": 0,
+      "secondOverFirstReferenceRmsError": 0.9999970906977578,
+      "secondQuadratureSubdivisions": 1,
+      "subdivision": 5
+    },
+    {
+      "areaWeightedEndpointDifferenceRmsMeters": 8.757766178242558e-7,
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "contourExtremaDifferences": [
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.004730062886039832,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.004730062886039832,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.0066776416833818075,
+          "thresholdMeters": 0.001
+        },
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.0028808123646513195,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.0028808123646513195,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.003429456324695934,
+          "thresholdMeters": 0.01
+        },
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.0021713672475556223,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.0021713672475556223,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.004240865286718076,
+          "thresholdMeters": 0.05
+        }
+      ],
+      "endpointDifferenceOverSecondReferenceRmsError": 0.00006174328494647022,
+      "firstQuadratureSubdivisions": 0,
+      "secondOverFirstReferenceRmsError": 1.0000166977644835,
+      "secondQuadratureSubdivisions": 1,
+      "subdivision": 3
+    },
+    {
+      "areaWeightedEndpointDifferenceRmsMeters": 7.247061389667429e-8,
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "contourExtremaDifferences": [
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.00044302047052724447,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.00044302047052724447,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.0007584211865179213,
+          "thresholdMeters": 0.001
+        },
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.00023408966345073168,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.00023408966345073168,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.0003141418401071405,
+          "thresholdMeters": 0.01
+        },
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.0001624992453912455,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.0001624992453912455,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.0003541967235065613,
+          "thresholdMeters": 0.05
+        }
+      ],
+      "endpointDifferenceOverSecondReferenceRmsError": 0.0000051092554790564085,
+      "firstQuadratureSubdivisions": 1,
+      "secondOverFirstReferenceRmsError": 1.0000016272011922,
+      "secondQuadratureSubdivisions": 2,
+      "subdivision": 3
+    },
+    {
+      "areaWeightedEndpointDifferenceRmsMeters": 2.7046369856658915e-7,
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "contourExtremaDifferences": [
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.0013172150183962117,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.0013172150183962117,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.001158985733162865,
+          "thresholdMeters": 0.001
+        },
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.0007727812079139085,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.0007727812079139085,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.0004361148324694142,
+          "thresholdMeters": 0.01
+        },
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.00022314716718874195,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.00022314716718874195,
+          "secondMinusFirstMinimumSignedErrorMeters": 0.0009365863362642557,
+          "thresholdMeters": 0.05
+        }
+      ],
+      "endpointDifferenceOverSecondReferenceRmsError": 0.00006293586474644357,
+      "firstQuadratureSubdivisions": 0,
+      "secondOverFirstReferenceRmsError": 1.0000177275298856,
+      "secondQuadratureSubdivisions": 1,
+      "subdivision": 5
+    }
+  ],
+  "incidentComparisons": [
+    {
+      "areaWeightedEndpointDifferenceRmsMeters": 0.0016411826544508255,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "contourExtremaDifferences": [
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 0.7477885312234847,
+          "secondMinusFirstMaximumSignedErrorMeters": 0.7477885312234847,
+          "secondMinusFirstMinimumSignedErrorMeters": 1.6362131226796954,
+          "thresholdMeters": 0.001
+        },
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 4.539454908825121,
+          "secondMinusFirstMaximumSignedErrorMeters": 4.539454908825121,
+          "secondMinusFirstMinimumSignedErrorMeters": 1.8875266283038261,
+          "thresholdMeters": 0.01
+        },
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 3.21297151067923,
+          "secondMinusFirstMaximumSignedErrorMeters": 3.21297151067923,
+          "secondMinusFirstMinimumSignedErrorMeters": 2.8211698782125705,
+          "thresholdMeters": 0.05
+        }
+      ],
+      "endpointDifferenceOverSecondReferenceRmsError": 0.292099686511042,
+      "secondOverFirstReferenceRmsError": 0.837579518843928,
+      "subdivision": 5
+    },
+    {
+      "areaWeightedEndpointDifferenceRmsMeters": 0.0014599199413086997,
+      "axis": [
+        1,
+        2,
+        3
+      ],
+      "contourExtremaDifferences": [
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 2.3542300448202695,
+          "secondMinusFirstMaximumSignedErrorMeters": 2.3542300448202695,
+          "secondMinusFirstMinimumSignedErrorMeters": 2.756532053729721,
+          "thresholdMeters": 0.001
+        },
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 2.975044099414962,
+          "secondMinusFirstMaximumSignedErrorMeters": 2.975044099414962,
+          "secondMinusFirstMinimumSignedErrorMeters": 1.764564363640586,
+          "thresholdMeters": 0.01
+        },
+        {
+          "secondMinusFirstMaximumAbsoluteErrorMeters": 2.6481455032771883,
+          "secondMinusFirstMaximumSignedErrorMeters": 2.6481455032771883,
+          "secondMinusFirstMinimumSignedErrorMeters": 2.1951917919562636,
+          "thresholdMeters": 0.05
+        }
+      ],
+      "endpointDifferenceOverSecondReferenceRmsError": 0.3397237902266385,
+      "secondOverFirstReferenceRmsError": 0.897558992024731,
+      "subdivision": 5
+    }
+  ],
+  "candidateCases": [
+    {
+      "subdivision": 3,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 2836,
+      "stepSeconds": 0.10578279266572638,
+      "areaWeightedRmsErrorMeters": 0.022765689684569976,
+      "maximumErrorMeters": 0.10248253680057451,
+      "referenceSpatialDifferenceRmsMeters": 0.000007322043259202031,
+      "referenceTemporalDifferenceRmsMeters": 0.000016184238794139904,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.00032162624373136087,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.000710904831717406,
+      "relativeInitialQuadratureDiscrepancy": -0.011904756896353062,
+      "initiallyDryHalfInventoryKilograms": 348554071.83619666,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 1.3179278185483956e-16,
+      "maximumGlobalRelativeResidual": 9.699337734607033e-18,
+      "coefficientNodeEvaluationUpperBound": 43560960,
+      "resolution": {
+        "deferredRequests": 578775,
+        "maximumDeferredRequestKilograms": 1.2033447488187123e-11,
+        "summedDeferredRequestKilograms": 2.424013377900388e-8
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 208.50524585392495,
+          "maximumSignedCrossingErrorMeters": 208.50524585392495,
+          "minimumSignedCrossingErrorMeters": 112.63482884117026,
+          "nativeThresholdWetAreaSquareMeters": 7874499.752505806,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 90
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 135.32491665887102,
+          "maximumSignedCrossingErrorMeters": 135.32491665887102,
+          "minimumSignedCrossingErrorMeters": 60.83447705641687,
+          "nativeThresholdWetAreaSquareMeters": 7492785.134555554,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 90
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 56.47684481986781,
+          "maximumSignedCrossingErrorMeters": 56.47684481986781,
+          "minimumSignedCrossingErrorMeters": 17.723307975848314,
+          "nativeThresholdWetAreaSquareMeters": 7492785.134555554,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 90
+        }
+      ]
+    },
+    {
+      "subdivision": 3,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 5672,
+      "stepSeconds": 0.05289139633286319,
+      "areaWeightedRmsErrorMeters": 0.02276535426895538,
+      "maximumErrorMeters": 0.10246456609957202,
+      "referenceSpatialDifferenceRmsMeters": 0.000007322043259202031,
+      "referenceTemporalDifferenceRmsMeters": 0.000016184238794139904,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.00032163098244365746,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.0007109153059045516,
+      "relativeInitialQuadratureDiscrepancy": -0.011904756896353062,
+      "initiallyDryHalfInventoryKilograms": 348557276.0704912,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 1.5210036742881497e-16,
+      "maximumGlobalRelativeResidual": 1.0004785042770415e-17,
+      "coefficientNodeEvaluationUpperBound": 87121920,
+      "resolution": {
+        "deferredRequests": 1153248,
+        "maximumDeferredRequestKilograms": 6.68975808706721e-12,
+        "summedDeferredRequestKilograms": 4.0956888930637076e-8
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 208.52426950521763,
+          "maximumSignedCrossingErrorMeters": 208.52426950521763,
+          "minimumSignedCrossingErrorMeters": 112.6370062192894,
+          "nativeThresholdWetAreaSquareMeters": 7874499.752505806,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 90
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 135.33399303347716,
+          "maximumSignedCrossingErrorMeters": 135.33399303347716,
+          "minimumSignedCrossingErrorMeters": 60.84311515916596,
+          "nativeThresholdWetAreaSquareMeters": 7492785.134555554,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 90
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 56.480919150221794,
+          "maximumSignedCrossingErrorMeters": 56.480919150221794,
+          "minimumSignedCrossingErrorMeters": 17.743128498604488,
+          "nativeThresholdWetAreaSquareMeters": 7492785.134555554,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 90
+        }
+      ]
+    },
+    {
+      "subdivision": 3,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 11344,
+      "stepSeconds": 0.026445698166431594,
+      "areaWeightedRmsErrorMeters": 0.02276518775196216,
+      "maximumErrorMeters": 0.10245558205229661,
+      "referenceSpatialDifferenceRmsMeters": 0.000007322043259202031,
+      "referenceTemporalDifferenceRmsMeters": 0.000016184238794139904,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.000321633335027994,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.0007109205059266408,
+      "relativeInitialQuadratureDiscrepancy": -0.011904756896353062,
+      "initiallyDryHalfInventoryKilograms": 348558877.6234914,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 1.447291088520699e-16,
+      "maximumGlobalRelativeResidual": 1.0213272057744696e-17,
+      "coefficientNodeEvaluationUpperBound": 174243840,
+      "resolution": {
+        "deferredRequests": 2389497,
+        "maximumDeferredRequestKilograms": 3.344879043533605e-12,
+        "summedDeferredRequestKilograms": 4.782213758453033e-8
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 208.53377245328454,
+          "maximumSignedCrossingErrorMeters": 208.53377245328454,
+          "minimumSignedCrossingErrorMeters": 112.63809520384504,
+          "nativeThresholdWetAreaSquareMeters": 7874499.752505806,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 90
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 135.33852886921994,
+          "maximumSignedCrossingErrorMeters": 135.33852886921994,
+          "minimumSignedCrossingErrorMeters": 60.84743356964406,
+          "nativeThresholdWetAreaSquareMeters": 7492785.134555554,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 90
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 56.48295631801892,
+          "maximumSignedCrossingErrorMeters": 56.48295631801892,
+          "minimumSignedCrossingErrorMeters": 17.75303409810647,
+          "nativeThresholdWetAreaSquareMeters": 7492785.134555554,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 90
+        }
+      ]
+    },
+    {
+      "subdivision": 4,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 2836,
+      "stepSeconds": 0.10578279266572638,
+      "areaWeightedRmsErrorMeters": 0.011960337372199705,
+      "maximumErrorMeters": 0.08742746803500019,
+      "referenceSpatialDifferenceRmsMeters": 0.000218734648856948,
+      "referenceTemporalDifferenceRmsMeters": 0.0002625083241046609,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.018288334354628583,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.02194823740631501,
+      "relativeInitialQuadratureDiscrepancy": -0.004519957218717051,
+      "initiallyDryHalfInventoryKilograms": 321815197.8745541,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 2.739188399069411e-16,
+      "maximumGlobalRelativeResidual": 3.6262033795217504e-18,
+      "coefficientNodeEvaluationUpperBound": 174243840,
+      "resolution": {
+        "deferredRequests": 1254145,
+        "maximumDeferredRequestKilograms": 4.473341291977651e-12,
+        "summedDeferredRequestKilograms": 6.340936090645356e-10
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 105.81923306195984,
+          "maximumSignedCrossingErrorMeters": 105.81923306195984,
+          "minimumSignedCrossingErrorMeters": 54.03844524588352,
+          "nativeThresholdWetAreaSquareMeters": 7643891.03813097,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 178
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 68.06532900680584,
+          "maximumSignedCrossingErrorMeters": 68.06532900680584,
+          "minimumSignedCrossingErrorMeters": 29.716016664371736,
+          "nativeThresholdWetAreaSquareMeters": 7389259.023326134,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 182
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 25.731231222568596,
+          "maximumSignedCrossingErrorMeters": 25.731231222568596,
+          "minimumSignedCrossingErrorMeters": 3.500193374521565,
+          "nativeThresholdWetAreaSquareMeters": 7251748.244452179,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 182
+        }
+      ]
+    },
+    {
+      "subdivision": 4,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 5672,
+      "stepSeconds": 0.05289139633286319,
+      "areaWeightedRmsErrorMeters": 0.011957143665711812,
+      "maximumErrorMeters": 0.08738018158649953,
+      "referenceSpatialDifferenceRmsMeters": 0.000218734648856948,
+      "referenceTemporalDifferenceRmsMeters": 0.0002625083241046609,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.018293219097483066,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.02195409969501556,
+      "relativeInitialQuadratureDiscrepancy": -0.004519957218717051,
+      "initiallyDryHalfInventoryKilograms": 321820839.4226405,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 2.6983800842926767e-16,
+      "maximumGlobalRelativeResidual": 6.516031830644939e-18,
+      "coefficientNodeEvaluationUpperBound": 348487680,
+      "resolution": {
+        "deferredRequests": 2548686,
+        "maximumDeferredRequestKilograms": 4.473341291977651e-12,
+        "summedDeferredRequestKilograms": 4.709571825500087e-9
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 105.86255863678362,
+          "maximumSignedCrossingErrorMeters": 105.86255863678362,
+          "minimumSignedCrossingErrorMeters": 54.0471934279283,
+          "nativeThresholdWetAreaSquareMeters": 7643891.03813097,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 178
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 68.08641124498793,
+          "maximumSignedCrossingErrorMeters": 68.08641124498793,
+          "minimumSignedCrossingErrorMeters": 29.769032283092134,
+          "nativeThresholdWetAreaSquareMeters": 7389259.023326134,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 182
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 25.740941961413633,
+          "maximumSignedCrossingErrorMeters": 25.740941961413633,
+          "minimumSignedCrossingErrorMeters": 3.5249141603634904,
+          "nativeThresholdWetAreaSquareMeters": 7251748.244452179,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 182
+        }
+      ]
+    },
+    {
+      "subdivision": 4,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 11344,
+      "stepSeconds": 0.026445698166431594,
+      "areaWeightedRmsErrorMeters": 0.011955551530250548,
+      "maximumErrorMeters": 0.0873565460825315,
+      "referenceSpatialDifferenceRmsMeters": 0.000218734648856948,
+      "referenceTemporalDifferenceRmsMeters": 0.0002625083241046609,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.018295655227907673,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.02195702334939956,
+      "relativeInitialQuadratureDiscrepancy": -0.004519957218717051,
+      "initiallyDryHalfInventoryKilograms": 321823659.0829635,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 2.742074567170473e-16,
+      "maximumGlobalRelativeResidual": 7.04336963570609e-18,
+      "coefficientNodeEvaluationUpperBound": 696975360,
+      "resolution": {
+        "deferredRequests": 5238171,
+        "maximumDeferredRequestKilograms": 3.288334675924857e-12,
+        "summedDeferredRequestKilograms": 5.1571953889439356e-8
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 105.88417094091595,
+          "maximumSignedCrossingErrorMeters": 105.88417094091595,
+          "minimumSignedCrossingErrorMeters": 54.051563369520885,
+          "nativeThresholdWetAreaSquareMeters": 7643891.03813097,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 178
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 68.09693812628859,
+          "maximumSignedCrossingErrorMeters": 68.09693812628859,
+          "minimumSignedCrossingErrorMeters": 29.795487471311112,
+          "nativeThresholdWetAreaSquareMeters": 7389259.023326134,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 182
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 25.745794765192453,
+          "maximumSignedCrossingErrorMeters": 25.745794765192453,
+          "minimumSignedCrossingErrorMeters": 3.537263106845323,
+          "nativeThresholdWetAreaSquareMeters": 7251748.244452179,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 182
+        }
+      ]
+    },
+    {
+      "subdivision": 5,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 2836,
+      "stepSeconds": 0.10578279266572638,
+      "areaWeightedRmsErrorMeters": 0.005627774756705822,
+      "maximumErrorMeters": 0.05679798323095986,
+      "referenceSpatialDifferenceRmsMeters": 0.00010952012427300184,
+      "referenceTemporalDifferenceRmsMeters": 0.00016026618591895327,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.019460644572262282,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.028477718609471136,
+      "relativeInitialQuadratureDiscrepancy": -0.0017039169293772947,
+      "initiallyDryHalfInventoryKilograms": 302929524.15777904,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 3.65386547602691e-16,
+      "maximumGlobalRelativeResidual": 2.1788978444370353e-18,
+      "coefficientNodeEvaluationUpperBound": 696975360,
+      "resolution": {
+        "deferredRequests": 2569441,
+        "maximumDeferredRequestKilograms": 5.825269071455118e-13,
+        "summedDeferredRequestKilograms": 5.8185266153239676e-11
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 47.494578901834174,
+          "maximumSignedCrossingErrorMeters": 47.494578901834174,
+          "minimumSignedCrossingErrorMeters": 27.33996219556234,
+          "nativeThresholdWetAreaSquareMeters": 7433308.712175817,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 362
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 30.162198852391242,
+          "maximumSignedCrossingErrorMeters": 30.162198852391242,
+          "minimumSignedCrossingErrorMeters": 12.461047573916195,
+          "nativeThresholdWetAreaSquareMeters": 7313125.774477283,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 366
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 9.52116918267043,
+          "maximumSignedCrossingErrorMeters": 9.52116918267043,
+          "minimumSignedCrossingErrorMeters": -1.1564564123829335,
+          "nativeThresholdWetAreaSquareMeters": 7221402.558407767,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 366
+        }
+      ]
+    },
+    {
+      "subdivision": 5,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 5672,
+      "stepSeconds": 0.05289139633286319,
+      "areaWeightedRmsErrorMeters": 0.005621626181709545,
+      "maximumErrorMeters": 0.056703643346313656,
+      "referenceSpatialDifferenceRmsMeters": 0.00010952012427300184,
+      "referenceTemporalDifferenceRmsMeters": 0.00016026618591895327,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.01948192938003156,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.028508865715830306,
+      "relativeInitialQuadratureDiscrepancy": -0.0017039169293772947,
+      "initiallyDryHalfInventoryKilograms": 302936177.76150405,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 4.36842422175621e-16,
+      "maximumGlobalRelativeResidual": 4.471688423325373e-18,
+      "coefficientNodeEvaluationUpperBound": 1393950720,
+      "resolution": {
+        "deferredRequests": 5212084,
+        "maximumDeferredRequestKilograms": 6.076168039726897e-13,
+        "summedDeferredRequestKilograms": 3.9904787279881053e-10
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 47.502387969396096,
+          "maximumSignedCrossingErrorMeters": 47.502387969396096,
+          "minimumSignedCrossingErrorMeters": 27.357147978660954,
+          "nativeThresholdWetAreaSquareMeters": 7433308.712175817,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 362
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 30.210839192527317,
+          "maximumSignedCrossingErrorMeters": 30.210839192527317,
+          "minimumSignedCrossingErrorMeters": 12.516395674350145,
+          "nativeThresholdWetAreaSquareMeters": 7313125.774477283,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 366
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 9.544003531144929,
+          "maximumSignedCrossingErrorMeters": 9.544003531144929,
+          "minimumSignedCrossingErrorMeters": -1.1340175264702435,
+          "nativeThresholdWetAreaSquareMeters": 7221402.558407767,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 366
+        }
+      ]
+    },
+    {
+      "subdivision": 5,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 11344,
+      "stepSeconds": 0.026445698166431594,
+      "areaWeightedRmsErrorMeters": 0.005618570406746346,
+      "maximumErrorMeters": 0.056656533676059384,
+      "referenceSpatialDifferenceRmsMeters": 0.00010952012427300184,
+      "referenceTemporalDifferenceRmsMeters": 0.00016026618591895327,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.01949252502762954,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.028524370848235347,
+      "relativeInitialQuadratureDiscrepancy": -0.0017039169293772947,
+      "initiallyDryHalfInventoryKilograms": 302939502.8443145,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 4.107633501426275e-16,
+      "maximumGlobalRelativeResidual": 3.2757930671285046e-18,
+      "coefficientNodeEvaluationUpperBound": 2787901440,
+      "resolution": {
+        "deferredRequests": 10566656,
+        "maximumDeferredRequestKilograms": 1.1637760342451174e-12,
+        "summedDeferredRequestKilograms": 1.013156779245031e-9
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 47.50627903012084,
+          "maximumSignedCrossingErrorMeters": 47.50627903012084,
+          "minimumSignedCrossingErrorMeters": 27.365710250632613,
+          "nativeThresholdWetAreaSquareMeters": 7433308.712175817,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 362
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 30.23506720328872,
+          "maximumSignedCrossingErrorMeters": 30.23506720328872,
+          "minimumSignedCrossingErrorMeters": 12.543968330717803,
+          "nativeThresholdWetAreaSquareMeters": 7313125.774477283,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 366
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 9.555393446813998,
+          "maximumSignedCrossingErrorMeters": 9.555393446813998,
+          "minimumSignedCrossingErrorMeters": -1.1228045822897492,
+          "nativeThresholdWetAreaSquareMeters": 7221402.558407767,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 366
+        }
+      ]
+    },
+    {
+      "subdivision": 3,
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 2836,
+      "stepSeconds": 0.10578279266572638,
+      "areaWeightedRmsErrorMeters": 0.01418280712963467,
+      "maximumErrorMeters": 0.0757230176521706,
+      "referenceSpatialDifferenceRmsMeters": 0.00007914328433827746,
+      "referenceTemporalDifferenceRmsMeters": 0.00006836411770032976,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.005580227074576039,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.004820210630763244,
+      "relativeInitialQuadratureDiscrepancy": 0.00007335150987598763,
+      "initiallyDryHalfInventoryKilograms": 265853611.54049015,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 1.309297462308304e-16,
+      "maximumGlobalRelativeResidual": 5.731668516664402e-18,
+      "coefficientNodeEvaluationUpperBound": 43560960,
+      "resolution": {
+        "deferredRequests": 501698,
+        "maximumDeferredRequestKilograms": 3.4743767410087216e-23,
+        "summedDeferredRequestKilograms": 2.4623130574456344e-21
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 233.92089507813242,
+          "maximumSignedCrossingErrorMeters": 233.92089507813242,
+          "minimumSignedCrossingErrorMeters": 116.84626914928641,
+          "nativeThresholdWetAreaSquareMeters": 8082176.827719092,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 89
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 156.50136507964675,
+          "maximumSignedCrossingErrorMeters": 156.50136507964675,
+          "minimumSignedCrossingErrorMeters": 71.8508310057151,
+          "nativeThresholdWetAreaSquareMeters": 7748213.0367715405,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 89
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 80.12706580597495,
+          "maximumSignedCrossingErrorMeters": 80.12706580597495,
+          "minimumSignedCrossingErrorMeters": 18.06016029621116,
+          "nativeThresholdWetAreaSquareMeters": 7374513.102259247,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 88
+        }
+      ]
+    },
+    {
+      "subdivision": 3,
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 5672,
+      "stepSeconds": 0.05289139633286319,
+      "areaWeightedRmsErrorMeters": 0.014183549934646206,
+      "maximumErrorMeters": 0.0757434283878964,
+      "referenceSpatialDifferenceRmsMeters": 0.00007914328433827746,
+      "referenceTemporalDifferenceRmsMeters": 0.00006836411770032976,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.0055799348331657,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.00481995819208395,
+      "relativeInitialQuadratureDiscrepancy": 0.00007335150987598763,
+      "initiallyDryHalfInventoryKilograms": 265861392.65447575,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 1.7216990163221224e-16,
+      "maximumGlobalRelativeResidual": 7.660332530274706e-18,
+      "coefficientNodeEvaluationUpperBound": 87121920,
+      "resolution": {
+        "deferredRequests": 1091996,
+        "maximumDeferredRequestKilograms": 1.8871859414466346e-23,
+        "summedDeferredRequestKilograms": 8.864850034415488e-21
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 233.93939569693867,
+          "maximumSignedCrossingErrorMeters": 233.93939569693867,
+          "minimumSignedCrossingErrorMeters": 116.87832040320556,
+          "nativeThresholdWetAreaSquareMeters": 8082176.827719092,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 89
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 156.51671464349624,
+          "maximumSignedCrossingErrorMeters": 156.51671464349624,
+          "minimumSignedCrossingErrorMeters": 71.86438387087324,
+          "nativeThresholdWetAreaSquareMeters": 7748213.0367715405,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 89
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 80.14070961371833,
+          "maximumSignedCrossingErrorMeters": 80.14070961371833,
+          "minimumSignedCrossingErrorMeters": 18.080785378053797,
+          "nativeThresholdWetAreaSquareMeters": 7374513.102259247,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 88
+        }
+      ]
+    },
+    {
+      "subdivision": 3,
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 11344,
+      "stepSeconds": 0.026445698166431594,
+      "areaWeightedRmsErrorMeters": 0.014183922920783845,
+      "maximumErrorMeters": 0.0757536320053206,
+      "referenceSpatialDifferenceRmsMeters": 0.00007914328433827746,
+      "referenceTemporalDifferenceRmsMeters": 0.00006836411770032976,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.005579788100956754,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.004819831444526192,
+      "relativeInitialQuadratureDiscrepancy": 0.00007335150987598763,
+      "initiallyDryHalfInventoryKilograms": 265865282.2888808,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 1.4855808998899866e-16,
+      "maximumGlobalRelativeResidual": 6.957574184507726e-18,
+      "coefficientNodeEvaluationUpperBound": 174243840,
+      "resolution": {
+        "deferredRequests": 2095290,
+        "maximumDeferredRequestKilograms": 9.133979358928491e-23,
+        "summedDeferredRequestKilograms": 3.2495270093475546e-20
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 233.94863776780616,
+          "maximumSignedCrossingErrorMeters": 233.94863776780616,
+          "minimumSignedCrossingErrorMeters": 116.89432609123473,
+          "nativeThresholdWetAreaSquareMeters": 8082176.827719092,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 89
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 156.52438491655695,
+          "maximumSignedCrossingErrorMeters": 156.52438491655695,
+          "minimumSignedCrossingErrorMeters": 71.87115809912514,
+          "nativeThresholdWetAreaSquareMeters": 7748213.0367715405,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 89
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 80.14752860362529,
+          "maximumSignedCrossingErrorMeters": 80.14752860362529,
+          "minimumSignedCrossingErrorMeters": 18.09109439888679,
+          "nativeThresholdWetAreaSquareMeters": 7374513.102259247,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 88
+        }
+      ]
+    },
+    {
+      "subdivision": 4,
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 2836,
+      "stepSeconds": 0.10578279266572638,
+      "areaWeightedRmsErrorMeters": 0.007930129423343426,
+      "maximumErrorMeters": 0.07151961134546288,
+      "referenceSpatialDifferenceRmsMeters": 0.00012778046219542692,
+      "referenceTemporalDifferenceRmsMeters": 0.00008238831058893857,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.01611328836819328,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.010389276919796197,
+      "relativeInitialQuadratureDiscrepancy": 0.0000790916046663624,
+      "initiallyDryHalfInventoryKilograms": 274749097.0457929,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 2.995465728829613e-16,
+      "maximumGlobalRelativeResidual": 3.007696079962383e-18,
+      "coefficientNodeEvaluationUpperBound": 174243840,
+      "resolution": {
+        "deferredRequests": 1124825,
+        "maximumDeferredRequestKilograms": 1.3402709907676652e-24,
+        "summedDeferredRequestKilograms": 5.126573932050958e-22
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 116.56252732017536,
+          "maximumSignedCrossingErrorMeters": 116.56252732017536,
+          "minimumSignedCrossingErrorMeters": 57.882220925101976,
+          "nativeThresholdWetAreaSquareMeters": 7647407.184495057,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 177
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 75.08281157518314,
+          "maximumSignedCrossingErrorMeters": 75.08281157518314,
+          "minimumSignedCrossingErrorMeters": 29.932765419433238,
+          "nativeThresholdWetAreaSquareMeters": 7478522.1639965875,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 178
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 30.944135679936036,
+          "maximumSignedCrossingErrorMeters": 30.944135679936036,
+          "minimumSignedCrossingErrorMeters": 5.743104293461032,
+          "nativeThresholdWetAreaSquareMeters": 7291751.924641006,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 178
+        }
+      ]
+    },
+    {
+      "subdivision": 4,
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 5672,
+      "stepSeconds": 0.05289139633286319,
+      "areaWeightedRmsErrorMeters": 0.00792934599109885,
+      "maximumErrorMeters": 0.07146937574928461,
+      "referenceSpatialDifferenceRmsMeters": 0.00012778046219542692,
+      "referenceTemporalDifferenceRmsMeters": 0.00008238831058893857,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.0161148803872183,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.010390303397206304,
+      "relativeInitialQuadratureDiscrepancy": 0.0000790916046663624,
+      "initiallyDryHalfInventoryKilograms": 274756807.6642045,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 3.048444663688034e-16,
+      "maximumGlobalRelativeResidual": 4.480628544502523e-18,
+      "coefficientNodeEvaluationUpperBound": 348487680,
+      "resolution": {
+        "deferredRequests": 2370560,
+        "maximumDeferredRequestKilograms": 7.814647877640852e-24,
+        "summedDeferredRequestKilograms": 1.9184928017763123e-21
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 116.58792562218956,
+          "maximumSignedCrossingErrorMeters": 116.58792562218956,
+          "minimumSignedCrossingErrorMeters": 57.899052235621085,
+          "nativeThresholdWetAreaSquareMeters": 7647407.184495057,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 177
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 75.10400263936879,
+          "maximumSignedCrossingErrorMeters": 75.10400263936879,
+          "minimumSignedCrossingErrorMeters": 29.949079316523132,
+          "nativeThresholdWetAreaSquareMeters": 7478522.1639965875,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 178
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 30.95527118566377,
+          "maximumSignedCrossingErrorMeters": 30.95527118566377,
+          "minimumSignedCrossingErrorMeters": 5.771167334575722,
+          "nativeThresholdWetAreaSquareMeters": 7291751.924641006,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 178
+        }
+      ]
+    },
+    {
+      "subdivision": 4,
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 11344,
+      "stepSeconds": 0.026445698166431594,
+      "areaWeightedRmsErrorMeters": 0.00792896045284443,
+      "maximumErrorMeters": 0.07144426744354943,
+      "referenceSpatialDifferenceRmsMeters": 0.00012778046219542692,
+      "referenceTemporalDifferenceRmsMeters": 0.00008238831058893857,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.016115663958140573,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.010390808615949479,
+      "relativeInitialQuadratureDiscrepancy": 0.0000790916046663624,
+      "initiallyDryHalfInventoryKilograms": 274760661.67536986,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 2.9744417083574764e-16,
+      "maximumGlobalRelativeResidual": 4.277574669427042e-18,
+      "coefficientNodeEvaluationUpperBound": 696975360,
+      "resolution": {
+        "deferredRequests": 4800829,
+        "maximumDeferredRequestKilograms": 6.316723071866777e-24,
+        "summedDeferredRequestKilograms": 6.94102162162004e-21
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 116.60059789318544,
+          "maximumSignedCrossingErrorMeters": 116.60059789318544,
+          "minimumSignedCrossingErrorMeters": 57.90745593069735,
+          "nativeThresholdWetAreaSquareMeters": 7647407.184495057,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 177
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 75.11458420321992,
+          "maximumSignedCrossingErrorMeters": 75.11458420321992,
+          "minimumSignedCrossingErrorMeters": 29.957230554445992,
+          "nativeThresholdWetAreaSquareMeters": 7478522.1639965875,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 178
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 30.96083539114103,
+          "maximumSignedCrossingErrorMeters": 30.96083539114103,
+          "minimumSignedCrossingErrorMeters": 5.785187900838817,
+          "nativeThresholdWetAreaSquareMeters": 7291751.924641006,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 178
+        }
+      ]
+    },
+    {
+      "subdivision": 5,
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 2836,
+      "stepSeconds": 0.10578279266572638,
+      "areaWeightedRmsErrorMeters": 0.004299975200210174,
+      "maximumErrorMeters": 0.05228169260265084,
+      "referenceSpatialDifferenceRmsMeters": 0.00012358658900997214,
+      "referenceTemporalDifferenceRmsMeters": 0.00010562355036165482,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.028741232973606794,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.024563758032021245,
+      "relativeInitialQuadratureDiscrepancy": -0.00002864386122835593,
+      "initiallyDryHalfInventoryKilograms": 276998514.9596784,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 3.9667278467704975e-16,
+      "maximumGlobalRelativeResidual": 2.1854974502116777e-18,
+      "coefficientNodeEvaluationUpperBound": 696975360,
+      "resolution": {
+        "deferredRequests": 2348929,
+        "maximumDeferredRequestKilograms": 2.262793552790794e-25,
+        "summedDeferredRequestKilograms": 1.1189327333110824e-22
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 54.689826843189906,
+          "maximumSignedCrossingErrorMeters": 54.689826843189906,
+          "minimumSignedCrossingErrorMeters": 27.242895046956093,
+          "nativeThresholdWetAreaSquareMeters": 7433996.7986843,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 358
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 33.81820674440461,
+          "maximumSignedCrossingErrorMeters": 33.81820674440461,
+          "minimumSignedCrossingErrorMeters": 13.488699048598729,
+          "nativeThresholdWetAreaSquareMeters": 7338070.132314395,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 356
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 11.707126891702169,
+          "maximumSignedCrossingErrorMeters": 11.707126891702169,
+          "minimumSignedCrossingErrorMeters": -0.7856526799956409,
+          "nativeThresholdWetAreaSquareMeters": 7238588.584236005,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 358
+        }
+      ]
+    },
+    {
+      "subdivision": 5,
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 5672,
+      "stepSeconds": 0.05289139633286319,
+      "areaWeightedRmsErrorMeters": 0.004298225818660173,
+      "maximumErrorMeters": 0.05237670089056335,
+      "referenceSpatialDifferenceRmsMeters": 0.00012358658900997214,
+      "referenceTemporalDifferenceRmsMeters": 0.00010562355036165482,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.028752930679778965,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.024573755502352693,
+      "relativeInitialQuadratureDiscrepancy": -0.00002864386122835593,
+      "initiallyDryHalfInventoryKilograms": 277006256.60019255,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 4.292531105103771e-16,
+      "maximumGlobalRelativeResidual": 2.217431941700633e-18,
+      "coefficientNodeEvaluationUpperBound": 1393950720,
+      "resolution": {
+        "deferredRequests": 4743108,
+        "maximumDeferredRequestKilograms": 1.8839247688112924e-24,
+        "summedDeferredRequestKilograms": 4.033713356835842e-22
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 54.72086556847366,
+          "maximumSignedCrossingErrorMeters": 54.72086556847366,
+          "minimumSignedCrossingErrorMeters": 27.273147162209852,
+          "nativeThresholdWetAreaSquareMeters": 7433996.7986843,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 358
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 33.845581458591845,
+          "maximumSignedCrossingErrorMeters": 33.845581458591845,
+          "minimumSignedCrossingErrorMeters": 13.500423392937666,
+          "nativeThresholdWetAreaSquareMeters": 7338070.132314395,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 356
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 11.724746358228622,
+          "maximumSignedCrossingErrorMeters": 11.724746358228622,
+          "minimumSignedCrossingErrorMeters": -0.7464750339984949,
+          "nativeThresholdWetAreaSquareMeters": 7238588.584236005,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 358
+        }
+      ]
+    },
+    {
+      "subdivision": 5,
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "quadratureSubdivisions": 0,
+      "steps": 11344,
+      "stepSeconds": 0.026445698166431594,
+      "areaWeightedRmsErrorMeters": 0.004297373287678056,
+      "maximumErrorMeters": 0.05242419342362831,
+      "referenceSpatialDifferenceRmsMeters": 0.00012358658900997214,
+      "referenceTemporalDifferenceRmsMeters": 0.00010562355036165482,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.028758634807065614,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.024578630547295328,
+      "relativeInitialQuadratureDiscrepancy": -0.00002864386122835593,
+      "initiallyDryHalfInventoryKilograms": 277010125.58649457,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 3.9313231829298405e-16,
+      "maximumGlobalRelativeResidual": 2.264033552103619e-18,
+      "coefficientNodeEvaluationUpperBound": 2787901440,
+      "resolution": {
+        "deferredRequests": 9764709,
+        "maximumDeferredRequestKilograms": 1.3964117188071075e-24,
+        "summedDeferredRequestKilograms": 1.4857435944212799e-21
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 54.73630873688617,
+          "maximumSignedCrossingErrorMeters": 54.73630873688617,
+          "minimumSignedCrossingErrorMeters": 27.28819707696917,
+          "nativeThresholdWetAreaSquareMeters": 7433996.7986843,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 358
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 33.85922774161676,
+          "maximumSignedCrossingErrorMeters": 33.85922774161676,
+          "minimumSignedCrossingErrorMeters": 13.506291591292019,
+          "nativeThresholdWetAreaSquareMeters": 7338070.132314395,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 356
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 11.733541133252867,
+          "maximumSignedCrossingErrorMeters": 11.733541133252867,
+          "minimumSignedCrossingErrorMeters": -0.7269265198217578,
+          "nativeThresholdWetAreaSquareMeters": 7238588.584236005,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 358
+        }
+      ]
+    },
+    {
+      "subdivision": 3,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "quadratureSubdivisions": 2,
+      "steps": 11344,
+      "stepSeconds": 0.026445698166431594,
+      "areaWeightedRmsErrorMeters": 0.022764922922483888,
+      "maximumErrorMeters": 0.10245071209582812,
+      "referenceSpatialDifferenceRmsMeters": 0.000007322043259202031,
+      "referenceTemporalDifferenceRmsMeters": 0.000016184238794139904,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.0003216370766610582,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.0007109287762250871,
+      "relativeInitialQuadratureDiscrepancy": -0.011904756896353062,
+      "initiallyDryHalfInventoryKilograms": 348561137.43474907,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 1.3997521707676198e-16,
+      "maximumGlobalRelativeResidual": 1.2481372049450957e-17,
+      "coefficientNodeEvaluationUpperBound": 2787901440,
+      "resolution": {
+        "deferredRequests": 2391246,
+        "maximumDeferredRequestKilograms": 3.344879043533605e-12,
+        "summedDeferredRequestKilograms": 4.7958984501250435e-8
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 208.5400538691551,
+          "maximumSignedCrossingErrorMeters": 208.5400538691551,
+          "minimumSignedCrossingErrorMeters": 112.63881332696712,
+          "nativeThresholdWetAreaSquareMeters": 7874499.752505806,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 90
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 135.3404756306582,
+          "maximumSignedCrossingErrorMeters": 135.3404756306582,
+          "minimumSignedCrossingErrorMeters": 60.849542124034926,
+          "nativeThresholdWetAreaSquareMeters": 7492785.134555554,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 90
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 56.484206779673364,
+          "maximumSignedCrossingErrorMeters": 56.484206779673364,
+          "minimumSignedCrossingErrorMeters": 17.757227727495774,
+          "nativeThresholdWetAreaSquareMeters": 7492785.134555554,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 90
+        }
+      ]
+    },
+    {
+      "subdivision": 3,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "quadratureSubdivisions": 1,
+      "steps": 11344,
+      "stepSeconds": 0.026445698166431594,
+      "areaWeightedRmsErrorMeters": 0.022764946085452688,
+      "maximumErrorMeters": 0.10245108463927984,
+      "referenceSpatialDifferenceRmsMeters": 0.000007322043259202031,
+      "referenceTemporalDifferenceRmsMeters": 0.000016184238794139904,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.00032163674940047324,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.0007109280528664198,
+      "relativeInitialQuadratureDiscrepancy": -0.011904756896353062,
+      "initiallyDryHalfInventoryKilograms": 348560951.4262356,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 1.3167749019621148e-16,
+      "maximumGlobalRelativeResidual": 1.0696524677434502e-17,
+      "coefficientNodeEvaluationUpperBound": 696975360,
+      "resolution": {
+        "deferredRequests": 2321762,
+        "maximumDeferredRequestKilograms": 3.344879043533605e-12,
+        "summedDeferredRequestKilograms": 4.7415043581752044e-8
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 208.5395560445027,
+          "maximumSignedCrossingErrorMeters": 208.5395560445027,
+          "minimumSignedCrossingErrorMeters": 112.63873751311637,
+          "nativeThresholdWetAreaSquareMeters": 7874499.752505806,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 90
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 135.34033077185904,
+          "maximumSignedCrossingErrorMeters": 135.34033077185904,
+          "minimumSignedCrossingErrorMeters": 60.84937798086876,
+          "nativeThresholdWetAreaSquareMeters": 7492785.134555554,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 90
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 56.484105194557046,
+          "maximumSignedCrossingErrorMeters": 56.484105194557046,
+          "minimumSignedCrossingErrorMeters": 17.756920090766126,
+          "nativeThresholdWetAreaSquareMeters": 7492785.134555554,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 90
+        }
+      ]
+    },
+    {
+      "subdivision": 5,
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "quadratureSubdivisions": 1,
+      "steps": 11344,
+      "stepSeconds": 0.026445698166431594,
+      "areaWeightedRmsErrorMeters": 0.005618554060626863,
+      "maximumErrorMeters": 0.05665515754944761,
+      "referenceSpatialDifferenceRmsMeters": 0.00010952012427300184,
+      "referenceTemporalDifferenceRmsMeters": 0.00016026618591895327,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.019492581737441297,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.028524453834492845,
+      "relativeInitialQuadratureDiscrepancy": -0.0017039169293772947,
+      "initiallyDryHalfInventoryKilograms": 302939676.71740204,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 4.1795985210478835e-16,
+      "maximumGlobalRelativeResidual": 3.2820521589552432e-18,
+      "coefficientNodeEvaluationUpperBound": 11151605760,
+      "resolution": {
+        "deferredRequests": 10709826,
+        "maximumDeferredRequestKilograms": 1.1637760342451174e-12,
+        "summedDeferredRequestKilograms": 9.496013164676276e-10
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 47.50653521699921,
+          "maximumSignedCrossingErrorMeters": 47.50653521699921,
+          "minimumSignedCrossingErrorMeters": 27.366396814870075,
+          "nativeThresholdWetAreaSquareMeters": 7433308.712175817,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 362
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 30.236391409694583,
+          "maximumSignedCrossingErrorMeters": 30.236391409694583,
+          "minimumSignedCrossingErrorMeters": 12.546167573440181,
+          "nativeThresholdWetAreaSquareMeters": 7313125.774477283,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 366
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 9.555727078846,
+          "maximumSignedCrossingErrorMeters": 9.555727078846,
+          "minimumSignedCrossingErrorMeters": -1.1224571166019714,
+          "nativeThresholdWetAreaSquareMeters": 7221402.558407767,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 366
+        }
+      ]
+    },
+    {
+      "subdivision": 3,
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "quadratureSubdivisions": 2,
+      "steps": 11344,
+      "stepSeconds": 0.026445698166431594,
+      "areaWeightedRmsErrorMeters": 0.014184182841069901,
+      "maximumErrorMeters": 0.0757570204936519,
+      "referenceSpatialDifferenceRmsMeters": 0.00007914328433827746,
+      "referenceTemporalDifferenceRmsMeters": 0.00006836411770032976,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.005579685853253408,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.004819743122767946,
+      "relativeInitialQuadratureDiscrepancy": 0.00007335150987598763,
+      "initiallyDryHalfInventoryKilograms": 265867227.08131742,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 1.48873293915057e-16,
+      "maximumGlobalRelativeResidual": 9.524661367951026e-18,
+      "coefficientNodeEvaluationUpperBound": 2787901440,
+      "resolution": {
+        "deferredRequests": 2152923,
+        "maximumDeferredRequestKilograms": 8.00213075173768e-23,
+        "summedDeferredRequestKilograms": 3.2645624876842955e-20
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 233.95381085116273,
+          "maximumSignedCrossingErrorMeters": 233.95381085116273,
+          "minimumSignedCrossingErrorMeters": 116.90176215410463,
+          "nativeThresholdWetAreaSquareMeters": 8082176.827719092,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 89
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 156.52749981858506,
+          "maximumSignedCrossingErrorMeters": 156.52749981858506,
+          "minimumSignedCrossingErrorMeters": 71.87490169728994,
+          "nativeThresholdWetAreaSquareMeters": 7748213.0367715405,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 89
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 80.14986247011824,
+          "maximumSignedCrossingErrorMeters": 80.14986247011824,
+          "minimumSignedCrossingErrorMeters": 18.095689460897013,
+          "nativeThresholdWetAreaSquareMeters": 7374513.102259247,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 88
+        }
+      ]
+    },
+    {
+      "subdivision": 3,
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "quadratureSubdivisions": 1,
+      "steps": 11344,
+      "stepSeconds": 0.026445698166431594,
+      "areaWeightedRmsErrorMeters": 0.014184159760588228,
+      "maximumErrorMeters": 0.0757567874024875,
+      "referenceSpatialDifferenceRmsMeters": 0.00007914328433827746,
+      "referenceTemporalDifferenceRmsMeters": 0.00006836411770032976,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.005579694932524881,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.004819750965459701,
+      "relativeInitialQuadratureDiscrepancy": 0.00007335150987598763,
+      "initiallyDryHalfInventoryKilograms": 265867076.49797437,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 1.4397202746391369e-16,
+      "maximumGlobalRelativeResidual": 8.473004399030038e-18,
+      "coefficientNodeEvaluationUpperBound": 696975360,
+      "resolution": {
+        "deferredRequests": 2144974,
+        "maximumDeferredRequestKilograms": 4.5092595857788247e-23,
+        "summedDeferredRequestKilograms": 3.2235254871876493e-20
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 233.9533678306922,
+          "maximumSignedCrossingErrorMeters": 233.9533678306922,
+          "minimumSignedCrossingErrorMeters": 116.90100373291811,
+          "nativeThresholdWetAreaSquareMeters": 8082176.827719092,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 89
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 156.5272657289216,
+          "maximumSignedCrossingErrorMeters": 156.5272657289216,
+          "minimumSignedCrossingErrorMeters": 71.87458755544984,
+          "nativeThresholdWetAreaSquareMeters": 7748213.0367715405,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 89
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 80.14969997087285,
+          "maximumSignedCrossingErrorMeters": 80.14969997087285,
+          "minimumSignedCrossingErrorMeters": 18.095335264173507,
+          "nativeThresholdWetAreaSquareMeters": 7374513.102259247,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 88
+        }
+      ]
+    },
+    {
+      "subdivision": 5,
+      "axis": [
+        0.2672612419124244,
+        0.5345224838248488,
+        0.8017837257372732
+      ],
+      "quadratureSubdivisions": 1,
+      "steps": 11344,
+      "stepSeconds": 0.026445698166431594,
+      "areaWeightedRmsErrorMeters": 0.004297449469491443,
+      "maximumErrorMeters": 0.05242635033113205,
+      "referenceSpatialDifferenceRmsMeters": 0.00012358658900997214,
+      "referenceTemporalDifferenceRmsMeters": 0.00010562355036165482,
+      "referenceSpatialDifferenceOverNativeRmsError": 0.028758124996545283,
+      "referenceTemporalDifferenceOverNativeRmsError": 0.024578194836611826,
+      "relativeInitialQuadratureDiscrepancy": -0.00002864386122835593,
+      "initiallyDryHalfInventoryKilograms": 277010284.97789425,
+      "referenceDryHalfInventoryKilograms": 278357880.50686926,
+      "maximumLocalRelativeResidual": 4.150335912767147e-16,
+      "maximumGlobalRelativeResidual": 2.7616844601082423e-18,
+      "coefficientNodeEvaluationUpperBound": 11151605760,
+      "resolution": {
+        "deferredRequests": 9732819,
+        "maximumDeferredRequestKilograms": 9.696898287948925e-25,
+        "summedDeferredRequestKilograms": 1.4829513852491522e-21
+      },
+      "contours": [
+        {
+          "maximumAbsoluteCrossingErrorMeters": 54.73762595190457,
+          "maximumSignedCrossingErrorMeters": 54.73762595190457,
+          "minimumSignedCrossingErrorMeters": 27.289356062702332,
+          "nativeThresholdWetAreaSquareMeters": 7433996.7986843,
+          "referenceAdvanceMeters": 152.85889161167486,
+          "referenceP": -0.15226420843148336,
+          "referenceThresholdWetAreaSquareMeters": 7239889.544405612,
+          "thresholdMeters": 0.001,
+          "crossingCount": 358
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 33.86000052282468,
+          "maximumSignedCrossingErrorMeters": 33.86000052282468,
+          "minimumSignedCrossingErrorMeters": 13.506727706124488,
+          "nativeThresholdWetAreaSquareMeters": 7338070.132314395,
+          "referenceAdvanceMeters": 152.48093778513817,
+          "referenceP": -0.15186945517639472,
+          "referenceThresholdWetAreaSquareMeters": 7237409.236553279,
+          "thresholdMeters": 0.01,
+          "crossingCount": 356
+        },
+        {
+          "maximumAbsoluteCrossingErrorMeters": 11.733764280420056,
+          "maximumSignedCrossingErrorMeters": 11.733764280420056,
+          "minimumSignedCrossingErrorMeters": -0.7259899334854936,
+          "nativeThresholdWetAreaSquareMeters": 7238588.584236005,
+          "referenceAdvanceMeters": 152.25120874836273,
+          "referenceP": -0.15075326389829835,
+          "referenceThresholdWetAreaSquareMeters": 7230395.99991474,
+          "thresholdMeters": 0.05,
+          "crossingCount": 358
+        }
+      ]
+    }
+  ],
+  "referenceControls": {
+    "planar": [
+      {
+        "bands": 64,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.999070256679066e-13,
+          "maximumIterations": 34,
+          "maximumRelativeInventoryDrift": 1.094506931685336e-15
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.00025547481009095975,
+        "stepSeconds": 0.0625,
+        "steps": 1600
+      },
+      {
+        "bands": 128,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.999468158876368e-13,
+          "maximumIterations": 47,
+          "maximumRelativeInventoryDrift": 5.786846078208075e-14
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.0000976945543239255,
+        "stepSeconds": 0.0625,
+        "steps": 1600
+      },
+      {
+        "bands": 256,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.999844919131307e-13,
+          "maximumIterations": 63,
+          "maximumRelativeInventoryDrift": 3.3924206006785645e-14
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.0000937380481927127,
+        "stepSeconds": 0.0625,
+        "steps": 1600
+      },
+      {
+        "bands": 512,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.99934510192979e-13,
+          "maximumIterations": 74,
+          "maximumRelativeInventoryDrift": 4.65339396229433e-15
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.00003698841630143694,
+        "stepSeconds": 0.0625,
+        "steps": 1600
+      },
+      {
+        "bands": 1024,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 8.894378289436844e-13,
+          "maximumIterations": 88,
+          "maximumRelativeInventoryDrift": 1.0541944454019086e-14
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.000018832672568415967,
+        "stepSeconds": 0.25,
+        "steps": 400
+      },
+      {
+        "bands": 1024,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.825508462402155e-13,
+          "maximumIterations": 84,
+          "maximumRelativeInventoryDrift": 4.0930460397697225e-15
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.00001550573136597071,
+        "stepSeconds": 0.125,
+        "steps": 800
+      },
+      {
+        "bands": 1024,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.999908887059483e-13,
+          "maximumIterations": 81,
+          "maximumRelativeInventoryDrift": 4.129183036790136e-15
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.00002192393211257719,
+        "stepSeconds": 0.0625,
+        "steps": 1600
+      },
+      {
+        "bands": 1024,
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.552410945579126e-13,
+          "maximumIterations": 76,
+          "maximumRelativeInventoryDrift": 3.3856589585162205e-15
+        },
+        "endSeconds": 100,
+        "rmsBandAverageErrorMeters": 0.0000262271437883841,
+        "stepSeconds": 0.03125,
+        "steps": 3200
+      }
+    ],
+    "spherical": [
+      {
+        "bands": 256,
+        "contours": [
+          {
+            "p": -0.15981848051165948,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15613754834990712,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.14963587339254492,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.998529781896082e-13,
+          "maximumIterations": 57,
+          "maximumRelativeInventoryDrift": 1.609823385706477e-14
+        },
+        "stepSeconds": 0.5,
+        "steps": 600
+      },
+      {
+        "bands": 512,
+        "contours": [
+          {
+            "p": -0.15722467569321374,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15377254252878514,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.15031210435993803,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.994990946005089e-13,
+          "maximumIterations": 65,
+          "maximumRelativeInventoryDrift": 2.220446049250313e-14
+        },
+        "stepSeconds": 1,
+        "steps": 300
+      },
+      {
+        "bands": 512,
+        "contours": [
+          {
+            "p": -0.15640153640472132,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15352332016627668,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.14985100479562852,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.998876726591277e-13,
+          "maximumIterations": 62,
+          "maximumRelativeInventoryDrift": 2.5424107263916085e-14
+        },
+        "stepSeconds": 0.5,
+        "steps": 600
+      },
+      {
+        "bands": 512,
+        "contours": [
+          {
+            "p": -0.15563058373034488,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.1533852514108106,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.14964201168536462,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.99263172207776e-13,
+          "maximumIterations": 57,
+          "maximumRelativeInventoryDrift": 2.3425705819590803e-14
+        },
+        "stepSeconds": 0.25,
+        "steps": 1200
+      },
+      {
+        "bands": 1024,
+        "contours": [
+          {
+            "p": -0.15330085201233423,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15252667421345711,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.1502820541361618,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.99859917083512e-13,
+          "maximumIterations": 61,
+          "maximumRelativeInventoryDrift": 3.930189507173054e-14
+        },
+        "stepSeconds": 0.25,
+        "steps": 1200
+      },
+      {
+        "bands": 2048,
+        "contours": [
+          {
+            "p": -0.15277735742463494,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15206479603727974,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.15072793922984618,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.996656280542027e-13,
+          "maximumIterations": 64,
+          "maximumRelativeInventoryDrift": 1.1446399383885364e-13
+        },
+        "stepSeconds": 0.25,
+        "steps": 1200
+      },
+      {
+        "bands": 4096,
+        "contours": [
+          {
+            "p": -0.15249855277023017,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15199097085851743,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.15081883172625865,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.996864447359144e-13,
+          "maximumIterations": 67,
+          "maximumRelativeInventoryDrift": 3.8746783559417963e-14
+        },
+        "stepSeconds": 0.25,
+        "steps": 1200
+      },
+      {
+        "bands": 4096,
+        "contours": [
+          {
+            "p": -0.15226420843148336,
+            "thresholdMeters": 0.001
+          },
+          {
+            "p": -0.15186945517639472,
+            "thresholdMeters": 0.01
+          },
+          {
+            "p": -0.15075326389829835,
+            "thresholdMeters": 0.05
+          }
+        ],
+        "diagnostics": {
+          "maximumEquationResidualMeters": 9.99788793420997e-13,
+          "maximumIterations": 64,
+          "maximumRelativeInventoryDrift": 6.461498003318411e-14
+        },
+        "stepSeconds": 0.125,
+        "steps": 2400
+      }
+    ]
+  },
+  "accounting": {
+    "maximumLocalRelativeResidual": 4.36842422175621e-16,
+    "maximumGlobalRelativeResidual": 1.2481372049450957e-17,
+    "deferredAttempts": 89806197,
+    "maximumDeferredRequestKilograms": 1.2033447488187123e-11,
+    "maximumPerCaseSummedAttemptKilograms": 5.1571953889439356e-8
+  },
+  "validation": {
+    "nativePassed": 589,
+    "nativeTargets": 109,
+    "nodeTestFilesPassed": 18,
+    "preExistingIgnoredNativeTests": 1,
+    "releaseLibraryPassed": 134,
+    "strictAllTargetClippy": true,
+    "formatting": true,
+    "whitespace": true,
+    "cliRefusals": {
+      "missingOutput": 1,
+      "extraArgument": 1,
+      "existingOutput": 1,
+      "invalidOutputAbsent": true
+    },
+    "newDirectedTests": 2,
+    "smallTrajectoryExactRepeats": [
+      0,
+      1,
+      2
+    ],
+    "completeNewReportRepeated": false,
+    "completeIncidentReportRebuiltUnchanged": true,
+    "guiRerun": false,
+    "seasonalOrDefaultPromotion": false,
+    "wallClockBenchmarkPerformed": false
+  },
+  "fingerprints": [
+    {
+      "path": "artifacts/element-front-v1.json",
+      "bytes": 95137928,
+      "sha256": "c0ebc9d0a9249360f940ae04d1eb8e64a60a292b927f62018f6259ce43d59651"
+    },
+    {
+      "path": "artifacts/incident-dry-final.json",
+      "bytes": 79542597,
+      "sha256": "c872e47fe5b1132ad2b4949debb153dc07dcd574619808f7aaf539c692e35535"
+    },
+    {
+      "path": "artifacts/element-front-incident-rebuilt.json",
+      "bytes": 79542597,
+      "sha256": "c872e47fe5b1132ad2b4949debb153dc07dcd574619808f7aaf539c692e35535"
+    },
+    {
+      "path": "artifacts/element-front-npm-test-log.txt",
+      "bytes": 79728,
+      "sha256": "a43ce71ad02aac1298b57d2da5455386b3d099d090f07e196b2e98560ee6150f"
+    },
+    {
+      "path": "artifacts/element-front-clippy-log.txt",
+      "bytes": 167,
+      "sha256": "b0ea520d751de9f9cb8e18b7eb31cb03e2d113fa4d60c910f534b2998ea12e9f"
+    },
+    {
+      "path": "artifacts/element-front-release-log.txt",
+      "bytes": 17522,
+      "sha256": "b5a4590746322f1f1a671c5f261b9565fb1478f0ea809ad9091ff972f2b5566c"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front.rs",
+      "bytes": 4656,
+      "sha256": "cf4e98fe3822a66cb87ea057e0c407987d80c045d9fe2485345e9776d21aa818"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/native.rs",
+      "bytes": 22041,
+      "sha256": "5b0c74a2e5a3f44dfcaf87ba121ffde17fb1023ee5f398dc92b7e865d47ea662"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/element.rs",
+      "bytes": 8104,
+      "sha256": "0dbc89d3ffb86f2e37ce30b90284b4635a8446a7bc83ef77adf063673a3e9ea6"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/reference.rs",
+      "bytes": 11933,
+      "sha256": "b4abd46b67f010efc783b17ba00389cf387f18026fd51bc8dc76f6675a04bf39"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_element.rs",
+      "bytes": 20138,
+      "sha256": "e948334ebd01fbbbff459e7c91138159f585a79176d9809d9f27f86e0c161b58"
+    },
+    {
+      "path": "native/examples/surface_element_front_report.rs",
+      "bytes": 938,
+      "sha256": "d463f9621badaf9ab767bc30d91d60617ac1571cc175683d7a0abba44fe0284b"
+    }
+  ],
+  "decision": {
+    "frontRemedySelected": false,
+    "scope": "Main q=0 cohort compared with the retained incident-mobility stage; not a universal rejection of element integration.",
+    "finestCadenceContourComparisonsWorsened": 18,
+    "finestCadenceContourComparisonsTotal": 18,
+    "nextControl": "Measure the same graph-edge contour observable on independently sampled reference depths before diagnosing state evolution or changing reconstruction.",
+    "notDiagnosed": "Observation error versus discrete evolution error has not yet been isolated. Fine-mesh q=2, smooth wet evolution, variable-bed hydraulics and physical calibration remain open."
+  }
+}

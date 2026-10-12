@@ -1,13 +1,13 @@
 //! Existing paired stages on fixed continuous dry-cap inputs, not new physics.
 use super::super::{
-    Mass, ResolutionBudget, surface, surface_centered, surface_flow, surface_gradient,
-    surface_incident, surface_verification,
+    Mass, ResolutionBudget, surface, surface_centered, surface_element, surface_flow,
+    surface_gradient, surface_incident, surface_verification,
 };
 use super::{AXES, CAP, END_SECONDS, RADIUS, THRESHOLDS, reference, reference_front};
 use crate::{Surface, dot, moisture_transport::total_mass, norm};
 use serde_json::{Value, json};
 
-fn rms(values: &[f64], areas: &[f64]) -> f64 {
+pub(super) fn rms(values: &[f64], areas: &[f64]) -> f64 {
     (total_mass(
         &values
             .iter()
@@ -18,18 +18,29 @@ fn rms(values: &[f64], areas: &[f64]) -> f64 {
     .sqrt()
 }
 
-struct NativeRun {
-    liquid: Vec<Mass>,
-    result: Value,
-    error: f64,
+pub(super) struct NativeRun {
+    pub liquid: Vec<Mass>,
+    pub result: Value,
+    pub error: f64,
 }
 
-fn run(
+pub(super) fn run(
     level: u32,
     axis: [f64; 3],
     steps: usize,
     references: &[Vec<f64>],
     stage: surface::VerificationStage,
+) -> Result<NativeRun, String> {
+    run_with_element(level, axis, steps, references, stage, None)
+}
+
+pub(super) fn run_with_element(
+    level: u32,
+    axis: [f64; 3],
+    steps: usize,
+    references: &[Vec<f64>],
+    stage: surface::VerificationStage,
+    quadrature: Option<u8>,
 ) -> Result<NativeRun, String> {
     let length = norm(axis);
     if !(3..=5).contains(&level)
@@ -38,6 +49,7 @@ fn run(
         || references.len() != 3
         || !length.is_finite()
         || length == 0.
+        || quadrature.is_some_and(|q| q > 3 || stage != surface::VerificationStage::FullGradient)
     {
         return Err("Unsupported bounded native front controls.".into());
     }
@@ -55,6 +67,9 @@ fn run(
         },
     )?;
     let prepared = surface_gradient::Prepared::new(&mesh, layout, RADIUS)?;
+    let element = quadrature
+        .map(|q| surface_element::Prepared::new(&prepared, q))
+        .transpose()?;
     let centered = if stage == surface::VerificationStage::FlatCenteredDepth {
         Some(surface_centered::Prepared::new(&prepared)?)
     } else {
@@ -95,7 +110,11 @@ fn run(
         let count = match stage {
             surface::VerificationStage::LegacyDirectional => surface::advance(layout, stocks, dt)?,
             surface::VerificationStage::FullGradient => {
-                surface::advance_full_gradient(&prepared, stocks, dt)?
+                if let Some(element) = &element {
+                    element.advance(stocks, dt)?
+                } else {
+                    surface::advance_full_gradient(&prepared, stocks, dt)?
+                }
             }
             surface::VerificationStage::FlatCenteredDepth => {
                 centered.as_ref().unwrap().advance(stocks, dt)?
@@ -198,7 +217,7 @@ fn run(
         * total_mass(&references.last().unwrap()[..references.last().unwrap().len() / 2]);
     let resolution = resolution.unwrap();
     resolution.validate()?;
-    let result = json!({"subdivision":level,"regions":liquid.len(),"axis":axis,"steps":steps,"stepSeconds":dt,
+    let mut result = json!({"subdivision":level,"regions":liquid.len(),"axis":axis,"steps":steps,"stepSeconds":dt,
         "legacyDirectionalMobility":stage == surface::VerificationStage::LegacyDirectional,"stabilityBoundSeconds":layout.stable_seconds,
         "areaWeightedRmsErrorMeters":error,"maximumErrorMeters":errors.iter().map(|e|e.abs()).fold(0.,f64::max),
         "referenceSpatialDifferenceRmsMeters":rms(&spatial,&mesh.areas),"referenceTemporalDifferenceRmsMeters":rms(&temporal,&mesh.areas),
@@ -210,6 +229,17 @@ fn run(
         "maximumLocalRelativeResidual":maximum_audit[0],"maximumGlobalRelativeResidual":maximum_audit[1],
         "resolution":resolution,"contours":contours,"initialLiquid":initial,"finalLiquid":liquid,
         "directedTransfers":transfers,"referenceAtCentersMeters":truth,"errorAtCentersMeters":errors});
+    if let Some(q) = quadrature {
+        result["operator"] = json!(surface_element::MODEL_VERSION);
+        result["quadratureSubdivisions"] = json!(q);
+        // A closed triangular sphere has 2*V-4 triangles. Cap splitting can
+        // require two uncapped pieces; dry/constant/capped pieces use fewer nodes.
+        let triangles = 2 * mesh.areas.len() - 4;
+        let maximum_nodes = 12_u64 * 4_u64.pow(q as u32);
+        result["maximumQuadratureNodesPerTriangle"] = json!(maximum_nodes);
+        result["coefficientNodeEvaluationUpperBound"] =
+            json!(steps as u64 * triangles as u64 * maximum_nodes);
+    }
     Ok(NativeRun {
         liquid,
         result,
@@ -336,6 +366,95 @@ fn report_for(mut result: Value, stage: surface::VerificationStage) -> Result<Va
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn element_dry_evolution_repeats_and_preserves_all_fixed_inputs() {
+        let references = [
+            reference::spherical(128, 600).unwrap().depth,
+            reference::spherical(256, 600).unwrap().depth,
+            reference::spherical(256, 1200).unwrap().depth,
+        ];
+        let old = run(
+            3,
+            AXES[1],
+            1200,
+            &references,
+            surface::VerificationStage::FlatIncidentMobility,
+        )
+        .unwrap();
+        let mut previous_nodes = None;
+        for q in 0..=2 {
+            let a = run_with_element(
+                3,
+                AXES[1],
+                1200,
+                &references,
+                surface::VerificationStage::FullGradient,
+                Some(q),
+            )
+            .unwrap();
+            let b = run_with_element(
+                3,
+                AXES[1],
+                1200,
+                &references,
+                surface::VerificationStage::FullGradient,
+                Some(q),
+            )
+            .unwrap();
+            assert_eq!(a.result, b.result);
+            for field in [
+                "initialLiquid",
+                "referenceAtCentersMeters",
+                "relativeInitialQuadratureDiscrepancy",
+                "axis",
+                "steps",
+                "stepSeconds",
+                "stabilityBoundSeconds",
+            ] {
+                assert_eq!(a.result[field], old.result[field], "changed {field}");
+            }
+            assert_ne!(a.result["finalLiquid"], old.result["finalLiquid"]);
+            assert_eq!(a.result["operator"], surface_element::MODEL_VERSION);
+            assert_eq!(a.result["quadratureSubdivisions"], q);
+            assert!(
+                a.result["initialLiquid"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|m| m["high"] == 0.)
+            );
+            assert!(
+                a.result["initiallyDryHalfInventoryKilograms"]
+                    .as_f64()
+                    .unwrap()
+                    > 0.
+            );
+            assert!(a.result["maximumGlobalRelativeResidual"].as_f64().unwrap() < 1e-12);
+            let nodes = a.result["coefficientNodeEvaluationUpperBound"]
+                .as_u64()
+                .unwrap();
+            assert_eq!(nodes, 1200 * (2 * 642 - 4) * 12 * 4_u64.pow(q as u32));
+            if let Some(previous) = previous_nodes {
+                assert_eq!(nodes, previous * 4);
+            }
+            previous_nodes = Some(nodes);
+        }
+        assert!(old.result.get("quadratureSubdivisions").is_none());
+    }
+
+    #[test]
+    fn element_front_refuses_invalid_quadrature_or_mixed_stage() {
+        let references = vec![vec![0.; 128]; 3];
+        for (stage, q) in [
+            (surface::VerificationStage::FullGradient, 4),
+            (surface::VerificationStage::FlatCenteredDepth, 0),
+            (surface::VerificationStage::FlatIncidentMobility, 0),
+            (surface::VerificationStage::LegacyDirectional, 0),
+        ] {
+            assert!(run_with_element(3, AXES[0], 1200, &references, stage, Some(q)).is_err());
+        }
+    }
+
     #[test]
     fn incident_dry_evolution_repeats_with_identical_initialization_and_reference() {
         let references = [

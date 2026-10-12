@@ -65,6 +65,7 @@ The separate [unified regional soil cycle](docs/regional-soil-cycle.md) applies 
 | [Flat centered-depth comparison](docs/surface-centered-depth.md) | Separately pinned interface-depth ablation with unchanged dry/wet problems, conservative transfers and explicit flat-only scope |
 | [Incident-triangle mobility comparison](docs/surface-incident-mobility.md) | Isolated gradient-side coefficient assembly; small smooth RMS gains but worse dry-front contours, retained without seasonal promotion |
 | [Positive elementwise mobility](docs/surface-element-mobility.md) | Standalone triangle coefficient integration, positive cap-split quadrature and frozen energy/stock controls; evolving-front qualification remains separate |
+| [Element-integrated dry front](docs/surface-element-front.md) | Fixed moving-front comparison: lower depth RMS but worse contour placement; quadrature/time/spatial controls and retained negative result |
 | [Seasonal-water desktop](docs/seasonal-water-desktop.md) | Run/pause, eight dynamic layers, interval inspection, versioned frames, baseline timing evidence, and limits |
 | [Seasonal-water checkpoints](docs/seasonal-water-checkpoints.md) | Complete native state, candidate validation, bounded file I/O, exact continuation, and limits |
 | [Typed surface water](docs/surface-water.md) | Empirical snowmelt, soil bucket, pending-runoff ownership, defaults, and limitations |
