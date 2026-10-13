@@ -38,6 +38,8 @@ Full-domain RMS improves by factors `2.732 / 2.275`; wet-interior RMS by `3.798 
 
 This closes the planned **non-affine evolving spatial-refinement gate in this bounded monotone family**. The former affine-only evidence is no longer the sole accuracy witness. General extrema/plateaus, wet/rest/barrier behavior on variable bed, spherical reconstruction/assembly, seasonal integration, calibration and production runtime remain separate gates. No product/model/save pins or desktop selections change.
 
+Follow-up: the [affine-bed head/storage baseline](surface-topography.md) now exercises bounded rest and interface blocking independently. It does not extend this flat-pressure candidate, erase its stencil refusals or qualify moving variable-bed accuracy.
+
 ## Contour limitations remain explicit
 
 At the finest cadence, the 5 cm contour errors are approximately `+31.42/-1.50/-2.93 mm`: this contour does not improve monotonically. Six independent exact-integrated-mean probes at times `0/1` use the identical root observer after all physical runs. At final time their 5 cm errors are `+44.25/+1.38/-2.25 mm`; thus this nonmonotonic behavior also exists without an evolving-state error. These probes are not evolved states, additive error corrections or replacements for reported physical contours. Moment inversion and root extraction are nonlinear, so subtracting these probe errors does not establish a solver-error decomposition.

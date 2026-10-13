@@ -5,6 +5,7 @@ mod element;
 mod face_controls;
 mod faces;
 mod full_cell;
+mod hypsometry;
 mod moment_controls;
 mod moments;
 mod native;
@@ -12,6 +13,7 @@ mod non_affine;
 mod paired_evolution;
 mod reconstruction;
 mod reference;
+mod topography;
 use serde_json::{Value, json};
 
 const RADIUS: f64 = 1000.;
@@ -160,4 +162,9 @@ pub fn barenblatt_reference_report() -> Result<Value, String> {
 /// Curved-pressure spatial/temporal laboratory; no seasonal model selection.
 pub fn non_affine_report() -> Result<Value, String> {
     non_affine::report()
+}
+
+/// Independent affine-bed head/storage baseline, not a production selection.
+pub fn topography_report() -> Result<Value, String> {
+    topography::report()
 }

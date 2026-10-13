@@ -1,0 +1,2313 @@
+{
+  "recordVersion": "surface-topography-validation-1",
+  "date": "2026-10-13",
+  "baselineCommit": "f40e43b",
+  "scope": "Separate first-order head/storage/face-crest baseline on bounded monotone affine owners; no pressure/spherical/seasonal selection",
+  "decision": "Bounded storage/rest/blocking and discrete-ODE time checks only; variable-bed PDE accuracy and general reconstruction remain open",
+  "contract": {
+    "reportVersion": "surface-topography-report-1",
+    "widthMeters": 1,
+    "maximumOwners": 128,
+    "maximumSteps": 4000,
+    "maximumCellSteps": 192000,
+    "physicalLaw": "q=-sign(g)*min(cap*abs(g), depthAboveCrest^(5/3)*sqrt(abs(g))/roughness)",
+    "crestContract": "Maximum adjacent interface bed traces, not center beds; no unresolved internal ridge in an affine owner",
+    "dryContract": "No inferred dry physical head; minimum-bed ordering surrogate is the positive-storage limit; dry donor flux remains zero",
+    "stateContract": "Original compensated closed single-face transaction; no film, epsilon, snapping, resized request or fallback"
+  },
+  "results": {
+    "completedClosedTrajectories": 28,
+    "acceptedClosedSteps": 32000,
+    "acceptedClosedCellSteps": 136000,
+    "exactRestCases": 24,
+    "exactRestAcceptedSteps": 24000,
+    "exactRestOwnersBitIdentical": true,
+    "independentFrozenInterfaceSteps": 4,
+    "deliberateRefusals": 1,
+    "maximumLocalRelativeLedgerResidual": 9.738798461624181e-17,
+    "maximumStepRelativeInventoryResidual": 7.400809204476573e-17,
+    "maximumCumulativeRelativeInventoryResidual": 1.9265293811439477e-19,
+    "arithmeticLimit": 5.684341886080802e-14
+  },
+  "restCases": [
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 1,
+          "right": 0.75
+        },
+        {
+          "left": 0.75,
+          "right": 0.25
+        },
+        {
+          "left": 0.25,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 0.25
+        },
+        {
+          "left": 0.25,
+          "right": 0.75
+        },
+        {
+          "left": 0.75,
+          "right": 1
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 0,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0,
+        0.0625,
+        0.375,
+        0.375,
+        0.0625,
+        0
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "shoreline-bowl",
+      "ownersBitIdentical": true,
+      "reflected": false,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 1,
+          "right": 0.75
+        },
+        {
+          "left": 0.75,
+          "right": 0.25
+        },
+        {
+          "left": 0.25,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 0.25
+        },
+        {
+          "left": 0.25,
+          "right": 0.75
+        },
+        {
+          "left": 0.75,
+          "right": 1
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 0,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0,
+        0.0625,
+        0.375,
+        0.375,
+        0.0625,
+        0
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "shoreline-bowl",
+      "ownersBitIdentical": true,
+      "reflected": true,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 1099511627777,
+          "right": 1099511627776.75
+        },
+        {
+          "left": 1099511627776.75,
+          "right": 1099511627776.25
+        },
+        {
+          "left": 1099511627776.25,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627776.25
+        },
+        {
+          "left": 1099511627776.25,
+          "right": 1099511627776.75
+        },
+        {
+          "left": 1099511627776.75,
+          "right": 1099511627777
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 1099511627776,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0,
+        0.0625,
+        0.375,
+        0.375,
+        0.0625,
+        0
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "shoreline-bowl",
+      "ownersBitIdentical": true,
+      "reflected": false,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 1099511627777,
+          "right": 1099511627776.75
+        },
+        {
+          "left": 1099511627776.75,
+          "right": 1099511627776.25
+        },
+        {
+          "left": 1099511627776.25,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627776.25
+        },
+        {
+          "left": 1099511627776.25,
+          "right": 1099511627776.75
+        },
+        {
+          "left": 1099511627776.75,
+          "right": 1099511627777
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 1099511627776,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0,
+        0.0625,
+        0.375,
+        0.375,
+        0.0625,
+        0
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "shoreline-bowl",
+      "ownersBitIdentical": true,
+      "reflected": true,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 0,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 2
+        },
+        {
+          "left": 2,
+          "right": 2
+        },
+        {
+          "left": 2,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 0
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 0,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0.5,
+        0.0625,
+        0,
+        0.015625,
+        0.25
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "disconnected-unequal-pools",
+      "ownersBitIdentical": true,
+      "reflected": false,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 0,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 2
+        },
+        {
+          "left": 2,
+          "right": 2
+        },
+        {
+          "left": 2,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 0
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 0,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0.25,
+        0.015625,
+        0,
+        0.0625,
+        0.5
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "disconnected-unequal-pools",
+      "ownersBitIdentical": true,
+      "reflected": true,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 1099511627776,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627778
+        },
+        {
+          "left": 1099511627778,
+          "right": 1099511627778
+        },
+        {
+          "left": 1099511627778,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627776
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 1099511627776,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0.5,
+        0.0625,
+        0,
+        0.015625,
+        0.25
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "disconnected-unequal-pools",
+      "ownersBitIdentical": true,
+      "reflected": false,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 1099511627776,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627778
+        },
+        {
+          "left": 1099511627778,
+          "right": 1099511627778
+        },
+        {
+          "left": 1099511627778,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627776
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 1099511627776,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0.25,
+        0.015625,
+        0,
+        0.0625,
+        0.5
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "disconnected-unequal-pools",
+      "ownersBitIdentical": true,
+      "reflected": true,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 0,
+          "right": 0.5
+        },
+        {
+          "left": 0.5,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 0.25
+        },
+        {
+          "left": 0.25,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 0.5
+        },
+        {
+          "left": 0.5,
+          "right": 0
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 0,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0.75,
+        0.75,
+        0.875,
+        0.875,
+        0.75,
+        0.75
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "fully-wet-alternating-bed",
+      "ownersBitIdentical": true,
+      "reflected": false,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 0,
+          "right": 0.5
+        },
+        {
+          "left": 0.5,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 0.25
+        },
+        {
+          "left": 0.25,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 0.5
+        },
+        {
+          "left": 0.5,
+          "right": 0
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 0,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0.75,
+        0.75,
+        0.875,
+        0.875,
+        0.75,
+        0.75
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "fully-wet-alternating-bed",
+      "ownersBitIdentical": true,
+      "reflected": true,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 1099511627776,
+          "right": 1099511627776.5
+        },
+        {
+          "left": 1099511627776.5,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627776.25
+        },
+        {
+          "left": 1099511627776.25,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627776.5
+        },
+        {
+          "left": 1099511627776.5,
+          "right": 1099511627776
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 1099511627776,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0.75,
+        0.75,
+        0.875,
+        0.875,
+        0.75,
+        0.75
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "fully-wet-alternating-bed",
+      "ownersBitIdentical": true,
+      "reflected": false,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 1099511627776,
+          "right": 1099511627776.5
+        },
+        {
+          "left": 1099511627776.5,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627776.25
+        },
+        {
+          "left": 1099511627776.25,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627776.5
+        },
+        {
+          "left": 1099511627776.5,
+          "right": 1099511627776
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 1099511627776,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0.75,
+        0.75,
+        0.875,
+        0.875,
+        0.75,
+        0.75
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "fully-wet-alternating-bed",
+      "ownersBitIdentical": true,
+      "reflected": true,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 0,
+          "right": 0
+        },
+        {
+          "left": 0.25,
+          "right": 0.25
+        },
+        {
+          "left": 0.75,
+          "right": 0.75
+        },
+        {
+          "left": 0.5,
+          "right": 0.5
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 0,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        1,
+        0.75,
+        0.25,
+        0.5
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "discontinuous-bed-rest",
+      "ownersBitIdentical": true,
+      "reflected": false,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 0.5,
+          "right": 0.5
+        },
+        {
+          "left": 0.75,
+          "right": 0.75
+        },
+        {
+          "left": 0.25,
+          "right": 0.25
+        },
+        {
+          "left": 0,
+          "right": 0
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 0,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0.5,
+        0.25,
+        0.75,
+        1
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "discontinuous-bed-rest",
+      "ownersBitIdentical": true,
+      "reflected": true,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 1099511627776,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776.25,
+          "right": 1099511627776.25
+        },
+        {
+          "left": 1099511627776.75,
+          "right": 1099511627776.75
+        },
+        {
+          "left": 1099511627776.5,
+          "right": 1099511627776.5
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 1099511627776,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        1,
+        0.75,
+        0.25,
+        0.5
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "discontinuous-bed-rest",
+      "ownersBitIdentical": true,
+      "reflected": false,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 1099511627776.5,
+          "right": 1099511627776.5
+        },
+        {
+          "left": 1099511627776.75,
+          "right": 1099511627776.75
+        },
+        {
+          "left": 1099511627776.25,
+          "right": 1099511627776.25
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627776
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 1099511627776,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0.5,
+        0.25,
+        0.75,
+        1
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "discontinuous-bed-rest",
+      "ownersBitIdentical": true,
+      "reflected": true,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 0,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 0
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 0,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "uniform-flat",
+      "ownersBitIdentical": true,
+      "reflected": false,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 0,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 0
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 0,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "uniform-flat",
+      "ownersBitIdentical": true,
+      "reflected": true,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 1099511627776,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627776
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 1099511627776,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "uniform-flat",
+      "ownersBitIdentical": true,
+      "reflected": false,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 1099511627776,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627776
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 1099511627776,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "uniform-flat",
+      "ownersBitIdentical": true,
+      "reflected": true,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 0,
+          "right": 1
+        },
+        {
+          "left": 1,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 2
+        },
+        {
+          "left": 2,
+          "right": 1
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 0,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "dry-variable-bed",
+      "ownersBitIdentical": true,
+      "reflected": false,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 1,
+          "right": 2
+        },
+        {
+          "left": 2,
+          "right": 0
+        },
+        {
+          "left": 0,
+          "right": 1
+        },
+        {
+          "left": 1,
+          "right": 0
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 0,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "dry-variable-bed",
+      "ownersBitIdentical": true,
+      "reflected": true,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 1099511627776,
+          "right": 1099511627777
+        },
+        {
+          "left": 1099511627777,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627778
+        },
+        {
+          "left": 1099511627778,
+          "right": 1099511627777
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 1099511627776,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "dry-variable-bed",
+      "ownersBitIdentical": true,
+      "reflected": false,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 1099511627777,
+          "right": 1099511627778
+        },
+        {
+          "left": 1099511627778,
+          "right": 1099511627776
+        },
+        {
+          "left": 1099511627776,
+          "right": 1099511627777
+        },
+        {
+          "left": 1099511627777,
+          "right": 1099511627776
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 100,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "datumMeters": 1099511627776,
+      "everyActiveFaceCapped": true,
+      "initialMeansMeters": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0,
+      "maximumCumulativeRelativeInventoryResidual": 0,
+      "maximumLocalRelativeLedgerResidual": 0,
+      "maximumStepRelativeInventoryResidual": 0,
+      "name": "dry-variable-bed",
+      "ownersBitIdentical": true,
+      "reflected": true,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "stepSeconds": 0.001
+    }
+  ],
+  "interfaces": [
+    {
+      "acceptedStep": {
+        "boundaryInput": 0,
+        "boundaryOutput": 0,
+        "maximumLocalRelativeLedgerResidual": 0,
+        "relativeInventoryResidual": 0,
+        "volumeHigh": [
+          0.5,
+          0
+        ],
+        "volumeLow": [
+          0,
+          0
+        ]
+      },
+      "accuracyComparison": null,
+      "beds": [
+        {
+          "left": 0,
+          "right": 0
+        },
+        {
+          "left": 1,
+          "right": 1
+        }
+      ],
+      "faces": [
+        {
+          "cappedBranchSelected": false,
+          "donor": "right",
+          "donorDepthAboveCrestMeters": 0,
+          "fluxSquareMetersPerSecond": 0,
+          "gradient": 0.5
+        }
+      ],
+      "meansMeters": [
+        0.5,
+        0
+      ],
+      "name": "below-crest"
+    },
+    {
+      "acceptedStep": {
+        "boundaryInput": 0,
+        "boundaryOutput": 0,
+        "maximumLocalRelativeLedgerResidual": 0,
+        "relativeInventoryResidual": 0,
+        "volumeHigh": [
+          1,
+          0
+        ],
+        "volumeLow": [
+          0,
+          0
+        ]
+      },
+      "accuracyComparison": null,
+      "beds": [
+        {
+          "left": 0,
+          "right": 0
+        },
+        {
+          "left": 1,
+          "right": 1
+        }
+      ],
+      "faces": [
+        {
+          "cappedBranchSelected": false,
+          "donor": null,
+          "donorDepthAboveCrestMeters": 0,
+          "fluxSquareMetersPerSecond": 0,
+          "gradient": 0
+        }
+      ],
+      "meansMeters": [
+        1,
+        0
+      ],
+      "name": "at-crest"
+    },
+    {
+      "acceptedStep": {
+        "boundaryInput": 0,
+        "boundaryOutput": 0,
+        "maximumLocalRelativeLedgerResidual": 3.0331495969454175e-36,
+        "relativeInventoryResidual": 3.0331495969454175e-36,
+        "volumeHigh": [
+          1.0000000000000002,
+          3.033149596945418e-36
+        ],
+        "volumeLow": [
+          -3.033149596945418e-36,
+          0
+        ]
+      },
+      "accuracyComparison": null,
+      "beds": [
+        {
+          "left": 0,
+          "right": 0
+        },
+        {
+          "left": 1,
+          "right": 1
+        }
+      ],
+      "faces": [
+        {
+          "cappedBranchSelected": false,
+          "donor": "left",
+          "donorDepthAboveCrestMeters": 2.220446049250313e-16,
+          "fluxSquareMetersPerSecond": 3.0331495969454182e-33,
+          "gradient": -2.220446049250313e-16
+        }
+      ],
+      "meansMeters": [
+        1.0000000000000002,
+        0
+      ],
+      "name": "one-ulp-above-crest"
+    },
+    {
+      "acceptedStep": {
+        "boundaryInput": 0,
+        "boundaryOutput": 0,
+        "maximumLocalRelativeLedgerResidual": 4.388850394221322e-17,
+        "relativeInventoryResidual": 4.388850394221322e-17,
+        "volumeHigh": [
+          1.24875984292815,
+          0.0012401570718501558
+        ],
+        "volumeLow": [
+          -5.4860629927766524e-17,
+          0
+        ]
+      },
+      "accuracyComparison": null,
+      "beds": [
+        {
+          "left": 0,
+          "right": 0
+        },
+        {
+          "left": 1,
+          "right": 1
+        }
+      ],
+      "faces": [
+        {
+          "cappedBranchSelected": false,
+          "donor": "left",
+          "donorDepthAboveCrestMeters": 0.25,
+          "fluxSquareMetersPerSecond": 1.2401570718501558,
+          "gradient": -0.25
+        }
+      ],
+      "meansMeters": [
+        1.25,
+        0
+      ],
+      "name": "above-crest"
+    },
+    {
+      "absoluteFluxDifferenceSquareMetersPerSecond": 0.000016854998278859057,
+      "contract": "Dry uses minimum-bed ordering surrogate, not a physical inferred head or face-bed surrogate.",
+      "dryFace": {
+        "cappedBranchSelected": false,
+        "donor": "left",
+        "donorDepthAboveCrestMeters": 1,
+        "fluxSquareMetersPerSecond": 82.915619758885,
+        "gradient": -11
+      },
+      "name": "dry-positive-storage-limit",
+      "positiveFace": {
+        "cappedBranchSelected": false,
+        "donor": "left",
+        "donorDepthAboveCrestMeters": 1,
+        "fluxSquareMetersPerSecond": 82.91560290388672,
+        "gradient": -10.999995527864044
+      },
+      "receiverBed": {
+        "left": 10,
+        "right": 0
+      },
+      "tinyMeanMeters": 1e-12
+    },
+    {
+      "absoluteFluxDifferenceSquareMetersPerSecond": 1.6854073692229576e-11,
+      "contract": "Dry uses minimum-bed ordering surrogate, not a physical inferred head or face-bed surrogate.",
+      "dryFace": {
+        "cappedBranchSelected": false,
+        "donor": "left",
+        "donorDepthAboveCrestMeters": 1,
+        "fluxSquareMetersPerSecond": 82.915619758885,
+        "gradient": -11
+      },
+      "name": "dry-positive-storage-limit",
+      "positiveFace": {
+        "cappedBranchSelected": false,
+        "donor": "left",
+        "donorDepthAboveCrestMeters": 1,
+        "fluxSquareMetersPerSecond": 82.91561975886815,
+        "gradient": -10.999999999995527
+      },
+      "receiverBed": {
+        "left": 10,
+        "right": 0
+      },
+      "tinyMeanMeters": 1e-24
+    },
+    {
+      "absoluteFluxDifferenceSquareMetersPerSecond": 0.0004472135956348211,
+      "contract": "Dry uses minimum-bed ordering surrogate, not a physical inferred head or face-bed surrogate.",
+      "dryFace": {
+        "cappedBranchSelected": true,
+        "donor": "left",
+        "donorDepthAboveCrestMeters": 11,
+        "fluxSquareMetersPerSecond": 1100,
+        "gradient": -11
+      },
+      "name": "dry-positive-storage-limit",
+      "positiveFace": {
+        "cappedBranchSelected": true,
+        "donor": "left",
+        "donorDepthAboveCrestMeters": 11,
+        "fluxSquareMetersPerSecond": 1099.9995527864044,
+        "gradient": -10.999995527864044
+      },
+      "receiverBed": {
+        "left": 0,
+        "right": 10
+      },
+      "tinyMeanMeters": 1e-12
+    },
+    {
+      "absoluteFluxDifferenceSquareMetersPerSecond": 4.4724401959683746e-10,
+      "contract": "Dry uses minimum-bed ordering surrogate, not a physical inferred head or face-bed surrogate.",
+      "dryFace": {
+        "cappedBranchSelected": true,
+        "donor": "left",
+        "donorDepthAboveCrestMeters": 11,
+        "fluxSquareMetersPerSecond": 1100,
+        "gradient": -11
+      },
+      "name": "dry-positive-storage-limit",
+      "positiveFace": {
+        "cappedBranchSelected": true,
+        "donor": "left",
+        "donorDepthAboveCrestMeters": 11,
+        "fluxSquareMetersPerSecond": 1099.9999999995528,
+        "gradient": -10.999999999995527
+      },
+      "receiverBed": {
+        "left": 0,
+        "right": 10
+      },
+      "tinyMeanMeters": 1e-24
+    }
+  ],
+  "roundoffControl": {
+    "acceptedSteps": 1000,
+    "acceptedTimeSeconds": 1,
+    "beds": [
+      {
+        "left": 0,
+        "right": 0.1
+      },
+      {
+        "left": 0.1,
+        "right": 0.33
+      },
+      {
+        "left": 0.33,
+        "right": 0.17
+      },
+      {
+        "left": 0.17,
+        "right": 0.9
+      },
+      {
+        "left": 0.9,
+        "right": 0.23
+      },
+      {
+        "left": 0.23,
+        "right": 0
+      }
+    ],
+    "boundaryInputSquareMeters": 0,
+    "boundaryOutputSquareMeters": 0,
+    "capSquareMetersPerSecond": 100,
+    "completed": true,
+    "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+    "everyActiveFaceCapped": true,
+    "finalOwnerComponents": [
+      [
+        0.45,
+        0
+      ],
+      [
+        0.28500000000000003,
+        -2.7755575615628914e-17
+      ],
+      [
+        0.24999999999999997,
+        5.551115123125786e-18
+      ],
+      [
+        0.07458904109589042,
+        -5.5511151231257815e-18
+      ],
+      [
+        0.05440298507462687,
+        0
+      ],
+      [
+        0.385,
+        0
+      ]
+    ],
+    "firstFaces": [
+      {
+        "cappedBranchSelected": false,
+        "donor": null,
+        "donorDepthAboveCrestMeters": 0,
+        "fluxSquareMetersPerSecond": 0,
+        "gradient": 0
+      },
+      {
+        "cappedBranchSelected": true,
+        "donor": "left",
+        "donorDepthAboveCrestMeters": 0.17,
+        "fluxSquareMetersPerSecond": 5.551115123125783e-15,
+        "gradient": -5.551115123125783e-17
+      },
+      {
+        "cappedBranchSelected": false,
+        "donor": null,
+        "donorDepthAboveCrestMeters": 0,
+        "fluxSquareMetersPerSecond": 0,
+        "gradient": 0
+      },
+      {
+        "cappedBranchSelected": false,
+        "donor": "right",
+        "donorDepthAboveCrestMeters": 0,
+        "fluxSquareMetersPerSecond": 0,
+        "gradient": 5.551115123125783e-17
+      },
+      {
+        "cappedBranchSelected": false,
+        "donor": null,
+        "donorDepthAboveCrestMeters": 0,
+        "fluxSquareMetersPerSecond": 0,
+        "gradient": 0
+      }
+    ],
+    "initialColumns": [
+      {
+        "bed": {
+          "left": 0,
+          "right": 0.1
+        },
+        "offset": 0.5,
+        "state": "wet"
+      },
+      {
+        "bed": {
+          "left": 0.1,
+          "right": 0.33
+        },
+        "offset": 0.4,
+        "state": "wet"
+      },
+      {
+        "bed": {
+          "left": 0.33,
+          "right": 0.17
+        },
+        "offset": 0.32999999999999996,
+        "state": "wet"
+      },
+      {
+        "bed": {
+          "left": 0.17,
+          "right": 0.9
+        },
+        "offset": 0.32999999999999996,
+        "state": "wet"
+      },
+      {
+        "bed": {
+          "left": 0.9,
+          "right": 0.23
+        },
+        "offset": 0.27,
+        "state": "wet"
+      },
+      {
+        "bed": {
+          "left": 0.23,
+          "right": 0
+        },
+        "offset": 0.5,
+        "state": "wet"
+      }
+    ],
+    "initialMeansMeters": [
+      0.45,
+      0.28500000000000003,
+      0.24999999999999997,
+      0.07458904109589039,
+      0.05440298507462687,
+      0.385
+    ],
+    "initialOwnerComponents": [
+      [
+        0.45,
+        0
+      ],
+      [
+        0.28500000000000003,
+        0
+      ],
+      [
+        0.24999999999999997,
+        0
+      ],
+      [
+        0.07458904109589039,
+        0
+      ],
+      [
+        0.05440298507462687,
+        0
+      ],
+      [
+        0.385,
+        0
+      ]
+    ],
+    "maximumComputedAbsoluteFluxSquareMetersPerSecond": 5.551115123125783e-15,
+    "maximumCumulativeRelativeInventoryResidual": 4.111413346062781e-33,
+    "maximumLocalRelativeLedgerResidual": 9.738798461624181e-17,
+    "maximumStepRelativeInventoryResidual": 3.703231922658885e-17,
+    "name": "non-dyadic-rest-input",
+    "ownersBitIdentical": false,
+    "refusal": null,
+    "requestedSteps": 1000,
+    "roughness": 0.04,
+    "stepSeconds": 0.001
+  },
+  "refusalControl": {
+    "acceptedSteps": 0,
+    "acceptedTimeSeconds": 0,
+    "beds": [
+      {
+        "left": 0,
+        "right": 0
+      },
+      {
+        "left": 0.25,
+        "right": 0.25
+      }
+    ],
+    "boundaryInputSquareMeters": 0,
+    "boundaryOutputSquareMeters": 0,
+    "capSquareMetersPerSecond": 100,
+    "completed": false,
+    "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+    "everyActiveFaceCapped": false,
+    "finalOwnerComponents": [
+      [
+        1.5,
+        0
+      ],
+      [
+        0.75,
+        0
+      ]
+    ],
+    "firstFaces": [
+      {
+        "cappedBranchSelected": false,
+        "donor": "left",
+        "donorDepthAboveCrestMeters": 1.25,
+        "fluxSquareMetersPerSecond": 25.641397966619955,
+        "gradient": -0.5
+      }
+    ],
+    "initialColumns": [
+      {
+        "bed": {
+          "left": 0,
+          "right": 0
+        },
+        "offset": 1.5,
+        "state": "wet"
+      },
+      {
+        "bed": {
+          "left": 0.25,
+          "right": 0.25
+        },
+        "offset": 0.75,
+        "state": "wet"
+      }
+    ],
+    "initialMeansMeters": [
+      1.5,
+      0.75
+    ],
+    "initialOwnerComponents": [
+      [
+        1.5,
+        0
+      ],
+      [
+        0.75,
+        0
+      ]
+    ],
+    "maximumComputedAbsoluteFluxSquareMetersPerSecond": 25.641397966619955,
+    "maximumCumulativeRelativeInventoryResidual": 0,
+    "maximumLocalRelativeLedgerResidual": 0,
+    "maximumStepRelativeInventoryResidual": 0,
+    "name": "complete-old-donor-overdraw",
+    "ownersBitIdentical": true,
+    "refusal": {
+      "attemptedStep": 1,
+      "candidateCommitted": false,
+      "reason": "Frozen donor budget exceeded at cell 0.",
+      "startTimeSeconds": 0
+    },
+    "requestedSteps": 1,
+    "roughness": 0.04,
+    "stepSeconds": 1000000
+  },
+  "flatPressureCoverage": [
+    {
+      "accuracyComparison": null,
+      "flatOperatorAttempt": {
+        "accepted": true,
+        "reason": null
+      },
+      "inputsUnchanged": true,
+      "meansMeters": [
+        1,
+        1,
+        1
+      ],
+      "name": "uniform",
+      "unresolved": []
+    },
+    {
+      "accuracyComparison": null,
+      "flatOperatorAttempt": {
+        "accepted": false,
+        "reason": "Reconstruction refused at cell 1: Ambiguous extremum or plateau stencil."
+      },
+      "inputsUnchanged": true,
+      "meansMeters": [
+        1,
+        2,
+        1
+      ],
+      "name": "peak",
+      "unresolved": [
+        {
+          "cell": 1,
+          "reason": "Ambiguous extremum or plateau stencil."
+        }
+      ]
+    },
+    {
+      "accuracyComparison": null,
+      "flatOperatorAttempt": {
+        "accepted": false,
+        "reason": "Reconstruction refused at cell 1: Ambiguous extremum or plateau stencil."
+      },
+      "inputsUnchanged": true,
+      "meansMeters": [
+        2,
+        1,
+        2
+      ],
+      "name": "trough",
+      "unresolved": [
+        {
+          "cell": 1,
+          "reason": "Ambiguous extremum or plateau stencil."
+        }
+      ]
+    },
+    {
+      "accuracyComparison": null,
+      "flatOperatorAttempt": {
+        "accepted": false,
+        "reason": "Reconstruction refused at cell 1: Ambiguous extremum or plateau stencil."
+      },
+      "inputsUnchanged": true,
+      "meansMeters": [
+        1,
+        1,
+        0.5
+      ],
+      "name": "mixed-plateau",
+      "unresolved": [
+        {
+          "cell": 1,
+          "reason": "Ambiguous extremum or plateau stencil."
+        }
+      ]
+    },
+    {
+      "accuracyComparison": null,
+      "flatOperatorAttempt": {
+        "accepted": false,
+        "reason": "Reconstruction refused at cell 1: Ambiguous extremum or plateau stencil."
+      },
+      "inputsUnchanged": true,
+      "meansMeters": [
+        0,
+        1,
+        0
+      ],
+      "name": "isolated-wet",
+      "unresolved": [
+        {
+          "cell": 1,
+          "reason": "Ambiguous extremum or plateau stencil."
+        }
+      ]
+    },
+    {
+      "accuracyComparison": null,
+      "flatOperatorAttempt": {
+        "accepted": false,
+        "reason": "Reconstruction refused at cell 2: Ambiguous extremum or plateau stencil."
+      },
+      "inputsUnchanged": true,
+      "meansMeters": [
+        0,
+        0.0625,
+        0.375,
+        0.375,
+        0.0625,
+        0
+      ],
+      "name": "bowl-rest-depths",
+      "unresolved": [
+        {
+          "cell": 2,
+          "reason": "Ambiguous extremum or plateau stencil."
+        },
+        {
+          "cell": 3,
+          "reason": "Ambiguous extremum or plateau stencil."
+        }
+      ]
+    }
+  ],
+  "relaxation": [
+    {
+      "acceptedSteps": 1000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 0,
+          "right": 0
+        },
+        {
+          "left": 0.25,
+          "right": 0.25
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 0.01,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "everyActiveFaceCapped": true,
+      "exactDiscreteOdeMeansMeters": [
+        1.4950496683266887,
+        0.7549503316733113
+      ],
+      "finalOwnerComponents": [
+        [
+          1.4950496193161067,
+          -1.0713611530051292e-16
+        ],
+        [
+          0.7549503806838934,
+          -3.88618716200273e-18
+        ]
+      ],
+      "firstFaces": [
+        {
+          "cappedBranchSelected": true,
+          "donor": "left",
+          "donorDepthAboveCrestMeters": 1.25,
+          "fluxSquareMetersPerSecond": 0.005,
+          "gradient": -0.5
+        }
+      ],
+      "initialColumns": [
+        {
+          "bed": {
+            "left": 0,
+            "right": 0
+          },
+          "offset": 1.5,
+          "state": "wet"
+        },
+        {
+          "bed": {
+            "left": 0.25,
+            "right": 0.25
+          },
+          "offset": 0.75,
+          "state": "wet"
+        }
+      ],
+      "initialMeansMeters": [
+        1.5,
+        0.75
+      ],
+      "initialOwnerComponents": [
+        [
+          1.5,
+          0
+        ],
+        [
+          0.75,
+          0
+        ]
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0.005,
+      "maximumCumulativeRelativeInventoryResidual": 1.9086475744796902e-19,
+      "maximumLocalRelativeLedgerResidual": 7.409732424731475e-17,
+      "maximumStepRelativeInventoryResidual": 7.39689402996482e-17,
+      "name": "capped-two-owner-relaxation",
+      "oracleContract": "Independent d'= -2*cap*d on two width-1 fully wet constant-bed owners; not a continuum PDE reference.",
+      "ownersBitIdentical": false,
+      "refusal": null,
+      "requestedSteps": 1000,
+      "roughness": 0.04,
+      "signedMeanErrorsMeters": [
+        -4.901058214434832e-8,
+        4.901058214434832e-8
+      ],
+      "stepSeconds": 0.001
+    },
+    {
+      "acceptedSteps": 2000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 0,
+          "right": 0
+        },
+        {
+          "left": 0.25,
+          "right": 0.25
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 0.01,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "everyActiveFaceCapped": true,
+      "exactDiscreteOdeMeansMeters": [
+        1.4950496683266887,
+        0.7549503316733113
+      ],
+      "finalOwnerComponents": [
+        [
+          1.49504964382156,
+          -6.460404992003274e-17
+        ],
+        [
+          0.7549503561784402,
+          -4.641825254248291e-17
+        ]
+      ],
+      "firstFaces": [
+        {
+          "cappedBranchSelected": true,
+          "donor": "left",
+          "donorDepthAboveCrestMeters": 1.25,
+          "fluxSquareMetersPerSecond": 0.005,
+          "gradient": -0.5
+        }
+      ],
+      "initialColumns": [
+        {
+          "bed": {
+            "left": 0,
+            "right": 0
+          },
+          "offset": 1.5,
+          "state": "wet"
+        },
+        {
+          "bed": {
+            "left": 0.25,
+            "right": 0.25
+          },
+          "offset": 0.75,
+          "state": "wet"
+        }
+      ],
+      "initialMeansMeters": [
+        1.5,
+        0.75
+      ],
+      "initialOwnerComponents": [
+        [
+          1.5,
+          0
+        ],
+        [
+          0.75,
+          0
+        ]
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0.005,
+      "maximumCumulativeRelativeInventoryResidual": 1.9142944607947188e-19,
+      "maximumLocalRelativeLedgerResidual": 7.407125219430259e-17,
+      "maximumStepRelativeInventoryResidual": 7.400809204476573e-17,
+      "name": "capped-two-owner-relaxation",
+      "oracleContract": "Independent d'= -2*cap*d on two width-1 fully wet constant-bed owners; not a continuum PDE reference.",
+      "ownersBitIdentical": false,
+      "refusal": null,
+      "requestedSteps": 2000,
+      "roughness": 0.04,
+      "signedMeanErrorsMeters": [
+        -2.4505128879626253e-8,
+        2.4505128879626253e-8
+      ],
+      "stepSeconds": 0.0005
+    },
+    {
+      "acceptedSteps": 4000,
+      "acceptedTimeSeconds": 1,
+      "beds": [
+        {
+          "left": 0,
+          "right": 0
+        },
+        {
+          "left": 0.25,
+          "right": 0.25
+        }
+      ],
+      "boundaryInputSquareMeters": 0,
+      "boundaryOutputSquareMeters": 0,
+      "capSquareMetersPerSecond": 0.01,
+      "completed": true,
+      "computedFaceDiagnosticContract": "Computed faces include a refused attempt, if any; only final owners/acceptedSteps denote committed state.",
+      "everyActiveFaceCapped": true,
+      "exactDiscreteOdeMeansMeters": [
+        1.4950496683266887,
+        0.7549503316733113
+      ],
+      "finalOwnerComponents": [
+        [
+          1.4950496560741648,
+          2.803255538938107e-17
+        ],
+        [
+          0.7549503439258352,
+          -2.803255538938107e-17
+        ]
+      ],
+      "firstFaces": [
+        {
+          "cappedBranchSelected": true,
+          "donor": "left",
+          "donorDepthAboveCrestMeters": 1.25,
+          "fluxSquareMetersPerSecond": 0.005,
+          "gradient": -0.5
+        }
+      ],
+      "initialColumns": [
+        {
+          "bed": {
+            "left": 0,
+            "right": 0
+          },
+          "offset": 1.5,
+          "state": "wet"
+        },
+        {
+          "bed": {
+            "left": 0.25,
+            "right": 0.25
+          },
+          "offset": 0.75,
+          "state": "wet"
+        }
+      ],
+      "initialMeansMeters": [
+        1.5,
+        0.75
+      ],
+      "initialOwnerComponents": [
+        [
+          1.5,
+          0
+        ],
+        [
+          0.75,
+          0
+        ]
+      ],
+      "maximumComputedAbsoluteFluxSquareMetersPerSecond": 0.005,
+      "maximumCumulativeRelativeInventoryResidual": 1.9265293811439477e-19,
+      "maximumLocalRelativeLedgerResidual": 7.424123724890549e-17,
+      "maximumStepRelativeInventoryResidual": 7.393251788291627e-17,
+      "name": "capped-two-owner-relaxation",
+      "oracleContract": "Independent d'= -2*cap*d on two width-1 fully wet constant-bed owners; not a continuum PDE reference.",
+      "ownersBitIdentical": false,
+      "refusal": null,
+      "requestedSteps": 4000,
+      "roughness": 0.04,
+      "signedMeanErrorsMeters": [
+        -1.2252523856338148e-8,
+        1.2252523856338148e-8
+      ],
+      "stepSeconds": 0.00025
+    }
+  ],
+  "validation": {
+    "fullNpmTest": {
+      "passed": true,
+      "nativeTests": 637,
+      "nativeTargets": 118,
+      "ignoredNativeTests": 1,
+      "nodeFiles": 18,
+      "nodeTests": 88,
+      "typecheck": true,
+      "nativeReleaseRebuilt": true
+    },
+    "releaseRegression": {
+      "libraryTests": 182,
+      "regionalSoilTests": 12,
+      "regionalSurfaceTests": 5,
+      "total": 199,
+      "passed": true
+    },
+    "finalDirectedTopographyTests": 3,
+    "directedHypsometryTests": 6,
+    "strictAllTargetClippy": "passed",
+    "format": "passed",
+    "whitespace": "passed",
+    "cliRefusalChecks": 3,
+    "guiRerun": false,
+    "sourcePhaseNote": "The optimized full regression preceded final test-only assertions and fixed-array chunk iteration; final optimized topography tests and strict Clippy include them. Physical/reference arithmetic is unchanged across those phases. The full npm suite additionally exercises all native targets and Node tests.",
+    "completeReportBytes": 109281,
+    "debugRepeatedDebugReleaseByteIdentical": true,
+    "oldNonAffineOutputUnchanged": true
+  },
+  "limitations": [
+    "Exact dyadic equilibrium does not imply bit-exact rest on arbitrary rounded stocks/bed; the non-dyadic case retains positive roundoff flow and altered low components.",
+    "The separate low-order head baseline does not repair or replace flat-pressure extrema/plateau refusals.",
+    "One-head local hydrostatic equilibration cannot resolve moving intracell head variation or disconnected pools behind an unrepresented internal ridge.",
+    "Dry minimum-bed ordering is a numerical surrogate, not an inferred physical water level; endpoint crests differ from paper center-bed geometry.",
+    "The two-owner ODE is discrete temporal validation, not variable-bed PDE accuracy, spatial order or a general positivity/stability theorem.",
+    "No new production, spherical, seasonal, persistence, protocol or desktop selection. Frozen overtopping direction is not calibrated discharge."
+  ],
+  "primarySources": [
+    {
+      "title": "Manorost–Bastian, diffusive-wave finite-volume interface, equations 6–8",
+      "url": "https://arxiv.org/html/2512.16525v1",
+      "borrowing": "Head/upwind/crest structure only; not its implicit regularized scheme or theorem."
+    },
+    {
+      "title": "HEC-RAS hydraulic property tables",
+      "url": "https://www.hec.usace.army.mil/confluence/rasdocs/hecras/beta/technical-reference/hydraulic-property-tables",
+      "borrowing": "Separate cell storage and face conveyance geometry precedent only."
+    }
+  ],
+  "fingerprints": [
+    {
+      "path": "artifacts/topography-final.json",
+      "sha256": "3ef45f4303b45da063f9dc3dafea95e457bf119bd3b388023b852b27065ca348"
+    },
+    {
+      "path": "artifacts/topography-repeat.json",
+      "sha256": "3ef45f4303b45da063f9dc3dafea95e457bf119bd3b388023b852b27065ca348"
+    },
+    {
+      "path": "artifacts/topography-release.json",
+      "sha256": "3ef45f4303b45da063f9dc3dafea95e457bf119bd3b388023b852b27065ca348"
+    },
+    {
+      "path": "artifacts/non-affine-after-topography.json",
+      "sha256": "637bbf678092f9fca352c9de5c1548d3baf5a4e0eb979cdb3f2c352912577bba"
+    },
+    {
+      "path": "artifacts/topography-full-test-log.txt",
+      "sha256": "03d675eb911684203f451c8b28e24fa2d4ebb70e2103b98163352282aa67fea5"
+    },
+    {
+      "path": "artifacts/topography-release-test-log.txt",
+      "sha256": "3fe952e36be2758b76a935dac151a7cb2353e095d2dc4ef1f001efe7f2f84dd9"
+    },
+    {
+      "path": "artifacts/topography-directed-final-log.txt",
+      "sha256": "72740871ebc79177865c43c3ae089da8b84e6775a81d0251931b566404809105"
+    },
+    {
+      "path": "artifacts/hypsometry-directed-tests.log",
+      "sha256": "966d21275db8dc060176ce0a1a78fbe0031805c0204917bdb6e70a267e84f438"
+    },
+    {
+      "path": "artifacts/topography-clippy-verified-log.txt",
+      "sha256": "48a26d10401b5f47663fca0c56903e8e096bab65df145e507d4d0ea912cd8092"
+    },
+    {
+      "path": "artifacts/topography-cli-log.txt",
+      "sha256": "a13f37b68bddd434478b54139abb5db9634eec41538c9ed6be2196da6077a26a"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front.rs",
+      "sha256": "5ea3bf2c0ede0cc84a8a296e475a5c8bc54c0e0a3f3793ddbee699adcc1534ec"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/hypsometry.rs",
+      "sha256": "728f663f9221c088c45c601abad4f7c10a247ee443b95bb62a3affda6af14522"
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/topography.rs",
+      "sha256": "4de3b5fad349e27d289a4e70e691e553c9181d38cb8eb6f745082c8c65407f89"
+    },
+    {
+      "path": "native/examples/surface_topography_report.rs",
+      "sha256": "9d7ac68948ba02e9134e20e564d2f40265a0c193453c35c0614e93f007bf4374"
+    }
+  ],
+  "unchangedSharedArithmetic": [
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/faces.rs",
+      "sha256": "0a17417c0fefc6f8edd4a93ba73bd7fd661c264775a42fd498eaa98421791bc3",
+      "unchangedFromBaseline": true
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/paired_evolution.rs",
+      "sha256": "27bdfc9bf09453b5262f11b07161375e9323c9d9b715093cb0eec2f26d4cb4c4",
+      "unchangedFromBaseline": true
+    },
+    {
+      "path": "native/src/seasonal_moisture/regional_soil/surface_front/moments.rs",
+      "sha256": "c96c549a6d1e0e07331078e98d4c0f249e7a4f93db3960d170dd67c98b5250cc",
+      "unchangedFromBaseline": true
+    }
+  ],
+  "excludedOwnerEdits": [
+    {
+      "path": "src/renderer/map.ts",
+      "sha256": "9c81dd0cd24b6c4da58e84263dd1b8fbb076de5cc8ec1c3271d70b307d7c9aaa",
+      "includedInCommit": false
+    },
+    {
+      "path": "src/renderer/style.css",
+      "sha256": "eb771462dfa08702874f7f06efc5b653364c7f56d54a43413724f87d167fe84d",
+      "includedInCommit": false
+    }
+  ],
+  "artifactRetention": "Complete reports/test logs are ignored local artifacts; this tracked record retains resolved inputs, summaries and fingerprints, not a claim of portable artifact availability."
+}
