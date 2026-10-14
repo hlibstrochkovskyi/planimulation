@@ -140,6 +140,14 @@ preview now accepts the uplands family for the next actual-bed comparison.
 Structural mountain/valley refinement, drainage-informed preparation and finer
 physical sampling remain open; R3 is not complete and the default is unchanged.
 
+The subsequent [structurally forced preparation](landscape-evolution.md) adds
+prescribed active-belt displacement before rebuilt downhill routing and existing
+incision. Twenty ordinary cases retain more high terrain than incision alone;
+depth/stock ledgers and time/space controls are retained. It is a native review
+component, not a new desktop default. Dense closed catchments and local time-step
+rerouting remain significant; actual sediment supply/retention is the next
+process decision before any depositional terrain change.
+
 No new default generator, higher desktop
 resolution, multiple-grid coupling, LOD, calibrated erosion or biomes are claimed.
 The owner's existing renderer changes are outside this work and must not be
@@ -186,3 +194,13 @@ remain feasible for generation, but one retained seed's initial closed dry area
 increases with finer sampling (47.56% → 61.68%). More samples alone are therefore
 not selected as the landscape fix. The focused probe/core-composition test,
 old field pin, Clippy and five refusal checks pass; see the updated scale record.
+
+The structurally forced preparation increment passes 722 native tests across
+130 targets and 96 Node tests, retaining the ignored native test. All 92 complete
+preparation records repeat exactly apart from declared timings. Both source
+ledgers, 16/32/64-step controls, actual bed/receiver atlases and 40,962–655,362
+sampling controls are retained. Strict Clippy, formatting, whitespace and eleven
+new-output refusals pass. Relief retention improves, but dense closed catchments
+and a 200.75 m local time-refinement difference prevent a full R3/default claim.
+Future sediment delivery must be derived from actually accepted erosion, not
+introduced as unrecorded depression filling.

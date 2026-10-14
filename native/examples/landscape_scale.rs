@@ -1,13 +1,13 @@
 //! Bounded generation-only performance probe; no desktop/world checkpoint output.
+#[path = "support/initial_landscape_fields.rs"]
+mod initial_landscape_fields;
+use initial_landscape_fields::build as initial_fields;
 use planimulation_core::{
     Recipe, Surface, continental_uplands,
-    crust::Crust,
     drainage::Drainage,
-    geography, hash,
+    hash,
     landscape::{self, Settings},
     moisture_transport::total_mass,
-    tectonics::Tectonics,
-    terrain::Terrain,
     water::{Water, WaterSettings},
 };
 use serde_json::json;
@@ -29,49 +29,6 @@ fn peak_rss_bytes() -> Option<u64> {
 
 fn storage<T>(items: &Vec<T>) -> usize {
     items.capacity() * std::mem::size_of::<T>()
-}
-
-fn initial_fields(
-    surface: &Surface,
-    parameters: &Recipe,
-) -> Result<(Crust, Tectonics, Terrain), String> {
-    let crust = if parameters.model_version == continental_uplands::MODEL_VERSION {
-        continental_uplands::build_crust(
-            surface,
-            &parameters.seed,
-            parameters.continental_fraction,
-            parameters.continental_scale,
-        )?
-    } else {
-        Crust::build(
-            surface,
-            &parameters.seed,
-            parameters.continental_fraction,
-            parameters.continental_scale,
-        )
-    };
-    let tectonics = Tectonics::build_with_continuous_roots(
-        surface,
-        &parameters.seed,
-        parameters.plate_count,
-        parameters.max_plate_speed_cm_per_year,
-        parameters.radius_meters,
-    )?;
-    let mut terrain = Terrain::build(surface, &crust, &tectonics, parameters);
-    if parameters.model_version == continental_uplands::MODEL_VERSION {
-        let field = geography::Field::new(&parameters.seed, parameters.continental_scale)?;
-        for (i, &p) in surface.centers.iter().enumerate() {
-            let sample = field.relief(p, crust.continentality[i])?;
-            terrain.convergence[i] *= sample.convergence_factor;
-            terrain.divergence[i] *= sample.divergence_factor;
-            terrain.detail[i] = sample.detail * parameters.detail_amplitude_meters;
-            terrain.elevation[i] = terrain.baseline[i]
-                + terrain.convergence[i]
-                + terrain.divergence[i]
-                + terrain.detail[i];
-        }
-    }
-    Ok((crust, tectonics, terrain))
 }
 
 fn parameters(seed: String, uplands: bool) -> Recipe {
