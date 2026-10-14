@@ -179,3 +179,10 @@ incision previews and an exact repeated first-light report complete, but broad
 smoothing and eight increased-storage cases prevent preparation-model promotion.
 Strict Clippy, formatting, whitespace and five new-output refusals pass. This
 closes the depth/storage characterization step, not R3 or the natural-world goal.
+
+The subsequent uplands-family generation probe repeats 40,962–655,362 workloads
+with explicit sampling metadata and unchanged production limits. Laptop costs
+remain feasible for generation, but one retained seed's initial closed dry area
+increases with finer sampling (47.56% → 61.68%). More samples alone are therefore
+not selected as the landscape fix. The focused probe/core-composition test,
+old field pin, Clippy and five refusal checks pass; see the updated scale record.

@@ -1,9 +1,9 @@
 //! Bounded generation-only performance probe; no desktop/world checkpoint output.
 use planimulation_core::{
-    Recipe, Surface,
+    Recipe, Surface, continental_uplands,
     crust::Crust,
     drainage::Drainage,
-    hash,
+    geography, hash,
     landscape::{self, Settings},
     moisture_transport::total_mass,
     tectonics::Tectonics,
@@ -31,25 +31,60 @@ fn storage<T>(items: &Vec<T>) -> usize {
     items.capacity() * std::mem::size_of::<T>()
 }
 
-fn main() -> Result<(), String> {
-    let args: Vec<_> = std::env::args().skip(1).collect();
-    if args.len() != 3 {
-        return Err("Usage: landscape_scale NEW_REPORT.json SEED SUBDIVISION(6..8)".into());
+fn initial_fields(
+    surface: &Surface,
+    parameters: &Recipe,
+) -> Result<(Crust, Tectonics, Terrain), String> {
+    let crust = if parameters.model_version == continental_uplands::MODEL_VERSION {
+        continental_uplands::build_crust(
+            surface,
+            &parameters.seed,
+            parameters.continental_fraction,
+            parameters.continental_scale,
+        )?
+    } else {
+        Crust::build(
+            surface,
+            &parameters.seed,
+            parameters.continental_fraction,
+            parameters.continental_scale,
+        )
+    };
+    let tectonics = Tectonics::build_with_continuous_roots(
+        surface,
+        &parameters.seed,
+        parameters.plate_count,
+        parameters.max_plate_speed_cm_per_year,
+        parameters.radius_meters,
+    )?;
+    let mut terrain = Terrain::build(surface, &crust, &tectonics, parameters);
+    if parameters.model_version == continental_uplands::MODEL_VERSION {
+        let field = geography::Field::new(&parameters.seed, parameters.continental_scale)?;
+        for (i, &p) in surface.centers.iter().enumerate() {
+            let sample = field.relief(p, crust.continentality[i])?;
+            terrain.convergence[i] *= sample.convergence_factor;
+            terrain.divergence[i] *= sample.divergence_factor;
+            terrain.detail[i] = sample.detail * parameters.detail_amplitude_meters;
+            terrain.elevation[i] = terrain.baseline[i]
+                + terrain.convergence[i]
+                + terrain.divergence[i]
+                + terrain.detail[i];
+        }
     }
-    if Path::new(&args[0]).exists() {
-        return Err("Scale report must use a new output path.".into());
-    }
-    let level: u32 = args[2].parse().map_err(|_| "Invalid scale subdivision.")?;
-    if !(6..=8).contains(&level) {
-        return Err("Scale probe supports subdivisions 6–8 only.".into());
-    }
-    // This remains a valid reference parameter recipe. Sampling resolution is
-    // separate experiment metadata, never mislabeled as a supported Recipe.
-    let parameters = Recipe {
+    Ok((crust, tectonics, terrain))
+}
+
+fn parameters(seed: String, uplands: bool) -> Recipe {
+    Recipe {
         schema_version: 1,
-        model_version: "continuous-plates-1".into(),
+        model_version: if uplands {
+            continental_uplands::MODEL_VERSION
+        } else {
+            "continuous-plates-1"
+        }
+        .into(),
         random_version: "fnv1a-utf8-mulberry32-1".into(),
-        seed: args[1].clone(),
+        seed,
         subdivision: 6,
         radius_meters: 6371000.,
         plate_count: 12,
@@ -61,7 +96,26 @@ fn main() -> Result<(), String> {
         detail_amplitude_meters: 300.,
         terrain_preparation_passes: Some(0),
         water: WaterSettings::Coverage { fraction: 0.71 },
-    };
+    }
+}
+
+fn main() -> Result<(), String> {
+    let args: Vec<_> = std::env::args().skip(1).collect();
+    if !(3..=4).contains(&args.len()) || (args.len() == 4 && args[3] != "--uplands") {
+        return Err(
+            "Usage: landscape_scale NEW_REPORT.json SEED SUBDIVISION(6..8) [--uplands]".into(),
+        );
+    }
+    if Path::new(&args[0]).exists() {
+        return Err("Scale report must use a new output path.".into());
+    }
+    let level: u32 = args[2].parse().map_err(|_| "Invalid scale subdivision.")?;
+    if !(6..=8).contains(&level) {
+        return Err("Scale probe supports subdivisions 6–8 only.".into());
+    }
+    // This remains a valid reference parameter recipe. Sampling resolution is
+    // separate experiment metadata, never mislabeled as a supported Recipe.
+    let parameters = parameters(args[1].clone(), args.len() == 4);
     parameters.validate()?;
     let started = Instant::now();
     let mut stages = Vec::new();
@@ -76,23 +130,10 @@ fn main() -> Result<(), String> {
     };
     let surface = Surface::build_generation_probe(level, parameters.radius_meters)?;
     mark("surface");
-    let crust = Crust::build(
-        &surface,
-        &parameters.seed,
-        parameters.continental_fraction,
-        parameters.continental_scale,
-    );
-    mark("crust");
-    let tectonics = Tectonics::build_with_continuous_roots(
-        &surface,
-        &parameters.seed,
-        parameters.plate_count,
-        parameters.max_plate_speed_cm_per_year,
-        parameters.radius_meters,
-    )?;
-    mark("tectonics");
-    let terrain = Terrain::build(&surface, &crust, &tectonics, &parameters);
-    mark("terrain");
+    // This probe composition is separately checked against supported World
+    // generation. Sampling metadata never upgrades the reference recipe limit.
+    let (crust, tectonics, terrain) = initial_fields(&surface, &parameters)?;
+    mark("initialStructuralFields");
     let water = Water::generate(&surface, &terrain.elevation, &parameters.water)?;
     mark("initialWater");
     let drainage = Drainage::build(&surface, &terrain.elevation, &water.body_ids);
@@ -180,18 +221,34 @@ fn main() -> Result<(), String> {
         }
     }
     let fingerprint = format!("{:08x}", hash(&physical));
-    let report = json!({"reportVersion":"landscape-scale-1","samplingSubdivision":level,"regions":n,
+    let mut dry_area = 0.;
+    let mut closed_area = 0.;
+    let mut sinks = 0;
+    for i in 0..n {
+        if water.body_ids[i] == 0 {
+            dry_area += surface.areas[i];
+            if water.body_ids[drainage.outlets[i] as usize] == 0 {
+                closed_area += surface.areas[i];
+            }
+            if drainage.receivers[i] as usize == i {
+                sinks += 1;
+            }
+        }
+    }
+    let report = json!({"reportVersion":"landscape-scale-2","samplingSubdivision":level,"regions":n,
         "referenceParameters":parameters,"incisionModelVersion":landscape::MODEL_VERSION,"incisionSettings":settings,
         "stageMeasurements":stages,"totalGenerationAndOnePassSeconds":total_seconds,
         "generationPeakRssBytes":generation_peak,"reportingPeakRssBytes":peak_rss_bytes(),
         "retainedVecCapacityBytes":{"surface":surface_storage,"crust":crust_storage,"terrain":terrain_storage,
             "tectonics":tectonic_storage,"water":water_storage,"drainage":drainage_storage,"incisionAndLinks":incision_storage},
         "heightFieldBytes":n*8,"relativeSphereAreaError":relative_area_error,
+        "initialStaticDrainage":{"closedDrySinkCount":sinks,"closedDryAreaFraction":if dry_area>0. {closed_area/dry_area} else {0.},
+            "dryAreaSquareMeters":dry_area},
         "elevationRangeMeters":{"minimum":terrain.elevation.iter().copied().fold(f64::INFINITY,f64::min),
             "maximum":terrain.elevation.iter().copied().fold(f64::NEG_INFINITY,f64::max)},
         "removedMaterialReservoirCubicMeters":incision.removed_material_cubic_meters,
         "changedNodes":incision.changed_nodes,"physicalFieldFnv1aLittleEndian32":fingerprint,
-        "scope":"Generation-only existing structural fields, one dry incision pass. No basins, atmosphere, dynamic water, renderer, wire, checkpoint or supported higher-resolution recipe. Linux VmHWM is cumulative; timings and memory are not reproducible physical fields."});
+        "scope":"Generation-only explicitly pinned structural family, one dry incision pass. Initial static drainage is not active rivers or a permanent endorheic fraction. No basins, atmosphere, dynamic water, renderer, wire, checkpoint or supported higher-resolution recipe. Linux VmHWM is cumulative; timings and memory are not reproducible physical fields."});
     let mut bytes = serde_json::to_vec_pretty(&report).map_err(|e| e.to_string())?;
     bytes.push(b'\n');
     let mut file = std::fs::OpenOptions::new()
@@ -205,4 +262,31 @@ fn main() -> Result<(), String> {
         bytes.len()
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use planimulation_core::World;
+    #[test]
+    fn probe_composition_matches_supported_core_without_extending_recipe_limits() {
+        for uplands in [false, true] {
+            let mut r = parameters("first-light".into(), uplands);
+            r.subdivision = 3;
+            let w = World::generate(r.clone()).unwrap();
+            let s = Surface::build_generation_probe(3, r.radius_meters).unwrap();
+            let (c, t, h) = initial_fields(&s, &r).unwrap();
+            assert_eq!(c.potential, w.crust.potential);
+            assert_eq!(c.thickness_meters, w.crust.thickness_meters);
+            assert_eq!(c.threshold, w.crust.threshold);
+            assert_eq!(t.owners, w.tectonics.owners);
+            assert_eq!(h.baseline, w.terrain.baseline);
+            assert_eq!(h.convergence, w.terrain.convergence);
+            assert_eq!(h.divergence, w.terrain.divergence);
+            assert_eq!(h.detail, w.terrain.detail);
+            assert_eq!(h.elevation, w.terrain.elevation);
+            r.subdivision = 8;
+            assert!(r.validate().is_err());
+        }
+    }
 }

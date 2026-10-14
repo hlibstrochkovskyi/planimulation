@@ -85,3 +85,67 @@ Proceed to the versioned geographic-field family in R3. Keep production limits
 until display tiling/LOD, climate/catchment mapping, persistence and complete
 application measurements support them. No promise of a two-million-cell desktop
 world or interactive high-resolution dynamics follows from this probe.
+
+## Subsequent uplands-family probe
+
+After the [depression and incision review](depression-geometry.md), the same
+bounded example adds explicit `--uplands` selection. Observer report version 2
+records the pinned initial family and initial static dry drainage. The structural
+composition has an independent supported-grid comparison against `World::generate`
+for both families, with zero old smoothing. Production recipe validation still
+rejects subdivision 8; reference parameters remain a valid level-6 recipe.
+
+```bash
+cargo run --locked --release --manifest-path native/Cargo.toml \
+  --example landscape_scale -- artifacts/new-uplands-scale-8.json first-light 8 --uplands
+```
+
+Three fresh sequential release processes per resolution, in a normal desktop
+session, retain `artifacts/uplands-scale-l{6,7,8}-r{0,1,2}.json`. Initial runs
+overlapped a small regression probe/Clippy; these are observed process costs,
+not isolated performance guarantees. New reports group crust/tectonics/relief
+under `initialStructuralFields`; old report-1 stage measurements above remain
+historical observations, not silently rewritten results.
+
+| Regions | Median generation + one pass | Observed range | Generation peak RSS | Retained Vec capacities |
+| ---: | ---: | ---: | ---: | ---: |
+| 40,962 | 0.465 s | 0.289–0.512 s | 35.48–37.13 MiB | 27.63 MiB |
+| 163,842 | 1.144 s | 1.013–1.778 s | 127.91–128.67 MiB | 109.31 MiB |
+| 655,362 | 4.057 s | 3.992–6.510 s | 501.75–503.55 MiB | 434.88 MiB |
+
+All three field diagnostics repeat at each resolution: `a969cdda`, `087276ee`,
+`485049bc`. The supported level-6 encoded height fields also agree with the
+independent one-pass uplands `landscape_preview` report. The original scale
+probe's level-6 field pin remains `a072e8c2`. Hashes are noncryptographic
+diagnostics, not proof of full-state equivalence or platform portability.
+
+### More samples do not repair the model
+
+For this **one** zero-smoothing seed, the unchanged initial bed analysis shows:
+
+| Regions | Closed dry minima | Initial dry area reaching closed minima | Maximum bed elevation |
+| ---: | ---: | ---: | ---: |
+| 40,962 | 240 | 47.56% | 4,162.32 m |
+| 163,842 | 731 | 57.54% | 4,466.62 m |
+| 655,362 | 1,438 | 61.68% | 4,645.32 m |
+
+These drainage measures are taken **before** the one incision pass. Coarser
+sampling conceals parts of the field's topological complexity; finer sampling
+does not magically open physical outlets. Boundary propagation and sampled
+drainage also change with grid refinement even though continental columns are
+mesh-independent. This is not a convergence proof, a twenty-seed dense cohort,
+or a permanent endorheic measurement. It does demonstrate why more UI regions
+alone are insufficient to fix landscape generation.
+
+The laptop can generate these structural fields. The next geography choice
+must address structural drainage/relief and retained depressions, while future
+LOD and coarse-climate coupling address rendering and dynamics. No higher
+desktop setting, supported full dense World, basin hierarchy, climate, dynamic
+water, checkpoint or GPU performance is claimed by this extension.
+
+Verification: the new example composition test passes for both supported
+families; strict all-target Clippy and formatting/whitespace checks pass. Five
+malformed/unsupported/existing-output runs refuse without creating a report.
+This example-only extension follows the preceding full regression run of 703
+native and 96 Node tests; it receives its own focused test, not a second claimed
+full 704-test run. Owner renderer files remain untouched.
