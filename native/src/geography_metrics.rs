@@ -314,7 +314,7 @@ fn sum(values: impl IntoIterator<Item = f64>) -> Result<f64, String> {
     Ok(total)
 }
 
-fn validate(s: &Surface, h: &[f64], water: &Water) -> Result<(), String> {
+pub(crate) fn validate(s: &Surface, h: &[f64], water: &Water) -> Result<(), String> {
     let n = h.len();
     if n == 0
         || n > MAX_NODES

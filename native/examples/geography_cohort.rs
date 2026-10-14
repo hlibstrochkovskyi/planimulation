@@ -1,10 +1,12 @@
 //! Bounded geography review, not a calibrated realism score or dense desktop run.
+#[path = "support/depression_atlas.rs"]
+mod depression_atlas;
 #[path = "support/geography_atlas.rs"]
 mod geography_atlas;
 
 use planimulation_core::{
-    Recipe, Surface, World, continental_uplands, drainage::Drainage, geography, geography_metrics,
-    hash, water::WaterSettings, wire,
+    Recipe, Surface, World, continental_uplands, depression_analysis, drainage::Drainage,
+    geography, geography_metrics, hash, water::WaterSettings, wire,
 };
 use serde_json::{Value, json};
 use std::{
@@ -270,7 +272,12 @@ fn main() -> Result<(), String> {
             shared = shared_crust(&new)?;
         }
         let svg_filename = format!("{name}.svg");
+        let depression_filename = format!("{name}-depressions.svg");
         let json_filename = format!("{name}.json");
+        let old_depressions =
+            depression_analysis::analyze(&old.surface, &old.terrain.elevation, &old.water)?;
+        let new_depressions =
+            depression_analysis::analyze(&new.surface, &new.terrain.elevation, &new.water)?;
         let fixed_volume_control = if mode == Mode::Uplands {
             let mut r = new.recipe.clone();
             r.water = WaterSettings::Volume {
@@ -285,6 +292,8 @@ fn main() -> Result<(), String> {
         let row = json!({"case":name,"seed":seed,
             "category":if name.starts_with("ordinary-") { "ordinary" } else { "directed" },
             "atlasFile":svg_filename,"reportFile":json_filename,
+            "depressionAtlasFile":depression_filename,
+            "depressionGeometry":{"baseline":old_depressions,"candidate":new_depressions},
             "baseline":record(&old,old_seconds)?,"candidate":record(&new,new_seconds)?,
             "candidateWithBaselineWaterVolume":fixed_volume_control,
             "fixedVersion1TerminalMaskAblation":if mode==Mode::Uplands {
@@ -295,6 +304,10 @@ fn main() -> Result<(), String> {
         write_new(
             &directory.join(&svg_filename),
             geography_atlas::render(&old, &new).as_bytes(),
+        )?;
+        write_new(
+            &directory.join(&depression_filename),
+            depression_atlas::render(&old, &new, &old_depressions, &new_depressions).as_bytes(),
         )?;
         write_json(&directory.join(&json_filename), &row)?;
         println!(
@@ -311,7 +324,7 @@ fn main() -> Result<(), String> {
         Value::Null
     };
     // Written last: absence of manifest identifies a failed/partial diagnostic run.
-    let manifest = json!({"reportVersion":"geography-cohort-2","subdivision":subdivision,"comparison":format!("{mode:?}"),
+    let manifest = json!({"reportVersion":"geography-cohort-3","subdivision":subdivision,"comparison":format!("{mode:?}"),
         "ordinaryPairCount":20,"directedPairCount":3,"rows":rows,
         "meshIndependentCrustCheck":shared,"denseCrustDiagnostic":dense,
         "controlScope":"Fragmented and broad name scale settings 0.5 and 2, not guaranteed archipelago or supercontinent outcomes. Low-relief disables boundary relief/detail, not crust buoyancy or existing dry smoothing.",

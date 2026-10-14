@@ -132,6 +132,11 @@ coast/landmass variety but retains broad relief and many initial dry sinks.
 The subsequent [continental-uplands v2](continental-uplands.md) varies initial
 columns while retaining v1 structural fields. Its paired cohort improves regional
 elevation and reduces closed-catchment attraction, but retains many minima.
+The [depression-geometry review](depression-geometry.md) now distinguishes leaf
+first-merge depth from eventual water/ocean escape and measures unique storage
+prisms. Remaining v2 depressions have smaller footprints but greater depth;
+blanket filling/breaching is not selected. The existing accounted incision
+preview now accepts the uplands family for the next actual-bed comparison.
 Structural mountain/valley refinement, drainage-informed preparation and finer
 physical sampling remain open; R3 is not complete and the default is unchanged.
 
@@ -166,3 +171,11 @@ retain the reported drainage improvement and remaining minima. Both candidate
 desktop families pass save/reopen and inspector checks. Structural terrain and
 explicit geological preparation remain the next R3 work, not a higher-resolution
 or climate-calibration promotion.
+
+The depression-geometry and uplands-incision review passes 703 native tests
+across 127 targets and 96 Node tests, with the same ignored native test. All
+23 original geography pairs retain both fingerprints. Twenty accounted uplands
+incision previews and an exact repeated first-light report complete, but broad
+smoothing and eight increased-storage cases prevent preparation-model promotion.
+Strict Clippy, formatting, whitespace and five new-output refusals pass. This
+closes the depth/storage characterization step, not R3 or the natural-world goal.

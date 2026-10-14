@@ -6,9 +6,9 @@ use planimulation_core::{
     water::{Water, WaterSettings},
 };
 
-fn world(seed: &str) -> World {
+fn world(seed: &str, model: &str) -> World {
     let recipe: Recipe = serde_json::from_value(serde_json::json!({
-        "schemaVersion":1,"modelVersion":"continuous-plates-1",
+        "schemaVersion":1,"modelVersion":model,
         "randomVersion":"fnv1a-utf8-mulberry32-1","seed":seed,"subdivision":3,
         "radiusMeters":6371000.,"plateCount":12,"maxPlateSpeedCmPerYear":8.,
         "continentalFraction":0.38,"continentalScale":1.,"reliefScale":1.,
@@ -37,79 +37,81 @@ fn links(surface: &Surface, receivers: &[u32]) -> Vec<f64> {
 
 #[test]
 fn generated_spherical_incisions_preserve_terminals_and_close_independent_ledgers() {
-    for seed in ["first-light", "4836187e", "landscape-02", "landscape-03"] {
-        let w = world(seed);
-        let original = w.terrain.elevation.clone();
-        let mut bed = original.clone();
-        let mut volumes = Vec::new();
-        let settings = Settings {
-            erodibility_per_year: 1e-5,
-            step_years: 10000.,
-            base_level_meters: Some(w.water.level_meters),
-        };
-        for _ in 0..8 {
-            let graph = Drainage::build(&w.surface, &bed, &w.water.body_ids);
-            let distance = links(&w.surface, &graph.receivers);
-            let incision = landscape::incise(
-                &bed,
-                &w.surface.areas,
-                &graph.receivers,
-                &distance,
-                settings,
-            )
-            .unwrap();
-            assert_eq!(
-                serde_json::to_vec(&incision).unwrap(),
-                serde_json::to_vec(
-                    &landscape::incise(
-                        &bed,
-                        &w.surface.areas,
-                        &graph.receivers,
-                        &distance,
-                        settings
+    for model in ["continuous-plates-1", "multiscale-geography-2"] {
+        for seed in ["first-light", "4836187e", "landscape-02", "landscape-03"] {
+            let w = world(seed, model);
+            let original = w.terrain.elevation.clone();
+            let mut bed = original.clone();
+            let mut volumes = Vec::new();
+            let settings = Settings {
+                erodibility_per_year: 1e-5,
+                step_years: 10000.,
+                base_level_meters: Some(w.water.level_meters),
+            };
+            for _ in 0..8 {
+                let graph = Drainage::build(&w.surface, &bed, &w.water.body_ids);
+                let distance = links(&w.surface, &graph.receivers);
+                let incision = landscape::incise(
+                    &bed,
+                    &w.surface.areas,
+                    &graph.receivers,
+                    &distance,
+                    settings,
+                )
+                .unwrap();
+                assert_eq!(
+                    serde_json::to_vec(&incision).unwrap(),
+                    serde_json::to_vec(
+                        &landscape::incise(
+                            &bed,
+                            &w.surface.areas,
+                            &graph.receivers,
+                            &distance,
+                            settings
+                        )
+                        .unwrap()
                     )
                     .unwrap()
-                )
-                .unwrap()
-            );
-            for (i, &old) in bed.iter().enumerate() {
-                let new = incision.elevation_meters[i];
-                assert!(new.is_finite() && new <= old);
-                if graph.receivers[i] as usize == i || old <= w.water.level_meters {
-                    assert_eq!(new, old);
-                } else {
-                    assert!(new >= w.water.level_meters);
+                );
+                for (i, &old) in bed.iter().enumerate() {
+                    let new = incision.elevation_meters[i];
+                    assert!(new.is_finite() && new <= old);
+                    if graph.receivers[i] as usize == i || old <= w.water.level_meters {
+                        assert_eq!(new, old);
+                    } else {
+                        assert!(new >= w.water.level_meters);
+                    }
                 }
+                volumes.push(incision.removed_material_cubic_meters);
+                bed = incision.elevation_meters;
             }
-            volumes.push(incision.removed_material_cubic_meters);
-            bed = incision.elevation_meters;
+            let independent = total_mass(
+                &original
+                    .iter()
+                    .zip(&bed)
+                    .zip(&w.surface.areas)
+                    .map(|((a, b), area)| (a - b) * area)
+                    .collect::<Vec<_>>(),
+            );
+            let removed = total_mass(&volumes);
+            assert!(removed > 0.);
+            assert!((removed - independent).abs() / removed < 1e-12);
+            let water = Water::generate(
+                &w.surface,
+                &bed,
+                &WaterSettings::Volume {
+                    volume_cubic_meters: w.water.resolved_volume_cubic_meters,
+                },
+            )
+            .unwrap();
+            assert!(
+                (water.resolved_volume_cubic_meters - w.water.resolved_volume_cubic_meters).abs()
+                    / w.water.resolved_volume_cubic_meters
+                    < 1e-12
+            );
+            assert_eq!(w.terrain.elevation, original);
+            assert_eq!(w.terrain.elevation, world(seed, model).terrain.elevation);
         }
-        let independent = total_mass(
-            &original
-                .iter()
-                .zip(&bed)
-                .zip(&w.surface.areas)
-                .map(|((a, b), area)| (a - b) * area)
-                .collect::<Vec<_>>(),
-        );
-        let removed = total_mass(&volumes);
-        assert!(removed > 0.);
-        assert!((removed - independent).abs() / removed < 1e-12);
-        let water = Water::generate(
-            &w.surface,
-            &bed,
-            &WaterSettings::Volume {
-                volume_cubic_meters: w.water.resolved_volume_cubic_meters,
-            },
-        )
-        .unwrap();
-        assert!(
-            (water.resolved_volume_cubic_meters - w.water.resolved_volume_cubic_meters).abs()
-                / w.water.resolved_volume_cubic_meters
-                < 1e-12
-        );
-        assert_eq!(w.terrain.elevation, original);
-        assert_eq!(w.terrain.elevation, world(seed).terrain.elevation);
     }
 }
 
@@ -139,7 +141,7 @@ fn generation_probe_reuses_exact_supported_geometry_and_refuses_before_allocatio
     ] {
         assert!(Surface::build_generation_probe(level, radius).is_err());
     }
-    let mut unsupported = world("limits").recipe;
+    let mut unsupported = world("limits", "continuous-plates-1").recipe;
     unsupported.subdivision = 7;
     assert!(unsupported.validate().is_err());
     assert!(World::generate(unsupported).is_err());

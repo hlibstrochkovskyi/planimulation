@@ -1,7 +1,8 @@
 //! Compare real dry-incision fields; not a new desktop generator or climate run.
 use planimulation_core::{
-    Recipe, Surface, World,
+    Recipe, Surface, World, continental_uplands, depression_analysis,
     drainage::Drainage,
+    geography_metrics,
     landscape::{self, Settings},
     moisture_transport::total_mass,
     water::{Water, WaterSettings},
@@ -9,10 +10,15 @@ use planimulation_core::{
 use serde_json::json;
 use std::{fmt::Write as _, io::Write, path::Path, time::Instant};
 
-fn recipe(seed: String, subdivision: u32) -> Recipe {
+fn recipe(seed: String, subdivision: u32, uplands: bool) -> Recipe {
     Recipe {
         schema_version: 1,
-        model_version: "continuous-plates-1".into(),
+        model_version: if uplands {
+            continental_uplands::MODEL_VERSION
+        } else {
+            "continuous-plates-1"
+        }
+        .into(),
         random_version: "fnv1a-utf8-mulberry32-1".into(),
         seed,
         subdivision,
@@ -73,6 +79,7 @@ fn atlas(
     after: &[f64],
     old_water: &Water,
     new_water: &Water,
+    model: &str,
 ) -> String {
     let mut svg = String::from(
         "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1600\" height=\"520\" viewBox=\"0 0 1600 520\"><rect width=\"1600\" height=\"520\" fill=\"#10191f\"/><style>text{font-family:DejaVu Sans,sans-serif;fill:#e6edf3}</style><text x=\"24\" y=\"30\" font-size=\"20\">Physical terrain comparison — experimental dry incision, not biomes</text><defs><clipPath id=\"clip\"><rect width=\"760\" height=\"380\"/></clipPath></defs>",
@@ -81,12 +88,12 @@ fn atlas(
         (
             before,
             old_water,
-            "Baseline: continuous plates + existing terrain",
+            format!("Baseline: {model}, no old smoothing"),
         ),
         (
             after,
             new_water,
-            "Candidate: same terrain + stream-power incision",
+            "Candidate: same terrain + stream-power incision".into(),
         ),
     ]
     .into_iter()
@@ -149,9 +156,9 @@ fn create(path: &str, bytes: &[u8]) -> Result<(), String> {
 
 fn main() -> Result<(), String> {
     let args: Vec<_> = std::env::args().skip(1).collect();
-    if args.len() != 5 {
+    if !(5..=6).contains(&args.len()) || (args.len() == 6 && args[5] != "--uplands") {
         return Err(
-            "Usage: landscape_preview NEW_REPORT.json NEW_ATLAS.svg SEED SUBDIVISION PASSES".into(),
+            "Usage: landscape_preview NEW_REPORT.json NEW_ATLAS.svg SEED SUBDIVISION PASSES [--uplands]".into(),
         );
     }
     if args[0] == args[1] || Path::new(&args[0]).exists() || Path::new(&args[1]).exists() {
@@ -169,7 +176,7 @@ fn main() -> Result<(), String> {
         return Err("Preview supports subdivisions 3–6 and 1–32 geological passes.".into());
     }
     let started = Instant::now();
-    let world = World::generate(recipe(args[2].clone(), level))?;
+    let world = World::generate(recipe(args[2].clone(), level, args.len() == 6))?;
     let generated_seconds = started.elapsed().as_secs_f64();
     let mut field = world.terrain.elevation.clone();
     let settings = Settings {
@@ -265,7 +272,7 @@ fn main() -> Result<(), String> {
                 .collect::<Vec<_>>(),
         ) / area
     };
-    let report = json!({"reportVersion":"landscape-preview-1","incisionModelVersion":landscape::MODEL_VERSION,
+    let report = json!({"reportVersion":"landscape-preview-2","incisionModelVersion":landscape::MODEL_VERSION,
         "baselineRecipe":world.recipe,"settings":settings,"passes":passes,"regions":field.len(),
         "timingSeconds":{"initialGeneration":generated_seconds,"dryIncisionAndDrainage":erosion_seconds},
         "removedMaterialReservoirCubicMeters":removed,"independentBedLossCubicMeters":independent,
@@ -280,13 +287,18 @@ fn main() -> Result<(), String> {
         "candidateWaterVolumeCubicMeters":candidate_water.resolved_volume_cubic_meters,
         "baselineCoverage":coverage(&world.water),"candidateCoverage":coverage(&candidate_water),
         "baselineElevationMeters":world.terrain.elevation,"candidateElevationMeters":field,
-        "scope":"Dry geological preparation with prescribed effective runoff, fixed initial wet terminals and off-grid material reservoir. No deposition, new continental field, climate, selected desktop model or higher-resolution product support."});
+        "physicalGeography":{"baseline":geography_metrics::analyze(&world.surface,&world.terrain.elevation,&world.water)?,
+            "candidate":geography_metrics::analyze(&world.surface,&field,&candidate_water)?},
+        "depressionGeometry":{"baseline":depression_analysis::analyze(&world.surface,&world.terrain.elevation,&world.water)?,
+            "candidate":depression_analysis::analyze(&world.surface,&field,&candidate_water)?},
+        "scope":"Dry geological preparation on the explicitly recorded initial family, with prescribed effective runoff, fixed initial wet terminals and off-grid material reservoir. Candidate initial water is fitted once with original resolved stock, not coverage. No deposition, climate, selected desktop preparation model or higher-resolution product support."});
     let svg = atlas(
         &world.surface,
         &world.terrain.elevation,
         &field,
         &world.water,
         &candidate_water,
+        &world.recipe.model_version,
     );
     let mut bytes = serde_json::to_vec_pretty(&report).map_err(|e| e.to_string())?;
     bytes.push(b'\n');
@@ -301,4 +313,21 @@ fn main() -> Result<(), String> {
         residual
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::recipe;
+    #[test]
+    fn opt_in_family_does_not_change_old_preview_recipe_or_hide_smoothing() {
+        let old = recipe("first-light".into(), 6, false);
+        let mut new = recipe("first-light".into(), 6, true);
+        old.validate().unwrap();
+        new.validate().unwrap();
+        assert_eq!(old.model_version, "continuous-plates-1");
+        assert_eq!(new.model_version, "multiscale-geography-2");
+        assert_eq!(new.terrain_preparation_passes, Some(0));
+        new.model_version = old.model_version.clone();
+        assert_eq!(new, old);
+    }
 }

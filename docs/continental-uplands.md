@@ -141,6 +141,11 @@ preparation, and qualify finer physical sampling/LOD. Reviewed
 offers useful future geometry methods, but DEM flow enforcement is not physical
 erosion; none is implemented or used to conceal these retained minima.
 
+The subsequent [depression-geometry review](depression-geometry.md) implements
+that characterization without changing v2. It finds smaller depression footprints
+but deeper remaining basins, and selects an accounted uplands-incision comparison
+before choosing a production geological-preparation model.
+
 ## Verification scope
 
 Native controls check independent column values, monotonicity/bounds, unchanged
