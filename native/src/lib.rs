@@ -30,8 +30,13 @@ impl Recipe {
         }
         match (self.model_version.as_str(), self.terrain_preparation_passes) {
             ("basins-1", None) => {}
-            ("terrain-prep-1" | "continuous-plates-1" | geography::MODEL_VERSION, Some(passes))
-                if passes <= terrain_preparation::MAX_PASSES => {}
+            (
+                "terrain-prep-1"
+                | "continuous-plates-1"
+                | geography::MODEL_VERSION
+                | continental_uplands::MODEL_VERSION,
+                Some(passes),
+            ) if passes <= terrain_preparation::MAX_PASSES => {}
             _ => return Err("Unsupported terrain model or preparation pass count.".into()),
         }
         if self.seed.trim().is_empty() || self.seed.encode_utf16().count() > 128 {
@@ -277,7 +282,14 @@ impl World {
     pub fn generate(recipe: Recipe) -> Result<Self, String> {
         recipe.validate()?;
         let surface = Surface::build(recipe.subdivision, recipe.radius_meters);
-        let crust = if recipe.model_version == geography::MODEL_VERSION {
+        let crust = if recipe.model_version == continental_uplands::MODEL_VERSION {
+            continental_uplands::build_crust(
+                &surface,
+                &recipe.seed,
+                recipe.continental_fraction,
+                recipe.continental_scale,
+            )?
+        } else if recipe.model_version == geography::MODEL_VERSION {
             geography::build_crust(
                 &surface,
                 &recipe.seed,
@@ -294,6 +306,7 @@ impl World {
         };
         let tectonics = if recipe.model_version == "continuous-plates-1"
             || recipe.model_version == geography::MODEL_VERSION
+            || recipe.model_version == continental_uplands::MODEL_VERSION
         {
             tectonics::Tectonics::build_with_continuous_roots(
                 &surface,
@@ -312,7 +325,9 @@ impl World {
             )
         };
         let mut terrain = terrain::Terrain::build(&surface, &crust, &tectonics, &recipe);
-        if recipe.model_version == geography::MODEL_VERSION {
+        if recipe.model_version == geography::MODEL_VERSION
+            || recipe.model_version == continental_uplands::MODEL_VERSION
+        {
             let field = geography::Field::new(&recipe.seed, recipe.continental_scale)?;
             for (i, &p) in surface.centers.iter().enumerate() {
                 let sample = field.relief(p, crust.continentality[i])?;
@@ -421,6 +436,7 @@ impl World {
 }
 
 pub mod basins;
+pub mod continental_uplands;
 pub mod crust;
 pub mod drainage;
 pub mod exact_initial_accounting;

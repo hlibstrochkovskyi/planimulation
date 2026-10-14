@@ -3,7 +3,8 @@
 mod geography_atlas;
 
 use planimulation_core::{
-    Recipe, Surface, World, geography, geography_metrics, hash, water::WaterSettings, wire,
+    Recipe, Surface, World, continental_uplands, drainage::Drainage, geography, geography_metrics,
+    hash, water::WaterSettings, wire,
 };
 use serde_json::{Value, json};
 use std::{
@@ -61,11 +62,27 @@ fn record(world: &World, generation_seconds: f64) -> Result<Value, String> {
         geography_metrics::analyze(&world.surface, &world.terrain.elevation, &world.water)?;
     let metrics_seconds = started.elapsed().as_secs_f64();
     let fingerprint = checksum(world)?;
+    let mut dry_area = 0.;
+    let mut saturated_area = 0.;
+    let mut minimum = f64::INFINITY;
+    let mut maximum = f64::NEG_INFINITY;
+    for i in 0..world.surface.areas.len() {
+        if world.water.body_ids[i] == 0 {
+            dry_area += world.surface.areas[i];
+            if world.crust.continentality[i] == 1. {
+                saturated_area += world.surface.areas[i];
+                minimum = minimum.min(world.terrain.baseline[i]);
+                maximum = maximum.max(world.terrain.baseline[i]);
+            }
+        }
+    }
     Ok(json!({
         "recipe":world.recipe, "nativeCompatibleInitialChecksum":fingerprint,
         "checksumConstruction":"32-bit FNV-1a of native serde_json(recipe) followed by wire::arrays(world); not cryptographic",
         "metrics":metrics,
         "initialWater":{"levelMeters":world.water.level_meters,"resolvedVolumeCubicMeters":world.water.resolved_volume_cubic_meters},
+        "continentalInterior":{"fullyContinentalFractionOfDryArea":if dry_area>0. {saturated_area/dry_area} else {0.},
+            "baselineRangeMeters":if saturated_area>0. {Some([minimum,maximum])} else {None}},
         "timingSeconds":{"generation":generation_seconds,"metrics":metrics_seconds},
         "timingScope":"Observations only; timings are excluded from the native-compatible initial checksum"
     }))
@@ -76,7 +93,12 @@ fn shared_crust(candidate: &World) -> Result<Value, String> {
     if !candidate.surface.centers.starts_with(&surface.centers) {
         return Err("Selected surface does not preserve the level-4 shared centers.".into());
     }
-    let crust = geography::build_crust(
+    let build = if candidate.recipe.model_version == continental_uplands::MODEL_VERSION {
+        continental_uplands::build_crust
+    } else {
+        geography::build_crust
+    };
+    let crust = build(
         &surface,
         &candidate.recipe.seed,
         candidate.recipe.continental_fraction,
@@ -138,10 +160,41 @@ fn dense_crust() -> Result<Value, String> {
     )
 }
 
-fn parse_args(args: &[String]) -> Result<(PathBuf, u32, bool), String> {
-    if !(2..=3).contains(&args.len()) || (args.len() == 3 && args[2] != "--dense-crust") {
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum Mode {
+    Original,
+    DenseCrust,
+    Uplands,
+}
+
+fn fixed_outlet_drainage(world: &World, mask: &[u32]) -> Value {
+    let graph = Drainage::build(&world.surface, &world.terrain.elevation, mask);
+    let mut area = 0.;
+    let mut closed = 0.;
+    let mut sinks = 0;
+    for (i, &body) in mask.iter().enumerate() {
+        if body != 0 {
+            continue;
+        }
+        area += world.surface.areas[i];
+        if mask[graph.outlets[i] as usize] == 0 {
+            closed += world.surface.areas[i];
+        }
+        if graph.receivers[i] as usize == i {
+            sinks += 1;
+        }
+    }
+    json!({"closedDrySinkCount":sinks,"closedDryAreaFraction":if area>0. {closed/area} else {0.},
+        "scope":"Static receiver ablation with version-1 terminal mask fixed. This exogenous mask is not candidate water ownership or a simulated water state."})
+}
+
+fn parse_args(args: &[String]) -> Result<(PathBuf, u32, Mode), String> {
+    if !(2..=3).contains(&args.len())
+        || (args.len() == 3 && args[2] != "--dense-crust" && args[2] != "--uplands")
+    {
         return Err(
-            "Usage: geography_cohort NEW_DIRECTORY SUBDIVISION(4..6) [--dense-crust]".into(),
+            "Usage: geography_cohort NEW_DIRECTORY SUBDIVISION(4..6) [--dense-crust | --uplands]"
+                .into(),
         );
     }
     let level: u32 = args[1]
@@ -153,12 +206,17 @@ fn parse_args(args: &[String]) -> Result<(PathBuf, u32, bool), String> {
     if args[0].trim().is_empty() {
         return Err("A new output directory is required.".into());
     }
-    Ok((PathBuf::from(&args[0]), level, args.len() == 3))
+    let mode = match args.get(2).map(String::as_str) {
+        Some("--dense-crust") => Mode::DenseCrust,
+        Some("--uplands") => Mode::Uplands,
+        _ => Mode::Original,
+    };
+    Ok((PathBuf::from(&args[0]), level, mode))
 }
 
 fn main() -> Result<(), String> {
     let args: Vec<_> = std::env::args().skip(1).collect();
-    let (directory, subdivision, run_dense) = parse_args(&args)?;
+    let (directory, subdivision, mode) = parse_args(&args)?;
     // Atomic refusal of existing files/directories/symlinks; never overwrite.
     std::fs::create_dir(&directory)
         .map_err(|e| format!("Cannot create new directory {}: {e}", directory.display()))?;
@@ -183,12 +241,25 @@ fn main() -> Result<(), String> {
     let mut rows = Vec::new();
     let mut shared = Value::Null;
     for (seed, name, scale, relief, detail) in cases {
-        let mut old_recipe = recipe(&seed, subdivision, "continuous-plates-1");
+        let mut old_recipe = recipe(
+            &seed,
+            subdivision,
+            if mode == Mode::Uplands {
+                geography::MODEL_VERSION
+            } else {
+                "continuous-plates-1"
+            },
+        );
         old_recipe.continental_scale = scale;
         old_recipe.relief_scale = relief;
         old_recipe.detail_amplitude_meters = detail;
         let mut new_recipe = old_recipe.clone();
-        new_recipe.model_version = geography::MODEL_VERSION.into();
+        new_recipe.model_version = if mode == Mode::Uplands {
+            continental_uplands::MODEL_VERSION
+        } else {
+            geography::MODEL_VERSION
+        }
+        .into();
         let started = Instant::now();
         let old = World::generate(old_recipe)?;
         let old_seconds = started.elapsed().as_secs_f64();
@@ -200,10 +271,26 @@ fn main() -> Result<(), String> {
         }
         let svg_filename = format!("{name}.svg");
         let json_filename = format!("{name}.json");
+        let fixed_volume_control = if mode == Mode::Uplands {
+            let mut r = new.recipe.clone();
+            r.water = WaterSettings::Volume {
+                volume_cubic_meters: old.water.resolved_volume_cubic_meters,
+            };
+            let started = Instant::now();
+            let w = World::generate(r)?;
+            Some(record(&w, started.elapsed().as_secs_f64())?)
+        } else {
+            None
+        };
         let row = json!({"case":name,"seed":seed,
             "category":if name.starts_with("ordinary-") { "ordinary" } else { "directed" },
             "atlasFile":svg_filename,"reportFile":json_filename,
             "baseline":record(&old,old_seconds)?,"candidate":record(&new,new_seconds)?,
+            "candidateWithBaselineWaterVolume":fixed_volume_control,
+            "fixedVersion1TerminalMaskAblation":if mode==Mode::Uplands {
+                Some(json!({"baseline":fixed_outlet_drainage(&old,&old.water.body_ids),
+                    "candidate":fixed_outlet_drainage(&new,&old.water.body_ids)}))
+            } else {None},
             "scope":"Opt-in initial geography synthesis with identical requested parameters and four existing dry smoothing passes. No new stream-power incision, geological history, biomes or calibrated realism claim."});
         write_new(
             &directory.join(&svg_filename),
@@ -216,7 +303,7 @@ fn main() -> Result<(), String> {
         );
         rows.push(row);
     }
-    let dense = if run_dense {
+    let dense = if mode == Mode::DenseCrust {
         let report = dense_crust()?;
         write_json(&directory.join("dense-crust.json"), &report)?;
         report
@@ -224,7 +311,7 @@ fn main() -> Result<(), String> {
         Value::Null
     };
     // Written last: absence of manifest identifies a failed/partial diagnostic run.
-    let manifest = json!({"reportVersion":"geography-cohort-1","subdivision":subdivision,
+    let manifest = json!({"reportVersion":"geography-cohort-2","subdivision":subdivision,"comparison":format!("{mode:?}"),
         "ordinaryPairCount":20,"directedPairCount":3,"rows":rows,
         "meshIndependentCrustCheck":shared,"denseCrustDiagnostic":dense,
         "controlScope":"Fragmented and broad name scale settings 0.5 and 2, not guaranteed archipelago or supercontinent outcomes. Low-relief disables boundary relief/detail, not crust buoyancy or existing dry smoothing.",
@@ -255,10 +342,16 @@ mod tests {
         ] {
             assert!(parse_args(&args.into_iter().map(str::to_string).collect::<Vec<_>>()).is_err());
         }
-        let (_, level, dense) =
+        let (_, level, mode) =
             parse_args(&["out".into(), "6".into(), "--dense-crust".into()]).unwrap();
         assert_eq!(level, 6);
-        assert!(dense);
+        assert_eq!(mode, Mode::DenseCrust);
+        assert_eq!(
+            parse_args(&["out".into(), "6".into(), "--uplands".into()])
+                .unwrap()
+                .2,
+            Mode::Uplands
+        );
     }
     #[test]
     fn fixed_recipe_pairs_change_only_explicit_model_and_controls() {

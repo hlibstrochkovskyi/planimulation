@@ -105,7 +105,7 @@ fn native_candidate_recipe_refuses_missing_or_excess_preparation_and_future_pins
     bad.terrain_preparation_passes = Some(17);
     assert!(bad.validate().is_err());
     bad = r.clone();
-    bad.model_version = "multiscale-geography-2".into();
+    bad.model_version = "multiscale-geography-3".into();
     assert!(bad.validate().is_err());
     bad = r;
     bad.subdivision = 7;

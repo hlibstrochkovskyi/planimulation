@@ -22,7 +22,7 @@ test('multiscale geography recipes are explicit, strict, and preserve existing d
     assert.throws(() => parseRecipe({ ...candidate, terrainPreparationPasses: passes }), /preparation passes/);
   }
   assert.throws(() => parseRecipe({ ...candidate, geographyVersion: 'implicit' }), /Unknown recipe field/);
-  assert.throws(() => parseRecipe({ ...candidate, modelVersion: 'multiscale-geography-2' }), /Unsupported/);
+  assert.throws(() => parseRecipe({ ...candidate, modelVersion: 'multiscale-geography-3' }), /Unsupported/);
   assert.throws(() => parseRecipe({ ...candidate, subdivision: 7 }), /Subdivision/);
 });
 

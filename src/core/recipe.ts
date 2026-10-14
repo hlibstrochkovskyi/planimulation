@@ -1,6 +1,7 @@
 export const MODEL_VERSION = 'terrain-prep-1';
 export const CONTINUOUS_PLATES_MODEL_VERSION = 'continuous-plates-1';
 export const MULTISCALE_GEOGRAPHY_MODEL_VERSION = 'multiscale-geography-1';
+export const MULTISCALE_UPLANDS_MODEL_VERSION = 'multiscale-geography-2';
 export const LEGACY_MODEL_VERSION = 'basins-1';
 export const RANDOM_VERSION = 'fnv1a-utf8-mulberry32-1';
 
@@ -8,7 +9,7 @@ export type WaterSettings = { mode: 'coverage'; fraction: number } | { mode: 'vo
 
 export interface Recipe {
   schemaVersion: 1;
-  modelVersion: typeof MODEL_VERSION | typeof CONTINUOUS_PLATES_MODEL_VERSION | typeof MULTISCALE_GEOGRAPHY_MODEL_VERSION | typeof LEGACY_MODEL_VERSION;
+  modelVersion: typeof MODEL_VERSION | typeof CONTINUOUS_PLATES_MODEL_VERSION | typeof MULTISCALE_GEOGRAPHY_MODEL_VERSION | typeof MULTISCALE_UPLANDS_MODEL_VERSION | typeof LEGACY_MODEL_VERSION;
   randomVersion: typeof RANDOM_VERSION;
   seed: string;
   subdivision: number;
@@ -54,7 +55,7 @@ export function parseRecipe(value: unknown): Recipe {
     if (!keys.includes(key)) throw new Error(`Unknown recipe field: ${key}.`);
   }
   if (input.schemaVersion !== 1 || (input.modelVersion !== MODEL_VERSION && input.modelVersion !== CONTINUOUS_PLATES_MODEL_VERSION
-    && input.modelVersion !== MULTISCALE_GEOGRAPHY_MODEL_VERSION && !legacy) || input.randomVersion !== RANDOM_VERSION) {
+    && input.modelVersion !== MULTISCALE_GEOGRAPHY_MODEL_VERSION && input.modelVersion !== MULTISCALE_UPLANDS_MODEL_VERSION && !legacy) || input.randomVersion !== RANDOM_VERSION) {
     throw new Error('Unsupported recipe or random version.');
   }
   for (const key of keys) {

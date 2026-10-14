@@ -5,6 +5,10 @@ October 14, 2026. Implemented candidate `multiscale-geography-1` on
 not a calibrated Earth model or completion of the [landscape roadmap](landscape-roadmap.md).
 The desktop default remains `terrain-prep-1`; all older recipes keep their paths.
 
+The separate [version-2 continental-uplands candidate](continental-uplands.md)
+retains this field family and changes its initial material columns. Results below
+remain the original version-1 record; neither its algorithms nor pins are changed.
+
 ## Use and identity
 
 Select **Multiscale geography · experimental** in the desktop's Generation model

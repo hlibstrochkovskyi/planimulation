@@ -1,5 +1,5 @@
 import './style.css';
-import { DEFAULT_RECIPE, LEGACY_MODEL_VERSION, MULTISCALE_GEOGRAPHY_MODEL_VERSION, parseRecipe } from '../core/recipe';
+import { DEFAULT_RECIPE, LEGACY_MODEL_VERSION, MULTISCALE_GEOGRAPHY_MODEL_VERSION, MULTISCALE_UPLANDS_MODEL_VERSION, parseRecipe } from '../core/recipe';
 import type { Recipe } from '../core/recipe';
 import type { World } from '../core/world';
 import type { DesktopAPI, PreparedMoistureWorld, PreparedSoilWorld, PreparedWaterWorld, PrescribedWaterMode, WaterBudget, WaterFrame } from '../shared/desktop-api';
@@ -417,7 +417,8 @@ function inspect(id: number, preserveBasin = false): void {
   }
   const boundaryDetails = element('boundary-details');
   const elevationDetails = element('elevation-details'); elevationDetails.replaceChildren();
-  const multiscaleGeography = world.recipe.modelVersion === MULTISCALE_GEOGRAPHY_MODEL_VERSION;
+  const continentalUplands = world.recipe.modelVersion === MULTISCALE_UPLANDS_MODEL_VERSION;
+  const multiscaleGeography = world.recipe.modelVersion === MULTISCALE_GEOGRAPHY_MODEL_VERSION || continentalUplands;
   for (const [label, value] of [['Crust baseline', world.terrain.baseline[id]], ['Convergence uplift', world.terrain.convergence[id]],
     ['Divergence (ridge − rift)', world.terrain.divergence[id]], [multiscaleGeography ? 'Conditioned multiscale detail' : 'Bounded detail', world.terrain.detail[id]],
     ['Dry preparation', world.terrain.preparation[id]], ['Total elevation', world.terrain.elevation[id]]] as const) {
@@ -429,6 +430,12 @@ function inspect(id: number, preserveBasin = false): void {
   element('elevation-note').textContent = multiscaleGeography
     ? 'Crust baseline, static plate response, tectonic-envelope-conditioned multiscale ridging/detail, and bounded dry preparation sum to the native elevation. Detail uses smooth 3D value noise; it is physical initial roughness, not extra display geometry. These are heuristics, not geological history or computed river erosion. Display exaggeration changes none of the fields.'
     : 'Crust, plate response, detail, and dry preparation sum to the native elevation. Display exaggeration changes none of them. No geological age or climate erosion is modeled.';
+  if (continentalUplands) {
+    const interior = Math.max(world.crust.potential[id] - world.crust.threshold, 0);
+    const extra = world.crust.thicknessMeters[id] - (7000 + 28000 * world.crust.continentality[id]);
+    element('crust-note').textContent = `Version-1 smooth 3D geographic fields and fixed subdivision-5 reference sphere are retained. Continental potential excess ${interior.toFixed(6)} supplies ${(extra / 1000).toFixed(3)} km of additional initial crust thickness through 15 km × continentality × excess / (excess + 0.25). Density is unchanged. Thickness is bounded by 7–50 km; the common color palette saturates above 35 km. This is an initial continental-interior heuristic, not coast distance, crust age or simulated tectonic thickening.`;
+    element('elevation-note').textContent = 'Variable initial continental columns change the crust-buoyancy baseline. Static plate response, conditioned multiscale detail and bounded dry preparation are unchanged in law; their sum is the native bed. No depressions are secretly filled or breached. This is not geological history, river erosion or a solved isostatic equilibrium. Display exaggeration changes no physical field.';
+  }
   element('water-note').textContent = waterFrame
     ? `Prescribed runoff follows the frozen initial drainage outlet ${world.drainage.outlets[id]}. The displayed level here is ${waterFrame.surfaceLevelsMeters[id].toFixed(2)} m and the approximate depth is ${waterFrame.depthMeters[id].toFixed(2)} m. Exact basin stocks remain in the native core; visible depth can lag tiny accepted inputs. No elapsed time or climate forcing is implied.`
     : `Initial level ${world.water.levelMeters.toFixed(2)} m − bed ${world.terrain.elevation[id].toFixed(2)} m → depth max(0, level − bed) = ${world.water.depthMeters[id].toFixed(2)} m. Regional stock: ${(world.water.depthMeters[id] * s.areasSquareMeters[id] / 1e9).toFixed(3)} km³ using reference-sphere area. Positive-depth neighbors form water bodies; disconnected bodies share only this initial level, not a permanent connection.`;
@@ -506,7 +513,7 @@ function updateLegend(): void {
     boundaries: ['Boundary motion · dominant component; oblique motion retained in inspector', '', ''],
     speed: ['Plate speed · model reference frame', '0', `${world?.recipe.maxPlateSpeedCmPerYear ?? '—'} cm/year`],
     crust: ['Continentality · initial crust, not land or ocean coverage', '0 · oceanic', '1 · continental'],
-    thickness: ['Crust thickness · initial approximation, not elevation', '7 km', '35 km'],
+    thickness: [world?.recipe.modelVersion === MULTISCALE_UPLANDS_MODEL_VERSION ? 'Crust thickness · common palette saturates above 35 km; inspect full 7–50 km columns' : 'Crust thickness · initial approximation, not elevation', '7 km', world?.recipe.modelVersion === MULTISCALE_UPLANDS_MODEL_VERSION ? '≥35 km' : '35 km'],
     elevation: ['Elevation · reference datum, not sea level · world-relative color scale', `${number.format(terrainStats.minimumMeters)} m`, `${number.format(terrainStats.maximumMeters)} m`],
     uplift: ['Convergence uplift · strongest attenuated source, not accumulated history', '0 m', '12,000 m'],
     depth: [`${hasRegionalSurface(moistureFrame) ? 'Regional seasonal / prescribed initial-body depth' : waterFrame ? 'Prescribed-water display depth' : 'Initial water depth'} · gray = dry · globe shows the bed, not a water-surface mesh`, '0 m', `${number.format(maximumWaterDepth)} m`],
@@ -560,7 +567,9 @@ function setInputs(recipe: Recipe): void {
 function updateGeneratorInputs(): void {
   const legacy = generatorFamilyInput.value === LEGACY_MODEL_VERSION;
   terrainPreparationInput.disabled = legacy;
-  element('generator-note').textContent = generatorFamilyInput.value === MULTISCALE_GEOGRAPHY_MODEL_VERSION
+  element('generator-note').textContent = generatorFamilyInput.value === MULTISCALE_UPLANDS_MODEL_VERSION
+    ? 'Experimental continental uplands reuse version-1 geographic structure with variable initial crust thickness. No geological history, river incision or automatic depression removal. Changing the model creates a different world.'
+    : generatorFamilyInput.value === MULTISCALE_GEOGRAPHY_MODEL_VERSION
     ? 'Experimental multiscale crust and terrain fields, with continuous plate roots. No geological history, integrated river erosion, biomes or higher surface resolution is implied. Changing the model creates a different world.'
     : legacy ? 'Legacy terrain without dry preparation. Changing the model creates a different world, not an upgrade of an existing save.'
       : generatorFamilyInput.value === 'continuous-plates-1'

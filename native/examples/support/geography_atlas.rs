@@ -30,8 +30,8 @@ pub fn render(before: &World, after: &World) -> String {
         "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1600\" height=\"560\" viewBox=\"0 0 1600 560\"><rect width=\"1600\" height=\"560\" fill=\"#10191f\"/><style>text{font-family:DejaVu Sans,sans-serif;fill:#e6edf3}</style><text x=\"24\" y=\"30\" font-size=\"20\">Physical geography comparison — height/depth colors, not biomes</text><defs><clipPath id=\"clip\"><rect width=\"760\" height=\"380\"/></clipPath></defs>",
     );
     for (panel, (world, title)) in [
-        (before, "Baseline: continuous-plates-1"),
-        (after, "Candidate: multiscale-geography-1"),
+        (before, format!("Baseline: {}", before.recipe.model_version)),
+        (after, format!("Candidate: {}", after.recipe.model_version)),
     ]
     .into_iter()
     .enumerate()

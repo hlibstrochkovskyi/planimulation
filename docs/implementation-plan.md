@@ -6,7 +6,10 @@ October 14 priority reset on `feature/multiscale-world-generation`: follow the
 probe](landscape-scale.md) are implemented; a new Earth-like geographic family is
 under active development. Its first [opt-in multiscale geographic
 family](multiscale-geography.md) is implemented in the desktop, with retained
-paired-cohort findings and explicit remaining relief/drainage defects. Further
+paired-cohort findings and explicit remaining relief/drainage defects. The
+subsequent [v2 continental-uplands increment](continental-uplands.md) supplies
+variable initial columns and matched drainage controls, preserving v1.
+Further
 standalone water-solver qualification is not the immediate focus of that branch.
 This does not change the default desktop model or erase the historical
 water findings below.

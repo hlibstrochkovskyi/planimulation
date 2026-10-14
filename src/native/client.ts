@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import type { ChildProcessWithoutNullStreams } from 'node:child_process';
-import { parseRecipe } from '../core/recipe';
+import { MULTISCALE_UPLANDS_MODEL_VERSION, parseRecipe } from '../core/recipe';
+import { continentalUplandsThickness, columnBuoyancyBaseline } from '../core/continental-uplands';
 import type { Recipe } from '../core/recipe';
 import type { World } from '../core/world';
 import { validateWater } from '../core/water';
@@ -88,6 +89,7 @@ export function decodeWorld(packet: Packet): World {
   const { header: h, bytes } = packet;
   if (h.kind !== 'world') throw new Error('Expected native world.');
   const recipe = parseRecipe(h.recipe), n = 10 * 4 ** recipe.subdivision + 2;
+  const continentalUplands = recipe.modelVersion === MULTISCALE_UPLANDS_MODEL_VERSION;
   const prepared = recipe.modelVersion !== 'basins-1';
   if (h.protocol !== (prepared ? 10 : 9)) throw new Error('Native protocol does not match the terrain model.');
   const neighbors = 6 * n - 12, faces = 60 * 4 ** recipe.subdivision;
@@ -132,7 +134,7 @@ export function decodeWorld(packet: Packet): World {
   const basins = { regionNodes: u32(n), parents: u32(k), birthLevels: f64(k), spillLevels: f64(k),
     spillFrom: u32(k), spillTo: u32(k), supportAreas: f64(k), capacities: f64(k) };
   for (let i = 0; i < n; i++) {
-    if (terrain.baseline[i] < -4500.000001 || terrain.baseline[i] > 167
+    if (terrain.baseline[i] < -4500.000001 || terrain.baseline[i] > (continentalUplands ? 2440 : 167)
       || terrain.convergence[i] < 0 || terrain.convergence[i] > 12000
       || terrain.divergence[i] < -3000 || terrain.divergence[i] > 5000
       || Math.abs(terrain.detail[i]) > recipe.detailAmplitudeMeters + 1e-9
@@ -141,10 +143,16 @@ export function decodeWorld(packet: Packet): World {
         + terrain.detail[i] + terrain.preparation[i])) > 1e-8) {
       throw new Error('Invalid native elevation contributions.');
     }
+    if (continentalUplands && (Math.abs(crust.thicknessMeters[i] - continentalUplandsThickness(
+      crust.continentality[i], crust.potential[i], crust.threshold)) > 1e-8
+      || Math.abs(crust.densityKgPerCubicMeter[i] - (3000 - 200 * crust.continentality[i])) > 1e-9
+      || Math.abs(terrain.baseline[i] - columnBuoyancyBaseline(crust.thicknessMeters[i], crust.densityKgPerCubicMeter[i])) > 1e-8)) {
+      throw new Error('Invalid native continental-uplands material provenance.');
+    }
   }
   if (Math.abs(crust.threshold) > 1.12 || crust.potential.some((v) => Math.abs(v) > 1)
     || crust.continentality.some((v) => v < 0 || v > 1)
-    || crust.thicknessMeters.some((v) => v < 7000 || v > 35000)
+    || crust.thicknessMeters.some((v) => v < 7000 || v > (continentalUplands ? 50000 : 35000))
     || crust.densityKgPerCubicMeter.some((v) => v < 2800 || v > 3000)) throw new Error('Invalid native crust fields.');
   if (tectonics.owners.some((v) => v >= recipe.plateCount) || tectonics.seeds.some((v, p) => v >= n || tectonics.owners[v] !== p)
     || new Set(tectonics.seeds).size !== recipe.plateCount || tectonics.boundaryTypes.some((v) => v > 3)

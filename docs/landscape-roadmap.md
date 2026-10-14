@@ -129,8 +129,11 @@ measured, not selected as a supported desktop setting. R3's first
 in both desktop projections, with twenty paired ordinary seeds, three controls,
 independent morphology metrics and a crust-only dense-sampling probe. It improves
 coast/landmass variety but retains broad relief and many initial dry sinks.
-Structural relief, drainage-informed preparation and finer physical sampling
-remain open; R3 is not complete and the default is unchanged.
+The subsequent [continental-uplands v2](continental-uplands.md) varies initial
+columns while retaining v1 structural fields. Its paired cohort improves regional
+elevation and reduces closed-catchment attraction, but retains many minima.
+Structural mountain/valley refinement, drainage-informed preparation and finer
+physical sampling remain open; R3 is not complete and the default is unchanged.
 
 No new default generator, higher desktop
 resolution, multiple-grid coupling, LOD, calibrated erosion or biomes are claimed.
@@ -155,3 +158,11 @@ comparisons and three dense crust-only sampling controls complete. Strict
 all-target Clippy, formatting, whitespace and four new-output CLI refusals pass.
 Owner renderer hashes remain unchanged. Retained morphology limitations prevent
 default promotion or claiming the complete Earth-like geography milestone.
+
+The continental-uplands increment passes 690 native tests across 126 targets and
+96 Node tests, retaining the same one ignored test. The 23 paired worlds repeat
+their candidate fingerprints; frozen-terminal and fixed-water-volume controls
+retain the reported drainage improvement and remaining minima. Both candidate
+desktop families pass save/reopen and inspector checks. Structural terrain and
+explicit geological preparation remain the next R3 work, not a higher-resolution
+or climate-calibration promotion.
