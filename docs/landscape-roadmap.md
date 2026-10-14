@@ -245,6 +245,9 @@ the next investigation, not claiming that added noise solved valleys.
 The retained point-source control now measures persistent graph-distance excess
 against an analytic spherical reference for both degree-five and degree-six
 sources. Dense near-field mean excess remains 15.34% / 10.16%, rather than
-converging away with sample count. A bounded geometric source-envelope replacement
-is the next proposed structural change; the old model remains frozen and that
-replacement is not yet implemented.
+converging away with sample count. The following [geodesic-belt review](geodesic-belts.md)
+implements bounded direct point/arc envelopes and retains 23 three-way cases,
+exact repeated physical records and a 655362-sample comparison. This separates
+distance from source-origin effects, but sampled boundaries still depend on
+the terrain grid and dense closed share remains roughly 34–36%. The old model
+stays frozen; no new desktop/default promotion or completed R3 is claimed.

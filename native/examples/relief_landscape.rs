@@ -1,11 +1,11 @@
-//! Actual-bed ablations of belt width and physical-length initial detail.
+//! Actual-bed ablations of belt width/detail or graph/geodesic source geometry.
 #[path = "support/initial_landscape_fields.rs"]
 mod initial_landscape_fields;
 #[path = "support/relief_display.rs"]
 mod relief_display;
 use planimulation_core::{
-    Recipe, Surface, continental_uplands, geography_metrics, landscape_evolution, relief_spectrum,
-    sedimentary_landscape,
+    Recipe, Surface, continental_uplands, geodesic_belts, geography_metrics, landscape_evolution,
+    relief_spectrum, sedimentary_landscape,
     water::{Water, WaterSettings},
 };
 use serde_json::{Value, json};
@@ -47,9 +47,11 @@ fn recipe(seed: &str) -> Recipe {
         water: WaterSettings::Coverage { fraction: 0.71 },
     }
 }
-fn parse(args: &[String]) -> Result<(PathBuf, u32, Option<String>), String> {
-    if !(2..=3).contains(&args.len()) || args[0].trim().is_empty() {
-        return Err("Usage: relief_landscape NEW_DIRECTORY SUBDIVISION(6..8) [SEED]".into());
+fn parse(args: &[String]) -> Result<(PathBuf, u32, Option<String>, bool), String> {
+    if !(2..=4).contains(&args.len()) || args[0].trim().is_empty() {
+        return Err(
+            "Usage: relief_landscape NEW_DIRECTORY SUBDIVISION(6..8) [SEED] [--geodesic]".into(),
+        );
     }
     let directory = PathBuf::from(&args[0]);
     if std::fs::symlink_metadata(&directory).is_ok() {
@@ -68,9 +70,19 @@ fn parse(args: &[String]) -> Result<(PathBuf, u32, Option<String>), String> {
     if !(6..=8).contains(&level) {
         return Err("Relief review sampling supports levels6–8.".into());
     }
-    let seed = args.get(2).cloned();
+    let mut seed = None;
+    let mut geodesic = false;
+    for arg in &args[2..] {
+        if arg == "--geodesic" && !geodesic {
+            geodesic = true;
+        } else if arg.starts_with("--") || seed.is_some() {
+            return Err("Unknown or duplicate relief review argument.".into());
+        } else {
+            seed = Some(arg.clone());
+        }
+    }
     recipe(seed.as_deref().unwrap_or("first-light")).validate()?;
-    Ok((directory, level, seed))
+    Ok((directory, level, seed, geodesic))
 }
 fn cases(seed: Option<String>) -> Vec<(String, String, f64, f64, f64)> {
     if let Some(seed) = seed {
@@ -163,7 +175,7 @@ fn write_fields(
 }
 fn main() -> Result<(), String> {
     let args: Vec<_> = std::env::args().skip(1).collect();
-    let (directory, level, seed) = parse(&args)?;
+    let (directory, level, seed, geodesic) = parse(&args)?;
     let selected = seed.is_some();
     let s = Surface::build_generation_probe(level, 6371000.)?;
     // A single explicit owned-grid footprint proxy; not chosen by the camera.
@@ -181,11 +193,59 @@ fn main() -> Result<(), String> {
         let mut svg = String::from(
             "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1600\" height=\"960\"><rect width=\"1600\" height=\"960\" fill=\"#10191f\"/><style>text{font-family:DejaVu Sans,sans-serif;fill:#e6edf3}</style><text x=\"24\" y=\"28\" font-size=\"18\">Actual prepared beds · belt width x detail spectrum</text><defs><clipPath id=\"clip\"><rect width=\"760\" height=\"380\"/></clipPath></defs>",
         );
-        for (j, (label, width, new_detail)) in variant_controls().into_iter().enumerate() {
+        if geodesic {
+            svg = svg.replace(
+                "belt width x detail spectrum",
+                "graph / geodesic seeds / geodesic arcs",
+            );
+        }
+        let controls: Vec<_> = if geodesic {
+            vec![
+                ("graph-300", 300., false, None),
+                (
+                    "geodesic-points-300",
+                    300.,
+                    false,
+                    Some(geodesic_belts::Origin::RegionSeeds),
+                ),
+                (
+                    "geodesic-arcs-300",
+                    300.,
+                    false,
+                    Some(geodesic_belts::Origin::BoundaryArcs),
+                ),
+            ]
+        } else {
+            variant_controls()
+                .into_iter()
+                .map(|(a, b, c)| (a, b, c, None))
+                .collect()
+        };
+        for (j, (label, width, new_detail, origin)) in controls.into_iter().enumerate() {
             let started = Instant::now();
             let mut parameters = reference.clone();
             parameters.boundary_width_km = width;
             let (crust, tectonics, mut terrain) = initial_landscape_fields::build(&s, &parameters)?;
+            let geodesic_started = Instant::now();
+            let geodesic_record = if let Some(origin) = origin {
+                let built =
+                    geodesic_belts::build(&s, &crust, &tectonics, &parameters, &terrain, origin)?;
+                let filename = format!("{name}-{label}-sources.json");
+                write_json(
+                    &directory.join(&filename),
+                    &json!({"sourceModelVersion":origin.model_version(),
+                    "envelopeModelVersion":planimulation_core::geodesic_envelope::MODEL_VERSION,
+                    "radiusMeters":parameters.radius_meters,"widthMeters":width*1000.,"sources":built.sources,
+                    "scope":"Owned sampled-boundary source geometry, still mesh dependent. Array index is the source ID, not a persistent plate/region entity."}),
+                )?;
+                let record = json!({"sourceModelVersion":origin.model_version(),"sourceCount":built.sources.len(),
+                    "meanEvaluatedSources":built.mean_evaluated_sources,"maximumEvaluatedSources":built.maximum_evaluated_sources,
+                    "sourceGeometryFile":filename,"initialEnvelopeSeconds":geodesic_started.elapsed().as_secs_f64()});
+                terrain = built.terrain;
+                record
+            } else {
+                Value::Null
+            };
             drop(tectonics);
             let settings = relief_spectrum::Settings {
                 radius_meters: parameters.radius_meters,
@@ -258,6 +318,7 @@ fn main() -> Result<(), String> {
                 "detailModelVersion":if new_detail {relief_spectrum::MODEL_VERSION}else{"multiscale-geography-1.detail"},
                 "physicalDetailSettings":if new_detail {json!(settings)}else{Value::Null},
                 "physicalDetailBands":if new_detail {json!(field.bands())}else{Value::Null},
+                "geodesicEnvelope":geodesic_record,
                 "initialMetrics":initial_metrics,"preparedMetrics":metrics,"preparationModelVersion":p.model_version,
                 "preparationSettings":PREPARATION,"upliftCharacteristicHeightMeters":2000.,
                 "grossErosionVolumeCubicMeters":p.gross_erosion_volume_cubic_meters,"grossDepositionVolumeCubicMeters":p.gross_deposition_volume_cubic_meters,
@@ -307,12 +368,12 @@ fn main() -> Result<(), String> {
     }
     write_json(
         &directory.join("manifest.json"),
-        &json!({"reportVersion":"physical-relief-review-2","samplingSubdivision":level,
+        &json!({"reportVersion":if geodesic {"geodesic-belt-review-1"}else{"physical-relief-review-2"},"samplingSubdivision":level,
         "regions":s.areas.len(),"physicalSamplingLengthMeters":footprint,"rows":rows,
         "display":{"hillshade":"actual-neighbor-tangent-least-squares-1","verticalExaggeration":20.,"sunAzimuthDegrees":315.,"sunElevationDegrees":45.,"physicalMutation":false},
-        "atlasScope":if level==8 {"Separate per-variant SVGs bound each document below the converter's million-element limit. No combined dense SVG."}else{"Four-panel actual-field atlas."},
+        "atlasScope":if level==8 {"Separate per-variant SVGs bound each document below the converter's million-element limit. No combined dense SVG."}else if geodesic {"Three-panel actual-field atlas."}else{"Four-panel actual-field atlas."},
         "fieldRecord":{"format":"headerless-f64-le-region-major-1","columns":["initialBedMeters","upliftRateMetersPerYear","preparedBedMeters","activeSedimentThicknessMeters","pendingSedimentVolumeCubicMeters","cumulativeErosionThicknessMeters","cumulativeDepositionThicknessMeters","acceptedUpliftDisplacementMeters"]},
-        "scope":"Initial-world ablations, not one world's dynamic intervention. Same seed/columns/plate roots; width changes structural amplitudes/source. Candidate detail replaces only initial detail. Original wide-case water stock held fixed. Physical spectrum is procedural initial-condition synthesis, not folding/erosion or calibrated Earth terrain. Probe metadata and new detail pin are not a supported Recipe/World/checkpoint. Native arrays remain authoritative; atlas approximate projection does not modify them. Manifest written last."}),
+        "scope":if geodesic {"Initial-world source-geometry ablations: legacy graph, direct geodesic original region seeds, direct geodesic sampled boundary arcs. Same width, sampled plate geometry/motion, crust/detail streams and old prescribed parameters. Original graph-case water stock held fixed. Boundaries are still mesh dependent; not continuous independent plate history, a supported new World or a checkpoint. Renderer cannot mutate the physical fields. Manifest written last."}else{"Initial-world ablations, not one world's dynamic intervention. Same seed/columns/plate roots; width changes structural amplitudes/source. Candidate detail replaces only initial detail. Original wide-case water stock held fixed. Physical spectrum is procedural initial-condition synthesis, not folding/erosion or calibrated Earth terrain. Probe metadata and new detail pin are not a supported Recipe/World/checkpoint. Native arrays remain authoritative; atlas approximate projection does not modify them. Manifest written last."}}),
     )
 }
 #[cfg(test)]
@@ -337,14 +398,33 @@ mod tests {
             [(300., false), (300., true), (100., false), (100., true)]
         );
         assert_eq!(cases(Some("first-light".into())).len(), 1);
-        let (_, level, r) = parse(&[
+        let (_, level, r, mode) = parse(&[
             "relief-review-unit-uncreated".into(),
             "8".into(),
             "first-light".into(),
         ])
         .unwrap();
         assert_eq!(level, 8);
+        assert!(!mode);
         assert_eq!(r.as_deref(), Some("first-light"));
+        assert!(
+            parse(&[
+                "relief-review-unit-uncreated".into(),
+                "8".into(),
+                "--geodesic".into()
+            ])
+            .unwrap()
+            .3
+        );
+        assert!(
+            parse(&[
+                "out".into(),
+                "6".into(),
+                "--geodesic".into(),
+                "--geodesic".into()
+            ])
+            .is_err()
+        );
         recipe("first-light").validate().unwrap();
     }
     #[test]

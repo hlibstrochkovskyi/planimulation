@@ -210,8 +210,11 @@ Next hypothesis: derive explicitly versioned belt envelopes from spherical
 boundary/source geometry with bounded direct-distance queries, retain the same
 initial crust/velocity streams, and compare actual source fields before further
 incision. Exact geometric construction, degeneracies, query bounds and supported
-performance must be tested. That replacement is **not implemented** by this
-distance-control example and is not silently installed in old worlds.
+performance must be tested. That replacement is not implemented by this
+distance-control example. The subsequent [geodesic-belt review](geodesic-belts.md)
+now implements direct point/arc envelopes as native initial-world ablations;
+sampled source geometry remains mesh-dependent and dense drainage remains
+inadequate. It is not silently installed in old worlds or selected for desktop.
 
 ## Verification
 

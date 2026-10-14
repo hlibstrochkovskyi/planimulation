@@ -65,7 +65,7 @@ fn main() -> Result<(), String> {
     let manifest = read_json(&directory.join("manifest.json"))?;
     if !matches!(
         manifest["reportVersion"].as_str(),
-        Some("physical-relief-review-1" | "physical-relief-review-2")
+        Some("physical-relief-review-1" | "physical-relief-review-2" | "geodesic-belt-review-1")
     ) || manifest["fieldRecord"]["format"] != "headerless-f64-le-region-major-1"
         || manifest["fieldRecord"]["columns"]
             != serde_json::json!([

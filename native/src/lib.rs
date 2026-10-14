@@ -441,6 +441,8 @@ pub mod crust;
 pub mod depression_analysis;
 pub mod drainage;
 pub mod exact_initial_accounting;
+pub mod geodesic_belts;
+pub mod geodesic_envelope;
 pub mod geography;
 pub mod geography_metrics;
 pub mod initial_water_inventory;
