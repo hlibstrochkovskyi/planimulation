@@ -231,3 +231,20 @@ pass after the preceding full regression. Dense static closed area still reaches
 35.82% for the retained seed; transient and structural-detail limitations remain.
 No new desktop limit, dense checkpoint, climate coupling or complete R3/R4 is
 claimed from this measurement.
+
+The next [physical-length relief review](physical-relief-review.md) separates
+belt-width and bounded initial-detail hypotheses in a 23-case full factorial.
+Candidate noise gives mixed coarse results and increases the retained dense
+seed's closed share for both widths; neither field nor narrow width is promoted.
+Read-only actual-bed hillshade and canonical raw-field rendering now inspect
+655k physical data without rerunning prehistory. Dense views require bounded
+individual documents, not a giant SVG. Broad forms/source-envelope structure
+remain visible; structural-distance/orientation and drainage-aware relief are
+the next investigation, not claiming that added noise solved valleys.
+
+The retained point-source control now measures persistent graph-distance excess
+against an analytic spherical reference for both degree-five and degree-six
+sources. Dense near-field mean excess remains 15.34% / 10.16%, rather than
+converging away with sample count. A bounded geometric source-envelope replacement
+is the next proposed structural change; the old model remains frozen and that
+replacement is not yet implemented.

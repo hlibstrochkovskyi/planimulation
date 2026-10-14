@@ -63,13 +63,13 @@ fn smooth_value(seed: u32, p: V) -> f64 {
     value
 }
 
-struct Noise {
+pub(crate) struct Noise {
     seed: u32,
     axes: [V; 3],
     offset: V,
 }
 impl Noise {
-    fn new(seed: &str, channel: &str) -> Self {
+    pub(crate) fn new(seed: &str, channel: &str) -> Self {
         let mut rng = Random::stream(seed, channel);
         let key = rng.next_u32();
         let y = rng.next() * 2. - 1.;
@@ -92,7 +92,7 @@ impl Noise {
             offset: std::array::from_fn(|_| rng.next() * 32. - 16.),
         }
     }
-    fn sample(&self, p: V, frequency: f64) -> f64 {
+    pub(crate) fn sample(&self, p: V, frequency: f64) -> f64 {
         smooth_value(
             self.seed,
             std::array::from_fn(|i| dot(self.axes[i], p) * frequency + self.offset[i]),
