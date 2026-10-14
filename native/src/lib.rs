@@ -445,6 +445,7 @@ pub mod geodesic_belts;
 pub mod geodesic_envelope;
 pub mod geography;
 pub mod geography_metrics;
+pub mod hillslope_transport;
 pub mod initial_water_inventory;
 pub mod landscape;
 pub mod landscape_evolution;

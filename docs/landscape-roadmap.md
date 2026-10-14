@@ -262,7 +262,7 @@ not another global source reroll, are the next work. Full regression passes
 800 native tests across 142 targets and 96 Node tests, with the existing ignored
 native test retained, plus strict all-target Clippy/formatting/whitespace checks.
 
-## Next physical landform increment — proposed, not implemented
+## Next physical landform increment — not yet integrated
 
 The global 655362-region footprint is approximately 28 km. This cannot represent
 a sub-kilometer valley floor and neighboring ridge as separate authoritative
@@ -298,8 +298,10 @@ identity and boundary assumptions. Geographic inputs sample global unit
 directions; areas/distances and face transmissivities use declared physical
 geometry. Camera movement must not generate or change the bed.
 
-Add a separately versioned hillslope-transfer primitive using paired shared-face
-volume exchanges and a monotonicity-preserving timestep. Never clamp after an
+The [hillslope-transfer primitive](hillslope-transport.md) now implements paired
+shared-face exchanges with focused controls; fine-patch integration is still
+proposed. Its next use requires declared geometry and a monotonicity-preserving
+timestep. Never clamp after an
 unstable step. Test constant fields, unequal areas, material balance, maximum
 principle, analytic refinement, invalid workload and immutable failure. Then
 combine prescribed uplift, rebuilt actual downhill routing and existing
