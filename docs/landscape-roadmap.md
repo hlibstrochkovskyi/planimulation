@@ -145,8 +145,14 @@ prescribed active-belt displacement before rebuilt downhill routing and existing
 incision. Twenty ordinary cases retain more high terrain than incision alone;
 depth/stock ledgers and time/space controls are retained. It is a native review
 component, not a new desktop default. Dense closed catchments and local time-step
-rerouting remain significant; actual sediment supply/retention is the next
-process decision before any depositional terrain change.
+rerouting remain significant. The following
+[delivered-material preparation](sedimentary-landscape.md) routes accepted
+erosion and pending stock on physical DAGs, deposits within rate/material/first
+spill bounds, and remobilizes active deposits on later steps. It owns separate
+dry pending and per-body wet external inventories. Actual-bed comparisons now
+test this coupling without changing old models or installing artificial outlets.
+Spatial sampling, transient sensitivity and broad initial forms still require
+review; this is not a completed Earth-like/default promotion.
 
 No new default generator, higher desktop
 resolution, multiple-grid coupling, LOD, calibrated erosion or biomes are claimed.
@@ -204,3 +210,14 @@ new-output refusals pass. Relief retention improves, but dense closed catchments
 and a 200.75 m local time-refinement difference prevent a full R3/default claim.
 Future sediment delivery must be derived from actually accepted erosion, not
 introduced as unrecorded depression filling.
+
+The delivered-material increment passes full `npm test`: 763 native tests across
+134 targets and 96 Node tests, retaining the same ignored test. All 69 complete
+initial/old/new records repeat their raw physical arrays, histories and water
+diagnostics; twenty ordinary candidates reduce median closed dry area from
+23.64% to 10.98% and potential storage from 437614 to 151883 km³. Actual maps,
+finite pending material, remobilized deposits and split wet collectors are
+retained. Step controls show material/routing sensitivity despite nearly stable
+p95, so this is not timestep-qualified R3/default completion. Strict Clippy,
+formatting, whitespace and preparation CLI refusal controls pass. Owner renderer
+files remain untouched and excluded.

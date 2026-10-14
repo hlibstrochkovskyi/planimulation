@@ -3,8 +3,10 @@
 October 14, 2026. Implemented: native kernel
 `uplift-stream-power-preparation-1`, controlled physical-field atlases, time-step
 controls and bounded finer-sampling reports. Not implemented: a selected desktop
-preparation family, sediment deposition, reconstructed plate history or complete
-Earth-like terrain. Old recipes, wire layouts and fingerprints remain unchanged.
+preparation family, reconstructed plate history or complete Earth-like terrain.
+This frozen model has no deposition; the separately versioned
+[delivered-material candidate](sedimentary-landscape.md) now studies it without
+changing this law. Old recipes, wire layouts and fingerprints remain unchanged.
 
 ## Why add a source rather than increase erosion?
 
@@ -202,8 +204,9 @@ capacity, separately from wet-terminal export. No input material means no
 depositional bed rise. Later deposition must debit real inventory, stay within
 the actual minimum-leaf footprint and declared rate, retain excess stock, and
 rebuild actual terrain/drainage—not apply blanket DEM filling or assume the
-first sibling merge is an ocean outlet. That is a planned next step, not working
-sediment/lake functionality.
+first sibling merge is an ocean outlet. That next step is now implemented in a
+[separate native candidate](sedimentary-landscape.md), not added to this frozen
+kernel or presented as dynamic lake/desktop functionality.
 
 ## Tests and compatibility scope
 
