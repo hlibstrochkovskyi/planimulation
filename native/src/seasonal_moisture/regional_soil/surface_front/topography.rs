@@ -13,12 +13,12 @@ const MAX_STEPS: usize = 4000;
 
 #[derive(Clone, Copy, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct Face {
-    flux_square_meters_per_second: f64,
-    gradient: f64,
+pub(super) struct Face {
+    pub(super) flux_square_meters_per_second: f64,
+    pub(super) gradient: f64,
     donor_depth_above_crest_meters: f64,
     donor: Option<&'static str>,
-    capped_branch_selected: bool,
+    pub(super) capped_branch_selected: bool,
 }
 
 fn ordering(column: &Column) -> (Bed, f64, bool) {
@@ -113,7 +113,7 @@ fn columns(stocks: &[Stock], beds: &[Bed], width: f64) -> Result<Vec<Column>, St
         .collect()
 }
 
-fn fluxes(
+pub(super) fn fluxes(
     stocks: &[Stock],
     beds: &[Bed],
     width: f64,

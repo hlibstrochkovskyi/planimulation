@@ -1,10 +1,13 @@
 //! Standalone moving wet/dry verification; no seasonal or rendering selection.
 mod barenblatt_reference;
+mod bed_moving;
+mod bed_reference;
 mod cadence_controls;
 mod element;
 mod face_controls;
 mod faces;
 mod full_cell;
+mod head_reconstruction;
 mod hypsometry;
 mod moment_controls;
 mod moments;
@@ -167,4 +170,12 @@ pub fn non_affine_report() -> Result<Value, String> {
 /// Independent affine-bed head/storage baseline, not a production selection.
 pub fn topography_report() -> Result<Value, String> {
     topography::report()
+}
+
+/// Tilted-bed moving-front reference and diagnostics, not a selected model.
+pub fn bed_moving_report() -> Result<Value, String> {
+    let mut report = bed_moving::report()?;
+    report["referenceConditioning"] =
+        bed_reference::Reference::new(0.001, 0.1, 0.04)?.conditioning_report()?;
+    Ok(report)
 }

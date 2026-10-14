@@ -1,0 +1,1387 @@
+{
+  "recordVersion": "surface-moving-bed-validation-1",
+  "date": "2026-10-14",
+  "baselineCommit": "f45e378939e2e280a7cb4a1e511a0a45da366c2d",
+  "scope": "Standalone planar moving affine-bed reference and explicitly named supported affine-head reconstruction; no production model, persistence or desktop change",
+  "decision": "Bounded moving-bed improvement demonstrated; arbitrary moving shoreline, non-affine terrain, spherical assembly, calibration and production runtime not qualified",
+  "contract": {
+    "reportVersion": "surface-bed-moving-report-1",
+    "domainMeters": [
+      -3.5,
+      0.5
+    ],
+    "slope": 0.001,
+    "speedMetersPerSecond": 0.1,
+    "roughness": 0.04,
+    "capSquareMetersPerSecond": 100,
+    "endSeconds": 2,
+    "widthsMeters": [
+      0.5,
+      0.25,
+      0.125,
+      0.0625
+    ],
+    "originalStepSeconds": [
+      0.004,
+      0.002,
+      0.001
+    ],
+    "extraFinestStepSeconds": [
+      0.002,
+      0.001
+    ],
+    "maximumOwners": 128,
+    "maximumSteps": 4000,
+    "maximumCellStepsPerTrial": 128000,
+    "physicalArithmeticLimit": 5.684341886080802e-14,
+    "exactReferenceUse": "Initial integrated means and prescribed exterior interval exchanges only; no exact interior front, slope, head or future stock",
+    "contourContract": "Cell-mean interpolation with separately retained exact-mean observer bias; null/multiple roots retained, no error subtraction or exact support claim"
+  },
+  "report": {
+    "bytes": 780897,
+    "sha256": "b01257372b2d8e21341d03b183de0895433416d4e12230b89dddc52ca25fdefa",
+    "debugRepeatMatches": true,
+    "optimizedMatches": true
+  },
+  "cohorts": {
+    "baseline": {
+      "operator": "HydrostaticBaseline",
+      "maximumReferenceCoefficient": 0.675568867537927,
+      "completed": 14,
+      "requested": 14,
+      "acceptedSteps": 19500,
+      "acceptedCellSteps": 580000,
+      "maximumLocalResidual": 1.3297406910226401e-16,
+      "maximumStepResidual": 7.962438363291449e-17,
+      "maximumCumulativeResidual": 6.45293042559665e-17,
+      "maximumBoundaryCounterDifference": 1.8579667698023078e-18,
+      "cappedFaces": 0,
+      "reflectionBitIdentical": false,
+      "reflection": 2.397167559777825e-20,
+      "datum": 1.0146942253173429e-13,
+      "trials": [
+        {
+          "index": 0,
+          "width": 0.5,
+          "dt": 0.004,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 500,
+          "time": 2,
+          "rms": 0.0006021110893228278,
+          "maxError": 0.001583704353187486,
+          "arrivalError": 0.000791852176593743,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": null,
+              "exactMeanObserverBias": null
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.09134083151669886,
+              "exactMeanObserverBias": -0.041535351394324904
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.06177024969909484,
+              "exactMeanObserverBias": -0.015733726773714762
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "width": 0.5,
+          "dt": 0.002,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 1000,
+          "time": 2,
+          "rms": 0.0006021996685289183,
+          "maxError": 0.001583934331662591,
+          "arrivalError": 0.0007919671658312956,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": null,
+              "exactMeanObserverBias": null
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.09135164916856026,
+              "exactMeanObserverBias": -0.041535351394324904
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.061779053295561104,
+              "exactMeanObserverBias": -0.015733726773714762
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "width": 0.5,
+          "dt": 0.001,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 2000,
+          "time": 2,
+          "rms": 0.0006022440150181232,
+          "maxError": 0.0015840494651147177,
+          "arrivalError": 0.0007920247325573587,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": null,
+              "exactMeanObserverBias": null
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.09135706643012315,
+              "exactMeanObserverBias": -0.041535351394324904
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.06178345676522046,
+              "exactMeanObserverBias": -0.015733726773714762
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "width": 0.25,
+          "dt": 0.004,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 500,
+          "time": 2,
+          "rms": 0.0003721961781235162,
+          "maxError": 0.0010770325011076882,
+          "arrivalError": 0.0004788176361401596,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": null,
+              "exactMeanObserverBias": 0.10636865174823792
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.04947862570158895,
+              "exactMeanObserverBias": -0.00808386901553032
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.02508384202940883,
+              "exactMeanObserverBias": -0.0035315071275907606
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "width": 0.25,
+          "dt": 0.002,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 1000,
+          "time": 2,
+          "rms": 0.00037235949630329415,
+          "maxError": 0.0010781683282203478,
+          "arrivalError": 0.0004789852562362115,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": null,
+              "exactMeanObserverBias": 0.10636865174823792
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.04948960961241872,
+              "exactMeanObserverBias": -0.00808386901553032
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.025094863641003773,
+              "exactMeanObserverBias": -0.0035315071275907606
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "width": 0.25,
+          "dt": 0.001,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 2000,
+          "time": 2,
+          "rms": 0.00037244125721517087,
+          "maxError": 0.0010787361681075392,
+          "arrivalError": 0.00047906910996583965,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": null,
+              "exactMeanObserverBias": 0.10636865174823792
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.04949510780202765,
+              "exactMeanObserverBias": -0.00808386901553032
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.02510037362426476,
+              "exactMeanObserverBias": -0.0035315071275907606
+            }
+          ]
+        },
+        {
+          "index": 6,
+          "width": 0.125,
+          "dt": 0.004,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 500,
+          "time": 2,
+          "rms": 0.00030313949990198104,
+          "maxError": 0.001393235947774967,
+          "arrivalError": 0.0002674245572064582,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.1067977111271042,
+              "exactMeanObserverBias": 0.04324360614561237
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.02498720158216733,
+              "exactMeanObserverBias": -0.0009479042386587033
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.010851393742799864,
+              "exactMeanObserverBias": -0.0005095734408071539
+            }
+          ]
+        },
+        {
+          "index": 7,
+          "width": 0.125,
+          "dt": 0.002,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 1000,
+          "time": 2,
+          "rms": 0.000303328717180127,
+          "maxError": 0.001393170510460299,
+          "arrivalError": 0.00026764243480138924,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.10689488489839691,
+              "exactMeanObserverBias": 0.04324360614561237
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.025003286048595863,
+              "exactMeanObserverBias": -0.0009479042386587033
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.010862063787334675,
+              "exactMeanObserverBias": -0.0005095734408071539
+            }
+          ]
+        },
+        {
+          "index": 8,
+          "width": 0.125,
+          "dt": 0.001,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 2000,
+          "time": 2,
+          "rms": 0.00030342342451820676,
+          "maxError": 0.0013931382277753452,
+          "arrivalError": 0.00026775137993299174,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.1069434850128835,
+              "exactMeanObserverBias": 0.04324360614561237
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.025011327797293925,
+              "exactMeanObserverBias": -0.0009479042386587033
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.010867398029675401,
+              "exactMeanObserverBias": -0.0005095734408071539
+            }
+          ]
+        },
+        {
+          "index": 9,
+          "width": 0.125,
+          "dt": 0.001,
+          "direction": -1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 2000,
+          "time": 2,
+          "rms": 0.00030342342451820676,
+          "maxError": 0.0013931382277753452,
+          "arrivalError": 0.00026775137993299174,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": -0.10694348501288334,
+              "exactMeanObserverBias": -0.043243606145612595
+            },
+            {
+              "threshold": 0.01,
+              "error": 0.025011327797294147,
+              "exactMeanObserverBias": 0.0009479042386588143
+            },
+            {
+              "threshold": 0.015,
+              "error": 0.010867398029675401,
+              "exactMeanObserverBias": 0.0005095734408071539
+            }
+          ]
+        },
+        {
+          "index": 10,
+          "width": 0.125,
+          "dt": 0.001,
+          "direction": 1,
+          "datum": 1024,
+          "phase": 0,
+          "completed": true,
+          "accepted": 2000,
+          "time": 2,
+          "rms": 0.00030342342452422175,
+          "maxError": 0.001393138227793835,
+          "arrivalError": 0.0002677513799366661,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.10694348501400572,
+              "exactMeanObserverBias": 0.04324360614561237
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.025011327804318972,
+              "exactMeanObserverBias": -0.0009479042386587033
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.010867398053570954,
+              "exactMeanObserverBias": -0.0005095734408071539
+            }
+          ]
+        },
+        {
+          "index": 11,
+          "width": 0.125,
+          "dt": 0.001,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0.03125,
+          "completed": true,
+          "accepted": 2000,
+          "time": 2,
+          "rms": 0.00029740343598474886,
+          "maxError": 0.0013537819020394927,
+          "arrivalError": 0.0002854008499086892,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.11903201845762243,
+              "exactMeanObserverBias": 0.040117295232875966
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.024875630154846784,
+              "exactMeanObserverBias": -0.0022730397719584183
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.011354416195676453,
+              "exactMeanObserverBias": -0.0009316410949791187
+            }
+          ]
+        },
+        {
+          "index": 12,
+          "width": 0.0625,
+          "dt": 0.002,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 1000,
+          "time": 2,
+          "rms": 0.0002395558855422838,
+          "maxError": 0.0017697885213025838,
+          "arrivalError": 0.0001443674990271169,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.06326811186215284,
+              "exactMeanObserverBias": 0.005894674107271486
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.013316839347546294,
+              "exactMeanObserverBias": -0.0006295555272495812
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.00543313889750241,
+              "exactMeanObserverBias": -0.0002224233628798089
+            }
+          ]
+        },
+        {
+          "index": 13,
+          "width": 0.0625,
+          "dt": 0.001,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 2000,
+          "time": 2,
+          "rms": 0.00023969765767119827,
+          "maxError": 0.0017704299055735248,
+          "arrivalError": 0.0001444911111146914,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.06332228269705462,
+              "exactMeanObserverBias": 0.005894674107271486
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.013326711724387652,
+              "exactMeanObserverBias": -0.0006295555272495812
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.0054382944773572195,
+              "exactMeanObserverBias": -0.0002224233628798089
+            }
+          ]
+        }
+      ],
+      "temporal": [
+        {
+          "indices": [
+            0,
+            1,
+            2
+          ],
+          "first": 9.428070493809512e-8,
+          "second": 4.719975053358365e-8
+        },
+        {
+          "indices": [
+            3,
+            4,
+            5
+          ],
+          "first": 3.135820863099184e-7,
+          "second": 1.567558592091816e-7
+        },
+        {
+          "indices": [
+            6,
+            7,
+            8
+          ],
+          "first": 3.6140247007607744e-7,
+          "second": 1.8056593922391842e-7
+        }
+      ],
+      "spatial": [
+        {
+          "trialIndices": [
+            2,
+            5
+          ],
+          "rmsMeanDifferenceMeters": 0.00023848193477861657,
+          "maximumMeanDifferenceMeters": 0.0006259112451830383
+        },
+        {
+          "trialIndices": [
+            5,
+            8
+          ],
+          "rmsMeanDifferenceMeters": 0.00017841856772996947,
+          "maximumMeanDifferenceMeters": 0.0006380793466346471
+        },
+        {
+          "trialIndices": [
+            8,
+            13
+          ],
+          "rmsMeanDifferenceMeters": 0.00012953687983202768,
+          "maximumMeanDifferenceMeters": 0.0005989640095531958
+        }
+      ],
+      "extraFinestTemporal": {
+        "indices": [
+          12,
+          13
+        ],
+        "rms": 2.368941511141249e-7,
+        "max": 0.0000016939731611277207
+      }
+    },
+    "candidate": {
+      "operator": "AffineHeadSupportedMinmodPenaltyOne",
+      "maximumReferenceCoefficient": 0.675568867537927,
+      "completed": 14,
+      "requested": 14,
+      "acceptedSteps": 19500,
+      "acceptedCellSteps": 580000,
+      "maximumLocalResidual": 1.5332985037956683e-16,
+      "maximumStepResidual": 8.112484950426888e-17,
+      "maximumCumulativeResidual": 6.197530593986548e-17,
+      "maximumBoundaryCounterDifference": 1.8579667698023078e-18,
+      "cappedFaces": 0,
+      "reflectionBitIdentical": false,
+      "reflection": 7.487771253728015e-19,
+      "datum": 9.927863957629682e-14,
+      "trials": [
+        {
+          "index": 0,
+          "width": 0.5,
+          "dt": 0.004,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 500,
+          "time": 2,
+          "rms": 0.00017731766665071355,
+          "maxError": 0.0004338767473970407,
+          "arrivalError": 0.00021693837369852044,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": null,
+              "exactMeanObserverBias": null
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.06380760173482708,
+              "exactMeanObserverBias": -0.041535351394324904
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.021043454543077544,
+              "exactMeanObserverBias": -0.015733726773714762
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "width": 0.5,
+          "dt": 0.002,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 1000,
+          "time": 2,
+          "rms": 0.00017748974898499931,
+          "maxError": 0.0004343303744492736,
+          "arrivalError": 0.0002171651872246368,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": null,
+              "exactMeanObserverBias": null
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.06382971554810896,
+              "exactMeanObserverBias": -0.041535351394324904
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.021055513768656997,
+              "exactMeanObserverBias": -0.015733726773714762
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "width": 0.5,
+          "dt": 0.001,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 2000,
+          "time": 2,
+          "rms": 0.00017757579640389473,
+          "maxError": 0.0004345571863202396,
+          "arrivalError": 0.00021727859316011987,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": null,
+              "exactMeanObserverBias": null
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.0638407717936112,
+              "exactMeanObserverBias": -0.041535351394324904
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.021061541600334133,
+              "exactMeanObserverBias": -0.015733726773714762
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "width": 0.25,
+          "dt": 0.004,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 500,
+          "time": 2,
+          "rms": 0.00011699009373678867,
+          "maxError": 0.00032159198719677407,
+          "arrivalError": 0.00013390600314215336,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.12330240848875026,
+              "exactMeanObserverBias": 0.10636865174823792
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.02517807544165379,
+              "exactMeanObserverBias": -0.00808386901553032
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.006412832704000948,
+              "exactMeanObserverBias": -0.0035315071275907606
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "width": 0.25,
+          "dt": 0.002,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 1000,
+          "time": 2,
+          "rms": 0.00011712686274428362,
+          "maxError": 0.0003218450791768891,
+          "arrivalError": 0.0001341019649568003,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.12333495796559965,
+              "exactMeanObserverBias": 0.10636865174823792
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.02519632259181176,
+              "exactMeanObserverBias": -0.00808386901553032
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.0064224290189971445,
+              "exactMeanObserverBias": -0.0035315071275907606
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "width": 0.25,
+          "dt": 0.001,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 2000,
+          "time": 2,
+          "rms": 0.00011719528269434227,
+          "maxError": 0.00032197150475617593,
+          "arrivalError": 0.00013419996572232664,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.12335124359340685,
+              "exactMeanObserverBias": 0.10636865174823792
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.02520544442464795,
+              "exactMeanObserverBias": -0.00808386901553032
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.006427227609049568,
+              "exactMeanObserverBias": -0.0035315071275907606
+            }
+          ]
+        },
+        {
+          "index": 6,
+          "width": 0.125,
+          "dt": 0.004,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 500,
+          "time": 2,
+          "rms": 0.00010661677561748063,
+          "maxError": 0.0005426738577356693,
+          "arrivalError": 0.00005935929594651039,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.06323868873854419,
+              "exactMeanObserverBias": 0.04324360614561237
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.007752918793869024,
+              "exactMeanObserverBias": -0.0009479042386587033
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.0014150464108091398,
+              "exactMeanObserverBias": -0.0005095734408071539
+            }
+          ]
+        },
+        {
+          "index": 7,
+          "width": 0.125,
+          "dt": 0.002,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 1000,
+          "time": 2,
+          "rms": 0.0001069455140123872,
+          "maxError": 0.000544346104049019,
+          "arrivalError": 0.00005960170936486367,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.06329959525773096,
+              "exactMeanObserverBias": 0.04324360614561237
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.007773798029765688,
+              "exactMeanObserverBias": -0.0009479042386587033
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.0014243983809334448,
+              "exactMeanObserverBias": -0.0005095734408071539
+            }
+          ]
+        },
+        {
+          "index": 8,
+          "width": 0.125,
+          "dt": 0.001,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 2000,
+          "time": 2,
+          "rms": 0.00010710975922066875,
+          "maxError": 0.0005451812024549091,
+          "arrivalError": 0.000059722893558029335,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.0633300324759821,
+              "exactMeanObserverBias": 0.04324360614561237
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.007784237708637287,
+              "exactMeanObserverBias": -0.0009479042386587033
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.0014290750020247156,
+              "exactMeanObserverBias": -0.0005095734408071539
+            }
+          ]
+        },
+        {
+          "index": 9,
+          "width": 0.125,
+          "dt": 0.001,
+          "direction": -1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 2000,
+          "time": 2,
+          "rms": 0.00010710975922066874,
+          "maxError": 0.0005451812024549094,
+          "arrivalError": 0.00005972289355802955,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": -0.06333003247598198,
+              "exactMeanObserverBias": -0.043243606145612595
+            },
+            {
+              "threshold": 0.01,
+              "error": 0.007784237708637065,
+              "exactMeanObserverBias": 0.0009479042386588143
+            },
+            {
+              "threshold": 0.015,
+              "error": 0.0014290750020247156,
+              "exactMeanObserverBias": 0.0005095734408071539
+            }
+          ]
+        },
+        {
+          "index": 10,
+          "width": 0.125,
+          "dt": 0.001,
+          "direction": 1,
+          "datum": 1024,
+          "phase": 0,
+          "completed": true,
+          "accepted": 2000,
+          "time": 2,
+          "rms": 0.00010710975922567812,
+          "maxError": 0.0005451812024701667,
+          "arrivalError": 0.00005972289356057862,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.06333003247664956,
+              "exactMeanObserverBias": 0.04324360614561237
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.007784237717446241,
+              "exactMeanObserverBias": -0.0009479042386587033
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.0014290750252849982,
+              "exactMeanObserverBias": -0.0005095734408071539
+            }
+          ]
+        },
+        {
+          "index": 11,
+          "width": 0.125,
+          "dt": 0.001,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0.03125,
+          "completed": true,
+          "accepted": 2000,
+          "time": 2,
+          "rms": 0.00009016904975705252,
+          "maxError": 0.0003512758769556228,
+          "arrivalError": 0.0000778804930699906,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.05288098412800721,
+              "exactMeanObserverBias": 0.040117295232875966
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.009223307939581427,
+              "exactMeanObserverBias": -0.0022730397719584183
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.0018724039412996163,
+              "exactMeanObserverBias": -0.0009316410949791187
+            }
+          ]
+        },
+        {
+          "index": 12,
+          "width": 0.0625,
+          "dt": 0.002,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 1000,
+          "time": 2,
+          "rms": 0.00007500195594812222,
+          "maxError": 0.0005673740529304216,
+          "arrivalError": 0.000024432268630544037,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.017187641462575426,
+              "exactMeanObserverBias": 0.005894674107271486
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.003277001836714144,
+              "exactMeanObserverBias": -0.0006295555272495812
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.0004829511659742991,
+              "exactMeanObserverBias": -0.0002224233628798089
+            }
+          ]
+        },
+        {
+          "index": 13,
+          "width": 0.0625,
+          "dt": 0.001,
+          "direction": 1,
+          "datum": 0,
+          "phase": 0,
+          "completed": true,
+          "accepted": 2000,
+          "time": 2,
+          "rms": 0.00007529688125797598,
+          "maxError": 0.0005697086012460269,
+          "arrivalError": 0.00002456175794126865,
+          "contours": [
+            {
+              "threshold": 0.001,
+              "error": 0.01724460454385532,
+              "exactMeanObserverBias": 0.005894674107271486
+            },
+            {
+              "threshold": 0.01,
+              "error": -0.003288621782389145,
+              "exactMeanObserverBias": -0.0006295555272495812
+            },
+            {
+              "threshold": 0.015,
+              "error": -0.0004877063444708174,
+              "exactMeanObserverBias": -0.0002224233628798089
+            }
+          ]
+        }
+      ],
+      "temporal": [
+        {
+          "indices": [
+            0,
+            1,
+            2
+          ],
+          "first": 1.826010137125162e-7,
+          "second": 9.129923753062588e-8
+        },
+        {
+          "indices": [
+            3,
+            4,
+            5
+          ],
+          "first": 1.601093775129113e-7,
+          "second": 8.00897023101331e-8
+        },
+        {
+          "indices": [
+            6,
+            7,
+            8
+          ],
+          "first": 3.3670632237378474e-7,
+          "second": 1.682441882455908e-7
+        }
+      ],
+      "spatial": [
+        {
+          "trialIndices": [
+            2,
+            5
+          ],
+          "rmsMeanDifferenceMeters": 0.00007659467839358062,
+          "maximumMeanDifferenceMeters": 0.00016615725487558616
+        },
+        {
+          "trialIndices": [
+            5,
+            8
+          ],
+          "rmsMeanDifferenceMeters": 0.00006294072673184699,
+          "maximumMeanDifferenceMeters": 0.0001695020848649802
+        },
+        {
+          "trialIndices": [
+            8,
+            13
+          ],
+          "rmsMeanDifferenceMeters": 0.000051041221437566805,
+          "maximumMeanDifferenceMeters": 0.0002495599934735724
+        }
+      ],
+      "extraFinestTemporal": {
+        "indices": [
+          12,
+          13
+        ],
+        "rms": 2.989221931625417e-7,
+        "max": 0.0000023345483156052706
+      }
+    }
+  },
+  "referenceVerification": {
+    "method": "mpmath 1.3.0 independent elementary primitives, bracketed Newton inversion and rational quadrature",
+    "cohorts": [
+      {
+        "operator": "HydrostaticBaseline",
+        "evaluations": [
+          {
+            "decimalDigits": 80,
+            "meanComparisons": 1176,
+            "maximumMeanAbsoluteErrorMeters": 1.6050868507211463e-15,
+            "maximumMeanRelativeError": 8.247990166825415e-14,
+            "original256EpsilonReferenceProbePassed": false,
+            "declaredReferenceRelativeLimit": 1.1368683772161603e-13,
+            "maximumContourAbsoluteErrorMeters": 4.0583396747145636e-16,
+            "maximumBoundaryAbsoluteErrorSquareMeters": 2.5805496156832098e-17,
+            "rationalQuadraturePrimitiveRelativeErrors": [
+              2.05443065132479e-75,
+              2.695557917141042e-80,
+              6.206375216526048e-81
+            ],
+            "shortIntervalConditioning": [
+              {
+                "requestedIntervalSeconds": 0.004,
+                "actualBinaryIntervalSeconds": 0.0040000000000000036,
+                "absoluteErrorSquareMeters": 2.925190837972497e-17,
+                "relativeError": 3.7117832558796915e-12
+              },
+              {
+                "requestedIntervalSeconds": 0.001,
+                "actualBinaryIntervalSeconds": 0.0009999999999998899,
+                "absoluteErrorSquareMeters": 3.068016546500221e-17,
+                "relativeError": 1.5572298794263564e-11
+              },
+              {
+                "requestedIntervalSeconds": 0.000001,
+                "actualBinaryIntervalSeconds": 9.999999999177334e-7,
+                "absoluteErrorSquareMeters": 9.257360142130127e-18,
+                "relativeError": 4.698772300980809e-9
+              },
+              {
+                "requestedIntervalSeconds": 1e-8,
+                "actualBinaryIntervalSeconds": 9.99999993922529e-9,
+                "absoluteErrorSquareMeters": 3.6530463004689543e-17,
+                "relativeError": 0.000001854182261115998
+              },
+              {
+                "requestedIntervalSeconds": 1e-10,
+                "actualBinaryIntervalSeconds": 1.000000082740371e-10,
+                "absoluteErrorSquareMeters": 4.364562063015355e-17,
+                "relativeError": 0.00022153272011297983
+              }
+            ]
+          },
+          {
+            "decimalDigits": 100,
+            "meanComparisons": 1176,
+            "maximumMeanAbsoluteErrorMeters": 1.6050868507211463e-15,
+            "maximumMeanRelativeError": 8.247990166825415e-14,
+            "original256EpsilonReferenceProbePassed": false,
+            "declaredReferenceRelativeLimit": 1.1368683772161603e-13,
+            "maximumContourAbsoluteErrorMeters": 4.0583396747145636e-16,
+            "maximumBoundaryAbsoluteErrorSquareMeters": 2.5805496156832098e-17,
+            "rationalQuadraturePrimitiveRelativeErrors": [
+              8.5133404555766e-96,
+              2.6861486671184003e-100,
+              4.0104888504967934e-101
+            ],
+            "shortIntervalConditioning": [
+              {
+                "requestedIntervalSeconds": 0.004,
+                "actualBinaryIntervalSeconds": 0.0040000000000000036,
+                "absoluteErrorSquareMeters": 2.925190837972497e-17,
+                "relativeError": 3.7117832558796915e-12
+              },
+              {
+                "requestedIntervalSeconds": 0.001,
+                "actualBinaryIntervalSeconds": 0.0009999999999998899,
+                "absoluteErrorSquareMeters": 3.068016546500221e-17,
+                "relativeError": 1.5572298794263564e-11
+              },
+              {
+                "requestedIntervalSeconds": 0.000001,
+                "actualBinaryIntervalSeconds": 9.999999999177334e-7,
+                "absoluteErrorSquareMeters": 9.257360142130127e-18,
+                "relativeError": 4.698772300980809e-9
+              },
+              {
+                "requestedIntervalSeconds": 1e-8,
+                "actualBinaryIntervalSeconds": 9.99999993922529e-9,
+                "absoluteErrorSquareMeters": 3.6530463004689543e-17,
+                "relativeError": 0.000001854182261115998
+              },
+              {
+                "requestedIntervalSeconds": 1e-10,
+                "actualBinaryIntervalSeconds": 1.000000082740371e-10,
+                "absoluteErrorSquareMeters": 4.364562063015355e-17,
+                "relativeError": 0.00022153272011297983
+              }
+            ]
+          }
+        ],
+        "maximum80To100DigitMeanDifferenceMeters": 2.9811642280736776e-69
+      },
+      {
+        "operator": "AffineHeadSupportedMinmodPenaltyOne",
+        "evaluations": [
+          {
+            "decimalDigits": 80,
+            "meanComparisons": 1176,
+            "maximumMeanAbsoluteErrorMeters": 1.6050868507211463e-15,
+            "maximumMeanRelativeError": 8.247990166825415e-14,
+            "original256EpsilonReferenceProbePassed": false,
+            "declaredReferenceRelativeLimit": 1.1368683772161603e-13,
+            "maximumContourAbsoluteErrorMeters": 4.0583396747145636e-16,
+            "maximumBoundaryAbsoluteErrorSquareMeters": 2.5805496156832098e-17,
+            "rationalQuadraturePrimitiveRelativeErrors": [
+              2.05443065132479e-75,
+              2.695557917141042e-80,
+              6.206375216526048e-81
+            ],
+            "shortIntervalConditioning": [
+              {
+                "requestedIntervalSeconds": 0.004,
+                "actualBinaryIntervalSeconds": 0.0040000000000000036,
+                "absoluteErrorSquareMeters": 2.925190837972497e-17,
+                "relativeError": 3.7117832558796915e-12
+              },
+              {
+                "requestedIntervalSeconds": 0.001,
+                "actualBinaryIntervalSeconds": 0.0009999999999998899,
+                "absoluteErrorSquareMeters": 3.068016546500221e-17,
+                "relativeError": 1.5572298794263564e-11
+              },
+              {
+                "requestedIntervalSeconds": 0.000001,
+                "actualBinaryIntervalSeconds": 9.999999999177334e-7,
+                "absoluteErrorSquareMeters": 9.257360142130127e-18,
+                "relativeError": 4.698772300980809e-9
+              },
+              {
+                "requestedIntervalSeconds": 1e-8,
+                "actualBinaryIntervalSeconds": 9.99999993922529e-9,
+                "absoluteErrorSquareMeters": 3.6530463004689543e-17,
+                "relativeError": 0.000001854182261115998
+              },
+              {
+                "requestedIntervalSeconds": 1e-10,
+                "actualBinaryIntervalSeconds": 1.000000082740371e-10,
+                "absoluteErrorSquareMeters": 4.364562063015355e-17,
+                "relativeError": 0.00022153272011297983
+              }
+            ]
+          },
+          {
+            "decimalDigits": 100,
+            "meanComparisons": 1176,
+            "maximumMeanAbsoluteErrorMeters": 1.6050868507211463e-15,
+            "maximumMeanRelativeError": 8.247990166825415e-14,
+            "original256EpsilonReferenceProbePassed": false,
+            "declaredReferenceRelativeLimit": 1.1368683772161603e-13,
+            "maximumContourAbsoluteErrorMeters": 4.0583396747145636e-16,
+            "maximumBoundaryAbsoluteErrorSquareMeters": 2.5805496156832098e-17,
+            "rationalQuadraturePrimitiveRelativeErrors": [
+              8.5133404555766e-96,
+              2.6861486671184003e-100,
+              4.0104888504967934e-101
+            ],
+            "shortIntervalConditioning": [
+              {
+                "requestedIntervalSeconds": 0.004,
+                "actualBinaryIntervalSeconds": 0.0040000000000000036,
+                "absoluteErrorSquareMeters": 2.925190837972497e-17,
+                "relativeError": 3.7117832558796915e-12
+              },
+              {
+                "requestedIntervalSeconds": 0.001,
+                "actualBinaryIntervalSeconds": 0.0009999999999998899,
+                "absoluteErrorSquareMeters": 3.068016546500221e-17,
+                "relativeError": 1.5572298794263564e-11
+              },
+              {
+                "requestedIntervalSeconds": 0.000001,
+                "actualBinaryIntervalSeconds": 9.999999999177334e-7,
+                "absoluteErrorSquareMeters": 9.257360142130127e-18,
+                "relativeError": 4.698772300980809e-9
+              },
+              {
+                "requestedIntervalSeconds": 1e-8,
+                "actualBinaryIntervalSeconds": 9.99999993922529e-9,
+                "absoluteErrorSquareMeters": 3.6530463004689543e-17,
+                "relativeError": 0.000001854182261115998
+              },
+              {
+                "requestedIntervalSeconds": 1e-10,
+                "actualBinaryIntervalSeconds": 1.000000082740371e-10,
+                "absoluteErrorSquareMeters": 4.364562063015355e-17,
+                "relativeError": 0.00022153272011297983
+              }
+            ]
+          }
+        ],
+        "maximum80To100DigitMeanDifferenceMeters": 2.9811642280736776e-69
+      }
+    ]
+  },
+  "referenceConditioning": {
+    "contract": "Rounded inverses can amplify relative short-interval amount error. These are reference-only observations, not qualified timestep controls or physical transactions.",
+    "probes": [
+      {
+        "endSeconds": 1.004,
+        "referenceBoundaryVolumeSquareMeters": 0.00000788082341109135,
+        "requestedIntervalSeconds": 0.004,
+        "startSeconds": 1,
+        "xMeters": -3.5
+      },
+      {
+        "endSeconds": 1.001,
+        "referenceBoundaryVolumeSquareMeters": 0.000001970175750533777,
+        "requestedIntervalSeconds": 0.001,
+        "startSeconds": 1,
+        "xMeters": -3.5
+      },
+      {
+        "endSeconds": 1.000001,
+        "referenceBoundaryVolumeSquareMeters": 1.9701657353551688e-9,
+        "requestedIntervalSeconds": 0.000001,
+        "startSeconds": 1,
+        "xMeters": -3.5
+      },
+      {
+        "endSeconds": 1.00000001,
+        "referenceBoundaryVolumeSquareMeters": 1.970162051305899e-11,
+        "requestedIntervalSeconds": 1e-8,
+        "startSeconds": 1,
+        "xMeters": -3.5
+      },
+      {
+        "endSeconds": 1.0000000001,
+        "referenceBoundaryVolumeSquareMeters": 1.9697294230324245e-13,
+        "requestedIntervalSeconds": 1e-10,
+        "startSeconds": 1,
+        "xMeters": -3.5
+      }
+    ]
+  },
+  "restValidation": {
+    "candidateCases": 24,
+    "stepsPerCase": 1000,
+    "exactlyZeroFlux": true,
+    "ownerComponentsBitIdentical": true,
+    "scope": "Exactly representable existing shoreline/unequal-pool/alternating/discontinuous/uniform/dry fixtures with reflection and large datum; not unconditional floating exact well-balancing"
+  },
+  "deliberateRefusal": {
+    "attemptedStep": 1,
+    "candidateCommitted": false,
+    "reason": "Frozen donor budget exceeded at cell 0.",
+    "startTimeSeconds": 0
+  },
+  "defectsFixed": [
+    "Tiny partial-cell stock lost by collapsed effective-bed anchor+offset; separate components retained without relaxing moment criteria",
+    "Wet-neighbor limiter activation introduced a finite zero-stock flux jump; declared numerical dry ordering and own-storage slope bound restore the tested limit",
+    "First-step refusal report attempted an invalid zero-length reference interval; zero accepted clock now retains zero reference exchange",
+    "Rounded-mean field differences lost physical low components; high-component cancellation precedes projection and low-only regressions cover restriction factors one and two",
+    "Halving smallest positive subnormal traces erased a representable mean; safely scaled positive averaging preserves it"
+  ],
+  "validation": {
+    "npmTestStatus": "passed",
+    "nativePassed": 655,
+    "nativeTargets": 119,
+    "preExistingIgnoredNativeTests": 1,
+    "nodePassed": 88,
+    "nodeFiles": 18,
+    "typecheckAndNativeReleaseBuild": "passed",
+    "strictAllTargetClippy": "passed",
+    "formatAndWhitespace": "passed",
+    "optimizedLibraryPassed": 200,
+    "optimizedRegionalSoilPassed": 12,
+    "optimizedRegionalSurfaceFlowPassed": 5,
+    "optimizedFocusedReferenceAndMovingPassed": 8,
+    "optimizedFocusedHeadPassed": 10,
+    "cliRefusals": {
+      "noArguments": true,
+      "extraArgumentsNoFileCreated": true,
+      "existingOutputPreserved": true
+    },
+    "initialWrongOptimizedTargetRequest": "regional_surface rejected as nonexistent before tests; corrected regional_surface_flow passes",
+    "guiRun": false,
+    "ownerRendererFilesUntouched": true
+  },
+  "unchangedTopographyReportSha256": "3ef45f4303b45da063f9dc3dafea95e457bf119bd3b388023b852b27065ca348",
+  "remaining": [
+    "Thin-front accuracy and arbitrary-phase propagation/recession/interacting fronts",
+    "Non-affine bed peaks/plateaus and connected subcell geometry",
+    "Spherical full-gradient reconstruction and assembly",
+    "Seasonal selection and exact persistence under new model pins",
+    "Calibration and measured production runtime",
+    "Reference narrow-interval inverse conditioning; initial 256-epsilon reference-only probe failure retained alongside separate 512-epsilon limit"
+  ],
+  "nextProposal": "../surface-non-affine-bed-proposal.md",
+  "commands": [
+    "npm test",
+    "cargo clippy --locked --manifest-path native/Cargo.toml --all-targets -- -D warnings",
+    "cargo fmt --manifest-path native/Cargo.toml --check",
+    "cargo test --locked --release --manifest-path native/Cargo.toml --lib",
+    "cargo test --locked --release --manifest-path native/Cargo.toml --test regional_soil --test regional_surface_flow",
+    "cargo run --locked --manifest-path native/Cargo.toml --example surface_bed_moving_report -- artifacts/bed-moving-final-20261014.json",
+    "cargo run --locked --release --manifest-path native/Cargo.toml --example surface_bed_moving_report -- artifacts/bed-moving-release-20261014.json",
+    "python scripts/verify-bed-moving-reference.py artifacts/bed-moving-final-20261014.json"
+  ]
+}
