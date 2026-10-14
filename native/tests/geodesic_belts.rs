@@ -10,7 +10,11 @@ fn both_geometries_keep_owned_columns_detail_and_inputs_unchanged() {
     for seed in ["first-light", "4836187e", "geography-00"] {
         let w = World::generate(recipe(seed)).unwrap();
         let old = w.terrain.clone();
-        for origin in [Origin::RegionSeeds, Origin::BoundaryArcs] {
+        for origin in [
+            Origin::RegionSeeds,
+            Origin::BoundaryArcs,
+            Origin::FixedBoundaryArcs,
+        ] {
             let a = build(&w.surface, &w.crust, &w.tectonics, &w.recipe, &old, origin).unwrap();
             let b = build(&w.surface, &w.crust, &w.tectonics, &w.recipe, &old, origin).unwrap();
             assert_eq!(a.terrain, b.terrain);
@@ -45,7 +49,11 @@ fn stopped_or_zero_strength_has_no_structural_height_change() {
             r.relief_scale = 0.;
         }
         let w = World::generate(r).unwrap();
-        for origin in [Origin::RegionSeeds, Origin::BoundaryArcs] {
+        for origin in [
+            Origin::RegionSeeds,
+            Origin::BoundaryArcs,
+            Origin::FixedBoundaryArcs,
+        ] {
             let a = build(
                 &w.surface,
                 &w.crust,
@@ -60,6 +68,47 @@ fn stopped_or_zero_strength_has_no_structural_height_change() {
             assert!(a.terrain.divergence.iter().all(|&v| v == 0.));
         }
     }
+}
+
+#[test]
+fn fixed_origins_and_shared_initial_contributions_do_not_depend_on_target_grid() {
+    let mut r = recipe("first-light");
+    r.subdivision = 2;
+    let coarse = World::generate(r.clone()).unwrap();
+    r.subdivision = 3;
+    let fine = World::generate(r).unwrap();
+    let apply = |w: &World| {
+        build(
+            &w.surface,
+            &w.crust,
+            &w.tectonics,
+            &w.recipe,
+            &w.terrain,
+            Origin::FixedBoundaryArcs,
+        )
+        .unwrap()
+    };
+    let a = apply(&coarse);
+    let b = apply(&fine);
+    assert_ne!(
+        coarse.tectonics.boundary_types.len(),
+        fine.tectonics.boundary_types.len()
+    );
+    assert_eq!(a.source_identity, b.source_identity);
+    assert!(a.source_identity.is_some());
+    assert_eq!(
+        serde_json::to_vec(&a.sources).unwrap(),
+        serde_json::to_vec(&b.sources).unwrap()
+    );
+    let shared = coarse.surface.centers.len();
+    assert_eq!(coarse.surface.centers, fine.surface.centers[..shared]);
+    assert_eq!(a.terrain.baseline, b.terrain.baseline[..shared]);
+    assert_eq!(a.terrain.detail, b.terrain.detail[..shared]);
+    assert_eq!(a.terrain.convergence, b.terrain.convergence[..shared]);
+    assert_eq!(a.terrain.divergence, b.terrain.divergence[..shared]);
+    assert_eq!(a.terrain.elevation, b.terrain.elevation[..shared]);
+    // This is initial-field consistency, not convergence of discretized erosion,
+    // water coverage fitting, downstream connectivity or prepared landscapes.
 }
 #[test]
 fn malformed_fields_and_noninitial_provenance_refuse_without_mutation() {

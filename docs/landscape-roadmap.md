@@ -251,3 +251,66 @@ exact repeated physical records and a 655362-sample comparison. This separates
 distance from source-origin effects, but sampled boundaries still depend on
 the terrain grid and dense closed share remains roughly 34–36%. The old model
 stays frozen; no new desktop/default promotion or completed R3 is claimed.
+
+The subsequent [fixed geological sources](fixed-geological-sources.md) separate
+subdivision-5 structural origins from target terrain sampling, retaining weighted
+partition/motion/crust streams and explicit identity. Shared initial directions
+and source records agree exactly between 40962 and 655362 samples. Twenty ordinary
+worlds retain median closed dry share 9.78%, but the dense first-light share
+remains 34.35% and actual maps still have broad forms. Fine physical landforms,
+not another global source reroll, are the next work. Full regression passes
+800 native tests across 142 targets and 96 Node tests, with the existing ignored
+native test retained, plus strict all-target Clippy/formatting/whitespace checks.
+
+## Next physical landform increment — proposed, not implemented
+
+The global 655362-region footprint is approximately 28 km. This cannot represent
+a sub-kilometer valley floor and neighboring ridge as separate authoritative
+heights. Correct regional prism accounting does not prove resolved landform
+geometry. It is also not evidence that whole-cell stream-power equations are
+intrinsically invalid.
+
+[Cordonnier et al., sections 6.2–6.3](https://cs.purdue.edu/homes/bbenes/papers/Cordonier16CGF.pdf)
+normally use a 50×50 km domain with 10000–160000 samples (roughly 500–125 m
+spacing). Their detailed rendering additionally synthesizes landform primitives;
+it is not simply a dense display of the raw coarse graph. Their lake connections
+and slope corrections are separate assumptions, not conservative water/material
+operations that can be silently imported here.
+
+[Theodoratos et al., sections 2.1–2.3](https://esurf.copernicus.org/articles/6/779/2018/)
+study uplift, stream-power incision and linear hillslope diffusion together:
+
+```text
+dh/dt = U - K sqrt(A) |gradient(h)| + D Laplacian(h)
+characteristic length = sqrt(D/K)
+characteristic height = U/K
+characteristic time = 1/K
+```
+
+These give a declared process scale against which to test physical sampling.
+Linear diffusion is a simplified gentle-soil hillslope law, not every mountain
+process. Missing diffusion and insufficient sampling are actionable hypotheses,
+not proven unique explanations of our global maps.
+
+Implement a bounded generation-only **authoritative fine patch** first, around
+50–100 km across with recorded 250–1000 m spacing, location/orientation, source
+identity and boundary assumptions. Geographic inputs sample global unit
+directions; areas/distances and face transmissivities use declared physical
+geometry. Camera movement must not generate or change the bed.
+
+Add a separately versioned hillslope-transfer primitive using paired shared-face
+volume exchanges and a monotonicity-preserving timestep. Never clamp after an
+unstable step. Test constant fields, unequal areas, material balance, maximum
+principle, analytic refinement, invalid workload and immutable failure. Then
+combine prescribed uplift, rebuilt actual downhill routing and existing
+incision, retaining actual heights and separate accepted displacement/incision
+export/lateral-transfer diagnostics. Initially do not double-count transport in
+the global sedimentary pending/active inventories.
+
+Start with a controlled mountain domain and explicit external fixed-height
+boundaries, not fake ocean cells or forced drainage from interior sinks. Compare
+equal extents/durations at 1000/500/250 m, longitudinal/transverse profiles and
+fixed-distance roughness. Retain an actual generated mountain patch and both
+initial/final maps before promotion. A successful patch is not global water/
+climate coupling: that needs material-stock restriction, explicit boundary fluxes,
+channel connections and storage-aware aggregation, not averaged heights alone.

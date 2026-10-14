@@ -15,12 +15,20 @@ source placement:
 | Variant | Source origins | Attenuation |
 | --- | --- | --- |
 | `graph-300` | Frozen region seeds | Frozen graph shortest paths |
-| `geodesic-points-300` | Exactly those region seed positions/amplitudes | Direct great-circle distance |
+| `geodesic-points-300` | Same region origins and seed-amplitude law | Direct great-circle distance |
 | `geodesic-arcs-300` | Actual sampled half-dual boundary arcs | Distance to the entire minor arc |
 
 All widths are 300 km. Retain v2 crust columns, plate motion, geographic detail,
 relief modulation and their independent random streams. No added noise, guessed
 outlet, extra plate motion or renderer-defined physical detail enters this review.
+
+The independent scalar seeding helper uses a squared cross-product norm, while
+the frozen terrain builder uses chained `hypot`; midpoint normalization also
+differs in floating-point evaluation. They implement the same spherical law, not
+a promised bytewise equality of source amplitudes to the frozen builder. The
+point ablation therefore includes that numerical-rounding distinction as well
+as direct propagation. Exact raw-repeat claims below compare the same pinned
+implementation, not two algebraically equivalent scalar implementations.
 
 The initial contribution in channel j is:
 
@@ -76,12 +84,17 @@ supply trusted same-world components. The review obtains all components together
 through its initial-field builder. Source indices are record-local, not persistent
 plate or region identities.
 
-Next structural requirement: construct and pin source geometry independently
-of the target terrain grid, then test shared-direction samples across resolutions.
-A fixed reference geological mesh is a possible explicit approximation; it is
-not equivalent to a fully continuous evolving tectonic model.
+The subsequent [fixed geological source component](fixed-geological-sources.md)
+now constructs and pins origins independently of the target grid, with exact
+shared-direction controls. Its separate fixed reference mesh is an explicit
+approximation, not a fully continuous evolving tectonic model. This does not
+retroactively change the sampled-origin geometry in the version-1 comparisons.
 
 ## Reproducible physical comparisons
+
+The commands below now emit the four-way version-2 review with
+[fixed geological sources](fixed-geological-sources.md). The retained version-1
+evidence described here remains the original three-way comparison.
 
 ```bash
 cargo run --locked --release --manifest-path native/Cargo.toml \

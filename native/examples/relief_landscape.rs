@@ -196,7 +196,7 @@ fn main() -> Result<(), String> {
         if geodesic {
             svg = svg.replace(
                 "belt width x detail spectrum",
-                "graph / geodesic seeds / geodesic arcs",
+                "graph / geodesic seeds / sampled arcs / fixed geology",
             );
         }
         let controls: Vec<_> = if geodesic {
@@ -213,6 +213,12 @@ fn main() -> Result<(), String> {
                     300.,
                     false,
                     Some(geodesic_belts::Origin::BoundaryArcs),
+                ),
+                (
+                    "fixed-arcs-300",
+                    300.,
+                    false,
+                    Some(geodesic_belts::Origin::FixedBoundaryArcs),
                 ),
             ]
         } else {
@@ -236,11 +242,13 @@ fn main() -> Result<(), String> {
                     &json!({"sourceModelVersion":origin.model_version(),
                     "envelopeModelVersion":planimulation_core::geodesic_envelope::MODEL_VERSION,
                     "radiusMeters":parameters.radius_meters,"widthMeters":width*1000.,"sources":built.sources,
-                    "scope":"Owned sampled-boundary source geometry, still mesh dependent. Array index is the source ID, not a persistent plate/region entity."}),
+                    "sourceIdentity":built.source_identity,
+                    "scope":if built.source_identity.is_some() {"Owned boundary arcs from a pinned subdivision-5 geological reference mesh, independent of target sampling. Not continuous tectonic evolution. Array index is source ID local to this identity."}else{"Owned target-grid sampled-boundary source geometry, still mesh dependent. Array index is the source ID, not a persistent plate/region entity."}}),
                 )?;
                 let record = json!({"sourceModelVersion":origin.model_version(),"sourceCount":built.sources.len(),
                     "meanEvaluatedSources":built.mean_evaluated_sources,"maximumEvaluatedSources":built.maximum_evaluated_sources,
-                    "sourceGeometryFile":filename,"initialEnvelopeSeconds":geodesic_started.elapsed().as_secs_f64()});
+                    "sourceGeometryFile":filename,"sourceIdentity":built.source_identity,
+                    "initialEnvelopeSeconds":geodesic_started.elapsed().as_secs_f64()});
                 terrain = built.terrain;
                 record
             } else {
@@ -368,12 +376,12 @@ fn main() -> Result<(), String> {
     }
     write_json(
         &directory.join("manifest.json"),
-        &json!({"reportVersion":if geodesic {"geodesic-belt-review-1"}else{"physical-relief-review-2"},"samplingSubdivision":level,
+        &json!({"reportVersion":if geodesic {"geodesic-belt-review-2"}else{"physical-relief-review-2"},"samplingSubdivision":level,
         "regions":s.areas.len(),"physicalSamplingLengthMeters":footprint,"rows":rows,
         "display":{"hillshade":"actual-neighbor-tangent-least-squares-1","verticalExaggeration":20.,"sunAzimuthDegrees":315.,"sunElevationDegrees":45.,"physicalMutation":false},
-        "atlasScope":if level==8 {"Separate per-variant SVGs bound each document below the converter's million-element limit. No combined dense SVG."}else if geodesic {"Three-panel actual-field atlas."}else{"Four-panel actual-field atlas."},
+        "atlasScope":if level==8 {"Separate per-variant SVGs bound each document below the converter's million-element limit. No combined dense SVG."}else{"Four-panel actual-field atlas."},
         "fieldRecord":{"format":"headerless-f64-le-region-major-1","columns":["initialBedMeters","upliftRateMetersPerYear","preparedBedMeters","activeSedimentThicknessMeters","pendingSedimentVolumeCubicMeters","cumulativeErosionThicknessMeters","cumulativeDepositionThicknessMeters","acceptedUpliftDisplacementMeters"]},
-        "scope":if geodesic {"Initial-world source-geometry ablations: legacy graph, direct geodesic original region seeds, direct geodesic sampled boundary arcs. Same width, sampled plate geometry/motion, crust/detail streams and old prescribed parameters. Original graph-case water stock held fixed. Boundaries are still mesh dependent; not continuous independent plate history, a supported new World or a checkpoint. Renderer cannot mutate the physical fields. Manifest written last."}else{"Initial-world ablations, not one world's dynamic intervention. Same seed/columns/plate roots; width changes structural amplitudes/source. Candidate detail replaces only initial detail. Original wide-case water stock held fixed. Physical spectrum is procedural initial-condition synthesis, not folding/erosion or calibrated Earth terrain. Probe metadata and new detail pin are not a supported Recipe/World/checkpoint. Native arrays remain authoritative; atlas approximate projection does not modify them. Manifest written last."}}),
+        "scope":if geodesic {"Initial-world source-geometry ablations: legacy graph, direct geodesic original region seeds, target-grid sampled boundary arcs and fixed subdivision-5 geological arcs. Same width, crust/detail streams and prescribed parameters; fixed source geometry retains connected weighted partition/resistance on its separate reference grid. Original graph-case water stock held fixed. Target-grid variants remain mesh dependent; fixed source identity is independent of target sampling, not evolving plate history, a supported new World or a checkpoint. Renderer cannot mutate physical fields. Manifest written last."}else{"Initial-world ablations, not one world's dynamic intervention. Same seed/columns/plate roots; width changes structural amplitudes/source. Candidate detail replaces only initial detail. Original wide-case water stock held fixed. Physical spectrum is procedural initial-condition synthesis, not folding/erosion or calibrated Earth terrain. Probe metadata and new detail pin are not a supported Recipe/World/checkpoint. Native arrays remain authoritative; atlas approximate projection does not modify them. Manifest written last."}}),
     )
 }
 #[cfg(test)]

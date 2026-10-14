@@ -467,6 +467,7 @@ pub mod spill_connections;
 pub mod spill_junction;
 pub mod spill_network;
 pub mod spill_readiness;
+pub mod structural_sources;
 pub mod surface_water;
 pub mod tectonics;
 pub mod terrain;

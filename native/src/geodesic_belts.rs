@@ -1,10 +1,10 @@
-//! Controlled initial-world ablations. Existing sampled plate boundaries remain
-//! mesh-dependent; only attenuation/origin geometry is replaced here.
+//! Controlled initial-world ablations. Target-grid sampled origins remain
+//! mesh-dependent; fixed origins use a separately pinned geological mesh.
 use crate::{
     Recipe, Surface,
     crust::Crust,
     geodesic_envelope::{Field, Settings, Source},
-    geography,
+    geography, structural_sources,
     tectonics::Tectonics,
     terrain::{Terrain, boundary_amplitudes},
 };
@@ -14,12 +14,14 @@ use serde::Serialize;
 pub enum Origin {
     RegionSeeds,
     BoundaryArcs,
+    FixedBoundaryArcs,
 }
 impl Origin {
     pub fn model_version(self) -> &'static str {
         match self {
             Self::RegionSeeds => "geodesic-region-seeds-1",
             Self::BoundaryArcs => "geodesic-sampled-arcs-1",
+            Self::FixedBoundaryArcs => structural_sources::MODEL_VERSION,
         }
     }
 }
@@ -30,6 +32,7 @@ pub struct Initial {
     pub origin: Origin,
     pub mean_evaluated_sources: f64,
     pub maximum_evaluated_sources: usize,
+    pub source_identity: Option<structural_sources::Identity>,
 }
 fn angle(a: [f64; 3], b: [f64; 3]) -> f64 {
     let cross = [
@@ -97,42 +100,51 @@ pub fn build(
     }
     let width = reference.boundary_width_km * 1000.;
     let mut sources = Vec::new();
-    let mut seeded = if matches!(origin, Origin::RegionSeeds) {
-        Some(vec![[0_f64; 3]; n])
+    let source_identity;
+    if matches!(origin, Origin::FixedBoundaryArcs) {
+        let fixed = structural_sources::build(reference)?;
+        sources = fixed.sources;
+        source_identity = Some(fixed.identity);
     } else {
-        None
-    };
-    for segment in 0..m {
-        let a = plates.boundary_cells[segment * 2] as usize;
-        let b = plates.boundary_cells[segment * 2 + 1] as usize;
-        if a >= n || b >= n || a == b {
-            return Err("Invalid sampled boundary cells.".into());
-        }
-        let amplitudes = boundary_amplitudes(
-            plates.boundary_motion[segment * 2],
-            (crust.continentality[a] + crust.continentality[b]) * 0.5,
-        );
-        let start = plates.boundary_directions[segment * 2];
-        let end = plates.boundary_directions[segment * 2 + 1];
-        let arc = Source::new(start, end, amplitudes)?;
-        if let Some(seeded) = seeded.as_mut() {
-            let sum = std::array::from_fn::<_, 3, _>(|i| start[i] + end[i]);
-            let norm = sum.iter().map(|v| v * v).sum::<f64>().sqrt();
-            let p = sum.map(|v| v / norm);
-            for cell in [a, b] {
-                let decay = (-angle(s.centers[cell], p) * reference.radius_meters / width).exp();
-                for j in 0..3 {
-                    seeded[cell][j] = seeded[cell][j].max(amplitudes[j] * decay);
-                }
-            }
+        source_identity = None;
+        let mut seeded = if matches!(origin, Origin::RegionSeeds) {
+            Some(vec![[0_f64; 3]; n])
         } else {
-            sources.push(arc);
+            None
+        };
+        for segment in 0..m {
+            let a = plates.boundary_cells[segment * 2] as usize;
+            let b = plates.boundary_cells[segment * 2 + 1] as usize;
+            if a >= n || b >= n || a == b {
+                return Err("Invalid sampled boundary cells.".into());
+            }
+            let amplitudes = boundary_amplitudes(
+                plates.boundary_motion[segment * 2],
+                (crust.continentality[a] + crust.continentality[b]) * 0.5,
+            );
+            let start = plates.boundary_directions[segment * 2];
+            let end = plates.boundary_directions[segment * 2 + 1];
+            let arc = Source::new(start, end, amplitudes)?;
+            if let Some(seeded) = seeded.as_mut() {
+                let sum = std::array::from_fn::<_, 3, _>(|i| start[i] + end[i]);
+                let norm = sum.iter().map(|v| v * v).sum::<f64>().sqrt();
+                let p = sum.map(|v| v / norm);
+                for cell in [a, b] {
+                    let decay =
+                        (-angle(s.centers[cell], p) * reference.radius_meters / width).exp();
+                    for j in 0..3 {
+                        seeded[cell][j] = seeded[cell][j].max(amplitudes[j] * decay);
+                    }
+                }
+            } else {
+                sources.push(arc);
+            }
         }
-    }
-    if let Some(seeded) = seeded {
-        for (i, amplitudes) in seeded.into_iter().enumerate() {
-            if amplitudes.iter().any(|&v| v > 0.) {
-                sources.push(Source::new(s.centers[i], s.centers[i], amplitudes)?);
+        if let Some(seeded) = seeded {
+            for (i, amplitudes) in seeded.into_iter().enumerate() {
+                if amplitudes.iter().any(|&v| v > 0.) {
+                    sources.push(Source::new(s.centers[i], s.centers[i], amplitudes)?);
+                }
             }
         }
     }
@@ -175,5 +187,6 @@ pub fn build(
         origin,
         mean_evaluated_sources: count as f64 / n as f64,
         maximum_evaluated_sources: maximum,
+        source_identity,
     })
 }
