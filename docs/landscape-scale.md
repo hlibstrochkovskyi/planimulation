@@ -149,3 +149,24 @@ malformed/unsupported/existing-output runs refuse without creating a report.
 This example-only extension follows the preceding full regression run of 703
 native and 96 Node tests; it receives its own focused test, not a second claimed
 full 704-test run. Owner renderer files remain untouched.
+
+## Coupled sedimentary preparation probe
+
+The subsequent [delivered-material preparation](sedimentary-landscape.md) now
+has a separate summary-only `sedimentary_scale` probe. It retains the valid
+level-6 reference recipe and explicit 40,962–655,362 sampling metadata, without
+instantiating a dense World. Its supported fields/physical metrics match the
+full World-based review. At 655,362 samples, coupled prehistory takes
+28.025–32.135 s and the sequential control/candidate process peaks near 503 MiB;
+full two-variant reporting takes 37.286–42.215 s. Physical summaries, history
+and bed diagnostics repeat independently of timing/RSS. This is generation
+evidence, not climate/hydrology/desktop or isolated allocator qualification.
+
+Sediment delivery/aggradation lowers first-light's static closed dry area from
+the export control's 51.53% to 35.82% on the dense grid; at 40,962 it changes
+26.24% to 12.33%. The retained resolution dependence remains significant. Do
+not increase the desktop limit or claim converged geography on that evidence
+alone. Additional dense depression diagnostics are explicitly omitted; actual
+deposition continues to use the physical hierarchy. Three focused example
+controls, strict Clippy/formatting and six sampling-output refusals pass after
+the preceding full 763-native/96-Node regression run.

@@ -204,6 +204,54 @@ converged transient routing/deposition. Retained preparation records are in
 a calibrated or timestep-qualified desktop default. Future coupling must qualify
 capture/spill timing and finer sampling instead of hiding these differences.
 
+### Bounded finer sampling
+
+The separate `sedimentary_scale` example composes the same initial structural
+fields without constructing a dense World, runs the frozen export control and
+the coupled candidate, then retains summary-only actual-bed diagnostics:
+
+```bash
+cargo run --locked --release --manifest-path native/Cargo.toml \
+  --example sedimentary_scale -- artifacts/NEW_REPORT.json first-light 8
+```
+
+Sampling levels 6–8 are explicit probe metadata. The reference Recipe remains
+valid at level 6; it does not masquerade as a supported level-8 recipe. At level
+6, both variants' physical geography/hypsometry/drainage/neighbor diagnostics
+match the full World-based review exactly. Extra depression/minimax diagnostics
+are omitted above level 6, not replaced by inferred depths. The preparation
+itself still constructs its authoritative basin hierarchy for actual deposition.
+Field checksums are noncryptographic diagnostics, not checkpoint identities.
+
+Retained sequential first-light reports: `artifacts/sedimentary-scale-l{6,7,8}.json`.
+
+| Samples | Export-control closed dry area | Candidate closed dry area | Candidate minima | Candidate p95 | Coupled preparation | Two-variant total | Peak process RSS |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 40962 | 26.24% | 12.33% | 15 | 1479.33 m | 2.290 s | 3.149 s | 37.22 MiB |
+| 163842 | 39.56% | 21.85% | 38 | 1606.92 m | 7.833 s | 10.776 s | 129.41 MiB |
+| 655362 | 51.53% | 35.82% | 154 | 1719.57 m | 28.025 s | 37.286 s | 502.86 MiB |
+
+The dense repeat takes 32.135 s preparation / 42.215 s total and 501.47 MiB
+peak RSS. Initial fields, source, both independently reconstructed physical
+summaries, new per-step history summaries and bed field diagnostics repeat exactly
+apart from declared timing/RSS observations. Summary output is about 41 KiB;
+it does not contain a complete dense state. No dense twenty-seed ensemble or
+full-state bitwise/checkpoint reproduction is implied by that summary repeat.
+
+Coupled global ledger residuals remain below `2.735e-16`; independent pending,
+active sediment and split collector reconstruction also passes its declared
+tolerance. Candidate physical-bed diagnostics
+are `f7ce8015`, `eec49ddc`, `1942a8ac` at sampling 6/7/8. The 655k run observes
+3328 unresolved deposition leaf-step proposals and retains finite pending stock;
+it does not convert those observations into forced outlets.
+
+More samples remain feasible for **prehistory generation**, not yet for full
+dynamic water/climate or interactive dense display. Cumulative process RSS
+includes geometry, both sequential variants and allocator history, not isolated
+candidate memory. The remaining increase in closed area with resolution is a
+model limitation; density alone is not a geographic fix. Tiled display, explicit
+coarse-climate coupling and local physical relief remain outstanding R3/R4 work.
+
 ## Verification scope
 
 Delivery controls independently walk weighted DAGs and generated-sphere accepted
@@ -233,3 +281,11 @@ old output and create no new result. Retained full log:
 `artifacts/sedimentary-validation.log`. Owner renderer hashes remain unchanged
 and their existing edits are excluded from this increment. No new packaged
 desktop capability is claimed.
+
+The subsequent sampling example receives three focused tests after that full
+run: supported reference versus probe limits, independent actual-sphere stock
+reconstruction and corrupt catalog/net refusal, and all-wet zero-scale/omitted
+diagnostic controls. These are additional focused controls, not a newly claimed
+full 766-test run. Strict all-target Clippy, formatting and whitespace pass.
+Five sampling binary refusals and a dangling-symlink control preserve existing
+output and create no result. The old/full World path is unchanged.

@@ -221,3 +221,13 @@ retained. Step controls show material/routing sensitivity despite nearly stable
 p95, so this is not timestep-qualified R3/default completion. Strict Clippy,
 formatting, whitespace and preparation CLI refusal controls pass. Owner renderer
 files remain untouched and excluded.
+
+The subsequent sedimentary sampling probe qualifies only bounded prehistory
+generation: 655,362 samples complete at roughly 503 MiB cumulative process RSS
+and 28–32 s coupled preparation. Independently reconstructed physical summaries,
+history and bed field diagnostics repeat; supported-level metrics match the full
+World-based review. Three additional focused tests and output-refusal controls
+pass after the preceding full regression. Dense static closed area still reaches
+35.82% for the retained seed; transient and structural-detail limitations remain.
+No new desktop limit, dense checkpoint, climate coupling or complete R3/R4 is
+claimed from this measurement.
