@@ -1,0 +1,143 @@
+# Landscape and scale reset
+
+October 14, 2026. Active development branch: `feature/multiscale-world-generation`.
+This changes implementation priorities, not the agreed product principles in
+[DESIGN.md](../DESIGN.md). Proposed capabilities below are not implemented unless
+explicitly marked. Existing water experiments remain available, but further
+standalone water-solver refinement is not this branch's immediate focus.
+
+## Product acceptance before numerical depth
+
+The next product milestone is an inspectable Earth-like natural world in both
+the flat atlas and globe: varied large-scale landforms, structured mountain
+systems and drainage, documented climatic approximations, and a measured laptop
+budget. Numerical invariants remain necessary, but passing them is not evidence
+of plausible geography. A terrain screenshot is not evidence of correct water
+dynamics either.
+
+Preserve the Rust core, desktop boundary, reproducible streams and versions,
+physical units, explicit material/water exchanges, and compatible existing saves.
+Do not change old seeds or model pins in place. Do not replace the technology
+stack without a measured bottleneck that requires it.
+
+## Proposed scale responsibilities
+
+| Layer | Proposed representation | Coupling obligation |
+| --- | --- | --- |
+| Geological structure | Continuous seeded fields and structural graphs | Same seed has stable physical feature locations across sampling resolutions |
+| Physical terrain | Finer authoritative height field/tiles | Slopes, depressions, connectivity and storage affect downstream models |
+| Atmosphere/climate | Coarser spherical fields | Fluxes use physical areas; downscaling is a stated approximation |
+| Hydrology | Catchments, river/lake graph and selected spatial patches | Shared transfers and aggregate stocks reconcile across scales |
+| Ecology | Regional state with terrain-conditioned local properties | Fine display cannot invent biomass or productivity |
+| Civilization | Settlements and route/market graphs | Traversal and production consume authoritative environmental data |
+| Display | Texture/mesh tiles and view-dependent LOD | Camera detail never changes physical state |
+
+These are design targets, not a claim that multiple coupled grids or LOD exist.
+Aggregation must preserve stock sums and relevant connectivity. Averaging heights
+alone cannot represent a valley, spill threshold or disconnected lake. World
+identity will need separate terrain, climate and display resolutions rather than
+one global `subdivision`. Its exact schema is not selected yet.
+
+## Ordered work and exit conditions
+
+### R1 — Known landscape process and visible comparison
+
+Implement a small native detachment-limited stream-power incision primitive
+using downstream-first implicit updates for the fixed `m=.5, n=1` case. This is
+an independently derived adaptation of the literature, not copied external
+source code. Preserve physical depressions and fixed terminals. Explicitly
+account for removed reference-area-equivalent bed material in a separate
+reservoir; do not silently discard it or call it modeled deposition.
+
+Tests: known single-link and chain results; time refinement against a fixed-outlet
+ODE; no incision at zero forcing; base-level behavior; malformed/cyclic graphs;
+determinism, immutable inputs and material accounting. Then compare actual
+generated fields and drainage in a side-by-side atlas over fixed seeds. State
+which geographic defects remain. Do not spend weeks trying to prove a universal
+erosion theorem before inspecting those worlds.
+
+Exit: the primitive and a reproducible physical-field comparison work, with
+explicit limitations. This does not yet select a new desktop world generator.
+
+### R2 — Generation-only scale measurements
+
+Define a separate bounded generation path to measure 40,962, 163,842 and 655,362
+terrain samples without claiming that the current atmosphere, wire protocol or
+checkpoint limits support them. Measure wall time, peak process memory, output
+size and stage costs on the target laptop. Investigate large temporary geometry
+arrays, duplicated view buffers and serialization before increasing UI limits.
+
+Exit: retained measurements identify feasible targets and actual bottlenecks.
+These counts are candidate workloads, not promised supported product settings.
+
+### R3 — New geographic field family
+
+Replace broad smooth-only landforms with an explicitly versioned family:
+mesh-independent structural origins, a broader controlled scale spectrum,
+geologically conditioned local relief, and drainage-informed preparation.
+Evaluate continental shape separately from mountain/valley quality. Additional
+noise alone is not fluvial erosion or plate history.
+
+Compare at least twenty fixed ordinary seeds and directed archipelago,
+supercontinent and low-relief controls. Retain physical-field metrics and images:
+area-weighted hypsometry, connected landmass distributions, roughness at physical
+scales, coast representation, drainage hierarchy and depression distributions.
+These are diagnostics, not a mandate to force every world to resemble Earth.
+
+Exit: both views show a materially better family and inspector provenance agrees
+with it. Old recipes/fingerprints remain intact; a new version is opt-in until
+reviewed. Climate/biome colors must not conceal an inadequate physical bed.
+
+### R4 — Display and scale coupling
+
+Introduce bounded tiles/LOD and canonical picking, then explicit terrain-to-climate
+and catchment mappings. Benchmark interaction while the native model advances.
+Run conservative restriction/prolongation tests, seam/pole controls, complete
+checkpoint continuation and generated-world cohorts before introducing ecology.
+
+Exit: detail and simulation rates can differ without changing the world through
+camera movement. Unsupported coupling remains rejected, never approximated
+silently. The chosen performance budget is documented with measurements.
+
+## First model scope
+
+The initial incision primitive models dry geological preparation, not a resolved
+water flood, rainfall simulation, sediment transport/deposition, evolving plate
+motion or ongoing ecology. Uniform effective runoff is absorbed into a declared
+erodibility coefficient. Its timestep is geological preparation time, not the
+seasonal clock. Faster implicit integration does not make large timesteps
+accurate for transient landscapes. Continental-shape improvements and terrain
+refinement remain later work.
+
+## Primary sources and adaptation boundaries
+
+- [Cordonnier et al. (2016)](https://www.cs.purdue.edu/cgvlab/www/publications/cordonnier2016large/): combined uplift and fluvial erosion with a structural stream graph and subsequent terrain synthesis. Its planar construction is not a ready spherical planet implementation.
+- [Landlab FastscapeEroder](https://landlab.csdms.io/generated/api/landlab.components.stream_power.fastscape_stream_power.html): documents Braun–Willett stream-power integration, dependency on drainage accumulation, and transient timestep limitations. We derive the linear-slope case rather than porting its implementation.
+- [FastScape processes](https://fastscape.readthedocs.io/en/latest/processes.html): modular landscape-process reference, not a complete climate/civilization engine.
+- [Mapgen4](https://www.redblobgames.com/maps/mapgen4/): useful causal/visual comparison and implementation ideas; artistic map generation is not long-running conservative planetary dynamics.
+
+External code integration requires a separate license/compatibility review.
+
+## Current branch status
+
+R1's [native primitive and physical-field comparisons](stream-power-incision.md)
+and R2's [bounded generation-only measurements](landscape-scale.md) are implemented.
+The four comparison seeds retain inadequate smooth continent shapes; incision
+alone is not accepted as Earth-like geography. Generation at 655,362 samples is
+measured, not selected as a supported desktop setting. R3 is next: improve the
+geographic field family, with visible cohort review before production integration.
+
+No new default generator, higher desktop
+resolution, multiple-grid coupling, LOD, calibrated erosion or biomes are claimed.
+The owner's existing renderer changes are outside this work and must not be
+included in branch commits without separate authorization.
+
+## Verification at this increment
+
+Full `npm test` passes: 665 native tests across 122 targets and 88 Node tests,
+with one pre-existing ignored native test. Strict all-target Clippy, formatting,
+whitespace and seven diagnostic CLI refusals pass. The final release scale smoke
+preserves the recorded subdivision-6 physical-field diagnostic. Owner renderer
+file hashes are unchanged and those files are excluded from this increment.
+This verifies the bounded implementation and existing compatibility, not the
+future geographic family or complete high-resolution desktop simulation.

@@ -137,6 +137,25 @@ pub struct Surface {
 impl Surface {
     pub fn build(level: u32, radius: f64) -> Self {
         assert!(level <= 6 && radius.is_finite() && radius > 0.0);
+        Self::build_geometry(level, radius)
+    }
+
+    /// Generation-only scale probe. This does not expand Recipe, IPC or save limits.
+    /// Larger geometries must not be passed off as supported desktop worlds.
+    pub fn build_generation_probe(level: u32, radius: f64) -> Result<Self, String> {
+        let area_scale = radius * radius;
+        if level > 8
+            || !radius.is_finite()
+            || radius <= 0.
+            || !area_scale.is_finite()
+            || area_scale < f64::MIN_POSITIVE
+        {
+            return Err("Invalid generation-probe resolution or radius.".into());
+        }
+        Ok(Self::build_geometry(level, radius))
+    }
+
+    fn build_geometry(level: u32, radius: f64) -> Self {
         let p = (1.0 + 5.0_f64.sqrt()) / 2.0;
         let mut vertices: Vec<V> = vec![
             [-1., p, 0.],
@@ -382,6 +401,7 @@ pub mod crust;
 pub mod drainage;
 pub mod exact_initial_accounting;
 pub mod initial_water_inventory;
+pub mod landscape;
 pub mod moisture_transport;
 pub mod nested_reservoir;
 pub mod orographic_response;
