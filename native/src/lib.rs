@@ -30,7 +30,7 @@ impl Recipe {
         }
         match (self.model_version.as_str(), self.terrain_preparation_passes) {
             ("basins-1", None) => {}
-            ("terrain-prep-1" | "continuous-plates-1", Some(passes))
+            ("terrain-prep-1" | "continuous-plates-1" | geography::MODEL_VERSION, Some(passes))
                 if passes <= terrain_preparation::MAX_PASSES => {}
             _ => return Err("Unsupported terrain model or preparation pass count.".into()),
         }
@@ -277,13 +277,24 @@ impl World {
     pub fn generate(recipe: Recipe) -> Result<Self, String> {
         recipe.validate()?;
         let surface = Surface::build(recipe.subdivision, recipe.radius_meters);
-        let crust = crust::Crust::build(
-            &surface,
-            &recipe.seed,
-            recipe.continental_fraction,
-            recipe.continental_scale,
-        );
-        let tectonics = if recipe.model_version == "continuous-plates-1" {
+        let crust = if recipe.model_version == geography::MODEL_VERSION {
+            geography::build_crust(
+                &surface,
+                &recipe.seed,
+                recipe.continental_fraction,
+                recipe.continental_scale,
+            )?
+        } else {
+            crust::Crust::build(
+                &surface,
+                &recipe.seed,
+                recipe.continental_fraction,
+                recipe.continental_scale,
+            )
+        };
+        let tectonics = if recipe.model_version == "continuous-plates-1"
+            || recipe.model_version == geography::MODEL_VERSION
+        {
             tectonics::Tectonics::build_with_continuous_roots(
                 &surface,
                 &recipe.seed,
@@ -301,6 +312,19 @@ impl World {
             )
         };
         let mut terrain = terrain::Terrain::build(&surface, &crust, &tectonics, &recipe);
+        if recipe.model_version == geography::MODEL_VERSION {
+            let field = geography::Field::new(&recipe.seed, recipe.continental_scale)?;
+            for (i, &p) in surface.centers.iter().enumerate() {
+                let sample = field.relief(p, crust.continentality[i])?;
+                terrain.convergence[i] *= sample.convergence_factor;
+                terrain.divergence[i] *= sample.divergence_factor;
+                terrain.detail[i] = sample.detail * recipe.detail_amplitude_meters;
+                terrain.elevation[i] = terrain.baseline[i]
+                    + terrain.convergence[i]
+                    + terrain.divergence[i]
+                    + terrain.detail[i];
+            }
+        }
         if let Some(passes) = recipe.terrain_preparation_passes {
             let prepared = terrain_preparation::prepare(&surface, &terrain.elevation, passes)?;
             for region in 0..terrain.elevation.len() {
@@ -400,6 +424,8 @@ pub mod basins;
 pub mod crust;
 pub mod drainage;
 pub mod exact_initial_accounting;
+pub mod geography;
+pub mod geography_metrics;
 pub mod initial_water_inventory;
 pub mod landscape;
 pub mod moisture_transport;

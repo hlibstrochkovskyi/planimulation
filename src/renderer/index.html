@@ -17,6 +17,9 @@
           <p class="eyebrow">WORLD CONFIGURATION</p><h2>Build a planet</h2>
           <p class="muted">Set its scale, geology, and initial water inventory.</p>
           <form id="recipe-form">
+            <label for="generator-family">Generation model</label>
+            <select id="generator-family"><option value="terrain-prep-1" selected>Original terrain · default</option><option value="continuous-plates-1">Continuous plate roots</option><option value="multiscale-geography-1">Multiscale geography · experimental</option><option value="basins-1">Legacy terrain · no preparation</option></select>
+            <p id="generator-note" class="muted">Original terrain with bounded dry preparation. Changing the model creates a different world, not an upgrade of an existing save.</p>
             <label for="seed">World seed</label>
             <div class="seed-row"><input id="seed" name="seed" value="first-light" maxlength="128" required autocomplete="off" spellcheck="false" /><button id="new-seed" type="button" title="Choose a new seed" aria-label="Choose a new seed">↻</button></div>
             <label for="subdivision">Surface resolution</label>
@@ -141,7 +144,7 @@
         <section class="boundary-inspector"><p class="eyebrow">WHY THIS TEMPERATURE?</p><p id="temperature-note" class="muted">Select a region after seasonal normals load. This is a prescribed response, not a full energy budget.</p></section>
         <section class="boundary-inspector"><p class="eyebrow">WHY THIS WIND?</p><p id="wind-note" class="muted">Select a region after wind normals load. These are prescribed surface belts, not atmospheric dynamics.</p></section>
         <section class="inspector"><div><p class="eyebrow">BASIN ANALYSIS · NOT LIVE WATER</p><h3 id="basin-title">Select a region</h3><p id="basin-note" class="muted">Thresholds describe possible connections, not current water levels.</p><button id="basin-parent" disabled>Inspect parent</button><button id="basin-owner" disabled>Region branch</button></div><dl id="basin-details"></dl></section>
-        <section class="boundary-inspector"><p class="eyebrow">WHY THIS ELEVATION?</p><p class="muted">Crust, plate response, detail, and dry preparation sum to the native elevation. Display exaggeration changes none of them. No geological age or climate erosion is modeled.</p><ul id="elevation-details"></ul></section>
+        <section class="boundary-inspector"><p class="eyebrow">WHY THIS ELEVATION?</p><p id="elevation-note" class="muted">Crust, plate response, detail, and dry preparation sum to the native elevation. Display exaggeration changes none of them. No geological age or climate erosion is modeled.</p><ul id="elevation-details"></ul></section>
         <section class="boundary-inspector"><p class="eyebrow">BOUNDARY EXPLANATION</p><p id="boundary-note" class="muted">Select a region to inspect its plate and any inter-plate boundary segments.</p><ul id="boundary-details"></ul></section>
       </div>
     </main>

@@ -1,5 +1,5 @@
 import './style.css';
-import { DEFAULT_RECIPE, parseRecipe } from '../core/recipe';
+import { DEFAULT_RECIPE, LEGACY_MODEL_VERSION, MULTISCALE_GEOGRAPHY_MODEL_VERSION, parseRecipe } from '../core/recipe';
 import type { Recipe } from '../core/recipe';
 import type { World } from '../core/world';
 import type { DesktopAPI, PreparedMoistureWorld, PreparedSoilWorld, PreparedWaterWorld, PrescribedWaterMode, WaterBudget, WaterFrame } from '../shared/desktop-api';
@@ -28,6 +28,7 @@ function element<T extends HTMLElement>(id: string): T {
 
 const api: DesktopAPI = window.desktop;
 const seedInput = element<HTMLInputElement>('seed');
+const generatorFamilyInput = element<HTMLSelectElement>('generator-family');
 const resolutionInput = element<HTMLSelectElement>('subdivision');
 const radiusInput = element<HTMLInputElement>('radius');
 const plateCountInput = element<HTMLInputElement>('plate-count');
@@ -416,12 +417,18 @@ function inspect(id: number, preserveBasin = false): void {
   }
   const boundaryDetails = element('boundary-details');
   const elevationDetails = element('elevation-details'); elevationDetails.replaceChildren();
+  const multiscaleGeography = world.recipe.modelVersion === MULTISCALE_GEOGRAPHY_MODEL_VERSION;
   for (const [label, value] of [['Crust baseline', world.terrain.baseline[id]], ['Convergence uplift', world.terrain.convergence[id]],
-    ['Divergence (ridge − rift)', world.terrain.divergence[id]], ['Bounded detail', world.terrain.detail[id]],
+    ['Divergence (ridge − rift)', world.terrain.divergence[id]], [multiscaleGeography ? 'Conditioned multiscale detail' : 'Bounded detail', world.terrain.detail[id]],
     ['Dry preparation', world.terrain.preparation[id]], ['Total elevation', world.terrain.elevation[id]]] as const) {
     const row = document.createElement('li'); row.textContent = `${label}: ${value.toFixed(2)} m`; elevationDetails.append(row);
   }
-  element('crust-note').textContent = `Seeded spherical potential ${world.crust.potential[id].toFixed(6)}; fitted threshold ${world.crust.threshold.toFixed(6)}; smooth transition width 0.12. Continentality blends the 7–35 km thickness and 3,000–2,800 kg/m³ density endmembers. These are initial model approximations, not elevation or water depth.`;
+  element('crust-note').textContent = multiscaleGeography
+    ? `Seeded smooth 3D value-noise fBm with a bounded tangent warp gives potential ${world.crust.potential[id].toFixed(6)}. Threshold ${world.crust.threshold.toFixed(6)} uses a fixed subdivision-5 reference sphere (global bounds for 0%/100%), not refitting to the displayed mesh; sampled continental coverage can differ from the target. The reference fit and fine bands have finite sampling limits. Smooth transition width is 0.12. Continentality blends the 7–35 km thickness and 3,000–2,800 kg/m³ density endmembers. This is a procedural initial-condition heuristic, not reconstructed geological history, elevation or water depth.`
+    : `Seeded spherical potential ${world.crust.potential[id].toFixed(6)}; fitted threshold ${world.crust.threshold.toFixed(6)}; smooth transition width 0.12. Continentality blends the 7–35 km thickness and 3,000–2,800 kg/m³ density endmembers. These are initial model approximations, not elevation or water depth.`;
+  element('elevation-note').textContent = multiscaleGeography
+    ? 'Crust baseline, static plate response, tectonic-envelope-conditioned multiscale ridging/detail, and bounded dry preparation sum to the native elevation. Detail uses smooth 3D value noise; it is physical initial roughness, not extra display geometry. These are heuristics, not geological history or computed river erosion. Display exaggeration changes none of the fields.'
+    : 'Crust, plate response, detail, and dry preparation sum to the native elevation. Display exaggeration changes none of them. No geological age or climate erosion is modeled.';
   element('water-note').textContent = waterFrame
     ? `Prescribed runoff follows the frozen initial drainage outlet ${world.drainage.outlets[id]}. The displayed level here is ${waterFrame.surfaceLevelsMeters[id].toFixed(2)} m and the approximate depth is ${waterFrame.depthMeters[id].toFixed(2)} m. Exact basin stocks remain in the native core; visible depth can lag tiny accepted inputs. No elapsed time or climate forcing is implied.`
     : `Initial level ${world.water.levelMeters.toFixed(2)} m − bed ${world.terrain.elevation[id].toFixed(2)} m → depth max(0, level − bed) = ${world.water.depthMeters[id].toFixed(2)} m. Regional stock: ${(world.water.depthMeters[id] * s.areasSquareMeters[id] / 1e9).toFixed(3)} km³ using reference-sphere area. Positive-depth neighbors form water bodies; disconnected bodies share only this initial level, not a permanent connection.`;
@@ -531,6 +538,7 @@ function updateLegend(): void {
 }
 
 function setInputs(recipe: Recipe): void {
+  generatorFamilyInput.value = recipe.modelVersion;
   seedInput.value = recipe.seed;
   resolutionInput.value = String(recipe.subdivision);
   radiusInput.value = String(recipe.radiusMeters / 1000);
@@ -543,11 +551,23 @@ function setInputs(recipe: Recipe): void {
   boundaryWidthInput.value = String(recipe.boundaryWidthKm);
   detailAmplitudeInput.value = String(recipe.detailAmplitudeMeters);
   terrainPreparationInput.value = String(recipe.terrainPreparationPasses ?? 0);
+  updateGeneratorInputs();
   waterModeInput.value = recipe.water.mode;
   if (recipe.water.mode === 'coverage') waterCoverageInput.value = String(recipe.water.fraction * 100);
   else waterVolumeInput.value = String(recipe.water.volumeCubicMeters / 1e9);
   updateWaterInputs();
 }
+function updateGeneratorInputs(): void {
+  const legacy = generatorFamilyInput.value === LEGACY_MODEL_VERSION;
+  terrainPreparationInput.disabled = legacy;
+  element('generator-note').textContent = generatorFamilyInput.value === MULTISCALE_GEOGRAPHY_MODEL_VERSION
+    ? 'Experimental multiscale crust and terrain fields, with continuous plate roots. No geological history, integrated river erosion, biomes or higher surface resolution is implied. Changing the model creates a different world.'
+    : legacy ? 'Legacy terrain without dry preparation. Changing the model creates a different world, not an upgrade of an existing save.'
+      : generatorFamilyInput.value === 'continuous-plates-1'
+        ? 'Mesh-independent plate-root directions with the original crust and terrain formulas. Changing the model creates a different world.'
+        : 'Original terrain with bounded dry preparation. Changing the model creates a different world, not an upgrade of an existing save.';
+}
+generatorFamilyInput.addEventListener('change', updateGeneratorInputs);
 function updateWaterInputs(): void {
   const coverage = waterModeInput.value === 'coverage';
   element('water-coverage-control').hidden = !coverage; waterCoverageInput.disabled = !coverage;
@@ -884,11 +904,12 @@ for (const button of document.querySelectorAll<HTMLButtonElement>('button[data-v
 element('recipe-form').addEventListener('submit', (event) => {
   event.preventDefault();
   try {
-    void generate(parseRecipe({ ...DEFAULT_RECIPE, seed: seedInput.value, subdivision: Number(resolutionInput.value), radiusMeters: Number(radiusInput.value) * 1000,
+    const { terrainPreparationPasses: _defaultPasses, ...baseRecipe } = DEFAULT_RECIPE;
+    void generate(parseRecipe({ ...baseRecipe, modelVersion: generatorFamilyInput.value, seed: seedInput.value, subdivision: Number(resolutionInput.value), radiusMeters: Number(radiusInput.value) * 1000,
       plateCount: Number(plateCountInput.value), maxPlateSpeedCmPerYear: Number(plateSpeedInput.value),
       continentalFraction: Number(continentalFractionInput.value) / 100, continentalScale: Number(continentalScaleInput.value),
       reliefScale: Number(reliefScaleInput.value), boundaryWidthKm: Number(boundaryWidthInput.value), detailAmplitudeMeters: Number(detailAmplitudeInput.value),
-      terrainPreparationPasses: Number(terrainPreparationInput.value),
+      ...(generatorFamilyInput.value !== LEGACY_MODEL_VERSION ? { terrainPreparationPasses: Number(terrainPreparationInput.value) } : {}),
       water: waterModeInput.value === 'coverage' ? { mode: 'coverage', fraction: Number(waterCoverageInput.value) / 100 }
         : { mode: 'volume', volumeCubicMeters: Number(waterVolumeInput.value) * 1e9 } }));
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }

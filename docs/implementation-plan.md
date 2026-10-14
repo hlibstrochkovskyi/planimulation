@@ -4,8 +4,11 @@ October 14 priority reset on `feature/multiscale-world-generation`: follow the
 [landscape and scale roadmap](landscape-roadmap.md). The standalone
 [stream-power increment](stream-power-incision.md) and [generation-only scale
 probe](landscape-scale.md) are implemented; a new Earth-like geographic family is
-next. Further standalone water-solver qualification is not the immediate focus
-of that branch. This does not promote a new desktop model or erase the historical
+under active development. Its first [opt-in multiscale geographic
+family](multiscale-geography.md) is implemented in the desktop, with retained
+paired-cohort findings and explicit remaining relief/drainage defects. Further
+standalone water-solver qualification is not the immediate focus of that branch.
+This does not change the default desktop model or erase the historical
 water findings below.
 
 Status reviewed October 3, 2026: desktop milestones A, native/GPU foundation, B1–B5, C1 and C2a/C2b are implemented. C3a–C3g and C3i are standalone reservoir/routing experiments; C3h screens older structural restrictions on generated worlds; C3j transfers generated initial water into read-only exclusive inventories; C3k advances it in a bounded headless experiment; C3l adds a guarded larger version and records measured failures; C3m fixes a measured exact-threshold rounding failure; C3n replaces duplicated branch curves; C3o records bounded repeated-forcing and replay outcomes; C3p adds an opt-in resolution-aware level inverse; C3q records a directed event-roundoff witness without changing the solver. A separately versioned exact initial-water report and a bounded native-core prescribed-water inventory provide exact input accounting and one unambiguous spill/merge path on generated worlds. A [manual desktop view](prescribed-water-desktop.md) displays accepted prescribed steps on both projections, saves/restores that exact water-only inventory, and inspects its exact budget. [Bounded dry terrain preparation](terrain-preparation.md) is integrated into new initial worlds before water fitting; it is not timed or climate-driven erosion. A separate [continuous plate-root candidate](plate-root-candidate.md) improves measured cross-resolution stability and now has an opt-in generated-world recipe, while the desktop default remains unchanged. Timed planetary water dynamics, full simulation checkpoints, ongoing erosion and later simulation milestones remain unimplemented. Milestone B has current-view PNG and [resolved initial-world field](resolved-world-export.md) exports, but geological prehistory integration remains open; milestone C is not complete. Milestone letters are not released versions, and no calendar schedule or percentage-complete claim is implied.

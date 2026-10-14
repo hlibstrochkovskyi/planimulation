@@ -124,20 +124,34 @@ R1's [native primitive and physical-field comparisons](stream-power-incision.md)
 and R2's [bounded generation-only measurements](landscape-scale.md) are implemented.
 The four comparison seeds retain inadequate smooth continent shapes; incision
 alone is not accepted as Earth-like geography. Generation at 655,362 samples is
-measured, not selected as a supported desktop setting. R3 is next: improve the
-geographic field family, with visible cohort review before production integration.
+measured, not selected as a supported desktop setting. R3's first
+[opt-in multiscale geographic family](multiscale-geography.md) is now available
+in both desktop projections, with twenty paired ordinary seeds, three controls,
+independent morphology metrics and a crust-only dense-sampling probe. It improves
+coast/landmass variety but retains broad relief and many initial dry sinks.
+Structural relief, drainage-informed preparation and finer physical sampling
+remain open; R3 is not complete and the default is unchanged.
 
 No new default generator, higher desktop
 resolution, multiple-grid coupling, LOD, calibrated erosion or biomes are claimed.
 The owner's existing renderer changes are outside this work and must not be
 included in branch commits without separate authorization.
 
-## Verification at this increment
+## Verification history
 
-Full `npm test` passes: 665 native tests across 122 targets and 88 Node tests,
+The initial R1/R2 increment passed full `npm test`: 665 native tests across 122 targets and 88 Node tests,
 with one pre-existing ignored native test. Strict all-target Clippy, formatting,
 whitespace and seven diagnostic CLI refusals pass. The final release scale smoke
 preserves the recorded subdivision-6 physical-field diagnostic. Owner renderer
 file hashes are unchanged and those files are excluded from this increment.
 This verifies the bounded implementation and existing compatibility, not the
 future geographic family or complete high-resolution desktop simulation.
+
+The subsequent first R3 candidate passes full `npm test`: 684 native tests across
+125 targets and 92 Node tests, retaining the same pre-existing ignored test.
+Both actual desktop projections, numeric inspector, recipe save/reopen/regenerate,
+and a candidate seasonal checkpoint continuation pass. All 23 paired geography
+comparisons and three dense crust-only sampling controls complete. Strict
+all-target Clippy, formatting, whitespace and four new-output CLI refusals pass.
+Owner renderer hashes remain unchanged. Retained morphology limitations prevent
+default promotion or claiming the complete Earth-like geography milestone.
