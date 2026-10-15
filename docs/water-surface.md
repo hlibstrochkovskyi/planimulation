@@ -33,6 +33,40 @@ Consequences:
 
 There is no explicit shoreline contour extraction, CPU polygon clipping, subregion hydrology, or vertical shore-wall mesh in this increment. The UI calls the shoreline a display approximation. More elaborate shore geometry must not silently alter the regional model.
 
+### Open visual review: angular coast intersections
+
+Owner report, October 15, 2026: globe close-up, seed `5c151f46`,
+`multiscale-geography-2`, 40,962 regions, radius 6,371 km, initial water
+coverage 71%, Land and water layer. Red-marked coast segments appear to extend
+colors across the apparent regional cells. Reference screenshot was supplied
+as `/tmp/codex-clipboard-cgcjGN.png`; that temporary path is not a durable fixture.
+Full resolved recipe, camera pose and exaggeration were not captured.
+
+Code inspection confirms constant region IDs on each bed/cap triangle and
+nearest-filtered regional field lookup: scalar colors are not blended between
+neighboring region IDs. Shared-corner bed interpolation and depth-tested caps
+can expose part of a native wet region as land, producing diagonal boundaries
+inside its polygon. This is a supported explanation, not an exact reproduction
+of every marked pixel. The screenshot alone does not establish a cap rendered
+outside its native wet polygon, a picking defect, or a water-stock error.
+
+Track this as an unresolved shoreline-legibility issue for R4, not as acceptable
+final visual quality. Before choosing a repair:
+
+- Reproduce with a complete recipe, camera and exaggeration; compare 0×, 1×
+  and 10× relief, the flat wet-mask view, and globe region outlines.
+- Inspect native wet mask/body ID, bed/cap triangle region IDs, depth occlusion
+  and picked region on both sides of each marked boundary. Distinguish actual
+  cross-region coverage from an intersection inside a wet region.
+- Check seams, poles, shallow water, neighboring unequal levels and all supported
+  resolutions. Retain close-up images and regression cases for any confirmed bug.
+- A future contour/clipping or LOD change must preserve physical heights, wet
+  ownership, stocks and canonical selection. Smoothing the physical wet mask to
+  conceal the display mismatch is not an authorized fix.
+
+No rendering or physical-model change accompanies this record. The existing
+geometry/picking tests cover their contracts, not this report's visual quality.
+
 ## Layers and colors
 
 **Land and water** shows the raised water mesh only on the globe. The flat view colors entire wet regions from the same native mask. Water color is a shallow-to-deep blue ramp using native region depth divided by the world's maximum depth. Land color is an elevation-above-initial-level ramp between muted green and stone; it does not indicate vegetation or biomes. Exposed bed inside a native wet region uses the low-land color. A tiny minimum color-ramp magnitude preserves a visible wet/dry distinction for extremely shallow water; it never changes depth or volume.

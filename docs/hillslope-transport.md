@@ -1,8 +1,8 @@
 # Bounded linear hillslope transport
 
-October 14, 2026. Native primitive `linear-hillslope-transfer-1`. Not yet
-integrated into geological preparation, a fine patch, desktop generation,
-sediment stocks or the seasonal clock.
+October 14, 2026. Native primitive `linear-hillslope-transfer-1`. Subsequently
+integrated into the bounded [fine-patch review](fine-terrain-patch.md), not
+desktop generation, global sediment stocks or the seasonal clock.
 
 ## Model and units
 
@@ -79,8 +79,8 @@ pair with its independent exponential solution.
 
 The previous full suite (800 native / 96 Node) predates this new primitive.
 Its focused tests and strict checks are qualified separately; do not infer a
-complete coupled landscape from them. The next step remains the bounded
-authoritative fine patch in [the roadmap](landscape-roadmap.md), with declared
+complete coupled landscape from them. The subsequent bounded
+authoritative [fine patch](fine-terrain-patch.md) records declared
 geometry, boundaries, process scales and actual-bed views. Global sedimentary
 pending/active stocks and climate/water coupling remain untouched.
 

@@ -262,7 +262,7 @@ not another global source reroll, are the next work. Full regression passes
 800 native tests across 142 targets and 96 Node tests, with the existing ignored
 native test retained, plus strict all-target Clippy/formatting/whitespace checks.
 
-## Next physical landform increment — not yet integrated
+## Fine physical landform increment
 
 The global 655362-region footprint is approximately 28 km. This cannot represent
 a sub-kilometer valley floor and neighboring ridge as separate authoritative
@@ -299,8 +299,10 @@ directions; areas/distances and face transmissivities use declared physical
 geometry. Camera movement must not generate or change the bed.
 
 The [hillslope-transfer primitive](hillslope-transport.md) now implements paired
-shared-face exchanges with focused controls; fine-patch integration is still
-proposed. Its next use requires declared geometry and a monotonicity-preserving
+shared-face exchanges with focused controls. The subsequent
+[authoritative fine-patch review](fine-terrain-patch.md) implements bounded
+spherical geometry, fixed-field point sampling and coupled dry preparation.
+This integration uses declared geometry and a monotonicity-preserving
 timestep. Never clamp after an
 unstable step. Test constant fields, unequal areas, material balance, maximum
 principle, analytic refinement, invalid workload and immutable failure. Then
@@ -308,6 +310,19 @@ combine prescribed uplift, rebuilt actual downhill routing and existing
 incision, retaining actual heights and separate accepted displacement/incision
 export/lateral-transfer diagnostics. Initially do not double-count transport in
 the global sedimentary pending/active inventories.
+
+The retained 250–1000 m actual-bed comparisons do not yet meet R3 visual quality:
+eight-direction routing alignment, parameter-dependent smoothing/closed basins
+and time/space sensitivity remain. Neither lower diffusivity nor longer age is
+selected as a fix. Next isolate directional routing error and choose a
+direction-flexible physical formulation before further parameter searches.
+Fine-patch output is not yet a tiled world, desktop model or climate coupling.
+Full regression for this increment passes 831 native tests across 147 targets
+and 96 Node tests, with the pre-existing ignored test. The subsequently added
+plane-direction witness passes in the ten-test preparation target. Strict
+all-target Clippy, formatting, raw-field repeatability and CLI refusals pass.
+The owner-reported angular globe coast intersections are tracked separately in
+[the shoreline review](water-surface.md#open-visual-review-angular-coast-intersections).
 
 Start with a controlled mountain domain and explicit external fixed-height
 boundaries, not fake ocean cells or forced drainage from interior sinks. Compare
