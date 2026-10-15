@@ -175,8 +175,9 @@ not proof that it alone causes every observed landscape defect.
 Next select a direction-flexible routing/mesh formulation with an explicit
 incision discretization. [TauDEM's D-infinity description](https://hydrology.usu.edu/taudem/taudem5/help/DInfinityFlowDirections.html)
 provides a primary reference for triangular-facet descent with up to two
-neighbors. It is a candidate, not yet implemented or accepted here; its flat/pit
-assumptions must be reviewed separately. Changing the simulation mesh or distributing
+neighbors. The subsequent adaptation implements the direction/area component,
+not an accepted erosion model; its flat/pit assumptions remain explicit and
+separate. Changing the simulation mesh or distributing
 flow is a physical algorithm choice, not a renderer smoothing fix. Any later
 humid-prehistory sink connection requires stated water/base-level assumptions;
 it must not silently replace the existing conservative seasonal water solver.
@@ -193,6 +194,11 @@ single-receiver implicit incision update cannot silently be reused as a
 multi-receiver equation: its slope/receiver interpretation and detachment ledger
 need an explicit derivation and separate model pin. Retain the old patch as a
 control, then compare actual prepared beds before accepting the new candidate.
+
+The subsequent [triangular-facet routing review](facet-routing.md) implements
+the direction/area component and read-only actual-bed comparisons. It does not
+yet implement coupled erosion. A new counterexample exposes branch reversal in
+the unconstrained extension below, so that extension is not accepted unchanged.
 
 One proposed, **unimplemented** incision extension freezes the reconstructed unit
 descent direction `d` during a geological step. With local receiver displacement

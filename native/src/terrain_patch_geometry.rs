@@ -2,14 +2,14 @@
 //! World or Surface. Side transmissivities are a small-chart two-point
 //! approximation, not an exact nonorthogonal Laplace-Beltrami discretization.
 use crate::hillslope_transport::Edge;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 type V = [f64; 3];
 pub const MODEL_VERSION: &str = "fixed-spherical-patch-1";
 pub const MAX_CELLS: usize = 262_144;
 pub const MAX_EXTENT_RADIUS_RATIO: f64 = 0.05;
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     pub radius_meters: f64,

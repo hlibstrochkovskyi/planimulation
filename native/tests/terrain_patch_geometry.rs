@@ -48,6 +48,9 @@ fn geometry_repeats_owns_settings_and_perimeter_without_world_semantics() {
     let a = build(s).unwrap();
     let b = build(s).unwrap();
     assert_eq!(a.settings, s);
+    let decoded: Settings = serde_json::from_value(serde_json::to_value(s).unwrap()).unwrap();
+    assert_eq!(decoded, s);
+    assert_eq!(build(decoded).unwrap().cell_directions, a.cell_directions);
     assert_eq!(s, settings());
     assert_eq!(
         serde_json::to_vec(&a).unwrap(),

@@ -473,6 +473,7 @@ pub mod structural_sources;
 pub mod surface_water;
 pub mod tectonics;
 pub mod terrain;
+pub mod terrain_patch_facets;
 pub mod terrain_patch_geometry;
 pub mod terrain_patch_landscape;
 pub mod terrain_preparation;

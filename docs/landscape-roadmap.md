@@ -317,6 +317,11 @@ and time/space sensitivity remain. Neither lower diffusivity nor longer age is
 selected as a fix. Next isolate directional routing error and choose a
 direction-flexible physical formulation before further parameter searches.
 Fine-patch output is not yet a tiled world, desktop model or climate coupling.
+The subsequent [triangular-facet component](facet-routing.md) recovers continuous
+descent directions and partitions static area, retaining physical dry sinks.
+Its analytic controls and six read-only bed comparisons do not yet replace
+erosion/preparation. An explicit two-receiver slope constraint remains the next
+integration gate; neither unchanged-bed overlays nor accounting prove R3 quality.
 Full regression for this increment passes 831 native tests across 147 targets
 and 96 Node tests, with the pre-existing ignored test. The subsequently added
 plane-direction witness passes in the ten-test preparation target. Strict
