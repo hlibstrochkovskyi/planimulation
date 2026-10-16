@@ -1,4 +1,5 @@
 //! Read-only comparison of area routing on an already prepared physical patch.
+mod fine_record;
 use planimulation_core::{terrain_patch_facets, terrain_patch_geometry, terrain_patch_landscape};
 use serde_json::{Value, json};
 use std::{
@@ -20,8 +21,8 @@ fn bounded_read(path: &Path, limit: usize) -> Result<Vec<u8>, String> {
     }
     Ok(bytes)
 }
-fn read_json(path: &Path) -> Result<Value, String> {
-    serde_json::from_slice(&bounded_read(path, 16 * 1024 * 1024)?).map_err(|e| e.to_string())
+fn read_json(path: &Path, limit: usize) -> Result<Value, String> {
+    serde_json::from_slice(&bounded_read(path, limit)?).map_err(|e| e.to_string())
 }
 fn write_new(path: &Path, bytes: &[u8]) -> Result<(), String> {
     std::fs::OpenOptions::new()
@@ -35,14 +36,14 @@ fn write_new(path: &Path, bytes: &[u8]) -> Result<(), String> {
 fn output_args(args: &[String]) -> Result<(PathBuf, PathBuf, String), String> {
     if !(2..=3).contains(&args.len()) || args.iter().any(|v| v.trim().is_empty()) {
         return Err(
-            "Usage: fine_routing INPUT_ROW_JSON NEW_DIRECTORY [incision|coupled|facets|humid]"
+            "Usage: fine_routing INPUT_ROW_JSON NEW_DIRECTORY [incision|coupled|facets|humid|power|humid-power]"
                 .into(),
         );
     }
     let variant = args.get(2).cloned().unwrap_or("coupled".into());
     if !matches!(
         variant.as_str(),
-        "incision" | "coupled" | "facets" | "humid"
+        "incision" | "coupled" | "facets" | "humid" | "power" | "humid-power"
     ) {
         return Err("Unsupported retained-bed variant.".into());
     }
@@ -57,7 +58,32 @@ fn output_args(args: &[String]) -> Result<(PathBuf, PathBuf, String), String> {
     }
     Ok((PathBuf::from(&args[0]), output, variant))
 }
+#[cfg(test)]
 fn field_file(row: &Value, manifest: &Value, variant: &str) -> Result<String, String> {
+    field_file_named(row, manifest, variant, None)
+}
+fn field_file_named(
+    row: &Value,
+    manifest: &Value,
+    variant: &str,
+    row_name: Option<&str>,
+) -> Result<String, String> {
+    let member = if manifest["reportVersion"] == "fine-landscape-review-5" {
+        if let Some(name) = row_name {
+            let expected = fine_record::reference(name, row)?;
+            manifest["rowIndexFormat"] == fine_record::INDEX_FORMAT
+                && manifest["rowRecords"].as_array().is_some_and(|rows| {
+                    rows.iter().filter(|r| r["rowFile"] == name).count() == 1
+                        && rows.contains(&expected)
+                })
+        } else {
+            false
+        }
+    } else {
+        manifest["rows"]
+            .as_array()
+            .is_some_and(|rows| rows.contains(row))
+    };
     let columns = json!([
         "initialBedMeters",
         "prescribedUpliftMetersPerYear",
@@ -73,12 +99,11 @@ fn field_file(row: &Value, manifest: &Value, variant: &str) -> Result<String, St
                 | "fine-landscape-review-2"
                 | "fine-landscape-review-3"
                 | "fine-landscape-review-4"
+                | "fine-landscape-review-5"
         )
     ) || manifest["fieldRecord"]["format"] != "headerless-f64-le-region-major-1"
         || manifest["fieldRecord"]["columns"] != columns
-        || !manifest["rows"]
-            .as_array()
-            .is_some_and(|rows| rows.contains(row))
+        || !member
         || row["geometryModelVersion"] != terrain_patch_geometry::MODEL_VERSION
     {
         return Err("Unsupported or mismatched fine-landscape row/manifest.".into());
@@ -217,9 +242,19 @@ fn main() -> Result<(), String> {
         .parent()
         .filter(|p| !p.as_os_str().is_empty())
         .unwrap_or(Path::new("."));
-    let row = read_json(&input)?;
-    let manifest = read_json(&parent.join("manifest.json"))?;
-    let filename = field_file(&row, &manifest, &variant)?;
+    let manifest = read_json(&parent.join("manifest.json"), 16 * 1024 * 1024)?;
+    let row_limit = if manifest["reportVersion"] == "fine-landscape-review-5" {
+        64
+    } else {
+        16
+    };
+    let row = read_json(&input, row_limit * 1024 * 1024)?;
+    let filename = field_file_named(
+        &row,
+        &manifest,
+        &variant,
+        input.file_name().and_then(|s| s.to_str()),
+    )?;
     let settings: terrain_patch_geometry::Settings =
         serde_json::from_value(row["geometrySettings"].clone()).map_err(|e| e.to_string())?;
     settings.validate()?;
@@ -329,6 +364,26 @@ mod tests {
         manifest["reportVersion"] = json!("fine-landscape-review-4");
         assert!(field_file(&row, &manifest, "coupled").is_ok());
         manifest["reportVersion"] = json!("fine-landscape-review-5");
+        assert!(field_file(&row, &manifest, "coupled").is_err());
+        manifest["rowRecords"] = json!([fine_record::reference("a.json", &row).unwrap()]);
+        manifest["rowIndexFormat"] = json!(fine_record::INDEX_FORMAT);
+        assert!(field_file_named(&row, &manifest, "coupled", Some("a.json")).is_ok());
+        assert!(field_file_named(&row, &manifest, "coupled", Some("b.json")).is_err());
+        assert!(field_file_named(&row, &manifest, "coupled", Some("../a.json")).is_err());
+        let mut invalid_index = manifest.clone();
+        let duplicate = invalid_index["rowRecords"][0].clone();
+        invalid_index["rowRecords"]
+            .as_array_mut()
+            .unwrap()
+            .push(duplicate);
+        assert!(field_file_named(&row, &invalid_index, "coupled", Some("a.json")).is_err());
+        invalid_index = manifest.clone();
+        invalid_index["rowIndexFormat"] = json!("future");
+        assert!(field_file_named(&row, &invalid_index, "coupled", Some("a.json")).is_err());
+        let mut changed = row.clone();
+        changed["extraHistory"] = json!([1]);
+        assert!(field_file_named(&changed, &manifest, "coupled", Some("a.json")).is_err());
+        manifest["reportVersion"] = json!("fine-landscape-review-6");
         assert!(field_file(&row, &manifest, "coupled").is_err());
         manifest["reportVersion"] = json!("fine-landscape-review-2");
         assert!(field_file(&row, &manifest, "incision").is_err());

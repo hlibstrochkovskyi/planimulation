@@ -340,6 +340,12 @@ forms. Fastscapelib itself also generates a broad plateau with our retained
 synthetic settings, unlike its published mountain setup. A matched external
 process-regime comparison is the next investigation, not further noise rerolls,
 default promotion or completion of R3/R4.
+The following [exponent-aware preparation](power-law-regime.md) now tests that
+law/coefficient pair with explicit units, old-model compatibility and actual
+bed/clock controls. Lower, more dissected surfaces replace the high plateau,
+but many sinks, strong spatial/time sensitivity and a weak-D ledger refusal
+prevent promotion. A concrete bounded process-resolved regime is specified next;
+global World/tiles/climate coupling remains unimplemented by these experiments.
 Full regression for the initial fine-patch increment passes 831 native tests across 147 targets
 and 96 Node tests, with the pre-existing ignored test. The subsequently added
 plane-direction witness passes in the ten-test preparation target. Strict

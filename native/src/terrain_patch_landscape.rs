@@ -10,6 +10,8 @@ use serde::Serialize;
 pub const MODEL_VERSION: &str = "fine-patch-landscape-1";
 pub const FACET_MODEL_VERSION: &str = "fine-patch-facet-landscape-1";
 pub const HUMID_MODEL_VERSION: &str = "fine-patch-humid-landscape-1";
+pub const POWER_MODEL_VERSION: &str = "fine-patch-power-landscape-1";
+pub const HUMID_POWER_MODEL_VERSION: &str = "fine-patch-humid-power-landscape-1";
 const MAX_WORK: usize = 128_000_000;
 const MAX_DIFFUSION_SUBSTEPS: usize = 64;
 
@@ -20,6 +22,60 @@ pub struct Settings {
     pub diffusivity_square_meters_per_year: f64,
     pub step_years: f64,
     pub steps: usize,
+}
+/// Separate serialized units from the frozen m=.5 settings schema.
+#[derive(Clone, Copy, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PowerSettings {
+    /// Units meters^(1-2*area_exponent)/year; slope exponent is exactly one.
+    pub erodibility_coefficient: f64,
+    pub area_exponent: f64,
+    pub diffusivity_square_meters_per_year: f64,
+    pub step_years: f64,
+    pub steps: usize,
+}
+impl PowerSettings {
+    fn incision(self) -> facet_incision::PowerSettings {
+        facet_incision::PowerSettings {
+            erodibility_coefficient: self.erodibility_coefficient,
+            area_exponent: self.area_exponent,
+            step_years: self.step_years,
+        }
+    }
+}
+#[derive(Clone, Copy)]
+struct Schedule {
+    diffusion: f64,
+    years: f64,
+    steps: usize,
+}
+trait ProcessSettings: Copy {
+    fn schedule(self) -> Schedule;
+    fn valid_law(self) -> bool;
+}
+impl ProcessSettings for Settings {
+    fn schedule(self) -> Schedule {
+        Schedule {
+            diffusion: self.diffusivity_square_meters_per_year,
+            years: self.step_years,
+            steps: self.steps,
+        }
+    }
+    fn valid_law(self) -> bool {
+        self.erodibility_per_year.is_finite() && self.erodibility_per_year >= 0.
+    }
+}
+impl ProcessSettings for PowerSettings {
+    fn schedule(self) -> Schedule {
+        Schedule {
+            diffusion: self.diffusivity_square_meters_per_year,
+            years: self.step_years,
+            steps: self.steps,
+        }
+    }
+    fn valid_law(self) -> bool {
+        self.incision().valid_law()
+    }
 }
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -75,9 +131,9 @@ pub struct CumulativeConstraint {
 }
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Preparation<R = Routing> {
+pub struct Preparation<R = Routing, S = Settings> {
     pub model_version: &'static str,
-    pub settings: Settings,
+    pub settings: S,
     pub diffusion_substeps_per_step: usize,
     pub elevation_meters: Vec<f64>,
     pub accepted_uplift_displacement_meters: Vec<f64>,
@@ -399,11 +455,42 @@ pub fn prepare_humid_facets(
     )
 }
 
+pub fn prepare_facets_power(
+    g: &Geometry,
+    initial: &[f64],
+    uplift: &[f64],
+    settings: PowerSettings,
+) -> Result<Preparation<terrain_patch_facets::Routing, PowerSettings>, String> {
+    prepare_impl(
+        g,
+        initial,
+        uplift,
+        settings,
+        PowerFacets(FacetReceivers { router: None }),
+    )
+}
+pub fn prepare_humid_facets_power(
+    g: &Geometry,
+    initial: &[f64],
+    uplift: &[f64],
+    settings: PowerSettings,
+) -> Result<Preparation<humid_patch::Routing, PowerSettings>, String> {
+    prepare_impl(
+        g,
+        initial,
+        uplift,
+        settings,
+        HumidPowerFacets(HumidReceivers { router: None }),
+    )
+}
+
 trait PatchProcess {
     type Flow;
+    type Settings: ProcessSettings;
     const MODEL: &'static str;
     const STAGE_WORK: usize;
     const CONSTRAINED: bool;
+    const INCISION_MODEL: &'static str = facet_incision::MODEL_VERSION;
     fn potential(_flow: &Self::Flow) -> Option<potential_patch_surface::Summary> {
         None
     }
@@ -413,12 +500,13 @@ trait PatchProcess {
         g: &Geometry,
         h: &[f64],
         flow: &Self::Flow,
-        settings: Settings,
+        settings: Self::Settings,
     ) -> Result<(landscape::Incision, Option<facet_incision::Constraint>), String>;
 }
 struct SingleReceiver;
 impl PatchProcess for SingleReceiver {
     type Flow = Routing;
+    type Settings = Settings;
     const MODEL: &'static str = MODEL_VERSION;
     const STAGE_WORK: usize = 3;
     const CONSTRAINED: bool = false;
@@ -451,6 +539,7 @@ struct FacetReceivers {
 }
 impl PatchProcess for FacetReceivers {
     type Flow = terrain_patch_facets::Routing;
+    type Settings = Settings;
     const MODEL: &'static str = FACET_MODEL_VERSION;
     const STAGE_WORK: usize = 6;
     const CONSTRAINED: bool = true;
@@ -485,6 +574,7 @@ struct HumidReceivers {
 }
 impl PatchProcess for HumidReceivers {
     type Flow = humid_patch::Routing;
+    type Settings = Settings;
     const MODEL: &'static str = HUMID_MODEL_VERSION;
     const STAGE_WORK: usize = 12;
     const CONSTRAINED: bool = true;
@@ -517,36 +607,90 @@ impl PatchProcess for HumidReceivers {
     }
 }
 
+struct PowerFacets(FacetReceivers);
+impl PatchProcess for PowerFacets {
+    type Flow = terrain_patch_facets::Routing;
+    type Settings = PowerSettings;
+    const MODEL: &'static str = POWER_MODEL_VERSION;
+    const STAGE_WORK: usize = 6;
+    const CONSTRAINED: bool = true;
+    const INCISION_MODEL: &'static str = facet_incision::POWER_MODEL_VERSION;
+    fn route(&mut self, g: &Geometry, h: &[f64]) -> Result<Self::Flow, String> {
+        self.0.route(g, h)
+    }
+    fn incise(
+        &self,
+        g: &Geometry,
+        h: &[f64],
+        flow: &Self::Flow,
+        settings: PowerSettings,
+    ) -> Result<(landscape::Incision, Option<facet_incision::Constraint>), String> {
+        let r = facet_incision::incise_power(
+            h,
+            &g.reference_areas_square_meters,
+            &flow.contributing_area_square_meters,
+            &flow.descents,
+            settings.incision(),
+        )?;
+        Ok((r.incision, Some(r.receiver_constraint)))
+    }
+}
+struct HumidPowerFacets(HumidReceivers);
+impl PatchProcess for HumidPowerFacets {
+    type Flow = humid_patch::Routing;
+    type Settings = PowerSettings;
+    const MODEL: &'static str = HUMID_POWER_MODEL_VERSION;
+    const STAGE_WORK: usize = 12;
+    const CONSTRAINED: bool = true;
+    const INCISION_MODEL: &'static str = facet_incision::POWER_MODEL_VERSION;
+    fn potential(flow: &Self::Flow) -> Option<potential_patch_surface::Summary> {
+        Some(flow.potential.summary)
+    }
+    fn route(&mut self, g: &Geometry, h: &[f64]) -> Result<Self::Flow, String> {
+        self.0.route(g, h)
+    }
+    fn incise(
+        &self,
+        g: &Geometry,
+        h: &[f64],
+        flow: &Self::Flow,
+        settings: PowerSettings,
+    ) -> Result<(landscape::Incision, Option<facet_incision::Constraint>), String> {
+        let (incision, constraint) = humid_patch::incise_power(g, h, flow, settings.incision())?;
+        Ok((incision, Some(constraint)))
+    }
+}
+
 fn prepare_impl<P: PatchProcess>(
     g: &Geometry,
     initial: &[f64],
     uplift: &[f64],
-    settings: Settings,
+    settings: P::Settings,
     mut process: P,
-) -> Result<Preparation<P::Flow>, String> {
+) -> Result<Preparation<P::Flow, P::Settings>, String> {
     validate(g, initial)?;
+    let schedule = settings.schedule();
     let n = initial.len();
     if uplift.len() != n
         || uplift
             .iter()
             .enumerate()
             .any(|(i, v)| !v.is_finite() || *v < 0. || g.fixed_external_boundary[i] && *v != 0.)
-        || !(1..=256).contains(&settings.steps)
-        || !settings.step_years.is_finite()
-        || settings.step_years <= 0.
-        || !(settings.step_years * settings.steps as f64).is_finite()
-        || !settings.erodibility_per_year.is_finite()
-        || settings.erodibility_per_year < 0.
-        || !settings.diffusivity_square_meters_per_year.is_finite()
-        || settings.diffusivity_square_meters_per_year < 0.
+        || !(1..=256).contains(&schedule.steps)
+        || !schedule.years.is_finite()
+        || schedule.years <= 0.
+        || !(schedule.years * schedule.steps as f64).is_finite()
+        || !settings.valid_law()
+        || !schedule.diffusion.is_finite()
+        || schedule.diffusion < 0.
     {
         return Err("Invalid patch preparation fields/settings.".into());
     }
     let mut conductance = vec![0.; n];
-    if settings.diffusivity_square_meters_per_year > 0. {
+    if schedule.diffusion > 0. {
         for e in &g.side_faces {
-            let weight = settings.diffusivity_square_meters_per_year * e.shared_face_length_meters
-                / e.center_distance_meters;
+            let weight =
+                schedule.diffusion * e.shared_face_length_meters / e.center_distance_meters;
             if !weight.is_finite() || weight <= 0. {
                 return Err("Unrepresentable patch diffusion rate.".into());
             }
@@ -557,16 +701,16 @@ fn prepare_impl<P: PatchProcess>(
             }
         }
     }
-    let cfl = conductance.into_iter().fold(0_f64, f64::max) * settings.step_years;
+    let cfl = conductance.into_iter().fold(0_f64, f64::max) * schedule.years;
     if !cfl.is_finite() || cfl / 0.8 > MAX_DIFFUSION_SUBSTEPS as f64 {
         return Err("Excessive patch diffusion substeps.".into());
     }
-    let substeps = if settings.diffusivity_square_meters_per_year == 0. {
+    let substeps = if schedule.diffusion == 0. {
         0
     } else {
         (cfl / 0.8).ceil().max(1.) as usize
     };
-    if n.checked_mul(settings.steps)
+    if n.checked_mul(schedule.steps)
         .and_then(|v| v.checked_mul(P::STAGE_WORK + substeps))
         .is_none_or(|v| v > MAX_WORK)
     {
@@ -580,16 +724,16 @@ fn prepare_impl<P: PatchProcess>(
     let mut detached = Sum::default();
     let mut boundary = Sum::default();
     let mut gross = Sum::default();
-    let mut history = Vec::with_capacity(settings.steps);
+    let mut history = Vec::with_capacity(schedule.steps);
     let mut receiver_constraint = P::CONSTRAINED.then(|| CumulativeConstraint {
-        incision_model_version: facet_incision::MODEL_VERSION,
+        incision_model_version: P::INCISION_MODEL,
         cumulative_prevented_incision_meters: vec![0.; n],
         limited_node_updates: 0,
         prevented_reference_prism_cubic_meters: 0.,
         maximum_prevented_incision_meters: 0.,
     });
     let mut prevented = Sum::default();
-    for step in 0..settings.steps {
+    for step in 0..schedule.steps {
         let before = bed.clone();
         let mut u = Sum::default();
         let mut unresolved_u = 0;
@@ -597,7 +741,7 @@ fn prepare_impl<P: PatchProcess>(
             if uplift[i] == 0. {
                 continue;
             }
-            let requested = uplift[i] * settings.step_years;
+            let requested = uplift[i] * schedule.years;
             let updated = bed[i] + requested;
             let accepted = updated - bed[i];
             if !requested.is_finite() || requested <= 0. || !updated.is_finite() || accepted < 0. {
@@ -668,8 +812,8 @@ fn prepare_impl<P: PatchProcess>(
                 &g.fixed_external_boundary,
                 &g.side_faces,
                 hillslope_transport::Settings {
-                    diffusivity_square_meters_per_year: settings.diffusivity_square_meters_per_year,
-                    step_years: settings.step_years / substeps as f64,
+                    diffusivity_square_meters_per_year: schedule.diffusion,
+                    step_years: schedule.years / substeps as f64,
                 },
             )?;
             for (sum, &v) in lateral.iter_mut().zip(&t.accepted_height_change_meters) {

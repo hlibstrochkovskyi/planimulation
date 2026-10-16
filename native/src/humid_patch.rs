@@ -52,6 +52,37 @@ pub(crate) fn incise(
     flow: &Routing,
     settings: facet_incision::Settings,
 ) -> Result<(landscape::Incision, facet_incision::Constraint), String> {
+    protected_incision(bed, flow, |descents| {
+        facet_incision::incise(
+            &flow.potential.surface_meters,
+            &g.reference_areas_square_meters,
+            &flow.proxy_routing.contributing_area_square_meters,
+            descents,
+            settings,
+        )
+    })
+}
+pub(crate) fn incise_power(
+    g: &Geometry,
+    bed: &[f64],
+    flow: &Routing,
+    settings: facet_incision::PowerSettings,
+) -> Result<(landscape::Incision, facet_incision::Constraint), String> {
+    protected_incision(bed, flow, |descents| {
+        facet_incision::incise_power(
+            &flow.potential.surface_meters,
+            &g.reference_areas_square_meters,
+            &flow.proxy_routing.contributing_area_square_meters,
+            descents,
+            settings,
+        )
+    })
+}
+fn protected_incision(
+    bed: &[f64],
+    flow: &Routing,
+    erode: impl FnOnce(&[terrain_patch_facets::Descent]) -> Result<facet_incision::ResultRecord, String>,
+) -> Result<(landscape::Incision, facet_incision::Constraint), String> {
     let mut descents = flow.proxy_routing.descents.clone();
     for (i, d) in descents.iter_mut().enumerate() {
         if flow.potential.depth_meters[i] > 0. {
@@ -61,13 +92,7 @@ pub(crate) fn incise(
             };
         }
     }
-    let mut result = facet_incision::incise(
-        &flow.potential.surface_meters,
-        &g.reference_areas_square_meters,
-        &flow.proxy_routing.contributing_area_square_meters,
-        &descents,
-        settings,
-    )?;
+    let mut result = erode(&descents)?;
     for (i, &height) in bed.iter().enumerate() {
         if flow.potential.depth_meters[i] > 0. {
             // A terminal cannot incise. These checks protect the representation

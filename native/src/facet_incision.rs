@@ -4,11 +4,35 @@ use crate::{landscape, terrain_patch_facets::Descent, terrain_patch_geometry};
 use serde::Serialize;
 
 pub const MODEL_VERSION: &str = "frozen-facet-incision-1";
+pub const POWER_MODEL_VERSION: &str = "frozen-facet-power-incision-1";
 #[derive(Clone, Copy, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     pub erodibility_per_year: f64,
     pub step_years: f64,
+}
+/// E = K A^m S, with slope exponent fixed at one. For area measured in m²,
+/// K has units meters^(1-2m)/year, NOT necessarily year^-1.
+#[derive(Clone, Copy, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PowerSettings {
+    pub erodibility_coefficient: f64,
+    pub area_exponent: f64,
+    pub step_years: f64,
+}
+impl PowerSettings {
+    pub(crate) fn valid_law(self) -> bool {
+        self.erodibility_coefficient.is_finite()
+            && self.erodibility_coefficient >= 0.
+            && self.area_exponent.is_finite()
+            && (0. ..=1.).contains(&self.area_exponent)
+    }
+}
+struct Law {
+    coefficient: f64,
+    exponent: f64,
+    step_years: f64,
+    model: &'static str,
 }
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -54,6 +78,52 @@ pub fn incise(
     descents: &[Descent],
     settings: Settings,
 ) -> Result<ResultRecord, String> {
+    incise_impl(
+        h,
+        reference_areas,
+        contributing_areas,
+        descents,
+        Law {
+            coefficient: settings.erodibility_per_year,
+            exponent: 0.5,
+            step_years: settings.step_years,
+            model: MODEL_VERSION,
+        },
+    )
+}
+
+/// Separately pinned exponent-aware candidate. The m=.5 path deliberately uses
+/// sqrt rather than powf, preserving the old primitive's arithmetic exactly.
+pub fn incise_power(
+    h: &[f64],
+    reference_areas: &[f64],
+    contributing_areas: &[f64],
+    descents: &[Descent],
+    settings: PowerSettings,
+) -> Result<ResultRecord, String> {
+    if !settings.valid_law() {
+        return Err("Invalid power-incision law.".into());
+    }
+    incise_impl(
+        h,
+        reference_areas,
+        contributing_areas,
+        descents,
+        Law {
+            coefficient: settings.erodibility_coefficient,
+            exponent: settings.area_exponent,
+            step_years: settings.step_years,
+            model: POWER_MODEL_VERSION,
+        },
+    )
+}
+fn incise_impl(
+    h: &[f64],
+    reference_areas: &[f64],
+    contributing_areas: &[f64],
+    descents: &[Descent],
+    law: Law,
+) -> Result<ResultRecord, String> {
     let n = h.len();
     if !(1..=terrain_patch_geometry::MAX_CELLS).contains(&n)
         || reference_areas.len() != n
@@ -62,15 +132,15 @@ pub fn incise(
         || h.iter().any(|v| !v.is_finite())
         || reference_areas.iter().any(|v| !v.is_finite() || *v <= 0.)
         || contributing_areas.iter().any(|v| !v.is_finite() || *v < 0.)
-        || !settings.erodibility_per_year.is_finite()
-        || settings.erodibility_per_year < 0.
-        || !settings.step_years.is_finite()
-        || settings.step_years <= 0.
+        || !law.coefficient.is_finite()
+        || law.coefficient < 0.
+        || !law.step_years.is_finite()
+        || law.step_years <= 0.
     {
         return Err("Invalid facet-incision fields or settings.".into());
     }
-    let coefficient = settings.erodibility_per_year * settings.step_years;
-    if !coefficient.is_finite() || settings.erodibility_per_year > 0. && coefficient == 0. {
+    let coefficient = law.coefficient * law.step_years;
+    if !coefficient.is_finite() || law.coefficient > 0. && coefficient == 0. {
         return Err("Unrepresentable facet-incision time coefficient.".into());
     }
     let mut incoming = vec![0usize; n];
@@ -177,7 +247,12 @@ pub fn incise(
             continue;
         }
         let difference = h[i] - base;
-        let gamma = coefficient * contributing_areas[i].sqrt() * alpha_sum;
+        let area_factor = if law.exponent == 0.5 {
+            contributing_areas[i].sqrt()
+        } else {
+            contributing_areas[i].powf(law.exponent)
+        };
+        let gamma = coefficient * area_factor * alpha_sum;
         if !difference.is_finite() || difference <= 0. || !gamma.is_finite() || gamma <= 0. {
             return Err("Unrepresentable positive facet-incision coefficient or relief.".into());
         }
@@ -225,7 +300,7 @@ pub fn incise(
     result.removed_material_cubic_meters = detached.value;
     constraint.prevented_reference_prism_cubic_meters = prevented.value;
     Ok(ResultRecord {
-        model_version: MODEL_VERSION,
+        model_version: law.model,
         incision: result,
         receiver_constraint: constraint,
     })

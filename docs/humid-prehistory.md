@@ -168,6 +168,12 @@ height or a selected parameter set. Low relief alone is not the product goal.
 
 ## Verification
 
+The subsequent [exponent-aware regime comparison](power-law-regime.md) now
+implements the next incision-law/coefficient control while holding bed/forcing
+fixed. It removes the high plateau but retains actual sinks and unresolved
+time/space sensitivity. A process-resolved physical-scale comparison, rather
+than promoting the copied coefficient values, is the next concrete control.
+
 Ten new controls cover independent threshold-connectivity minimality on sixteen
 small terrains, known nested sills, immutable inputs/failures, exact flat/plane
 no-ops, vertical-datum invariance, overflow/malformed refusals, downstream proxy

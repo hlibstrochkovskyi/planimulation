@@ -441,7 +441,10 @@ fn facet_coupling_repeats_actual_bed_ledger_and_records_hypothetical_constraint_
 
 #[test]
 fn facet_work_limit_refuses_before_metric_construction_or_bed_advance() {
-    use planimulation_core::terrain_patch_landscape::{prepare_facets, prepare_humid_facets};
+    use planimulation_core::terrain_patch_landscape::{
+        PowerSettings, prepare_facets, prepare_facets_power, prepare_humid_facets,
+        prepare_humid_facets_power,
+    };
     let g = grid(512, 250.);
     let h = vec![0.; 512 * 512];
     let u = rates(&g, 0.001);
@@ -471,5 +474,115 @@ fn facet_work_limit_refuses_before_metric_construction_or_bed_advance() {
     )
     .unwrap_err();
     assert_eq!(error, "Excessive patch preparation workload.");
+    let power = PowerSettings {
+        erodibility_coefficient: 2e-4,
+        area_exponent: 0.4,
+        diffusivity_square_meters_per_year: 0.,
+        step_years: 1.,
+        steps: 128,
+    };
+    assert_eq!(
+        prepare_facets_power(&g, &h, &u, power).unwrap_err(),
+        "Excessive patch preparation workload."
+    );
+    assert_eq!(
+        prepare_humid_facets_power(&g, &h, &u, power).unwrap_err(),
+        "Excessive patch preparation workload."
+    );
     assert!(h.iter().all(|&v| v == 0.));
+}
+
+#[test]
+fn exponent_aware_preparation_preserves_old_half_power_physics_and_reports_real_units() {
+    use planimulation_core::terrain_patch_landscape as patch;
+    let g = grid(8, 500.);
+    let h: Vec<_> = (0..64)
+        .map(|i| 100. + (i % 8) as f64 + 0.2 * (i / 8) as f64)
+        .collect();
+    let u = rates(&g, 0.0005);
+    let controls = patch::PowerSettings {
+        erodibility_coefficient: settings().erodibility_per_year,
+        area_exponent: 0.5,
+        diffusivity_square_meters_per_year: settings().diffusivity_square_meters_per_year,
+        step_years: settings().step_years,
+        steps: settings().steps,
+    };
+    let old = patch::prepare_facets(&g, &h, &u, settings()).unwrap();
+    let p = patch::prepare_facets_power(&g, &h, &u, controls).unwrap();
+    assert_eq!(p.elevation_meters, old.elevation_meters);
+    assert_eq!(
+        p.removed_incision_thickness_meters,
+        old.removed_incision_thickness_meters
+    );
+    assert_eq!(
+        serde_json::to_value(&p.history).unwrap(),
+        serde_json::to_value(&old.history).unwrap()
+    );
+    assert_eq!(
+        p.receiver_constraint
+            .as_ref()
+            .unwrap()
+            .incision_model_version,
+        planimulation_core::facet_incision::POWER_MODEL_VERSION
+    );
+    let value = serde_json::to_value(&p).unwrap();
+    assert!(value["settings"].get("erodibilityPerYear").is_none());
+    assert_eq!(value["settings"]["areaExponent"], 0.5);
+    assert_eq!(value["settings"]["erodibilityCoefficient"], 1e-6);
+    let old = patch::prepare_humid_facets(&g, &h, &u, settings()).unwrap();
+    let p = patch::prepare_humid_facets_power(&g, &h, &u, controls).unwrap();
+    assert_eq!(p.elevation_meters, old.elevation_meters);
+    assert_eq!(
+        serde_json::to_value(&p.history).unwrap(),
+        serde_json::to_value(&old.history).unwrap()
+    );
+}
+#[test]
+fn exponent_aware_humid_preparation_keeps_protected_bed_and_repeats_actual_accounting() {
+    use planimulation_core::terrain_patch_landscape as patch;
+    let g = grid(8, 500.);
+    let mut h = vec![10.; 64];
+    h[27] = -5.;
+    let settings = patch::PowerSettings {
+        erodibility_coefficient: 2e-4,
+        area_exponent: 0.4,
+        diffusivity_square_meters_per_year: 0.,
+        step_years: 1000.,
+        steps: 4,
+    };
+    let zero = patch::prepare_humid_facets_power(&g, &h, &rates(&g, 0.), settings).unwrap();
+    assert_eq!(zero.elevation_meters, h);
+    assert_eq!(zero.detached_material_reservoir_cubic_meters, 0.);
+    let u = rates(&g, 0.0005);
+    let p = patch::prepare_humid_facets_power(&g, &h, &u, settings).unwrap();
+    let q = patch::prepare_humid_facets_power(&g, &h, &u, settings).unwrap();
+    assert_eq!(
+        serde_json::to_value(&p).unwrap(),
+        serde_json::to_value(&q).unwrap()
+    );
+    for (i, &old) in h.iter().enumerate() {
+        assert!(
+            (p.elevation_meters[i]
+                - (old + p.accepted_uplift_displacement_meters[i]
+                    - p.removed_incision_thickness_meters[i]))
+                .abs()
+                < 1e-12
+        );
+        if g.fixed_external_boundary[i] {
+            assert_eq!(p.elevation_meters[i], old);
+        }
+    }
+    assert_eq!(p.removed_incision_thickness_meters[27], 0.);
+    assert!(
+        patch::prepare_facets_power(
+            &g,
+            &h,
+            &u,
+            patch::PowerSettings {
+                area_exponent: f64::NAN,
+                ..settings
+            }
+        )
+        .is_err()
+    );
 }

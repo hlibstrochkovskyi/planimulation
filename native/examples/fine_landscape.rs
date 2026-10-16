@@ -1,10 +1,12 @@
 //! Actual fine-bed comparisons; regional experiments, not coupled global tiles.
+mod fine_record;
 use planimulation_core::{
     Random, Recipe, Surface, fixed_geological_field, humid_patch, physical_seed_field,
     terrain_patch_facets,
     terrain_patch_geometry::{self, Geometry},
-    terrain_patch_landscape::{self, Preparation, Settings},
+    terrain_patch_landscape::{self, PowerSettings, Preparation, Settings},
 };
+use serde::Serialize;
 use serde_json::{Value, json};
 use std::{
     fmt::Write as _,
@@ -95,17 +97,25 @@ struct Arguments {
     physical_seeds: bool,
     physical_amplitude: f64,
     humid: bool,
+    reference_law: bool,
 }
 fn parse(args: &[String]) -> Result<Arguments, String> {
     if !(1..=7).contains(&args.len())
         || args[0].trim().is_empty()
-        || args
-            .get(5)
-            .is_some_and(|s| !matches!(s.as_str(), "--facets" | "--spectrum" | "--humid"))
-        || args.len() == 7 && !matches!(args[5].as_str(), "--spectrum" | "--humid")
+        || args.get(5).is_some_and(|s| {
+            !matches!(
+                s.as_str(),
+                "--facets" | "--spectrum" | "--humid" | "--reference-law"
+            )
+        })
+        || args.len() == 7
+            && !matches!(
+                args[5].as_str(),
+                "--spectrum" | "--humid" | "--reference-law"
+            )
     {
         return Err(
-            "Usage: fine_landscape NEW_DIRECTORY [SEED] [STEPS(1..128)] [DURATION_YEARS] [DIFFUSIVITY_M2_PER_YEAR] [--facets|--spectrum [AMPLITUDE_METERS]|--humid [AMPLITUDE_METERS]]".into(),
+            "Usage: fine_landscape NEW_DIRECTORY [SEED] [STEPS(1..128)] [DURATION_YEARS] [DIFFUSIVITY_M2_PER_YEAR] [--facets|--spectrum [AMPLITUDE_METERS]|--humid [AMPLITUDE_METERS]|--reference-law [AMPLITUDE_METERS]]".into(),
         );
     }
     let path = PathBuf::from(&args[0]);
@@ -164,9 +174,12 @@ fn parse(args: &[String]) -> Result<Arguments, String> {
         facets: args.len() >= 6,
         physical_seeds: args
             .get(5)
-            .is_some_and(|s| matches!(s.as_str(), "--spectrum" | "--humid")),
+            .is_some_and(|s| matches!(s.as_str(), "--spectrum" | "--humid" | "--reference-law")),
         physical_amplitude: amplitude,
-        humid: args.get(5).is_some_and(|s| s == "--humid"),
+        humid: args
+            .get(5)
+            .is_some_and(|s| matches!(s.as_str(), "--humid" | "--reference-law")),
+        reference_law: args.get(5).is_some_and(|s| s == "--reference-law"),
     })
 }
 fn write_new(path: &Path, bytes: &[u8]) -> Result<(), String> {
@@ -210,7 +223,7 @@ impl Perturbation {
             .sum()
     }
 }
-fn metrics<R: ReviewFlow>(g: &Geometry, h: &[f64], p: &Preparation<R>) -> Value {
+fn metrics<R: ReviewFlow, S>(g: &Geometry, h: &[f64], p: &Preparation<R, S>) -> Value {
     let mut sorted: Vec<_> = h
         .iter()
         .copied()
@@ -244,9 +257,9 @@ fn metrics<R: ReviewFlow>(g: &Geometry, h: &[f64], p: &Preparation<R>) -> Value 
         "neighborScaleRmsSlope":(squared/total_weight).sqrt(),"neighborScaleMaximumSlope":maximum_slope,
         "closedDrySinkCount":p.final_routing.closed_count(),"closedFractionOfActiveArea":p.final_routing.closed_fraction()})
 }
-fn record<R: ReviewFlow>(
+fn record<R: ReviewFlow, S: Serialize>(
     g: &Geometry,
-    p: &Preparation<R>,
+    p: &Preparation<R, S>,
     label: &str,
     file: &str,
     seconds: f64,
@@ -291,6 +304,25 @@ fn shade(g: &Geometry, h: &[f64], i: usize) -> f64 {
     let light = (dx - dy + 1.) / ((dx * dx + dy * dy + 1.).sqrt() * 3_f64.sqrt());
     0.3 + 0.7 * light.max(0.)
 }
+struct PowerPair {
+    dry: Preparation<terrain_patch_facets::Routing, PowerSettings>,
+    humid: Preparation<humid_patch::Routing, PowerSettings>,
+}
+type Panel<'a> = (&'a str, &'a [f64], Option<&'a dyn ReviewFlow>);
+fn power_panels(p: &PowerPair) -> Vec<Panel<'_>> {
+    vec![
+        (
+            "Reference law m=.4 / dry bed",
+            &p.dry.elevation_meters,
+            Some(&p.dry.final_routing),
+        ),
+        (
+            "Reference law m=.4 / humid bed",
+            &p.humid.elevation_meters,
+            Some(&p.humid.final_routing),
+        ),
+    ]
+}
 fn atlas(
     g: &Geometry,
     initial: &[f64],
@@ -298,10 +330,8 @@ fn atlas(
     b: &Preparation,
     facets: Option<&Preparation<terrain_patch_facets::Routing>>,
     humid: Option<&Preparation<humid_patch::Routing>>,
+    power: Option<&PowerPair>,
 ) -> String {
-    let nx = g.settings.cells_x as usize;
-    let ny = g.settings.cells_y as usize;
-    let scale = 480. / nx as f64;
     let minimum = initial.iter().copied().fold(f64::INFINITY, f64::min);
     let mut maximum = initial
         .iter()
@@ -309,7 +339,6 @@ fn atlas(
         .chain(&b.elevation_meters)
         .copied()
         .fold(f64::NEG_INFINITY, f64::max);
-    type Panel<'a> = (&'a str, &'a [f64], Option<&'a dyn ReviewFlow>);
     let mut panels: Vec<Panel<'_>> = vec![
         ("Initial authoritative bed", initial, None),
         (
@@ -349,6 +378,24 @@ fn atlas(
             Some(&p.final_routing),
         ));
     }
+    if let Some(p) = power {
+        for (label, h, flow) in power_panels(p) {
+            maximum = maximum.max(h.iter().copied().fold(f64::NEG_INFINITY, f64::max));
+            panels.push((label, h, flow));
+        }
+    }
+    render_atlas(g, minimum, maximum, panels, humid.is_some())
+}
+fn render_atlas(
+    g: &Geometry,
+    minimum: f64,
+    maximum: f64,
+    panels: Vec<Panel<'_>>,
+    humid: bool,
+) -> String {
+    let nx = g.settings.cells_x as usize;
+    let ny = g.settings.cells_y as usize;
+    let scale = 480. / nx as f64;
     let width = 16 + 508 * panels.len();
     let mut svg = format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{width}\" height=\"610\"><rect width=\"{width}\" height=\"610\" fill=\"#10191f\"/><style>text{{font-family:DejaVu Sans,sans-serif;fill:#e6edf3}}</style>"
@@ -403,17 +450,17 @@ fn atlas(
     }
     write!(svg,"<text x=\"24\" y=\"558\" font-size=\"13\">50km chart extent · {:.0}m chart spacing · common elevation range {minimum:.1}–{maximum:.1}m</text>",g.settings.spacing_meters).unwrap();
     svg.push_str("<text x=\"24\" y=\"580\" font-size=\"13\">Actual bed / slope lighting1x. Cyan: static contributing-area links, not water discharge. Fixed outer collar is not ocean.</text>");
-    if humid.is_some() {
+    if humid {
         svg.push_str("<text x=\"24\" y=\"600\" font-size=\"12\">Humid panel links assume fully supplied potential lakes; lake levels are NOT actual bed or funded water inventories.</text>");
     }
     svg.push_str("</svg>");
     svg
 }
-fn raw_fields<R>(
+fn raw_fields<R, S>(
     path: &Path,
     initial: &[f64],
     u: &[f64],
-    p: &Preparation<R>,
+    p: &Preparation<R, S>,
 ) -> Result<(), String> {
     let mut f = std::io::BufWriter::new(
         std::fs::OpenOptions::new()
@@ -436,7 +483,12 @@ fn raw_fields<R>(
     }
     f.flush().map_err(|e| e.to_string())
 }
-fn profiles<A, B>(g: &Geometry, h: &[f64], a: &Preparation<A>, b: &Preparation<B>) -> Value {
+fn profiles<A, B, SA, SB>(
+    g: &Geometry,
+    h: &[f64],
+    a: &Preparation<A, SA>,
+    b: &Preparation<B, SB>,
+) -> Value {
     let nx = g.settings.cells_x as usize;
     let ny = g.settings.cells_y as usize;
     let sample = |i: usize, x: f64| json!({"chartDistanceMeters":x,"initialMeters":h[i],"incisionOnlyMeters":a.elevation_meters[i],"coupledMeters":b.elevation_meters[i]});
@@ -504,6 +556,19 @@ fn seed_summary(samples: &[(f64, f64, f64)]) -> Result<Value, String> {
         "scope":"Recorded initial interior seed values; not matched RMS or a single-frequency intervention."}),
     )
 }
+fn regime_scales(s: PowerSettings, chart_spacing: f64) -> Value {
+    if s.erodibility_coefficient == 0. || s.diffusivity_square_meters_per_year == 0. {
+        return json!({"defined":false,"reason":"Positive K and D are required for these competition scales."});
+    }
+    let length = (s.diffusivity_square_meters_per_year / s.erodibility_coefficient)
+        .powf(1. / (2. * s.area_exponent + 1.));
+    // This equivalent time form avoids squaring a tiny length before division.
+    let time = length.powf(1. - 2. * s.area_exponent) / s.erodibility_coefficient;
+    json!({"defined":true,"characteristicLengthMeters":length,"characteristicTimeYears":time,
+        "chartSpacingOverCharacteristicLength":chart_spacing/length,"stepOverCharacteristicTime":s.step_years/time,
+        "durationOverCharacteristicTime":s.step_years*s.steps as f64/time,
+        "scope":"Dimensional scales for E=K A^m S and linear diffusion; not proof of resolved features or convergence. Spatially varying uplift has no single characteristic height."})
+}
 fn main() -> Result<(), String> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     let Arguments {
@@ -516,6 +581,7 @@ fn main() -> Result<(), String> {
         physical_seeds,
         physical_amplitude,
         humid,
+        reference_law,
     } = parse(&args)?;
     let field = fixed_geological_field::Field::new(reference(&seed))?;
     let perturb = Perturbation::new(&seed);
@@ -673,6 +739,38 @@ fn main() -> Result<(), String> {
             } else {
                 None
             };
+            let power_prepared = if reference_law {
+                let controls = PowerSettings {
+                    erodibility_coefficient: 2e-4,
+                    area_exponent: 0.4,
+                    diffusivity_square_meters_per_year: diffusion,
+                    step_years: duration / steps as f64,
+                    steps,
+                };
+                let begin = Instant::now();
+                let dry =
+                    terrain_patch_landscape::prepare_facets_power(&g, &initial, &rates, controls)?;
+                let seconds = begin.elapsed().as_secs_f64();
+                let file = format!("{case}-{cells}-power.f64le");
+                raw_fields(&directory.join(&file), &initial, &rates, &dry)?;
+                variants.push(record(&g, &dry, "power", &file, seconds));
+                let begin = Instant::now();
+                let humid = terrain_patch_landscape::prepare_humid_facets_power(
+                    &g, &initial, &rates, controls,
+                )?;
+                let seconds = begin.elapsed().as_secs_f64();
+                let file = format!("{case}-{cells}-humid-power.f64le");
+                raw_fields(&directory.join(&file), &initial, &rates, &humid)?;
+                variants.push(record(&g, &humid, "humid-power", &file, seconds));
+                println!(
+                    "{case} {cells} reference law: dry closed {:.2}%, humid bed closed {:.2}%",
+                    dry.final_routing.closed_fraction() * 100.,
+                    humid.final_routing.closed_fraction() * 100.
+                );
+                Some(PowerPair { dry, humid })
+            } else {
+                None
+            };
             let svgfile = format!("{case}-{cells}.svg");
             write_new(
                 &directory.join(&svgfile),
@@ -683,6 +781,7 @@ fn main() -> Result<(), String> {
                     &prepared[1],
                     facet_prepared.as_ref(),
                     humid_prepared.as_ref(),
+                    power_prepared.as_ref(),
                 )
                 .as_bytes(),
             )?;
@@ -697,6 +796,30 @@ fn main() -> Result<(), String> {
             if let Some(p) = &humid_prepared {
                 row["humidTransects"] = profiles(&g, &initial, &prepared[0], p);
             }
+            if let Some(p) = &power_prepared {
+                let panels = power_panels(p);
+                let minimum = panels
+                    .iter()
+                    .flat_map(|p| p.1)
+                    .copied()
+                    .fold(f64::INFINITY, f64::min);
+                let maximum = panels
+                    .iter()
+                    .flat_map(|p| p.1)
+                    .copied()
+                    .fold(f64::NEG_INFINITY, f64::max);
+                let file = format!("{case}-{cells}-power.svg");
+                write_new(
+                    &directory.join(&file),
+                    render_atlas(&g, minimum, maximum, panels, true).as_bytes(),
+                )?;
+                row["powerAtlasFile"] = json!(file);
+                row["powerTransects"] = profiles(&g, &initial, &p.dry, &p.humid);
+                row["powerRegimeScales"] = regime_scales(p.dry.settings, g.settings.spacing_meters);
+                row["powerLaw"] = json!({"incisionModelVersion":planimulation_core::facet_incision::POWER_MODEL_VERSION,
+                    "areaExponent":0.4,"slopeExponent":1,"erodibilityCoefficient":2e-4,"erodibilityUnits":"meters^0.2/year",
+                    "scope":"Reference incision-law pair only. Initial bed, uplift, duration, boundary and D are held fixed; not a literal reproduction of the published numerical setup."});
+            }
             if let Some(field) = &physical_field {
                 let legacy = row["initialPerturbation"].clone();
                 row["initialPerturbation"] =
@@ -709,20 +832,64 @@ fn main() -> Result<(), String> {
                 row["initialPerturbation"]["legacyBoundaryPerturbation"] = legacy;
                 row["initialPerturbation"]["sampledInteriorSummary"] = seed_summary(&seed_samples)?;
             }
-            write_json(&directory.join(format!("{case}-{cells}.json")), &row)?;
-            rows.push(row);
+            let row_name = format!("{case}-{cells}.json");
+            write_json(&directory.join(&row_name), &row)?;
+            rows.push(if reference_law {
+                fine_record::reference(&row_name, &row)?
+            } else {
+                row
+            });
         }
     }
-    write_json(
-        &directory.join("manifest.json"),
-        &json!({"reportVersion":if humid {"fine-landscape-review-4"}else if physical_seeds {"fine-landscape-review-3"}else if facets {"fine-landscape-review-2"}else{"fine-landscape-review-1"},"durationYears":duration,"diffusivitySquareMetersPerYear":diffusion,"rows":rows,
+    let mut manifest = json!({"reportVersion":if reference_law {"fine-landscape-review-5"}else if humid {"fine-landscape-review-4"}else if physical_seeds {"fine-landscape-review-3"}else if facets {"fine-landscape-review-2"}else{"fine-landscape-review-1"},"durationYears":duration,"diffusivitySquareMetersPerYear":diffusion,"rows":rows,
         "fieldRecord":{"format":"headerless-f64-le-region-major-1","columns":["initialBedMeters","prescribedUpliftMetersPerYear","preparedBedMeters","acceptedUpliftDisplacementMeters","removedIncisionThicknessMeters","signedHillslopeHeightChangeMeters"]},
-        "scope":"Bounded actual fine-bed experiments. Fixed outer cell-center collar is an external height reservoir, not ocean. Detached material is in a bookkeeping reservoir, not deposition or material proven to leave through an outlet. Paired lateral transfers and external exchange accounted; no global water, climate or sediment stock advanced. Equal outer chart extents; active collar positions vary with spacing. Native records are not World/checkpoints or camera-driven display detail. Manifest written last."}),
-    )
+        "scope":"Bounded actual fine-bed experiments. Fixed outer cell-center collar is an external height reservoir, not ocean. Detached material is in a bookkeeping reservoir, not deposition or material proven to leave through an outlet. Paired lateral transfers and external exchange accounted; no global water, climate or sediment stock advanced. Equal outer chart extents; active collar positions vary with spacing. Native records are not World/checkpoints or camera-driven display detail. Manifest written last."});
+    if reference_law {
+        manifest["rowRecords"] = manifest.as_object_mut().unwrap().remove("rows").unwrap();
+        manifest["rowIndexFormat"] = json!(fine_record::INDEX_FORMAT);
+    }
+    write_json(&directory.join("manifest.json"), &manifest)
 }
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn dimensional_competition_scales_recover_independent_half_and_two_fifths_powers() {
+        let controls = PowerSettings {
+            erodibility_coefficient: 1e-6,
+            area_exponent: 0.5,
+            diffusivity_square_meters_per_year: 1.,
+            step_years: 1000.,
+            steps: 10,
+        };
+        let a = regime_scales(controls, 250.);
+        assert!((a["characteristicLengthMeters"].as_f64().unwrap() - 1000.).abs() < 1e-10);
+        assert_eq!(a["characteristicTimeYears"], 1e6);
+        let b = regime_scales(
+            PowerSettings {
+                erodibility_coefficient: 1.,
+                area_exponent: 0.4,
+                diffusivity_square_meters_per_year: 512.,
+                step_years: 4.,
+                ..controls
+            },
+            8.,
+        );
+        assert!((b["characteristicLengthMeters"].as_f64().unwrap() - 32.).abs() < 1e-12);
+        assert!((b["characteristicTimeYears"].as_f64().unwrap() - 2.).abs() < 1e-12);
+        assert!((b["chartSpacingOverCharacteristicLength"].as_f64().unwrap() - 0.25).abs() < 1e-14);
+        assert!((b["stepOverCharacteristicTime"].as_f64().unwrap() - 2.).abs() < 1e-12);
+        assert_eq!(
+            regime_scales(
+                PowerSettings {
+                    diffusivity_square_meters_per_year: 0.,
+                    ..controls
+                },
+                250.
+            )["defined"],
+            false
+        );
+    }
     #[test]
     fn refusals_precede_output_creation_and_perturbations_are_bounded_stateless() {
         for args in [
@@ -799,6 +966,9 @@ mod tests {
         let parsed = parse(&args).unwrap();
         assert!(parsed.facets && parsed.physical_seeds && parsed.humid);
         assert_eq!(parsed.physical_amplitude, 100.);
+        args[5] = "--reference-law".into();
+        let parsed = parse(&args).unwrap();
+        assert!(parsed.reference_law && parsed.humid && parsed.physical_seeds);
     }
     #[test]
     fn common_support_queries_reproduce_an_independent_affine_chart() {
