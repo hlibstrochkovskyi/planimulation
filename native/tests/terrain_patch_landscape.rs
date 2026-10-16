@@ -441,11 +441,24 @@ fn facet_coupling_repeats_actual_bed_ledger_and_records_hypothetical_constraint_
 
 #[test]
 fn facet_work_limit_refuses_before_metric_construction_or_bed_advance() {
-    use planimulation_core::terrain_patch_landscape::prepare_facets;
+    use planimulation_core::terrain_patch_landscape::{prepare_facets, prepare_humid_facets};
     let g = grid(512, 250.);
     let h = vec![0.; 512 * 512];
     let u = rates(&g, 0.001);
     let error = prepare_facets(
+        &g,
+        &h,
+        &u,
+        Settings {
+            erodibility_per_year: 0.,
+            diffusivity_square_meters_per_year: 0.,
+            step_years: 1.,
+            steps: 128,
+        },
+    )
+    .unwrap_err();
+    assert_eq!(error, "Excessive patch preparation workload.");
+    let error = prepare_humid_facets(
         &g,
         &h,
         &u,

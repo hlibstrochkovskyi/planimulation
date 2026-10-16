@@ -35,11 +35,15 @@ fn write_new(path: &Path, bytes: &[u8]) -> Result<(), String> {
 fn output_args(args: &[String]) -> Result<(PathBuf, PathBuf, String), String> {
     if !(2..=3).contains(&args.len()) || args.iter().any(|v| v.trim().is_empty()) {
         return Err(
-            "Usage: fine_routing INPUT_ROW_JSON NEW_DIRECTORY [incision|coupled|facets]".into(),
+            "Usage: fine_routing INPUT_ROW_JSON NEW_DIRECTORY [incision|coupled|facets|humid]"
+                .into(),
         );
     }
     let variant = args.get(2).cloned().unwrap_or("coupled".into());
-    if !matches!(variant.as_str(), "incision" | "coupled" | "facets") {
+    if !matches!(
+        variant.as_str(),
+        "incision" | "coupled" | "facets" | "humid"
+    ) {
         return Err("Unsupported retained-bed variant.".into());
     }
     let output = PathBuf::from(&args[1]);
@@ -64,7 +68,12 @@ fn field_file(row: &Value, manifest: &Value, variant: &str) -> Result<String, St
     ]);
     if !matches!(
         manifest["reportVersion"].as_str(),
-        Some("fine-landscape-review-1" | "fine-landscape-review-2" | "fine-landscape-review-3")
+        Some(
+            "fine-landscape-review-1"
+                | "fine-landscape-review-2"
+                | "fine-landscape-review-3"
+                | "fine-landscape-review-4"
+        )
     ) || manifest["fieldRecord"]["format"] != "headerless-f64-le-region-major-1"
         || manifest["fieldRecord"]["columns"] != columns
         || !manifest["rows"]
@@ -318,6 +327,8 @@ mod tests {
         manifest["reportVersion"] = json!("fine-landscape-review-3");
         assert_eq!(field_file(&row, &manifest, "coupled").unwrap(), "bed.f64le");
         manifest["reportVersion"] = json!("fine-landscape-review-4");
+        assert!(field_file(&row, &manifest, "coupled").is_ok());
+        manifest["reportVersion"] = json!("fine-landscape-review-5");
         assert!(field_file(&row, &manifest, "coupled").is_err());
         manifest["reportVersion"] = json!("fine-landscape-review-2");
         assert!(field_file(&row, &manifest, "incision").is_err());

@@ -1,6 +1,7 @@
 //! Actual fine-bed comparisons; regional experiments, not coupled global tiles.
 use planimulation_core::{
-    Random, Recipe, Surface, fixed_geological_field, physical_seed_field, terrain_patch_facets,
+    Random, Recipe, Surface, fixed_geological_field, humid_patch, physical_seed_field,
+    terrain_patch_facets,
     terrain_patch_geometry::{self, Geometry},
     terrain_patch_landscape::{self, Preparation, Settings},
 };
@@ -13,6 +14,9 @@ use std::{
 };
 const DURATION_YEARS: f64 = 4_800_000.;
 trait ReviewFlow {
+    fn audit_metadata(&self) -> Option<Value> {
+        None
+    }
     fn closed_count(&self) -> usize;
     fn closed_fraction(&self) -> f64;
     fn areas(&self) -> &[f64];
@@ -51,6 +55,30 @@ impl ReviewFlow for terrain_patch_facets::Routing {
         })
     }
 }
+impl ReviewFlow for humid_patch::Routing {
+    fn audit_metadata(&self) -> Option<Value> {
+        Some(
+            json!({"modelVersion":self.model_version,"assumption":self.assumption,
+            "potentialGeometry":self.potential.summary,
+            "actualBedClosedFractionOfActiveArea":self.actual_bed_routing.closed_fraction_of_active_area,
+            "proxyClosedFractionOfActiveArea":self.proxy_routing.closed_fraction_of_active_area,
+            "proxyTerminalAreaRelativeResidual":self.proxy_routing.terminal_area_relative_residual,
+            "scope":"Height/closed-basin metrics use actual bed. Cyan links use potential-lake proxy ancestry under the explicit humid assumption; connectivity is imposed, not evidence of physical water supply."}),
+        )
+    }
+    fn closed_count(&self) -> usize {
+        self.actual_bed_routing.closed_sink_count
+    }
+    fn closed_fraction(&self) -> f64 {
+        self.actual_bed_routing.closed_fraction_of_active_area
+    }
+    fn areas(&self) -> &[f64] {
+        &self.proxy_routing.contributing_area_square_meters
+    }
+    fn branches(&self, i: usize) -> [(u32, f64); 2] {
+        self.proxy_routing.branches(i)
+    }
+}
 fn reference(seed: &str) -> Recipe {
     serde_json::from_value(json!({"schemaVersion":1,"modelVersion":"multiscale-geography-2","randomVersion":"fnv1a-utf8-mulberry32-1",
         "seed":seed,"subdivision":6,"radiusMeters":6371000.,"plateCount":12,"maxPlateSpeedCmPerYear":8.,"continentalFraction":0.38,
@@ -66,17 +94,18 @@ struct Arguments {
     facets: bool,
     physical_seeds: bool,
     physical_amplitude: f64,
+    humid: bool,
 }
 fn parse(args: &[String]) -> Result<Arguments, String> {
     if !(1..=7).contains(&args.len())
         || args[0].trim().is_empty()
         || args
             .get(5)
-            .is_some_and(|s| !matches!(s.as_str(), "--facets" | "--spectrum"))
-        || args.len() == 7 && args[5] != "--spectrum"
+            .is_some_and(|s| !matches!(s.as_str(), "--facets" | "--spectrum" | "--humid"))
+        || args.len() == 7 && !matches!(args[5].as_str(), "--spectrum" | "--humid")
     {
         return Err(
-            "Usage: fine_landscape NEW_DIRECTORY [SEED] [STEPS(1..128)] [DURATION_YEARS] [DIFFUSIVITY_M2_PER_YEAR] [--facets|--spectrum [AMPLITUDE_METERS]]".into(),
+            "Usage: fine_landscape NEW_DIRECTORY [SEED] [STEPS(1..128)] [DURATION_YEARS] [DIFFUSIVITY_M2_PER_YEAR] [--facets|--spectrum [AMPLITUDE_METERS]|--humid [AMPLITUDE_METERS]]".into(),
         );
     }
     let path = PathBuf::from(&args[0]);
@@ -133,8 +162,11 @@ fn parse(args: &[String]) -> Result<Arguments, String> {
         duration,
         diffusion,
         facets: args.len() >= 6,
-        physical_seeds: args.get(5).is_some_and(|s| s == "--spectrum"),
+        physical_seeds: args
+            .get(5)
+            .is_some_and(|s| matches!(s.as_str(), "--spectrum" | "--humid")),
         physical_amplitude: amplitude,
+        humid: args.get(5).is_some_and(|s| s == "--humid"),
     })
 }
 fn write_new(path: &Path, bytes: &[u8]) -> Result<(), String> {
@@ -229,6 +261,9 @@ fn record<R: ReviewFlow>(
     if let Some(c) = &p.receiver_constraint {
         record["receiverConstraint"] = serde_json::to_value(c).unwrap();
     }
+    if let Some(info) = p.final_routing.audit_metadata() {
+        record["humidRouting"] = info;
+    }
     record
 }
 fn shade(g: &Geometry, h: &[f64], i: usize) -> f64 {
@@ -262,6 +297,7 @@ fn atlas(
     a: &Preparation,
     b: &Preparation,
     facets: Option<&Preparation<terrain_patch_facets::Routing>>,
+    humid: Option<&Preparation<humid_patch::Routing>>,
 ) -> String {
     let nx = g.settings.cells_x as usize;
     let ny = g.settings.cells_y as usize;
@@ -296,6 +332,19 @@ fn atlas(
         );
         panels.push((
             "Facet incision + hillslope transfer",
+            &p.elevation_meters,
+            Some(&p.final_routing),
+        ));
+    }
+    if let Some(p) = humid {
+        maximum = maximum.max(
+            p.elevation_meters
+                .iter()
+                .copied()
+                .fold(f64::NEG_INFINITY, f64::max),
+        );
+        panels.push((
+            "Humid prehistory / actual bed",
             &p.elevation_meters,
             Some(&p.final_routing),
         ));
@@ -353,7 +402,11 @@ fn atlas(
         svg.push_str("</g>");
     }
     write!(svg,"<text x=\"24\" y=\"558\" font-size=\"13\">50km chart extent · {:.0}m chart spacing · common elevation range {minimum:.1}–{maximum:.1}m</text>",g.settings.spacing_meters).unwrap();
-    svg.push_str("<text x=\"24\" y=\"580\" font-size=\"13\">Actual bed / slope lighting1x. Cyan: static contributing-area links, not water discharge. Fixed outer collar is not ocean.</text></svg>");
+    svg.push_str("<text x=\"24\" y=\"580\" font-size=\"13\">Actual bed / slope lighting1x. Cyan: static contributing-area links, not water discharge. Fixed outer collar is not ocean.</text>");
+    if humid.is_some() {
+        svg.push_str("<text x=\"24\" y=\"600\" font-size=\"12\">Humid panel links assume fully supplied potential lakes; lake levels are NOT actual bed or funded water inventories.</text>");
+    }
+    svg.push_str("</svg>");
     svg
 }
 fn raw_fields<R>(
@@ -462,6 +515,7 @@ fn main() -> Result<(), String> {
         facets,
         physical_seeds,
         physical_amplitude,
+        humid,
     } = parse(&args)?;
     let field = fixed_geological_field::Field::new(reference(&seed))?;
     let perturb = Perturbation::new(&seed);
@@ -593,6 +647,32 @@ fn main() -> Result<(), String> {
             } else {
                 None
             };
+            let humid_prepared = if humid {
+                let begin = Instant::now();
+                let p = terrain_patch_landscape::prepare_humid_facets(
+                    &g,
+                    &initial,
+                    &rates,
+                    Settings {
+                        erodibility_per_year: 1e-6,
+                        diffusivity_square_meters_per_year: diffusion,
+                        step_years: duration / steps as f64,
+                        steps,
+                    },
+                )?;
+                let seconds = begin.elapsed().as_secs_f64();
+                let file = format!("{case}-{cells}-humid.f64le");
+                raw_fields(&directory.join(&file), &initial, &rates, &p)?;
+                variants.push(record(&g, &p, "humid", &file, seconds));
+                println!(
+                    "{case} {cells} humid: actual bed closed {:.2}%, potential lake nodes{}, {seconds:.3}s",
+                    p.final_routing.closed_fraction() * 100.,
+                    p.final_routing.potential.summary.positive_depth_nodes
+                );
+                Some(p)
+            } else {
+                None
+            };
             let svgfile = format!("{case}-{cells}.svg");
             write_new(
                 &directory.join(&svgfile),
@@ -602,6 +682,7 @@ fn main() -> Result<(), String> {
                     &prepared[0],
                     &prepared[1],
                     facet_prepared.as_ref(),
+                    humid_prepared.as_ref(),
                 )
                 .as_bytes(),
             )?;
@@ -612,6 +693,9 @@ fn main() -> Result<(), String> {
                 "variants":variants,"transects":profiles(&g,&initial,&prepared[0],&prepared[1]),"atlasFile":svgfile,"totalSeconds":started.elapsed().as_secs_f64()});
             if let Some(p) = &facet_prepared {
                 row["facetTransects"] = profiles(&g, &initial, &prepared[0], p);
+            }
+            if let Some(p) = &humid_prepared {
+                row["humidTransects"] = profiles(&g, &initial, &prepared[0], p);
             }
             if let Some(field) = &physical_field {
                 let legacy = row["initialPerturbation"].clone();
@@ -631,7 +715,7 @@ fn main() -> Result<(), String> {
     }
     write_json(
         &directory.join("manifest.json"),
-        &json!({"reportVersion":if physical_seeds {"fine-landscape-review-3"}else if facets {"fine-landscape-review-2"}else{"fine-landscape-review-1"},"durationYears":duration,"diffusivitySquareMetersPerYear":diffusion,"rows":rows,
+        &json!({"reportVersion":if humid {"fine-landscape-review-4"}else if physical_seeds {"fine-landscape-review-3"}else if facets {"fine-landscape-review-2"}else{"fine-landscape-review-1"},"durationYears":duration,"diffusivitySquareMetersPerYear":diffusion,"rows":rows,
         "fieldRecord":{"format":"headerless-f64-le-region-major-1","columns":["initialBedMeters","prescribedUpliftMetersPerYear","preparedBedMeters","acceptedUpliftDisplacementMeters","removedIncisionThicknessMeters","signedHillslopeHeightChangeMeters"]},
         "scope":"Bounded actual fine-bed experiments. Fixed outer cell-center collar is an external height reservoir, not ocean. Detached material is in a bookkeeping reservoir, not deposition or material proven to leave through an outlet. Paired lateral transfers and external exchange accounted; no global water, climate or sediment stock advanced. Equal outer chart extents; active collar positions vary with spacing. Native records are not World/checkpoints or camera-driven display detail. Manifest written last."}),
     )
@@ -711,6 +795,10 @@ mod tests {
         let mut args = args.to_vec();
         args.push("100".into());
         assert_eq!(parse(&args).unwrap().physical_amplitude, 100.);
+        args[5] = "--humid".into();
+        let parsed = parse(&args).unwrap();
+        assert!(parsed.facets && parsed.physical_seeds && parsed.humid);
+        assert_eq!(parsed.physical_amplitude, 100.);
     }
     #[test]
     fn common_support_queries_reproduce_an_independent_affine_chart() {

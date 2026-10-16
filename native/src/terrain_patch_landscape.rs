@@ -1,13 +1,15 @@
-//! Bounded dry patch experiment, independent of global water and rendering.
-//! Prescribed uplift -> actual downhill incision -> stable hillslope substeps.
+//! Bounded geological patch experiments, independent of global water/rendering.
+//! Dry routing remains unchanged; a humid-prehistory assumption is opt-in.
 use crate::{
-    facet_incision, hillslope_transport, landscape, terrain_patch_facets,
+    facet_incision, hillslope_transport, humid_patch, landscape, potential_patch_surface,
+    terrain_patch_facets,
     terrain_patch_geometry::{self, Geometry},
 };
 use serde::Serialize;
 
 pub const MODEL_VERSION: &str = "fine-patch-landscape-1";
 pub const FACET_MODEL_VERSION: &str = "fine-patch-facet-landscape-1";
+pub const HUMID_MODEL_VERSION: &str = "fine-patch-humid-landscape-1";
 const MAX_WORK: usize = 128_000_000;
 const MAX_DIFFUSION_SUBSTEPS: usize = 64;
 
@@ -44,6 +46,8 @@ pub struct Step {
     pub relative_prism_ledger_residual: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub receiver_constraint: Option<ConstraintSummary>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub potential_geometry: Option<potential_patch_surface::Summary>,
 }
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -121,7 +125,7 @@ fn ledger(residual: f64, scale: f64) -> Result<f64, String> {
 }
 /// Numerical/topological validation, not authentication of arbitrary mutated
 /// coordinates against a recipe. Callers supply geometry from its pinned builder.
-fn validate(g: &Geometry, h: &[f64]) -> Result<(), String> {
+pub(crate) fn validate(g: &Geometry, h: &[f64]) -> Result<(), String> {
     g.settings.validate()?;
     let nx = g.settings.cells_x as usize;
     let ny = g.settings.cells_y as usize;
@@ -379,11 +383,30 @@ pub fn prepare_facets(
     )
 }
 
+/// Separate opt-in geological assumption, never an actual water advance.
+pub fn prepare_humid_facets(
+    g: &Geometry,
+    initial: &[f64],
+    uplift: &[f64],
+    settings: Settings,
+) -> Result<Preparation<humid_patch::Routing>, String> {
+    prepare_impl(
+        g,
+        initial,
+        uplift,
+        settings,
+        HumidReceivers { router: None },
+    )
+}
+
 trait PatchProcess {
     type Flow;
     const MODEL: &'static str;
     const STAGE_WORK: usize;
     const CONSTRAINED: bool;
+    fn potential(_flow: &Self::Flow) -> Option<potential_patch_surface::Summary> {
+        None
+    }
     fn route(&mut self, g: &Geometry, h: &[f64]) -> Result<Self::Flow, String>;
     fn incise(
         &self,
@@ -457,6 +480,43 @@ impl PatchProcess for FacetReceivers {
         Ok((result.incision, Some(result.receiver_constraint)))
     }
 }
+struct HumidReceivers {
+    router: Option<humid_patch::Router>,
+}
+impl PatchProcess for HumidReceivers {
+    type Flow = humid_patch::Routing;
+    const MODEL: &'static str = HUMID_MODEL_VERSION;
+    const STAGE_WORK: usize = 12;
+    const CONSTRAINED: bool = true;
+    fn potential(flow: &Self::Flow) -> Option<potential_patch_surface::Summary> {
+        Some(flow.potential.summary)
+    }
+    fn route(&mut self, g: &Geometry, h: &[f64]) -> Result<Self::Flow, String> {
+        if self.router.is_none() {
+            self.router = Some(humid_patch::Router::new(g)?);
+        }
+        self.router.as_ref().unwrap().route(h)
+    }
+    fn incise(
+        &self,
+        g: &Geometry,
+        h: &[f64],
+        flow: &Self::Flow,
+        settings: Settings,
+    ) -> Result<(landscape::Incision, Option<facet_incision::Constraint>), String> {
+        let (incision, constraint) = humid_patch::incise(
+            g,
+            h,
+            flow,
+            facet_incision::Settings {
+                erodibility_per_year: settings.erodibility_per_year,
+                step_years: settings.step_years,
+            },
+        )?;
+        Ok((incision, Some(constraint)))
+    }
+}
+
 fn prepare_impl<P: PatchProcess>(
     g: &Geometry,
     initial: &[f64],
@@ -555,6 +615,7 @@ fn prepare_impl<P: PatchProcess>(
             bed[i] = updated;
         }
         let routing = process.route(g, &bed)?;
+        let potential_geometry = P::potential(&routing);
         let (incision, constraint) = process.incise(g, &bed, &routing, settings)?;
         let constraint_summary = if let Some(c) = constraint {
             let cumulative = receiver_constraint.as_mut().unwrap();
@@ -643,6 +704,7 @@ fn prepare_impl<P: PatchProcess>(
             unresolved_hillslope_node_updates: unresolved_d,
             relative_prism_ledger_residual: residual,
             receiver_constraint: constraint_summary,
+            potential_geometry,
         });
     }
     let mut net = Sum::default();

@@ -116,6 +116,12 @@ headless comparison still needs R3 visual/cohort review and R4 scale coupling.
 
 ## Verification scope
 
+The subsequent [humid-prehistory comparison](humid-prehistory.md) now implements
+the proposed potential geometry and protected-bed candidate. Its retained beds
+do not solve broad landforms. An external Fastscapelib control reproduces broad
+forms under our settings, motivating a matched process-regime comparison rather
+than promoting either added noise or potential connectivity as the solution.
+
 Field controls cover bounds, deterministic independent query order, radius/length
 scaling, amplitude scaling, seam/pole continuity, seed limits and zero-amplitude
 validation. An independent two-sample calculation verifies area-weighted summary

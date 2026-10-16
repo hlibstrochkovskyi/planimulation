@@ -333,6 +333,13 @@ field is independent of sampling, but neither a 1 m nor 100 m envelope solves
 the retained broad forms. A separately declared humid-prehistory routing
 comparison is proposed next; potential filled geometry must never be confused
 with actual bed changes or funded seasonal water stocks.
+The following [humid-prehistory and external reference review](humid-prehistory.md)
+now implements that separate candidate with protected submerged bed and distinct
+actual/proxy diagnostics. It changes some catchments but does not fix the broad
+forms. Fastscapelib itself also generates a broad plateau with our retained
+synthetic settings, unlike its published mountain setup. A matched external
+process-regime comparison is the next investigation, not further noise rerolls,
+default promotion or completion of R3/R4.
 Full regression for the initial fine-patch increment passes 831 native tests across 147 targets
 and 96 Node tests, with the pre-existing ignored test. The subsequently added
 plane-direction witness passes in the ten-test preparation target. Strict
