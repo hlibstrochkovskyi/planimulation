@@ -359,6 +359,13 @@ sensitivity decrease substantially, while concentrated-channel width remains
 unresolved. A declared domain-scale channelization control produces additional
 branches but still not adequate landform variety. Neither quantity correctness
 nor this parameter control completes R3 or selects a World/default change.
+The [external irregular-mesh comparison](irregular-mesh-reference.md) now checks
+regular, jittered and Poisson triangulations with the same external processes.
+Grid-direction order drops strongly, but D=1 broad forms remain; uncapped pure
+incision instead creates excessively steep peaks. A blanket native mesh rewrite
+is not selected as the solution. The next bounded quality candidate combines
+structural drainage with explicit authoritative landform/hillslope construction,
+before expanding framework or changing production World storage.
 Full regression for the initial fine-patch increment passes 831 native tests across 147 targets
 and 96 Node tests, with the pre-existing ignored test. The subsequently added
 plane-direction witness passes in the ten-test preparation target. Strict
