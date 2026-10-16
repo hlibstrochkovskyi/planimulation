@@ -352,6 +352,13 @@ retained beds remain broad, also in an exact external control. A plane witness
 shows that total-area pressure still includes a sampling width. Specific-area
 transport/units and channel–hillslope coupling are the next model-form review,
 not a new resolution cap, blindly changing K or claiming completed R3/R4.
+The following [specific-area transport comparison](specific-area-transport.md)
+implements distinct source-area, transport-width and pressure fields, with a
+separate incision law. The plane width effect and actual-bed spatial quantile
+sensitivity decrease substantially, while concentrated-channel width remains
+unresolved. A declared domain-scale channelization control produces additional
+branches but still not adequate landform variety. Neither quantity correctness
+nor this parameter control completes R3 or selects a World/default change.
 Full regression for the initial fine-patch increment passes 831 native tests across 147 targets
 and 96 Node tests, with the pre-existing ignored test. The subsequently added
 plane-direction witness passes in the ten-test preparation target. Strict

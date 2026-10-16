@@ -47,7 +47,9 @@ pub struct Router {
 #[serde(rename_all = "camelCase")]
 pub struct Descent {
     pub receivers: [u32; 2],
-    /// Angular area partition; not incision coefficients or measured discharge.
+    /// Contributing-area partition, not derivative coefficients or discharge.
+    /// This module's router uses angular shares; separately pinned transport
+    /// models may explicitly supply a different normalized partition.
     pub area_weights: [f64; 2],
     /// d = sum(alpha_j * tangent_displacement_j), units 1/m.
     pub derivative_coefficients_per_meter: [f64; 2],

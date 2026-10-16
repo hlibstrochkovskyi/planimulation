@@ -36,14 +36,14 @@ fn write_new(path: &Path, bytes: &[u8]) -> Result<(), String> {
 fn output_args(args: &[String]) -> Result<(PathBuf, PathBuf, String), String> {
     if !(2..=3).contains(&args.len()) || args.iter().any(|v| v.trim().is_empty()) {
         return Err(
-            "Usage: fine_routing INPUT_ROW_JSON NEW_DIRECTORY [incision|coupled|facets|humid|power|humid-power]"
+            "Usage: fine_routing INPUT_ROW_JSON NEW_DIRECTORY [incision|coupled|facets|humid|power|humid-power|specific]"
                 .into(),
         );
     }
     let variant = args.get(2).cloned().unwrap_or("coupled".into());
     if !matches!(
         variant.as_str(),
-        "incision" | "coupled" | "facets" | "humid" | "power" | "humid-power"
+        "incision" | "coupled" | "facets" | "humid" | "power" | "humid-power" | "specific"
     ) {
         return Err("Unsupported retained-bed variant.".into());
     }
@@ -70,7 +70,7 @@ fn field_file_named(
 ) -> Result<String, String> {
     let member = if matches!(
         manifest["reportVersion"].as_str(),
-        Some("fine-landscape-review-5" | "fine-landscape-review-6")
+        Some("fine-landscape-review-5" | "fine-landscape-review-6" | "fine-landscape-review-7")
     ) {
         if let Some(name) = row_name {
             let expected = fine_record::reference(name, row)?;
@@ -104,6 +104,7 @@ fn field_file_named(
                 | "fine-landscape-review-4"
                 | "fine-landscape-review-5"
                 | "fine-landscape-review-6"
+                | "fine-landscape-review-7"
         )
     ) || manifest["fieldRecord"]["format"] != "headerless-f64-le-region-major-1"
         || manifest["fieldRecord"]["columns"] != columns
@@ -249,7 +250,7 @@ fn main() -> Result<(), String> {
     let manifest = read_json(&parent.join("manifest.json"), 16 * 1024 * 1024)?;
     let row_limit = if matches!(
         manifest["reportVersion"].as_str(),
-        Some("fine-landscape-review-5" | "fine-landscape-review-6")
+        Some("fine-landscape-review-5" | "fine-landscape-review-6" | "fine-landscape-review-7")
     ) {
         64
     } else {
@@ -393,6 +394,8 @@ mod tests {
         manifest["reportVersion"] = json!("fine-landscape-review-6");
         assert!(field_file_named(&row, &manifest, "coupled", Some("a.json")).is_ok());
         manifest["reportVersion"] = json!("fine-landscape-review-7");
+        assert!(field_file_named(&row, &manifest, "coupled", Some("a.json")).is_ok());
+        manifest["reportVersion"] = json!("fine-landscape-review-8");
         assert!(field_file_named(&row, &manifest, "coupled", Some("a.json")).is_err());
         assert!(field_file(&row, &manifest, "coupled").is_err());
         manifest["reportVersion"] = json!("fine-landscape-review-2");

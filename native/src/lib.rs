@@ -469,6 +469,7 @@ pub mod seasonal_wind;
 pub mod sediment_delivery;
 pub mod sediment_deposition;
 pub mod sedimentary_landscape;
+pub mod specific_transport;
 pub mod spill_connections;
 pub mod spill_junction;
 pub mod spill_network;

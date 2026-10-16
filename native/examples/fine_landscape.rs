@@ -2,7 +2,7 @@
 mod fine_record;
 use planimulation_core::{
     Random, Recipe, Surface, fixed_geological_field, humid_patch, physical_seed_field,
-    terrain_patch_facets,
+    specific_transport, terrain_patch_facets,
     terrain_patch_geometry::{self, Geometry},
     terrain_patch_landscape::{self, PowerSettings, Preparation, Settings},
 };
@@ -81,6 +81,25 @@ impl ReviewFlow for humid_patch::Routing {
         self.proxy_routing.branches(i)
     }
 }
+impl ReviewFlow for specific_transport::Routing {
+    fn closed_count(&self) -> usize {
+        self.closed_sink_count
+    }
+    fn closed_fraction(&self) -> f64 {
+        self.closed_fraction_of_active_area
+    }
+    fn areas(&self) -> &[f64] {
+        &self.contributing_area_square_meters
+    }
+    fn branches(&self, i: usize) -> [(u32, f64); 2] {
+        std::array::from_fn(|k| {
+            (
+                self.descents[i].receivers[k],
+                self.descents[i].area_weights[k],
+            )
+        })
+    }
+}
 fn reference(seed: &str) -> Recipe {
     serde_json::from_value(json!({"schemaVersion":1,"modelVersion":"multiscale-geography-2","randomVersion":"fnv1a-utf8-mulberry32-1",
         "seed":seed,"subdivision":6,"radiusMeters":6371000.,"plateCount":12,"maxPlateSpeedCmPerYear":8.,"continentalFraction":0.38,
@@ -99,6 +118,8 @@ struct Arguments {
     humid: bool,
     reference_law: bool,
     scaled_regime: bool,
+    specific_regime: bool,
+    channelization_regime: bool,
 }
 struct Profile {
     extent_meters: f64,
@@ -124,23 +145,36 @@ fn profile(scaled: bool) -> Profile {
     }
 }
 fn parse(args: &[String]) -> Result<Arguments, String> {
-    let scaled = args.get(5).is_some_and(|s| s == "--scaled-regime");
+    let channelization = args.get(5).is_some_and(|s| s == "--channelization-regime");
+    let specific = channelization || args.get(5).is_some_and(|s| s == "--specific-regime");
+    let scaled = specific || args.get(5).is_some_and(|s| s == "--scaled-regime");
     if !(1..=7).contains(&args.len())
         || args[0].trim().is_empty()
         || args.get(5).is_some_and(|s| {
             !matches!(
                 s.as_str(),
-                "--facets" | "--spectrum" | "--humid" | "--reference-law" | "--scaled-regime"
+                "--facets"
+                    | "--spectrum"
+                    | "--humid"
+                    | "--reference-law"
+                    | "--scaled-regime"
+                    | "--specific-regime"
+                    | "--channelization-regime"
             )
         })
         || args.len() == 7
             && !matches!(
                 args[5].as_str(),
-                "--spectrum" | "--humid" | "--reference-law" | "--scaled-regime"
+                "--spectrum"
+                    | "--humid"
+                    | "--reference-law"
+                    | "--scaled-regime"
+                    | "--specific-regime"
+                    | "--channelization-regime"
             )
     {
         return Err(
-            "Usage: fine_landscape NEW_DIRECTORY [SEED] [STEPS(1..128; scaled profile:1..256)] [DURATION_YEARS] [DIFFUSIVITY_M2_PER_YEAR] [--facets|--spectrum [AMPLITUDE_METERS]|--humid [AMPLITUDE_METERS]|--reference-law [AMPLITUDE_METERS]|--scaled-regime [AMPLITUDE_METERS]]".into(),
+            "Usage: fine_landscape NEW_DIRECTORY [SEED] [STEPS(1..128; scaled profiles:1..256)] [DURATION_YEARS] [DIFFUSIVITY_M2_PER_YEAR] [--facets|--spectrum [AMPLITUDE_METERS]|--humid [AMPLITUDE_METERS]|--reference-law [AMPLITUDE_METERS]|--scaled-regime [AMPLITUDE_METERS]|--specific-regime [AMPLITUDE_METERS]|--channelization-regime [AMPLITUDE_METERS]]".into(),
         );
     }
     let path = PathBuf::from(&args[0]);
@@ -206,20 +240,37 @@ fn parse(args: &[String]) -> Result<Arguments, String> {
         physical_seeds: args.get(5).is_some_and(|s| {
             matches!(
                 s.as_str(),
-                "--spectrum" | "--humid" | "--reference-law" | "--scaled-regime"
+                "--spectrum"
+                    | "--humid"
+                    | "--reference-law"
+                    | "--scaled-regime"
+                    | "--specific-regime"
+                    | "--channelization-regime"
             )
         }),
         physical_amplitude: amplitude,
         humid: args.get(5).is_some_and(|s| {
             matches!(
                 s.as_str(),
-                "--humid" | "--reference-law" | "--scaled-regime"
+                "--humid"
+                    | "--reference-law"
+                    | "--scaled-regime"
+                    | "--specific-regime"
+                    | "--channelization-regime"
             )
         }),
-        reference_law: args
-            .get(5)
-            .is_some_and(|s| matches!(s.as_str(), "--reference-law" | "--scaled-regime")),
+        reference_law: args.get(5).is_some_and(|s| {
+            matches!(
+                s.as_str(),
+                "--reference-law"
+                    | "--scaled-regime"
+                    | "--specific-regime"
+                    | "--channelization-regime"
+            )
+        }),
         scaled_regime: scaled,
+        specific_regime: specific,
+        channelization_regime: channelization,
     })
 }
 fn write_new(path: &Path, bytes: &[u8]) -> Result<(), String> {
@@ -620,6 +671,13 @@ fn regime_scales(s: PowerSettings, chart_spacing: f64) -> Value {
         "durationOverCharacteristicTime":s.step_years*s.steps as f64/time,
         "scope":"Dimensional scales for E=K A^m S and linear diffusion; not proof of resolved features or convergence. Spatially varying uplift has no single characteristic height."})
 }
+fn specific_coefficient(channelization: bool) -> f64 {
+    if channelization {
+        340. / 20000_f64.powf(1.4)
+    } else {
+        500_f64.powf(-1.4)
+    }
+}
 fn main() -> Result<(), String> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     let Arguments {
@@ -634,6 +692,8 @@ fn main() -> Result<(), String> {
         humid,
         reference_law,
         scaled_regime,
+        specific_regime,
+        channelization_regime,
     } = parse(&args)?;
     let profile = profile(scaled_regime);
     let field = fixed_geological_field::Field::new(reference(&seed))?;
@@ -833,6 +893,42 @@ fn main() -> Result<(), String> {
             } else {
                 None
             };
+            let specific_prepared = if specific_regime {
+                let begin = Instant::now();
+                let p = terrain_patch_landscape::prepare_specific(
+                    &g,
+                    &initial,
+                    &rates,
+                    terrain_patch_landscape::SpecificSettings {
+                        erodibility_coefficient: specific_coefficient(channelization_regime),
+                        specific_area_exponent: 0.4,
+                        diffusivity_square_meters_per_year: diffusion,
+                        step_years: duration / steps as f64,
+                        steps,
+                    },
+                )?;
+                let seconds = begin.elapsed().as_secs_f64();
+                let file = format!("{case}-{cells}-specific.f64le");
+                raw_fields(&directory.join(&file), &initial, &rates, &p)?;
+                let mut r = record(&g, &p, "specific", &file, seconds);
+                let route_file = format!("{case}-{cells}-specific-routing.json");
+                write_json(
+                    &directory.join(&route_file),
+                    &serde_json::to_value(&p.final_routing).map_err(|e| e.to_string())?,
+                )?;
+                r["specificRouting"] = json!({"modelVersion":specific_transport::MODEL_VERSION,
+                    "routingFile":route_file,"terminalAreaRelativeResidual":p.final_routing.terminal_area_relative_residual,
+                    "maximumLocalFluxRelativeResidual":p.final_routing.maximum_local_flux_relative_residual});
+                variants.push(r);
+                println!(
+                    "{case} {cells} specific: closed {:.2}%, limited{}, {seconds:.3}s",
+                    p.final_routing.closed_fraction() * 100.,
+                    p.receiver_constraint.as_ref().unwrap().limited_node_updates
+                );
+                Some(p)
+            } else {
+                None
+            };
             let svgfile = format!("{case}-{cells}.svg");
             write_new(
                 &directory.join(&svgfile),
@@ -894,6 +990,72 @@ fn main() -> Result<(), String> {
                 row["initialPerturbation"]["legacyBoundaryPerturbation"] = legacy;
                 row["initialPerturbation"]["sampledInteriorSummary"] = seed_summary(&seed_samples)?;
             }
+            if let Some(p) = &specific_prepared {
+                let old = &power_prepared.as_ref().unwrap().dry;
+                let panels: Vec<Panel<'_>> = vec![
+                    (
+                        "Total-area law / actual bed",
+                        &old.elevation_meters,
+                        Some(&old.final_routing),
+                    ),
+                    (
+                        "Specific-area law / actual bed",
+                        &p.elevation_meters,
+                        Some(&p.final_routing),
+                    ),
+                ];
+                let minimum = panels
+                    .iter()
+                    .flat_map(|p| p.1)
+                    .copied()
+                    .fold(f64::INFINITY, f64::min);
+                let maximum = panels
+                    .iter()
+                    .flat_map(|p| p.1)
+                    .copied()
+                    .fold(f64::NEG_INFINITY, f64::max);
+                let file = format!("{case}-{cells}-specific.svg");
+                write_new(
+                    &directory.join(&file),
+                    render_atlas(&g, minimum, maximum, panels, false).as_bytes(),
+                )?;
+                row["specificAtlasFile"] = json!(file);
+                let file = format!("{case}-{cells}-specific-detail.svg");
+                let minimum = p
+                    .elevation_meters
+                    .iter()
+                    .copied()
+                    .fold(f64::INFINITY, f64::min);
+                let maximum = p
+                    .elevation_meters
+                    .iter()
+                    .copied()
+                    .fold(f64::NEG_INFINITY, f64::max);
+                let detail: Vec<Panel<'_>> = vec![
+                    ("Specific law / actual bed", &p.elevation_meters, None),
+                    (
+                        "Same bed / unit-runoff area links",
+                        &p.elevation_meters,
+                        Some(&p.final_routing),
+                    ),
+                ];
+                write_new(
+                    &directory.join(&file),
+                    render_atlas(&g, minimum, maximum, detail, false).as_bytes(),
+                )?;
+                row["specificDetailAtlasFile"] = json!(file);
+                let length = (diffusion / p.settings.erodibility_coefficient).powf(1. / 1.4);
+                let time = length * length / diffusion;
+                row["specificLaw"] = json!({"incisionModelVersion":planimulation_core::facet_incision::SPECIFIC_MODEL_VERSION,
+                    "transportModelVersion":specific_transport::MODEL_VERSION,"specificAreaExponent":0.4,"slopeExponent":1,
+                    "erodibilityCoefficient":p.settings.erodibility_coefficient,"erodibilityUnits":"meters^0.6/year",
+                    "profile":if channelization_regime {"specific-channelization-340-1"}else{"specific-length-500-1"},
+                    "characteristicLengthMeters":length,"characteristicTimeYears":time,
+                    "chartSpacingOverCharacteristicLength":g.settings.spacing_meters/length,
+                    "stepOverCharacteristicTime":p.settings.step_years/time,"durationOverCharacteristicTime":duration/time,
+                    "channelizationIndex":p.settings.erodibility_coefficient*profile.extent_meters.powf(1.4)/diffusion,
+                    "scope":"Different pressure units AND derivative-normalized flux shares. Dry actual-bed candidate; not a one-coefficient intervention, humid proxy, measured runoff or qualified World."});
+            }
             let row_name = format!("{case}-{cells}.json");
             if scaled_regime {
                 row["comparisonProfile"] = json!("scaled-process-regime-1");
@@ -906,7 +1068,7 @@ fn main() -> Result<(), String> {
             });
         }
     }
-    let mut manifest = json!({"reportVersion":if scaled_regime {"fine-landscape-review-6"}else if reference_law {"fine-landscape-review-5"}else if humid {"fine-landscape-review-4"}else if physical_seeds {"fine-landscape-review-3"}else if facets {"fine-landscape-review-2"}else{"fine-landscape-review-1"},"durationYears":duration,"diffusivitySquareMetersPerYear":diffusion,"rows":rows,
+    let mut manifest = json!({"reportVersion":if specific_regime {"fine-landscape-review-7"}else if scaled_regime {"fine-landscape-review-6"}else if reference_law {"fine-landscape-review-5"}else if humid {"fine-landscape-review-4"}else if physical_seeds {"fine-landscape-review-3"}else if facets {"fine-landscape-review-2"}else{"fine-landscape-review-1"},"durationYears":duration,"diffusivitySquareMetersPerYear":diffusion,"rows":rows,
         "fieldRecord":{"format":"headerless-f64-le-region-major-1","columns":["initialBedMeters","prescribedUpliftMetersPerYear","preparedBedMeters","acceptedUpliftDisplacementMeters","removedIncisionThicknessMeters","signedHillslopeHeightChangeMeters"]},
         "scope":"Bounded actual fine-bed experiments. Fixed outer cell-center collar is an external height reservoir, not ocean. Detached material is in a bookkeeping reservoir, not deposition or material proven to leave through an outlet. Paired lateral transfers and external exchange accounted; no global water, climate or sediment stock advanced. Equal outer chart extents; active collar positions vary with spacing. Native records are not World/checkpoints or camera-driven display detail. Manifest written last."});
     if reference_law {
@@ -921,6 +1083,53 @@ fn main() -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn specific_profile_retains_scaled_inputs_but_uses_a_separate_length_law() {
+        let args = [
+            "fine-specific-uncreated-unit",
+            "seed",
+            "128",
+            "4800000",
+            "1",
+            "--specific-regime",
+        ]
+        .map(str::to_owned);
+        let p = parse(&args).unwrap();
+        assert!(p.specific_regime && p.scaled_regime && p.reference_law && p.physical_seeds);
+        assert_eq!(p.physical_amplitude, 10.);
+        let k = 500_f64.powf(-1.4);
+        assert!(((1. / k).powf(1. / 1.4) - 500.).abs() < 1e-10);
+        // A physical reference strip of 500m relates coefficient units only.
+        assert!((k - profile(true).power_coefficient * 500_f64.powf(0.4)).abs() < 1e-18);
+        let old = parse(
+            &[
+                "fine-scaled-uncreated-unit",
+                "seed",
+                "128",
+                "4800000",
+                "1",
+                "--scaled-regime",
+            ]
+            .map(str::to_owned),
+        )
+        .unwrap();
+        assert!(!old.specific_regime);
+        let high = parse(
+            &[
+                "fine-channelization-uncreated-unit",
+                "seed",
+                "256",
+                "4800000",
+                "1",
+                "--channelization-regime",
+            ]
+            .map(str::to_owned),
+        )
+        .unwrap();
+        assert!(high.channelization_regime && high.specific_regime && high.scaled_regime);
+        assert_eq!(high.physical_amplitude, p.physical_amplitude);
+        assert!((specific_coefficient(true) * 20000_f64.powf(1.4) - 340.).abs() < 1e-12);
+    }
     #[test]
     fn scaled_profile_resolves_declared_lengths_and_keeps_legacy_controls_separate() {
         let args = [

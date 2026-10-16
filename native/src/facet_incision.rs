@@ -5,6 +5,23 @@ use serde::Serialize;
 
 pub const MODEL_VERSION: &str = "frozen-facet-incision-1";
 pub const POWER_MODEL_VERSION: &str = "frozen-facet-power-incision-1";
+pub const SPECIFIC_MODEL_VERSION: &str = "frozen-facet-specific-incision-1";
+/// E = K_s a^m S; a is specific area (m), K_s is m^(1-m)/year.
+#[derive(Clone, Copy, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpecificSettings {
+    pub erodibility_coefficient: f64,
+    pub specific_area_exponent: f64,
+    pub step_years: f64,
+}
+impl SpecificSettings {
+    pub(crate) fn valid_law(self) -> bool {
+        self.erodibility_coefficient.is_finite()
+            && self.erodibility_coefficient >= 0.
+            && self.specific_area_exponent.is_finite()
+            && (0. ..=1.).contains(&self.specific_area_exponent)
+    }
+}
 #[derive(Clone, Copy, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
@@ -83,6 +100,7 @@ pub fn incise(
         reference_areas,
         contributing_areas,
         descents,
+        None,
         Law {
             coefficient: settings.erodibility_per_year,
             exponent: 0.5,
@@ -109,6 +127,7 @@ pub fn incise_power(
         reference_areas,
         contributing_areas,
         descents,
+        None,
         Law {
             coefficient: settings.erodibility_coefficient,
             exponent: settings.area_exponent,
@@ -117,11 +136,45 @@ pub fn incise_power(
         },
     )
 }
+/// Collected physical area remains in the result. Specific pressure is a
+/// separate field and is undefined at terminals; never relabel length as m².
+pub fn incise_specific(
+    h: &[f64],
+    reference_areas: &[f64],
+    contributing_areas: &[f64],
+    specific_areas: &[Option<f64>],
+    descents: &[Descent],
+    settings: SpecificSettings,
+) -> Result<ResultRecord, String> {
+    if !settings.valid_law()
+        || specific_areas.len() != h.len()
+        || specific_areas.iter().zip(descents).any(|(a, d)| match a {
+            Some(a) => !a.is_finite() || *a <= 0. || d.branches().next().is_none(),
+            None => d.branches().next().is_some(),
+        })
+    {
+        return Err("Invalid specific-incision pressure or law.".into());
+    }
+    incise_impl(
+        h,
+        reference_areas,
+        contributing_areas,
+        descents,
+        Some(specific_areas),
+        Law {
+            coefficient: settings.erodibility_coefficient,
+            exponent: settings.specific_area_exponent,
+            step_years: settings.step_years,
+            model: SPECIFIC_MODEL_VERSION,
+        },
+    )
+}
 fn incise_impl(
     h: &[f64],
     reference_areas: &[f64],
     contributing_areas: &[f64],
     descents: &[Descent],
+    specific_areas: Option<&[Option<f64>]>,
     law: Law,
 ) -> Result<ResultRecord, String> {
     let n = h.len();
@@ -247,10 +300,14 @@ fn incise_impl(
             continue;
         }
         let difference = h[i] - base;
+        let pressure = match specific_areas {
+            Some(a) => a[i].ok_or("Missing nonterminal specific-area pressure.")?,
+            None => contributing_areas[i],
+        };
         let area_factor = if law.exponent == 0.5 {
-            contributing_areas[i].sqrt()
+            pressure.sqrt()
         } else {
-            contributing_areas[i].powf(law.exponent)
+            pressure.powf(law.exponent)
         };
         let gamma = coefficient * area_factor * alpha_sum;
         if !difference.is_finite() || difference <= 0. || !gamma.is_finite() || gamma <= 0. {

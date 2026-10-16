@@ -130,6 +130,10 @@ pixel-dependent K invisibly.
 
 ## Next candidate — proposed, not implemented
 
+Historical next-step proposal at this review's close. The subsequent
+[specific-area transport review](specific-area-transport.md) implements it with
+separate units/pins and reports its actual-bed results and remaining limitations.
+
 Before committing to a new mesh or more parameter searches, compare a separately
 pinned specific-area transport law on the existing physical geometry. One
 independently derived discrete candidate uses the existing nonnegative facet

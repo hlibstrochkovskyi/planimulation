@@ -2,7 +2,7 @@
 //! Dry routing remains unchanged; a humid-prehistory assumption is opt-in.
 use crate::{
     facet_incision, hillslope_transport, humid_patch, landscape, potential_patch_surface,
-    terrain_patch_facets,
+    specific_transport, terrain_patch_facets,
     terrain_patch_geometry::{self, Geometry},
 };
 use serde::Serialize;
@@ -12,6 +12,7 @@ pub const FACET_MODEL_VERSION: &str = "fine-patch-facet-landscape-1";
 pub const HUMID_MODEL_VERSION: &str = "fine-patch-humid-landscape-1";
 pub const POWER_MODEL_VERSION: &str = "fine-patch-power-landscape-1";
 pub const HUMID_POWER_MODEL_VERSION: &str = "fine-patch-humid-power-landscape-1";
+pub const SPECIFIC_MODEL_VERSION: &str = "fine-patch-specific-landscape-1";
 const MAX_WORK: usize = 128_000_000;
 const MAX_DIFFUSION_SUBSTEPS: usize = 64;
 
@@ -43,6 +44,25 @@ impl PowerSettings {
         }
     }
 }
+#[derive(Clone, Copy, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpecificSettings {
+    /// Units meters^(1-specific_area_exponent)/year; slope exponent one.
+    pub erodibility_coefficient: f64,
+    pub specific_area_exponent: f64,
+    pub diffusivity_square_meters_per_year: f64,
+    pub step_years: f64,
+    pub steps: usize,
+}
+impl SpecificSettings {
+    fn incision(self) -> facet_incision::SpecificSettings {
+        facet_incision::SpecificSettings {
+            erodibility_coefficient: self.erodibility_coefficient,
+            specific_area_exponent: self.specific_area_exponent,
+            step_years: self.step_years,
+        }
+    }
+}
 #[derive(Clone, Copy)]
 struct Schedule {
     diffusion: f64,
@@ -66,6 +86,18 @@ impl ProcessSettings for Settings {
     }
 }
 impl ProcessSettings for PowerSettings {
+    fn schedule(self) -> Schedule {
+        Schedule {
+            diffusion: self.diffusivity_square_meters_per_year,
+            years: self.step_years,
+            steps: self.steps,
+        }
+    }
+    fn valid_law(self) -> bool {
+        self.incision().valid_law()
+    }
+}
+impl ProcessSettings for SpecificSettings {
     fn schedule(self) -> Schedule {
         Schedule {
             diffusion: self.diffusivity_square_meters_per_year,
@@ -482,6 +514,56 @@ pub fn prepare_humid_facets_power(
         settings,
         HumidPowerFacets(HumidReceivers { router: None }),
     )
+}
+
+pub fn prepare_specific(
+    g: &Geometry,
+    initial: &[f64],
+    uplift: &[f64],
+    settings: SpecificSettings,
+) -> Result<Preparation<specific_transport::Routing, SpecificSettings>, String> {
+    prepare_impl(
+        g,
+        initial,
+        uplift,
+        settings,
+        SpecificFacets { router: None },
+    )
+}
+
+struct SpecificFacets {
+    router: Option<terrain_patch_facets::Router>,
+}
+impl PatchProcess for SpecificFacets {
+    type Flow = specific_transport::Routing;
+    type Settings = SpecificSettings;
+    const MODEL: &'static str = SPECIFIC_MODEL_VERSION;
+    const STAGE_WORK: usize = 8;
+    const CONSTRAINED: bool = true;
+    const INCISION_MODEL: &'static str = facet_incision::SPECIFIC_MODEL_VERSION;
+    fn route(&mut self, g: &Geometry, h: &[f64]) -> Result<Self::Flow, String> {
+        if self.router.is_none() {
+            self.router = Some(terrain_patch_facets::Router::new(g)?);
+        }
+        specific_transport::route(self.router.as_ref().unwrap(), h)
+    }
+    fn incise(
+        &self,
+        g: &Geometry,
+        h: &[f64],
+        flow: &Self::Flow,
+        settings: SpecificSettings,
+    ) -> Result<(landscape::Incision, Option<facet_incision::Constraint>), String> {
+        let r = facet_incision::incise_specific(
+            h,
+            &g.reference_areas_square_meters,
+            &flow.contributing_area_square_meters,
+            &flow.specific_area_meters,
+            &flow.descents,
+            settings.incision(),
+        )?;
+        Ok((r.incision, Some(r.receiver_constraint)))
+    }
 }
 
 trait PatchProcess {
