@@ -92,7 +92,12 @@ def run():
     if not (np.array_equal(height[[0, -1], :], initial[[0, -1], :])
             and np.array_equal(height[:, [0, -1]], initial[:, [0, -1]])):
         raise ValueError("External reference changed the fixed perimeter.")
-    coordinates = np.arange(-80, 81) * 250.0
+    # Match the native 20/50 km profiles without sampling outside a smaller
+    # physical record. A domain too small for 1 km cannot provide that metric.
+    half_extent = min(20000.0, 0.4 * min(shape) * spacing, 0.5 * (min(shape) - 1) * spacing)
+    query_spacing = 125.0 if half_extent < 20000.0 else 250.0
+    count = int(half_extent / query_spacing)
+    coordinates = np.arange(-count, count + 1) * query_spacing
     native_x = (np.arange(shape[1]) + 0.5 - shape[1] / 2) * spacing
     native_y = (np.arange(shape[0]) + 0.5 - shape[0] / 2) * spacing
     # Same central point-query diagnostic as the native observer, not coupling.
@@ -100,9 +105,10 @@ def run():
         [np.interp(0.0, native_y, height[:, i]) for i in range(shape[1])])
     vertical = np.interp(coordinates, native_y,
         [np.interp(0.0, native_x, height[i, :]) for i in range(shape[0])])
-    differences = np.concatenate((horizontal[4:] - horizontal[:-4], vertical[4:] - vertical[:-4])) / 1000.0
+    stride = round(1000.0 / query_spacing)
+    differences = np.concatenate((horizontal[stride:] - horizontal[:-stride], vertical[stride:] - vertical[:-stride])) / 1000.0
     output = {
-        "reportVersion": "external-fastscape-review-1",
+        "reportVersion": "external-fastscape-review-2",
         "referenceOnlyNotProduction": True,
         "identity": identity,
         "packages": {"fastscapelib": version("fastscapelib"), "numpy": version("numpy"), "python": sys.version},
@@ -112,7 +118,10 @@ def run():
             "erodibilityUnits": f"meters^{1 - 2 * exponent:g}/year",
             "routing": "SingleFlowRouter + MSTSinkResolver", "diffusionIntegrator": "DiffusionADIEroder"},
         "metrics": {"unweightedHeightQuantilesMeters": np.quantile(height, [0.05, 0.5, 0.95]).tolist(),
-            "maximumHeightMeters": float(height.max()), "transectRmsSlopeAt1km": float(np.sqrt(np.mean(differences**2)))},
+            "maximumHeightMeters": float(height.max()),
+            "transectRmsSlopeAt1km": float(np.sqrt(np.mean(differences**2))) if differences.size else None},
+        "transectDiagnostics": {"chartCoordinatesMeters": coordinates.tolist(), "queryIntervalMeters": query_spacing,
+            "scope": "Interior bilinear point queries; a missing 1 km metric is null, never fabricated by out-of-domain clamping."},
         "preparedBedMetersRowMajor": height.ravel().tolist(),
         "scope": "External planar reference; not spherical geometry, protected-potential-lake incision, material accounting, World state or production integration. K units depend on the area exponent. Published and retained setups are different controls, not a bitwise equivalence claim."
     }

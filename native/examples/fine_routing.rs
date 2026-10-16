@@ -68,7 +68,10 @@ fn field_file_named(
     variant: &str,
     row_name: Option<&str>,
 ) -> Result<String, String> {
-    let member = if manifest["reportVersion"] == "fine-landscape-review-5" {
+    let member = if matches!(
+        manifest["reportVersion"].as_str(),
+        Some("fine-landscape-review-5" | "fine-landscape-review-6")
+    ) {
         if let Some(name) = row_name {
             let expected = fine_record::reference(name, row)?;
             manifest["rowIndexFormat"] == fine_record::INDEX_FORMAT
@@ -100,6 +103,7 @@ fn field_file_named(
                 | "fine-landscape-review-3"
                 | "fine-landscape-review-4"
                 | "fine-landscape-review-5"
+                | "fine-landscape-review-6"
         )
     ) || manifest["fieldRecord"]["format"] != "headerless-f64-le-region-major-1"
         || manifest["fieldRecord"]["columns"] != columns
@@ -243,7 +247,10 @@ fn main() -> Result<(), String> {
         .filter(|p| !p.as_os_str().is_empty())
         .unwrap_or(Path::new("."));
     let manifest = read_json(&parent.join("manifest.json"), 16 * 1024 * 1024)?;
-    let row_limit = if manifest["reportVersion"] == "fine-landscape-review-5" {
+    let row_limit = if matches!(
+        manifest["reportVersion"].as_str(),
+        Some("fine-landscape-review-5" | "fine-landscape-review-6")
+    ) {
         64
     } else {
         16
@@ -384,6 +391,9 @@ mod tests {
         changed["extraHistory"] = json!([1]);
         assert!(field_file_named(&changed, &manifest, "coupled", Some("a.json")).is_err());
         manifest["reportVersion"] = json!("fine-landscape-review-6");
+        assert!(field_file_named(&row, &manifest, "coupled", Some("a.json")).is_ok());
+        manifest["reportVersion"] = json!("fine-landscape-review-7");
+        assert!(field_file_named(&row, &manifest, "coupled", Some("a.json")).is_err());
         assert!(field_file(&row, &manifest, "coupled").is_err());
         manifest["reportVersion"] = json!("fine-landscape-review-2");
         assert!(field_file(&row, &manifest, "incision").is_err());

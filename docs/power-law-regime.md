@@ -161,7 +161,11 @@ predate compact indexing. Those preliminary local version-5 layouts are not
 claimed as a supported published format. Partial failures
 are `power-law-low-diffusion` and `power-law-low-diffusion-confirmation`.
 
-## Next concrete control — proposed, not yet implemented as an observer profile
+## Follow-up control — now implemented separately
+
+The settings below motivated the subsequent
+[scaled process review](scaled-process-regime.md). That record contains the
+actual numerical/visual results; these parameters are not a qualified World.
 
 Before another source/initial-noise reroll, test a process-resolved regime using
 the already implemented typed primitive. A bounded candidate is a 20×20 km chart
@@ -182,13 +186,19 @@ field can use a recorded .25 length multiplier (250–2000 m correlation lattice
 and a 10 m envelope, held constant across resolutions. This is a new initial
 condition, not an isolated exponent intervention. Generated boundary heights and
 uplift still come from the same fixed geological sources. Actual geometry/CFL
-work preflight must accept each run; the settings are not pre-certified here.
+work preflight must accept each run; acceptance is recorded in the follow-up.
 Inspect the physical beds first. If the resolved regime remains inadequate,
 retain that negative result and compare routing/landform representation directly.
 Do not substitute another conservation proof or silently fill real depressions.
 R3's seed/cohort and both-view review and R4's real scale coupling remain open.
 
 ## Verification scope
+
+The subsequent [scaled process review](scaled-process-regime.md) implements this
+proposed profile at 125 m and 64/128/256 stages. It retains broad forms despite
+zero final sinks; an independent plane witness exposes a remaining sampling-
+width dependence in the total-area pressure. A separately pinned specific-area
+transport comparison is proposed next, not a silent units change or more noise.
 
 New primitive tests use independent 32^(2/5)=4 and m=0 link results, exact old
 m=.5 field/constraint equivalence, horizontal/vertical unit rescaling, a fixed

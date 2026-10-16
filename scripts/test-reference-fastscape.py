@@ -61,6 +61,28 @@ class ReferenceChecks(unittest.TestCase):
         self.assertEqual(len(report["preparedBedMetersRowMajor"]), 60501)
         self.assertEqual(report["settings"]["erodibilityUnits"], "meters^0.2/year")
         self.assertAlmostEqual(report["metrics"]["unweightedHeightQuantilesMeters"][2], 148.3891150343122, places=8)
+        self.assertEqual(report["reportVersion"], "external-fastscape-review-2")
+        self.assertEqual(report["transectDiagnostics"]["chartCoordinatesMeters"][0], -20000.0)
+
+    def test_small_domain_has_no_fabricated_one_kilometer_statistic(self):
+        data = b"".join(struct.pack("<6d", 10.0, 0.0, 10.0, 0.0, 0.0, 0.0) for _ in range(16))
+        result = self.invoke(["retained", "--cells", "4", "--spacing", "10", "--steps", "1"], data)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertIsNone(report["metrics"]["transectRmsSlopeAt1km"])
+        self.assertTrue(all(abs(x) <= 15.0 for x in report["transectDiagnostics"]["chartCoordinatesMeters"]))
+
+    def test_scaled_affine_transects_use_the_same_interior_and_physical_distance(self):
+        data = b"".join(struct.pack("<6d", 10.0 + ((i % 160) - 79.5) * 0.125 + ((i // 160) - 79.5) * 0.25,
+            0.0, 0.0, 0.0, 0.0, 0.0) for i in range(25600))
+        result = self.invoke(["retained", "--cells", "160", "--spacing", "125", "--steps", "1",
+            "--erodibility", "0", "--diffusivity", "0"], data)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        points = report["transectDiagnostics"]["chartCoordinatesMeters"]
+        self.assertEqual(len(points), 129)
+        self.assertEqual((points[0], points[-1]), (-8000.0, 8000.0))
+        self.assertAlmostEqual(report["metrics"]["transectRmsSlopeAt1km"], math.sqrt(2.5e-6), places=12)
 
 
 if __name__ == "__main__":

@@ -346,6 +346,12 @@ bed/clock controls. Lower, more dissected surfaces replace the high plateau,
 but many sinks, strong spatial/time sensitivity and a weak-D ledger refusal
 prevent promotion. A concrete bounded process-resolved regime is specified next;
 global World/tiles/climate coupling remains unimplemented by these experiments.
+The following [scaled process comparison](scaled-process-regime.md) now samples
+125 m with a declared 500 m process length and smaller relative timesteps. The
+retained beds remain broad, also in an exact external control. A plane witness
+shows that total-area pressure still includes a sampling width. Specific-area
+transport/units and channel–hillslope coupling are the next model-form review,
+not a new resolution cap, blindly changing K or claiming completed R3/R4.
 Full regression for the initial fine-patch increment passes 831 native tests across 147 targets
 and 96 Node tests, with the pre-existing ignored test. The subsequently added
 plane-direction witness passes in the ten-test preparation target. Strict

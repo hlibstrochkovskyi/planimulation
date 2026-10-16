@@ -261,3 +261,73 @@ fn unconstrained_two_receiver_implicit_formula_can_reverse_a_valid_facet_branch(
     assert!(unconstrained < high);
     assert!(unconstrained > base);
 }
+
+#[test]
+fn planar_total_area_and_current_incision_pressure_retain_a_sampling_width_dependence() {
+    use planimulation_core::facet_incision;
+    let mut observations = Vec::new();
+    for cells in [40u32, 80, 160] {
+        let spacing = 20000. / f64::from(cells);
+        let g = terrain_patch_geometry::build(Settings {
+            radius_meters: 6371000.,
+            center_direction: [1., 0., 0.],
+            orientation_radians: 0.,
+            cells_x: cells,
+            cells_y: cells,
+            spacing_meters: spacing,
+        })
+        .unwrap();
+        let n = cells as usize;
+        let h: Vec<_> = (0..n * n)
+            .map(|i| 20000. - (i % n) as f64 * spacing - (0.5 - f64::from(cells) / 2.) * spacing)
+            .collect();
+        let flow = Router::new(&g).unwrap().route(&h).unwrap();
+        assert_eq!(flow.closed_sink_count, 0);
+        assert!(flow.terminal_area_relative_residual < 1e-12);
+        let dt = 0.01;
+        let incision = facet_incision::incise_power(
+            &h,
+            &g.reference_areas_square_meters,
+            &flow.contributing_area_square_meters,
+            &flow.descents,
+            facet_incision::PowerSettings {
+                erodibility_coefficient: 2e-4,
+                area_exponent: 0.4,
+                step_years: dt,
+            },
+        )
+        .unwrap();
+        let central = [
+            (n / 2 - 1) * n + n / 2 - 1,
+            (n / 2 - 1) * n + n / 2,
+            (n / 2) * n + n / 2 - 1,
+            (n / 2) * n + n / 2,
+        ];
+        // Interpolate the SAME chart point (0,0), not a cell center that moves
+        // with resolution. Fixed collar nodes contribute no source area.
+        let area = central
+            .iter()
+            .map(|&i| flow.contributing_area_square_meters[i])
+            .sum::<f64>()
+            / 4.;
+        let rate = central
+            .iter()
+            .map(|&i| incision.incision.removed_thickness_meters[i] / dt)
+            .sum::<f64>()
+            / 4.;
+        let expected_length = 10000. - spacing / 2.;
+        assert!((area / spacing / expected_length - 1.).abs() < 1e-4);
+        eprintln!(
+            "planar width witness: spacing={spacing}m, area={area}m2, area/spacing={}m, accepted_rate={rate}m/year",
+            area / spacing
+        );
+        observations.push((area, rate));
+    }
+    for pair in observations.windows(2) {
+        assert!((0.49..0.52).contains(&(pair[1].0 / pair[0].0)));
+        assert!((0.74..0.79).contains(&(pair[1].1 / pair[0].1)));
+    }
+    // This freezes a limitation of the current total-area model. The A/dx
+    // diagnostic is a LENGTH; it must not silently replace physical area or
+    // conserve the same units under the existing K/recipe/model identity.
+}
