@@ -64,7 +64,7 @@ fn field_file(row: &Value, manifest: &Value, variant: &str) -> Result<String, St
     ]);
     if !matches!(
         manifest["reportVersion"].as_str(),
-        Some("fine-landscape-review-1" | "fine-landscape-review-2")
+        Some("fine-landscape-review-1" | "fine-landscape-review-2" | "fine-landscape-review-3")
     ) || manifest["fieldRecord"]["format"] != "headerless-f64-le-region-major-1"
         || manifest["fieldRecord"]["columns"] != columns
         || !manifest["rows"]
@@ -316,6 +316,8 @@ mod tests {
         manifest["reportVersion"] = json!("fine-landscape-review-2");
         assert_eq!(field_file(&row, &manifest, "coupled").unwrap(), "bed.f64le");
         manifest["reportVersion"] = json!("fine-landscape-review-3");
+        assert_eq!(field_file(&row, &manifest, "coupled").unwrap(), "bed.f64le");
+        manifest["reportVersion"] = json!("fine-landscape-review-4");
         assert!(field_file(&row, &manifest, "coupled").is_err());
         manifest["reportVersion"] = json!("fine-landscape-review-2");
         assert!(field_file(&row, &manifest, "incision").is_err());

@@ -1,6 +1,6 @@
 //! Actual fine-bed comparisons; regional experiments, not coupled global tiles.
 use planimulation_core::{
-    Random, Recipe, Surface, fixed_geological_field, terrain_patch_facets,
+    Random, Recipe, Surface, fixed_geological_field, physical_seed_field, terrain_patch_facets,
     terrain_patch_geometry::{self, Geometry},
     terrain_patch_landscape::{self, Preparation, Settings},
 };
@@ -57,13 +57,26 @@ fn reference(seed: &str) -> Recipe {
         "continentalScale":1.,"reliefScale":1.,"boundaryWidthKm":300.,"detailAmplitudeMeters":300.,"terrainPreparationPasses":0,
         "water":{"mode":"coverage","fraction":0.71}})).unwrap()
 }
-fn parse(args: &[String]) -> Result<(PathBuf, String, usize, f64, f64, bool), String> {
-    if !(1..=6).contains(&args.len())
+struct Arguments {
+    directory: PathBuf,
+    seed: String,
+    steps: usize,
+    duration: f64,
+    diffusion: f64,
+    facets: bool,
+    physical_seeds: bool,
+    physical_amplitude: f64,
+}
+fn parse(args: &[String]) -> Result<Arguments, String> {
+    if !(1..=7).contains(&args.len())
         || args[0].trim().is_empty()
-        || args.get(5).is_some_and(|s| s != "--facets")
+        || args
+            .get(5)
+            .is_some_and(|s| !matches!(s.as_str(), "--facets" | "--spectrum"))
+        || args.len() == 7 && args[5] != "--spectrum"
     {
         return Err(
-            "Usage: fine_landscape NEW_DIRECTORY [SEED] [STEPS(1..128)] [DURATION_YEARS] [DIFFUSIVITY_M2_PER_YEAR] [--facets]".into(),
+            "Usage: fine_landscape NEW_DIRECTORY [SEED] [STEPS(1..128)] [DURATION_YEARS] [DIFFUSIVITY_M2_PER_YEAR] [--facets|--spectrum [AMPLITUDE_METERS]]".into(),
         );
     }
     let path = PathBuf::from(&args[0]);
@@ -104,7 +117,25 @@ fn parse(args: &[String]) -> Result<(PathBuf, String, usize, f64, f64, bool), St
     if !diffusion.is_finite() || !(0. ..=1.).contains(&diffusion) {
         return Err("Fine-landscape diffusivity supports0–1m2/year.".into());
     }
-    Ok((path, seed, steps, duration, diffusion, args.len() == 6))
+    let amplitude = args
+        .get(6)
+        .map(|s| s.parse::<f64>())
+        .transpose()
+        .map_err(|_| "Invalid physical seed amplitude.")?
+        .unwrap_or(1.);
+    if !amplitude.is_finite() || !(0. ..=1000.).contains(&amplitude) {
+        return Err("Physical seed amplitude must be 0–1000m.".into());
+    }
+    Ok(Arguments {
+        directory: path,
+        seed,
+        steps,
+        duration,
+        diffusion,
+        facets: args.len() >= 6,
+        physical_seeds: args.get(5).is_some_and(|s| s == "--spectrum"),
+        physical_amplitude: amplitude,
+    })
 }
 fn write_new(path: &Path, bytes: &[u8]) -> Result<(), String> {
     let mut file = std::fs::OpenOptions::new()
@@ -394,11 +425,58 @@ fn common_support(g: &Geometry, h: &[f64]) -> Value {
         "roughnessDistanceMeters":1000.,"transectRmsSlopeAt1km":(differences.iter().map(|v|v*v).sum::<f64>()/differences.len() as f64).sqrt(),
         "scope":"Common central40km transects,250m query interval. Derived display/diagnostic queries only, not additional physical samples, channel/storage-preserving aggregation or a global coupling map."})
 }
+fn seed_summary(samples: &[(f64, f64, f64)]) -> Result<Value, String> {
+    if samples.is_empty()
+        || samples.iter().any(|&(a, b, area)| {
+            !a.is_finite() || !b.is_finite() || !area.is_finite() || area <= 0.
+        })
+    {
+        return Err("Invalid physical seed diagnostic samples.".into());
+    }
+    let area: f64 = samples.iter().map(|v| v.2).sum();
+    let summary = |legacy: bool| {
+        let value = |v: &(f64, f64, f64)| if legacy { v.0 } else { v.1 };
+        let mean = samples.iter().map(|v| value(v) * v.2).sum::<f64>() / area;
+        let variance = samples
+            .iter()
+            .map(|v| (value(v) - mean).powi(2) * v.2)
+            .sum::<f64>()
+            / area;
+        json!({"areaWeightedMeanMeters":mean,"areaWeightedStandardDeviationMeters":variance.sqrt(),
+            "minimumMeters":samples.iter().map(value).fold(f64::INFINITY,f64::min),
+            "maximumMeters":samples.iter().map(value).fold(f64::NEG_INFINITY,f64::max)})
+    };
+    Ok(
+        json!({"sampleCount":samples.len(),"areaSquareMeters":area,"legacy":summary(true),"physical":summary(false),
+        "scope":"Recorded initial interior seed values; not matched RMS or a single-frequency intervention."}),
+    )
+}
 fn main() -> Result<(), String> {
     let args: Vec<_> = std::env::args().skip(1).collect();
-    let (directory, seed, steps, duration, diffusion, facets) = parse(&args)?;
+    let Arguments {
+        directory,
+        seed,
+        steps,
+        duration,
+        diffusion,
+        facets,
+        physical_seeds,
+        physical_amplitude,
+    } = parse(&args)?;
     let field = fixed_geological_field::Field::new(reference(&seed))?;
     let perturb = Perturbation::new(&seed);
+    let physical_field = physical_seeds
+        .then(|| {
+            physical_seed_field::Field::new(
+                &seed,
+                physical_seed_field::Settings {
+                    radius_meters: 6371000.,
+                    amplitude_meters: physical_amplitude,
+                    length_scale: 1.,
+                },
+            )
+        })
+        .transpose()?;
     let candidates = Surface::build(3, 6371000.);
     let mut chosen = [1., 0., 0.];
     let mut highest = f64::NEG_INFINITY;
@@ -429,13 +507,25 @@ fn main() -> Result<(), String> {
             let g = terrain_patch_geometry::build(grid)?;
             let mut initial = Vec::new();
             let mut rates = Vec::new();
+            let mut seed_samples = Vec::new();
             for (i, &p) in g.cell_directions.iter().enumerate() {
                 let s = field.sample(p)?;
                 let fixed = g.fixed_external_boundary[i];
-                initial.push(if case == "synthetic" {
-                    if fixed { 0. } else { 1. + perturb.sample(p) }
+                let legacy = perturb.sample(p);
+                // Hold the existing external boundary heights exactly fixed
+                // across initial-field controls, not just the collar location.
+                let noise = if !fixed && let Some(field) = &physical_field {
+                    field.sample(p)?
                 } else {
-                    s.elevation_meters + perturb.sample(p)
+                    legacy
+                };
+                if physical_seeds && !fixed {
+                    seed_samples.push((legacy, noise, g.reference_areas_square_meters[i]));
+                }
+                initial.push(if case == "synthetic" {
+                    if fixed { 0. } else { 1. + noise }
+                } else {
+                    s.elevation_meters + noise
                 });
                 rates.push(if fixed {
                     0.
@@ -523,13 +613,25 @@ fn main() -> Result<(), String> {
             if let Some(p) = &facet_prepared {
                 row["facetTransects"] = profiles(&g, &initial, &prepared[0], p);
             }
+            if let Some(field) = &physical_field {
+                let legacy = row["initialPerturbation"].clone();
+                row["initialPerturbation"] =
+                    serde_json::to_value(field.identity()).map_err(|e| e.to_string())?;
+                row["initialPerturbation"]["boundaryPolicy"] = json!(if case == "synthetic" {
+                    "Fixed zero collar; spectrum on active interior."
+                } else {
+                    "Legacy boundary perturbation retained exactly; spectrum on active interior."
+                });
+                row["initialPerturbation"]["legacyBoundaryPerturbation"] = legacy;
+                row["initialPerturbation"]["sampledInteriorSummary"] = seed_summary(&seed_samples)?;
+            }
             write_json(&directory.join(format!("{case}-{cells}.json")), &row)?;
             rows.push(row);
         }
     }
     write_json(
         &directory.join("manifest.json"),
-        &json!({"reportVersion":if facets {"fine-landscape-review-2"}else{"fine-landscape-review-1"},"durationYears":duration,"diffusivitySquareMetersPerYear":diffusion,"rows":rows,
+        &json!({"reportVersion":if physical_seeds {"fine-landscape-review-3"}else if facets {"fine-landscape-review-2"}else{"fine-landscape-review-1"},"durationYears":duration,"diffusivitySquareMetersPerYear":diffusion,"rows":rows,
         "fieldRecord":{"format":"headerless-f64-le-region-major-1","columns":["initialBedMeters","prescribedUpliftMetersPerYear","preparedBedMeters","acceptedUpliftDisplacementMeters","removedIncisionThicknessMeters","signedHillslopeHeightChangeMeters"]},
         "scope":"Bounded actual fine-bed experiments. Fixed outer cell-center collar is an external height reservoir, not ocean. Detached material is in a bookkeeping reservoir, not deposition or material proven to leave through an outlet. Paired lateral transfers and external exchange accounted; no global water, climate or sediment stock advanced. Equal outer chart extents; active collar positions vary with spacing. Native records are not World/checkpoints or camera-driven display detail. Manifest written last."}),
     )
@@ -548,6 +650,33 @@ mod tests {
             vec!["fine-uncreated", "seed", "64", "NaN"],
             vec!["fine-uncreated", "seed", "64", "4800000", "-1"],
             vec!["fine-uncreated", "seed", "64", "4800000", "1", "unknown"],
+            vec![
+                "fine-uncreated",
+                "seed",
+                "64",
+                "4800000",
+                "1",
+                "--facets",
+                "100",
+            ],
+            vec![
+                "fine-uncreated",
+                "seed",
+                "64",
+                "4800000",
+                "1",
+                "--spectrum",
+                "NaN",
+            ],
+            vec![
+                "fine-uncreated",
+                "seed",
+                "64",
+                "4800000",
+                "1",
+                "--spectrum",
+                "1001",
+            ],
         ] {
             assert!(parse(&args.into_iter().map(str::to_owned).collect::<Vec<_>>()).is_err());
         }
@@ -559,7 +688,10 @@ mod tests {
             assert_eq!(a, q.sample(x));
             assert_eq!(a, p.sample(x));
         }
-        assert_eq!(parse(&["fine-review-uncreated-unit".into()]).unwrap().2, 64);
+        assert_eq!(
+            parse(&["fine-review-uncreated-unit".into()]).unwrap().steps,
+            64
+        );
         let args = [
             "fine-review-uncreated-unit",
             "seed",
@@ -569,7 +701,16 @@ mod tests {
             "--facets",
         ]
         .map(str::to_owned);
-        assert!(parse(&args).unwrap().5);
+        let parsed = parse(&args).unwrap();
+        assert!(parsed.facets && !parsed.physical_seeds);
+        let mut args = args;
+        args[5] = "--spectrum".into();
+        let parsed = parse(&args).unwrap();
+        assert!(parsed.facets && parsed.physical_seeds);
+        assert_eq!(parsed.physical_amplitude, 1.);
+        let mut args = args.to_vec();
+        args.push("100".into());
+        assert_eq!(parse(&args).unwrap().physical_amplitude, 100.);
     }
     #[test]
     fn common_support_queries_reproduce_an_independent_affine_chart() {
@@ -596,5 +737,22 @@ mod tests {
         }
         let v = common_support(&g, &h);
         assert!((v["transectRmsSlopeAt1km"].as_f64().unwrap() - (2.5e-6_f64).sqrt()).abs() < 1e-14);
+    }
+
+    #[test]
+    fn physical_seed_diagnostics_have_known_area_weighted_means_and_variance() {
+        let s = seed_summary(&[(0., 1., 1.), (2., -1., 3.)]).unwrap();
+        assert_eq!(s["legacy"]["areaWeightedMeanMeters"], 1.5);
+        assert_eq!(s["physical"]["areaWeightedMeanMeters"], -0.5);
+        assert!(
+            (s["physical"]["areaWeightedStandardDeviationMeters"]
+                .as_f64()
+                .unwrap()
+                - 0.75_f64.sqrt())
+            .abs()
+                < 1e-14
+        );
+        assert!(seed_summary(&[]).is_err());
+        assert!(seed_summary(&[(0., f64::NAN, 1.)]).is_err());
     }
 }

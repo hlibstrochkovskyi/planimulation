@@ -327,6 +327,12 @@ implements actual uplift/incision/hillslope coupling and sparse limiter traces.
 Old physical records repeat exactly; new actual-bed and 32/64/128-step controls
 still expose broad forms and transient/spatial sensitivity. R3 is not complete;
 no new World pin, desktop limit, tiles or climate coupling are claimed.
+The following [physical initial-spectrum review](physical-seed-spectrum.md)
+holds sources, rates and boundary bed fixed. Its continuous 1–8 km initial
+field is independent of sampling, but neither a 1 m nor 100 m envelope solves
+the retained broad forms. A separately declared humid-prehistory routing
+comparison is proposed next; potential filled geometry must never be confused
+with actual bed changes or funded seasonal water stocks.
 Full regression for the initial fine-patch increment passes 831 native tests across 147 targets
 and 96 Node tests, with the pre-existing ignored test. The subsequently added
 plane-direction witness passes in the ten-test preparation target. Strict

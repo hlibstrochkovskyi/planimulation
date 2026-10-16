@@ -454,6 +454,7 @@ pub mod landscape_evolution;
 pub mod moisture_transport;
 pub mod nested_reservoir;
 pub mod orographic_response;
+pub mod physical_seed_field;
 pub mod plate_roots;
 pub mod prescribed_water_inventory;
 pub mod relief_spectrum;

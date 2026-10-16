@@ -151,6 +151,12 @@ Next separate the retained initial perturbation spectrum and remaining spatial
 representation effects under declared physical process scales; do not present
 additional display noise or another global source reroll as an erosion fix.
 
+The following [continuous initial-field review](physical-seed-spectrum.md)
+holds geology, forcing and boundary bed fixed. Its 1 m and 100 m spectrum
+controls change drainage but do not fix broad D=1 landforms; weak diffusion
+retains problematic closed basins. Neither initial-field profile is promoted
+as the missing landscape solution.
+
 ## Verification scope
 
 Known single-link/chain solutions, an independent two-outlet result, explicit
