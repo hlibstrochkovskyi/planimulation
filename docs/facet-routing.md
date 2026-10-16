@@ -118,8 +118,8 @@ branches, independent terminal-area and fractional-ancestry reconciliation,
 repeatability, owned geometry, malformed shapes and extreme arithmetic refusal.
 Observer controls cover metadata, byte layout and path/argument refusals.
 
-The [proposed frozen-characteristic incision formula](fine-terrain-patch.md#relation-to-published-models-and-next-decision)
-remains **unimplemented**. A valid-facet counterexample now verifies that its
+The [original proposed frozen-characteristic incision formula](fine-terrain-patch.md#relation-to-published-models-and-next-decision)
+is not accepted unconstrained. A valid-facet counterexample verifies that its
 unconstrained two-receiver update can fall below the higher receiver when the
 dimensionless timestep is large. Positive area/derivative weights alone do not
 guarantee every branch remains downhill after incision.
@@ -130,14 +130,18 @@ multiple-direction support is restricted to the linear case. Stable integration
 also does not make contributing area implicit. We have not copied its numerical
 limiter or selected its coefficients as a calibration.
 
-Next implement a separately pinned two-receiver incision/preparation candidate
-with an explicit receiver constraint or bounded routing/time refinement. Record
+The selected integration gate requires a separately pinned incision/preparation
+candidate with an explicit receiver constraint or bounded routing/time refinement. Record
 every limited node and any accepted-versus-unconstrained change; detach only
 actual accepted bed loss into the existing reference-material reservoir. No
 unrecorded stock correction or apparent successful erosion through a reversed
 branch is acceptable. Compare regenerated actual beds, time/space controls and
 the old single-receiver preparation before accepting that candidate. Better
 routing on an unchanged bed is not evidence of better generated mountains.
+
+The subsequent [receiver-constrained preparation](facet-landscape.md) implements
+this coupling, per-node constraint traces and actual regenerated-bed comparisons.
+Its retained visual/transient limitations still prevent R3/default promotion.
 
 Verification for this component: 31 focused native tests pass across the facet,
 geometry, fixed-field, old-preparation and two observer targets. Strict all-target

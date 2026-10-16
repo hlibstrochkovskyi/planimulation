@@ -1,12 +1,13 @@
 //! Bounded dry patch experiment, independent of global water and rendering.
 //! Prescribed uplift -> actual downhill incision -> stable hillslope substeps.
 use crate::{
-    hillslope_transport, landscape,
+    facet_incision, hillslope_transport, landscape, terrain_patch_facets,
     terrain_patch_geometry::{self, Geometry},
 };
 use serde::Serialize;
 
 pub const MODEL_VERSION: &str = "fine-patch-landscape-1";
+pub const FACET_MODEL_VERSION: &str = "fine-patch-facet-landscape-1";
 const MAX_WORK: usize = 128_000_000;
 const MAX_DIFFUSION_SUBSTEPS: usize = 64;
 
@@ -41,10 +42,36 @@ pub struct Step {
     pub unresolved_incision_nodes: usize,
     pub unresolved_hillslope_node_updates: usize,
     pub relative_prism_ledger_residual: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub receiver_constraint: Option<ConstraintSummary>,
 }
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Preparation {
+pub struct ConstraintSummary {
+    pub limited_nodes: usize,
+    pub prevented_reference_prism_cubic_meters: f64,
+    pub maximum_prevented_incision_meters: f64,
+    pub limited_updates: Vec<LimitedUpdate>,
+}
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LimitedUpdate {
+    pub node: u32,
+    pub prevented_incision_meters: f64,
+    pub accepted_incision_meters: f64,
+}
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CumulativeConstraint {
+    pub incision_model_version: &'static str,
+    pub cumulative_prevented_incision_meters: Vec<f64>,
+    pub limited_node_updates: usize,
+    pub prevented_reference_prism_cubic_meters: f64,
+    pub maximum_prevented_incision_meters: f64,
+}
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Preparation<R = Routing> {
     pub model_version: &'static str,
     pub settings: Settings,
     pub diffusion_substeps_per_step: usize,
@@ -59,8 +86,10 @@ pub struct Preparation {
     pub signed_hillslope_boundary_exchange_cubic_meters: f64,
     pub gross_requested_hillslope_transfer_cubic_meters: f64,
     pub relative_prism_ledger_residual: f64,
-    pub final_routing: Routing,
+    pub final_routing: R,
     pub history: Vec<Step>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub receiver_constraint: Option<CumulativeConstraint>,
 }
 #[derive(Default)]
 struct Sum {
@@ -330,6 +359,111 @@ pub fn prepare(
     uplift: &[f64],
     settings: Settings,
 ) -> Result<Preparation, String> {
+    prepare_impl(g, initial, uplift, settings, SingleReceiver)
+}
+
+/// Opt-in physical candidate. Its receiver limiter is an explicit numerical
+/// approximation; prevented incision is diagnostic pressure, not an inventory.
+pub fn prepare_facets(
+    g: &Geometry,
+    initial: &[f64],
+    uplift: &[f64],
+    settings: Settings,
+) -> Result<Preparation<terrain_patch_facets::Routing>, String> {
+    prepare_impl(
+        g,
+        initial,
+        uplift,
+        settings,
+        FacetReceivers { router: None },
+    )
+}
+
+trait PatchProcess {
+    type Flow;
+    const MODEL: &'static str;
+    const STAGE_WORK: usize;
+    const CONSTRAINED: bool;
+    fn route(&mut self, g: &Geometry, h: &[f64]) -> Result<Self::Flow, String>;
+    fn incise(
+        &self,
+        g: &Geometry,
+        h: &[f64],
+        flow: &Self::Flow,
+        settings: Settings,
+    ) -> Result<(landscape::Incision, Option<facet_incision::Constraint>), String>;
+}
+struct SingleReceiver;
+impl PatchProcess for SingleReceiver {
+    type Flow = Routing;
+    const MODEL: &'static str = MODEL_VERSION;
+    const STAGE_WORK: usize = 3;
+    const CONSTRAINED: bool = false;
+    fn route(&mut self, g: &Geometry, h: &[f64]) -> Result<Self::Flow, String> {
+        route_validated(g, h)
+    }
+    fn incise(
+        &self,
+        g: &Geometry,
+        h: &[f64],
+        flow: &Self::Flow,
+        settings: Settings,
+    ) -> Result<(landscape::Incision, Option<facet_incision::Constraint>), String> {
+        let incision = landscape::incise(
+            h,
+            &g.reference_areas_square_meters,
+            &flow.receivers,
+            &flow.receiver_distances_meters,
+            landscape::Settings {
+                erodibility_per_year: settings.erodibility_per_year,
+                step_years: settings.step_years,
+                base_level_meters: None,
+            },
+        )?;
+        Ok((incision, None))
+    }
+}
+struct FacetReceivers {
+    router: Option<terrain_patch_facets::Router>,
+}
+impl PatchProcess for FacetReceivers {
+    type Flow = terrain_patch_facets::Routing;
+    const MODEL: &'static str = FACET_MODEL_VERSION;
+    const STAGE_WORK: usize = 6;
+    const CONSTRAINED: bool = true;
+    fn route(&mut self, g: &Geometry, h: &[f64]) -> Result<Self::Flow, String> {
+        if self.router.is_none() {
+            self.router = Some(terrain_patch_facets::Router::new(g)?);
+        }
+        self.router.as_ref().unwrap().route(h)
+    }
+    fn incise(
+        &self,
+        g: &Geometry,
+        h: &[f64],
+        flow: &Self::Flow,
+        settings: Settings,
+    ) -> Result<(landscape::Incision, Option<facet_incision::Constraint>), String> {
+        let result = facet_incision::incise(
+            h,
+            &g.reference_areas_square_meters,
+            &flow.contributing_area_square_meters,
+            &flow.descents,
+            facet_incision::Settings {
+                erodibility_per_year: settings.erodibility_per_year,
+                step_years: settings.step_years,
+            },
+        )?;
+        Ok((result.incision, Some(result.receiver_constraint)))
+    }
+}
+fn prepare_impl<P: PatchProcess>(
+    g: &Geometry,
+    initial: &[f64],
+    uplift: &[f64],
+    settings: Settings,
+    mut process: P,
+) -> Result<Preparation<P::Flow>, String> {
     validate(g, initial)?;
     let n = initial.len();
     if uplift.len() != n
@@ -373,7 +507,7 @@ pub fn prepare(
         (cfl / 0.8).ceil().max(1.) as usize
     };
     if n.checked_mul(settings.steps)
-        .and_then(|v| v.checked_mul(3 + substeps))
+        .and_then(|v| v.checked_mul(P::STAGE_WORK + substeps))
         .is_none_or(|v| v > MAX_WORK)
     {
         return Err("Excessive patch preparation workload.".into());
@@ -387,6 +521,14 @@ pub fn prepare(
     let mut boundary = Sum::default();
     let mut gross = Sum::default();
     let mut history = Vec::with_capacity(settings.steps);
+    let mut receiver_constraint = P::CONSTRAINED.then(|| CumulativeConstraint {
+        incision_model_version: facet_incision::MODEL_VERSION,
+        cumulative_prevented_incision_meters: vec![0.; n],
+        limited_node_updates: 0,
+        prevented_reference_prism_cubic_meters: 0.,
+        maximum_prevented_incision_meters: 0.,
+    });
+    let mut prevented = Sum::default();
     for step in 0..settings.steps {
         let before = bed.clone();
         let mut u = Sum::default();
@@ -412,18 +554,45 @@ pub fn prepare(
             displacement[i] += accepted;
             bed[i] = updated;
         }
-        let routing = route_validated(g, &bed)?;
-        let incision = landscape::incise(
-            &bed,
-            &g.reference_areas_square_meters,
-            &routing.receivers,
-            &routing.receiver_distances_meters,
-            landscape::Settings {
-                erodibility_per_year: settings.erodibility_per_year,
-                step_years: settings.step_years,
-                base_level_meters: None,
-            },
-        )?;
+        let routing = process.route(g, &bed)?;
+        let (incision, constraint) = process.incise(g, &bed, &routing, settings)?;
+        let constraint_summary = if let Some(c) = constraint {
+            let cumulative = receiver_constraint.as_mut().unwrap();
+            for (sum, &value) in cumulative
+                .cumulative_prevented_incision_meters
+                .iter_mut()
+                .zip(&c.prevented_incision_meters)
+            {
+                *sum += value;
+                if !sum.is_finite() {
+                    return Err("Cumulative facet constraint overflowed.".into());
+                }
+            }
+            cumulative.limited_node_updates += c.limited_nodes;
+            prevented.add(c.prevented_reference_prism_cubic_meters)?;
+            cumulative.prevented_reference_prism_cubic_meters = prevented.value;
+            cumulative.maximum_prevented_incision_meters = cumulative
+                .maximum_prevented_incision_meters
+                .max(c.maximum_prevented_incision_meters);
+            Some(ConstraintSummary {
+                limited_nodes: c.limited_nodes,
+                prevented_reference_prism_cubic_meters: c.prevented_reference_prism_cubic_meters,
+                maximum_prevented_incision_meters: c.maximum_prevented_incision_meters,
+                limited_updates: c
+                    .prevented_incision_meters
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, v)| **v > 0.)
+                    .map(|(i, &value)| LimitedUpdate {
+                        node: i as u32,
+                        prevented_incision_meters: value,
+                        accepted_incision_meters: incision.removed_thickness_meters[i],
+                    })
+                    .collect(),
+            })
+        } else {
+            None
+        };
         for (sum, &v) in erosion.iter_mut().zip(&incision.removed_thickness_meters) {
             *sum += v;
         }
@@ -473,6 +642,7 @@ pub fn prepare(
             unresolved_incision_nodes: incision.unresolved_positive_incision_nodes,
             unresolved_hillslope_node_updates: unresolved_d,
             relative_prism_ledger_residual: residual,
+            receiver_constraint: constraint_summary,
         });
     }
     let mut net = Sum::default();
@@ -487,9 +657,9 @@ pub fn prepare(
             .max(gross.value)
             .max(boundary.value.abs()),
     )?;
-    let final_routing = route_validated(g, &bed)?;
+    let final_routing = process.route(g, &bed)?;
     Ok(Preparation {
-        model_version: MODEL_VERSION,
+        model_version: P::MODEL,
         settings,
         diffusion_substeps_per_step: substeps,
         elevation_meters: bed,
@@ -503,5 +673,6 @@ pub fn prepare(
         relative_prism_ledger_residual: residual,
         final_routing,
         history,
+        receiver_constraint,
     })
 }

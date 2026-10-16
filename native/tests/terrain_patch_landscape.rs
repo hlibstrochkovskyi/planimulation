@@ -303,3 +303,160 @@ fn eight_neighbor_plane_direction_error_does_not_disappear_with_refinement() {
     }
     assert!(observed.iter().all(|&error| (error - 22.).abs() < 1e-12));
 }
+
+#[test]
+fn facet_preparation_retains_noop_closed_basins_and_separate_model_metadata() {
+    use planimulation_core::terrain_patch_landscape::{FACET_MODEL_VERSION, prepare_facets};
+    let g = grid(8, 500.);
+    let h = vec![17.; 64];
+    let u = rates(&g, 0.);
+    let p = prepare_facets(&g, &h, &u, settings()).unwrap();
+    assert_eq!(p.elevation_meters, h);
+    assert_eq!(p.model_version, FACET_MODEL_VERSION);
+    assert_eq!(p.detached_material_reservoir_cubic_meters, 0.);
+    assert_eq!(
+        p.receiver_constraint.as_ref().unwrap().limited_node_updates,
+        0
+    );
+    let old = prepare(&g, &h, &u, settings()).unwrap();
+    let json = serde_json::to_value(&old).unwrap();
+    assert!(json.get("receiverConstraint").is_none());
+    assert!(
+        json["history"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|s| s.get("receiverConstraint").is_none())
+    );
+    let h: Vec<_> = g
+        .fixed_external_boundary
+        .iter()
+        .map(|&b| if b { 100. } else { 0. })
+        .collect();
+    let p = prepare_facets(
+        &g,
+        &h,
+        &u,
+        Settings {
+            diffusivity_square_meters_per_year: 0.,
+            ..settings()
+        },
+    )
+    .unwrap();
+    assert_eq!(p.elevation_meters, h);
+    assert_eq!(p.final_routing.closed_sink_count, 1);
+    assert!((p.final_routing.closed_fraction_of_active_area - 1.).abs() < 1e-14);
+}
+
+#[test]
+fn facet_coupling_repeats_actual_bed_ledger_and_records_hypothetical_constraint_separately() {
+    use planimulation_core::terrain_patch_landscape::prepare_facets;
+    let g = grid(12, 500.);
+    let angle = 22_f64.to_radians();
+    let h: Vec<_> = (0..144)
+        .map(|i| 1000. - 50. * ((i % 12) as f64 * angle.cos() + (i / 12) as f64 * angle.sin()))
+        .collect();
+    let u = rates(&g, 0.0005);
+    let s = Settings {
+        erodibility_per_year: 1e-3,
+        step_years: 1000.,
+        steps: 4,
+        ..settings()
+    };
+    let routing = planimulation_core::terrain_patch_facets::Router::new(&g)
+        .unwrap()
+        .route(&h)
+        .unwrap();
+    let stage = planimulation_core::facet_incision::incise(
+        &h,
+        &g.reference_areas_square_meters,
+        &routing.contributing_area_square_meters,
+        &routing.descents,
+        planimulation_core::facet_incision::Settings {
+            erodibility_per_year: s.erodibility_per_year,
+            step_years: s.step_years,
+        },
+    )
+    .unwrap();
+    let mut detached = 0.;
+    for (i, &height) in h.iter().enumerate() {
+        assert!(stage.incision.elevation_meters[i] <= height);
+        for (j, _, _) in routing.descents[i].branches() {
+            assert!(stage.incision.elevation_meters[i] >= stage.incision.elevation_meters[j]);
+        }
+        detached +=
+            (height - stage.incision.elevation_meters[i]) * g.reference_areas_square_meters[i];
+    }
+    assert!((detached - stage.incision.removed_material_cubic_meters).abs() / detached < 1e-12);
+    let p = prepare_facets(&g, &h, &u, s).unwrap();
+    let repeat = prepare_facets(&g, &h, &u, s).unwrap();
+    assert_eq!(
+        serde_json::to_vec(&p).unwrap(),
+        serde_json::to_vec(&repeat).unwrap()
+    );
+    let c = p.receiver_constraint.as_ref().unwrap();
+    assert!(c.limited_node_updates > 0);
+    assert!(c.prevented_reference_prism_cubic_meters > 0.);
+    let prevented: f64 = c
+        .cumulative_prevented_incision_meters
+        .iter()
+        .zip(&g.reference_areas_square_meters)
+        .map(|(h, a)| h * a)
+        .sum();
+    assert!((prevented - c.prevented_reference_prism_cubic_meters).abs() / prevented < 1e-12);
+    assert_eq!(
+        c.limited_node_updates,
+        p.history
+            .iter()
+            .map(|s| s.receiver_constraint.as_ref().unwrap().limited_nodes)
+            .sum::<usize>()
+    );
+    let mut reconstructed = vec![0.; h.len()];
+    for step in &p.history {
+        let c = step.receiver_constraint.as_ref().unwrap();
+        assert_eq!(c.limited_nodes, c.limited_updates.len());
+        for update in &c.limited_updates {
+            assert!(update.prevented_incision_meters > 0. && update.accepted_incision_meters >= 0.);
+            reconstructed[update.node as usize] += update.prevented_incision_meters;
+        }
+    }
+    assert_eq!(reconstructed, c.cumulative_prevented_incision_meters);
+    let mut net = 0.;
+    for (i, &initial) in h.iter().enumerate() {
+        if g.fixed_external_boundary[i] {
+            assert_eq!(p.elevation_meters[i], initial);
+        }
+        let rebuilt = initial + p.accepted_uplift_displacement_meters[i]
+            - p.removed_incision_thickness_meters[i]
+            + p.signed_hillslope_height_change_meters[i];
+        assert!((p.elevation_meters[i] - rebuilt).abs() < 1e-10);
+        net += (p.elevation_meters[i] - initial) * g.reference_areas_square_meters[i];
+    }
+    let expected = p.accepted_uplift_prism_cubic_meters
+        - p.detached_material_reservoir_cubic_meters
+        + p.signed_hillslope_boundary_exchange_cubic_meters;
+    assert!((net - expected).abs() / p.detached_material_reservoir_cubic_meters < 1e-12);
+    assert_eq!(u, rates(&g, 0.0005));
+}
+
+#[test]
+fn facet_work_limit_refuses_before_metric_construction_or_bed_advance() {
+    use planimulation_core::terrain_patch_landscape::prepare_facets;
+    let g = grid(512, 250.);
+    let h = vec![0.; 512 * 512];
+    let u = rates(&g, 0.001);
+    let error = prepare_facets(
+        &g,
+        &h,
+        &u,
+        Settings {
+            erodibility_per_year: 0.,
+            diffusivity_square_meters_per_year: 0.,
+            step_years: 1.,
+            steps: 128,
+        },
+    )
+    .unwrap_err();
+    assert_eq!(error, "Excessive patch preparation workload.");
+    assert!(h.iter().all(|&v| v == 0.));
+}

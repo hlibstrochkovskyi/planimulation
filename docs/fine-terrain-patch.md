@@ -196,11 +196,14 @@ need an explicit derivation and separate model pin. Retain the old patch as a
 control, then compare actual prepared beds before accepting the new candidate.
 
 The subsequent [triangular-facet routing review](facet-routing.md) implements
-the direction/area component and read-only actual-bed comparisons. It does not
-yet implement coupled erosion. A new counterexample exposes branch reversal in
-the unconstrained extension below, so that extension is not accepted unchanged.
+the direction/area component and read-only actual-bed comparisons. A new
+counterexample exposes branch reversal in the unconstrained extension below,
+so that extension is not accepted unchanged. The following
+[receiver-constrained preparation](facet-landscape.md) implements an explicit
+limited variant, actual-bed comparisons and separate accepted/prevented records;
+it is still not a supported World family or completed Earth-like landscape.
 
-One proposed, **unimplemented** incision extension freezes the reconstructed unit
+The original unconstrained incision proposal freezes the reconstructed unit
 descent direction `d` during a geological step. With local receiver displacement
 vectors `v_a`, `v_b`, write `d = alpha_a v_a + alpha_b v_b`. A direction inside
 the facet cone gives nonnegative alphas with units m⁻¹. Then:
@@ -217,7 +220,8 @@ of facet orientation or the gradient magnitude. Area-partition weights and
 these directional-derivative coefficients are different quantities; neither
 should be substituted for the other. Prove single-edge reduction, known two-exit
 solutions, downstream ordering, no-increase behavior and actual detached-prism
-accounting before choosing this extension. No existing model pin changes here.
+accounting before choosing this extension. The later constrained variant has a
+separate pin; the old single-receiver model remains unchanged.
 
 ## Verification scope
 

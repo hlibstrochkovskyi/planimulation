@@ -1,6 +1,6 @@
 //! Actual fine-bed comparisons; regional experiments, not coupled global tiles.
 use planimulation_core::{
-    Random, Recipe, Surface, fixed_geological_field,
+    Random, Recipe, Surface, fixed_geological_field, terrain_patch_facets,
     terrain_patch_geometry::{self, Geometry},
     terrain_patch_landscape::{self, Preparation, Settings},
 };
@@ -12,16 +12,58 @@ use std::{
     time::Instant,
 };
 const DURATION_YEARS: f64 = 4_800_000.;
+trait ReviewFlow {
+    fn closed_count(&self) -> usize;
+    fn closed_fraction(&self) -> f64;
+    fn areas(&self) -> &[f64];
+    fn branches(&self, i: usize) -> [(u32, f64); 2];
+}
+impl ReviewFlow for terrain_patch_landscape::Routing {
+    fn closed_count(&self) -> usize {
+        self.closed_sink_count
+    }
+    fn closed_fraction(&self) -> f64 {
+        self.closed_fraction_of_active_area
+    }
+    fn areas(&self) -> &[f64] {
+        &self.contributing_area_square_meters
+    }
+    fn branches(&self, i: usize) -> [(u32, f64); 2] {
+        [(self.receivers[i], 1.), (i as u32, 0.)]
+    }
+}
+impl ReviewFlow for terrain_patch_facets::Routing {
+    fn closed_count(&self) -> usize {
+        self.closed_sink_count
+    }
+    fn closed_fraction(&self) -> f64 {
+        self.closed_fraction_of_active_area
+    }
+    fn areas(&self) -> &[f64] {
+        &self.contributing_area_square_meters
+    }
+    fn branches(&self, i: usize) -> [(u32, f64); 2] {
+        std::array::from_fn(|j| {
+            (
+                self.descents[i].receivers[j],
+                self.descents[i].area_weights[j],
+            )
+        })
+    }
+}
 fn reference(seed: &str) -> Recipe {
     serde_json::from_value(json!({"schemaVersion":1,"modelVersion":"multiscale-geography-2","randomVersion":"fnv1a-utf8-mulberry32-1",
         "seed":seed,"subdivision":6,"radiusMeters":6371000.,"plateCount":12,"maxPlateSpeedCmPerYear":8.,"continentalFraction":0.38,
         "continentalScale":1.,"reliefScale":1.,"boundaryWidthKm":300.,"detailAmplitudeMeters":300.,"terrainPreparationPasses":0,
         "water":{"mode":"coverage","fraction":0.71}})).unwrap()
 }
-fn parse(args: &[String]) -> Result<(PathBuf, String, usize, f64, f64), String> {
-    if !(1..=5).contains(&args.len()) || args[0].trim().is_empty() {
+fn parse(args: &[String]) -> Result<(PathBuf, String, usize, f64, f64, bool), String> {
+    if !(1..=6).contains(&args.len())
+        || args[0].trim().is_empty()
+        || args.get(5).is_some_and(|s| s != "--facets")
+    {
         return Err(
-            "Usage: fine_landscape NEW_DIRECTORY [SEED] [STEPS(1..128)] [DURATION_YEARS] [DIFFUSIVITY_M2_PER_YEAR]".into(),
+            "Usage: fine_landscape NEW_DIRECTORY [SEED] [STEPS(1..128)] [DURATION_YEARS] [DIFFUSIVITY_M2_PER_YEAR] [--facets]".into(),
         );
     }
     let path = PathBuf::from(&args[0]);
@@ -62,7 +104,7 @@ fn parse(args: &[String]) -> Result<(PathBuf, String, usize, f64, f64), String> 
     if !diffusion.is_finite() || !(0. ..=1.).contains(&diffusion) {
         return Err("Fine-landscape diffusivity supports0–1m2/year.".into());
     }
-    Ok((path, seed, steps, duration, diffusion))
+    Ok((path, seed, steps, duration, diffusion, args.len() == 6))
 }
 fn write_new(path: &Path, bytes: &[u8]) -> Result<(), String> {
     let mut file = std::fs::OpenOptions::new()
@@ -105,7 +147,7 @@ impl Perturbation {
             .sum()
     }
 }
-fn metrics(g: &Geometry, h: &[f64], p: &Preparation) -> Value {
+fn metrics<R: ReviewFlow>(g: &Geometry, h: &[f64], p: &Preparation<R>) -> Value {
     let mut sorted: Vec<_> = h
         .iter()
         .copied()
@@ -137,7 +179,26 @@ fn metrics(g: &Geometry, h: &[f64], p: &Preparation) -> Value {
     json!({"areaSquareMeters":area,"heightQuantileProbabilities":[0.05,0.5,0.95],"heightQuantilesMeters":quantiles,
         "minimumHeightMeters":sorted[0].0,"maximumHeightMeters":sorted.last().unwrap().0,
         "neighborScaleRmsSlope":(squared/total_weight).sqrt(),"neighborScaleMaximumSlope":maximum_slope,
-        "closedDrySinkCount":p.final_routing.closed_sink_count,"closedFractionOfActiveArea":p.final_routing.closed_fraction_of_active_area})
+        "closedDrySinkCount":p.final_routing.closed_count(),"closedFractionOfActiveArea":p.final_routing.closed_fraction()})
+}
+fn record<R: ReviewFlow>(
+    g: &Geometry,
+    p: &Preparation<R>,
+    label: &str,
+    file: &str,
+    seconds: f64,
+) -> Value {
+    let mut record = json!({"variant":label,"settings":p.settings,"preparationModelVersion":p.model_version,
+        "diffusionSubstepsPerStep":p.diffusion_substeps_per_step,"metrics":metrics(g,&p.elevation_meters,p),
+        "commonSupport":common_support(g,&p.elevation_meters),
+        "acceptedUpliftPrismCubicMeters":p.accepted_uplift_prism_cubic_meters,"detachedMaterialReservoirCubicMeters":p.detached_material_reservoir_cubic_meters,
+        "signedHillslopeBoundaryExchangeCubicMeters":p.signed_hillslope_boundary_exchange_cubic_meters,
+        "grossRequestedHillslopeTransferCubicMeters":p.gross_requested_hillslope_transfer_cubic_meters,
+        "relativePrismLedgerResidual":p.relative_prism_ledger_residual,"history":p.history,"physicalFieldsFile":file,"preparationSeconds":seconds});
+    if let Some(c) = &p.receiver_constraint {
+        record["receiverConstraint"] = serde_json::to_value(c).unwrap();
+    }
+    record
 }
 fn shade(g: &Geometry, h: &[f64], i: usize) -> f64 {
     let nx = g.settings.cells_x as usize;
@@ -164,21 +225,25 @@ fn shade(g: &Geometry, h: &[f64], i: usize) -> f64 {
     let light = (dx - dy + 1.) / ((dx * dx + dy * dy + 1.).sqrt() * 3_f64.sqrt());
     0.3 + 0.7 * light.max(0.)
 }
-fn atlas(g: &Geometry, initial: &[f64], a: &Preparation, b: &Preparation) -> String {
+fn atlas(
+    g: &Geometry,
+    initial: &[f64],
+    a: &Preparation,
+    b: &Preparation,
+    facets: Option<&Preparation<terrain_patch_facets::Routing>>,
+) -> String {
     let nx = g.settings.cells_x as usize;
     let ny = g.settings.cells_y as usize;
     let scale = 480. / nx as f64;
     let minimum = initial.iter().copied().fold(f64::INFINITY, f64::min);
-    let maximum = initial
+    let mut maximum = initial
         .iter()
         .chain(&a.elevation_meters)
         .chain(&b.elevation_meters)
         .copied()
         .fold(f64::NEG_INFINITY, f64::max);
-    let mut svg = String::from(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1540\" height=\"610\"><rect width=\"1540\" height=\"610\" fill=\"#10191f\"/><style>text{font-family:DejaVu Sans,sans-serif;fill:#e6edf3}</style>",
-    );
-    for (panel, (label, h, routing)) in [
+    type Panel<'a> = (&'a str, &'a [f64], Option<&'a dyn ReviewFlow>);
+    let mut panels: Vec<Panel<'_>> = vec![
         ("Initial authoritative bed", initial, None),
         (
             "Incision only",
@@ -190,10 +255,25 @@ fn atlas(g: &Geometry, initial: &[f64], a: &Preparation, b: &Preparation) -> Str
             b.elevation_meters.as_slice(),
             Some(&b.final_routing),
         ),
-    ]
-    .into_iter()
-    .enumerate()
-    {
+    ];
+    if let Some(p) = facets {
+        maximum = maximum.max(
+            p.elevation_meters
+                .iter()
+                .copied()
+                .fold(f64::NEG_INFINITY, f64::max),
+        );
+        panels.push((
+            "Facet incision + hillslope transfer",
+            &p.elevation_meters,
+            Some(&p.final_routing),
+        ));
+    }
+    let width = 16 + 508 * panels.len();
+    let mut svg = format!(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{width}\" height=\"610\"><rect width=\"{width}\" height=\"610\" fill=\"#10191f\"/><style>text{{font-family:DejaVu Sans,sans-serif;fill:#e6edf3}}</style>"
+    );
+    for (panel, (label, h, routing)) in panels.into_iter().enumerate() {
         let x = 24 + panel * 508;
         write!(svg,"<text x=\"{x}\" y=\"30\" font-size=\"16\">{label}</text><g transform=\"translate({x},50)\">").unwrap();
         svg.push_str("<g shape-rendering=\"crispEdges\">");
@@ -212,20 +292,30 @@ fn atlas(g: &Geometry, initial: &[f64], a: &Preparation, b: &Preparation) -> Str
             svg.push_str(
                 "<g fill=\"none\" stroke=\"#46b8d7\" stroke-width=\"0.8\" opacity=\"0.65\">",
             );
-            for (i, &j) in r.receivers.iter().enumerate() {
-                let j = j as usize;
-                if j == i || r.contributing_area_square_meters[i] < 5_000_000. {
+            for i in 0..h.len() {
+                if r.areas()[i] < 5_000_000. {
                     continue;
                 }
-                write!(
-                    svg,
-                    "<path d=\"M {:.4} {:.4} L {:.4} {:.4}\"/>",
-                    ((i % nx) as f64 + 0.5) * scale,
-                    ((ny - 1 - i / nx) as f64 + 0.5) * scale,
-                    ((j % nx) as f64 + 0.5) * scale,
-                    ((ny - 1 - j / nx) as f64 + 0.5) * scale
-                )
-                .unwrap();
+                for (j, weight) in r.branches(i) {
+                    let j = j as usize;
+                    if j == i || weight == 0. {
+                        continue;
+                    }
+                    let opacity = if weight < 1. {
+                        format!(" opacity=\"{weight:.5}\"")
+                    } else {
+                        String::new()
+                    };
+                    write!(
+                        svg,
+                        "<path{opacity} d=\"M {:.4} {:.4} L {:.4} {:.4}\"/>",
+                        ((i % nx) as f64 + 0.5) * scale,
+                        ((ny - 1 - i / nx) as f64 + 0.5) * scale,
+                        ((j % nx) as f64 + 0.5) * scale,
+                        ((ny - 1 - j / nx) as f64 + 0.5) * scale
+                    )
+                    .unwrap();
+                }
             }
             svg.push_str("</g>");
         }
@@ -235,7 +325,12 @@ fn atlas(g: &Geometry, initial: &[f64], a: &Preparation, b: &Preparation) -> Str
     svg.push_str("<text x=\"24\" y=\"580\" font-size=\"13\">Actual bed / slope lighting1x. Cyan: static contributing-area links, not water discharge. Fixed outer collar is not ocean.</text></svg>");
     svg
 }
-fn raw_fields(path: &Path, initial: &[f64], u: &[f64], p: &Preparation) -> Result<(), String> {
+fn raw_fields<R>(
+    path: &Path,
+    initial: &[f64],
+    u: &[f64],
+    p: &Preparation<R>,
+) -> Result<(), String> {
     let mut f = std::io::BufWriter::new(
         std::fs::OpenOptions::new()
             .write(true)
@@ -257,7 +352,7 @@ fn raw_fields(path: &Path, initial: &[f64], u: &[f64], p: &Preparation) -> Resul
     }
     f.flush().map_err(|e| e.to_string())
 }
-fn profiles(g: &Geometry, h: &[f64], a: &Preparation, b: &Preparation) -> Value {
+fn profiles<A, B>(g: &Geometry, h: &[f64], a: &Preparation<A>, b: &Preparation<B>) -> Value {
     let nx = g.settings.cells_x as usize;
     let ny = g.settings.cells_y as usize;
     let sample = |i: usize, x: f64| json!({"chartDistanceMeters":x,"initialMeters":h[i],"incisionOnlyMeters":a.elevation_meters[i],"coupledMeters":b.elevation_meters[i]});
@@ -301,7 +396,7 @@ fn common_support(g: &Geometry, h: &[f64]) -> Value {
 }
 fn main() -> Result<(), String> {
     let args: Vec<_> = std::env::args().skip(1).collect();
-    let (directory, seed, steps, duration, diffusion) = parse(&args)?;
+    let (directory, seed, steps, duration, diffusion, facets) = parse(&args)?;
     let field = fixed_geological_field::Field::new(reference(&seed))?;
     let perturb = Perturbation::new(&seed);
     let candidates = Surface::build(3, 6371000.);
@@ -368,13 +463,7 @@ fn main() -> Result<(), String> {
                 let seconds = begin.elapsed().as_secs_f64();
                 let file = format!("{case}-{cells}-{label}.f64le");
                 raw_fields(&directory.join(&file), &initial, &rates, &p)?;
-                let record = json!({"variant":label,"settings":p.settings,"preparationModelVersion":p.model_version,
-                    "diffusionSubstepsPerStep":p.diffusion_substeps_per_step,"metrics":metrics(&g,&p.elevation_meters,&p),
-                    "commonSupport":common_support(&g,&p.elevation_meters),
-                    "acceptedUpliftPrismCubicMeters":p.accepted_uplift_prism_cubic_meters,"detachedMaterialReservoirCubicMeters":p.detached_material_reservoir_cubic_meters,
-                    "signedHillslopeBoundaryExchangeCubicMeters":p.signed_hillslope_boundary_exchange_cubic_meters,
-                    "grossRequestedHillslopeTransferCubicMeters":p.gross_requested_hillslope_transfer_cubic_meters,
-                    "relativePrismLedgerResidual":p.relative_prism_ledger_residual,"history":p.history,"physicalFieldsFile":file,"preparationSeconds":seconds});
+                let record = record(&g, &p, label, &file, seconds);
                 println!(
                     "{case} {cells} {label}: closed {:.2}%, sinks{}, bedmax{:.1}m, {seconds:.3}s",
                     p.final_routing.closed_fraction_of_active_area * 100.,
@@ -387,23 +476,60 @@ fn main() -> Result<(), String> {
                 variants.push(record);
                 prepared.push(p);
             }
+            let facet_prepared = if facets {
+                let begin = Instant::now();
+                let p = terrain_patch_landscape::prepare_facets(
+                    &g,
+                    &initial,
+                    &rates,
+                    Settings {
+                        erodibility_per_year: 1e-6,
+                        diffusivity_square_meters_per_year: diffusion,
+                        step_years: duration / steps as f64,
+                        steps,
+                    },
+                )?;
+                let seconds = begin.elapsed().as_secs_f64();
+                let file = format!("{case}-{cells}-facets.f64le");
+                raw_fields(&directory.join(&file), &initial, &rates, &p)?;
+                variants.push(record(&g, &p, "facets", &file, seconds));
+                println!(
+                    "{case} {cells} facets: closed {:.2}%, sinks{}, limited{}, {seconds:.3}s",
+                    p.final_routing.closed_fraction_of_active_area * 100.,
+                    p.final_routing.closed_sink_count,
+                    p.receiver_constraint.as_ref().unwrap().limited_node_updates
+                );
+                Some(p)
+            } else {
+                None
+            };
             let svgfile = format!("{case}-{cells}.svg");
             write_new(
                 &directory.join(&svgfile),
-                atlas(&g, &initial, &prepared[0], &prepared[1]).as_bytes(),
+                atlas(
+                    &g,
+                    &initial,
+                    &prepared[0],
+                    &prepared[1],
+                    facet_prepared.as_ref(),
+                )
+                .as_bytes(),
             )?;
-            let row = json!({"case":case,"geometryModelVersion":g.model_version,"geometrySettings":grid,"referenceRecipe":field.reference_recipe(),
+            let mut row = json!({"case":case,"geometryModelVersion":g.model_version,"geometrySettings":grid,"referenceRecipe":field.reference_recipe(),
                 "geologicalFieldModelVersion":fixed_geological_field::MODEL_VERSION,"sourceIdentity":field.source_identity(),"sourceGeometryFile":"sources.json",
                 "initialPerturbation":{"modelVersion":"fine-patch-seed-perturbations-1","amplitudeBoundMeters":1.,"sphericalWaveLengthMeters":4000.,"modeCount":6,"radiusMeters":6371000.},
                 "selectionRule":if case=="generated" {"Highest fixed-field initial bed among subdivision3 global directions; first ID breaks ties. No water fit."}else{"Controlled uniform uplift, fixed zero boundary collar and bounded initial perturbations."},
                 "variants":variants,"transects":profiles(&g,&initial,&prepared[0],&prepared[1]),"atlasFile":svgfile,"totalSeconds":started.elapsed().as_secs_f64()});
+            if let Some(p) = &facet_prepared {
+                row["facetTransects"] = profiles(&g, &initial, &prepared[0], p);
+            }
             write_json(&directory.join(format!("{case}-{cells}.json")), &row)?;
             rows.push(row);
         }
     }
     write_json(
         &directory.join("manifest.json"),
-        &json!({"reportVersion":"fine-landscape-review-1","durationYears":duration,"diffusivitySquareMetersPerYear":diffusion,"rows":rows,
+        &json!({"reportVersion":if facets {"fine-landscape-review-2"}else{"fine-landscape-review-1"},"durationYears":duration,"diffusivitySquareMetersPerYear":diffusion,"rows":rows,
         "fieldRecord":{"format":"headerless-f64-le-region-major-1","columns":["initialBedMeters","prescribedUpliftMetersPerYear","preparedBedMeters","acceptedUpliftDisplacementMeters","removedIncisionThicknessMeters","signedHillslopeHeightChangeMeters"]},
         "scope":"Bounded actual fine-bed experiments. Fixed outer cell-center collar is an external height reservoir, not ocean. Detached material is in a bookkeeping reservoir, not deposition or material proven to leave through an outlet. Paired lateral transfers and external exchange accounted; no global water, climate or sediment stock advanced. Equal outer chart extents; active collar positions vary with spacing. Native records are not World/checkpoints or camera-driven display detail. Manifest written last."}),
     )
@@ -421,6 +547,7 @@ mod tests {
             vec!["fine-uncreated", "seed", "129"],
             vec!["fine-uncreated", "seed", "64", "NaN"],
             vec!["fine-uncreated", "seed", "64", "4800000", "-1"],
+            vec!["fine-uncreated", "seed", "64", "4800000", "1", "unknown"],
         ] {
             assert!(parse(&args.into_iter().map(str::to_owned).collect::<Vec<_>>()).is_err());
         }
@@ -433,6 +560,16 @@ mod tests {
             assert_eq!(a, p.sample(x));
         }
         assert_eq!(parse(&["fine-review-uncreated-unit".into()]).unwrap().2, 64);
+        let args = [
+            "fine-review-uncreated-unit",
+            "seed",
+            "32",
+            "4800000",
+            "0.01",
+            "--facets",
+        ]
+        .map(str::to_owned);
+        assert!(parse(&args).unwrap().5);
     }
     #[test]
     fn common_support_queries_reproduce_an_independent_affine_chart() {

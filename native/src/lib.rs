@@ -441,6 +441,7 @@ pub mod crust;
 pub mod depression_analysis;
 pub mod drainage;
 pub mod exact_initial_accounting;
+pub mod facet_incision;
 pub mod fixed_geological_field;
 pub mod geodesic_belts;
 pub mod geodesic_envelope;

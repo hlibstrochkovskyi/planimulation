@@ -314,15 +314,20 @@ the global sedimentary pending/active inventories.
 The retained 250–1000 m actual-bed comparisons do not yet meet R3 visual quality:
 eight-direction routing alignment, parameter-dependent smoothing/closed basins
 and time/space sensitivity remain. Neither lower diffusivity nor longer age is
-selected as a fix. Next isolate directional routing error and choose a
-direction-flexible physical formulation before further parameter searches.
+selected as a fix. These results motivated the directional-error witness and
+direction-flexible formulation below before further parameter searches.
 Fine-patch output is not yet a tiled world, desktop model or climate coupling.
 The subsequent [triangular-facet component](facet-routing.md) recovers continuous
 descent directions and partitions static area, retaining physical dry sinks.
 Its analytic controls and six read-only bed comparisons do not yet replace
-erosion/preparation. An explicit two-receiver slope constraint remains the next
+erosion/preparation. An explicit two-receiver slope constraint was the selected
 integration gate; neither unchanged-bed overlays nor accounting prove R3 quality.
-Full regression for this increment passes 831 native tests across 147 targets
+The following [receiver-constrained facet preparation](facet-landscape.md) now
+implements actual uplift/incision/hillslope coupling and sparse limiter traces.
+Old physical records repeat exactly; new actual-bed and 32/64/128-step controls
+still expose broad forms and transient/spatial sensitivity. R3 is not complete;
+no new World pin, desktop limit, tiles or climate coupling are claimed.
+Full regression for the initial fine-patch increment passes 831 native tests across 147 targets
 and 96 Node tests, with the pre-existing ignored test. The subsequently added
 plane-direction witness passes in the ten-test preparation target. Strict
 all-target Clippy, formatting, raw-field repeatability and CLI refusals pass.

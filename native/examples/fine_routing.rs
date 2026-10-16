@@ -34,10 +34,12 @@ fn write_new(path: &Path, bytes: &[u8]) -> Result<(), String> {
 }
 fn output_args(args: &[String]) -> Result<(PathBuf, PathBuf, String), String> {
     if !(2..=3).contains(&args.len()) || args.iter().any(|v| v.trim().is_empty()) {
-        return Err("Usage: fine_routing INPUT_ROW_JSON NEW_DIRECTORY [incision|coupled]".into());
+        return Err(
+            "Usage: fine_routing INPUT_ROW_JSON NEW_DIRECTORY [incision|coupled|facets]".into(),
+        );
     }
     let variant = args.get(2).cloned().unwrap_or("coupled".into());
-    if variant != "incision" && variant != "coupled" {
+    if !matches!(variant.as_str(), "incision" | "coupled" | "facets") {
         return Err("Unsupported retained-bed variant.".into());
     }
     let output = PathBuf::from(&args[1]);
@@ -60,8 +62,10 @@ fn field_file(row: &Value, manifest: &Value, variant: &str) -> Result<String, St
         "removedIncisionThicknessMeters",
         "signedHillslopeHeightChangeMeters"
     ]);
-    if manifest["reportVersion"] != "fine-landscape-review-1"
-        || manifest["fieldRecord"]["format"] != "headerless-f64-le-region-major-1"
+    if !matches!(
+        manifest["reportVersion"].as_str(),
+        Some("fine-landscape-review-1" | "fine-landscape-review-2")
+    ) || manifest["fieldRecord"]["format"] != "headerless-f64-le-region-major-1"
         || manifest["fieldRecord"]["columns"] != columns
         || !manifest["rows"]
             .as_array()
@@ -309,6 +313,11 @@ mod tests {
                 "initialBedMeters","prescribedUpliftMetersPerYear","preparedBedMeters",
                 "acceptedUpliftDisplacementMeters","removedIncisionThicknessMeters","signedHillslopeHeightChangeMeters"]}});
         assert_eq!(field_file(&row, &manifest, "coupled").unwrap(), "bed.f64le");
+        manifest["reportVersion"] = json!("fine-landscape-review-2");
+        assert_eq!(field_file(&row, &manifest, "coupled").unwrap(), "bed.f64le");
+        manifest["reportVersion"] = json!("fine-landscape-review-3");
+        assert!(field_file(&row, &manifest, "coupled").is_err());
+        manifest["reportVersion"] = json!("fine-landscape-review-2");
         assert!(field_file(&row, &manifest, "incision").is_err());
         let mut wrong = row.clone();
         wrong["variants"][0]["physicalFieldsFile"] = json!("../bed.f64le");
