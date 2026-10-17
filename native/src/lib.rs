@@ -440,6 +440,7 @@ pub mod continental_uplands;
 pub mod crust;
 pub mod depression_analysis;
 pub mod drainage;
+pub mod drainage_landforms;
 pub mod exact_initial_accounting;
 pub mod facet_incision;
 pub mod fixed_geological_field;

@@ -146,6 +146,11 @@ resulting **authoritative height field**. This is a proposed bounded candidate,
 not implemented functionality or a selected final production model. Require
 actual height maps before expanding it into a general framework.
 
+October 17 follow-up: the [bounded native construction comparison](drainage-landform-construction.md)
+now implements that candidate and retains actual physical maps. This paragraph's
+proposal is no longer unimplemented, but neither the new component nor its two
+unstructured examples select a final production World model or complete R3/R4.
+
 If construction changes a retained physical bed, measure the accepted change
 and account for detached material; do not silently call it deposition or export.
 If it defines new initial conditions instead, state that distinct scope. In

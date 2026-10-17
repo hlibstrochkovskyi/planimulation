@@ -366,6 +366,16 @@ incision instead creates excessively steep peaks. A blanket native mesh rewrite
 is not selected as the solution. The next bounded quality candidate combines
 structural drainage with explicit authoritative landform/hillslope construction,
 before expanding framework or changing production World storage.
+The subsequent [drainage-conditioned construction](drainage-landform-construction.md)
+now implements native channel-profile constraints, a lower graph-slope roof,
+accepted material debits and actual-bed rerouting. Independent retained
+unstructured comparisons preserve nearly all selected structural channel links
+and produce more dissected local relief; plain slope envelopes remain broad.
+A fully native regular-patch control still exposes strong grid-direction forms.
+Thus a direction-flexible native fine-generation path and inspectable physical
+output are the next implementation priority, not default promotion or another
+general parameter search. The component is not calibrated geological history;
+global geographic family acceptance and R4 coupling remain open.
 Full regression for the initial fine-patch increment passes 831 native tests across 147 targets
 and 96 Node tests, with the pre-existing ignored test. The subsequently added
 plane-direction witness passes in the ten-test preparation target. Strict
