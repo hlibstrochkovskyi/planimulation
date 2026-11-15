@@ -1,7 +1,7 @@
 import './style.css';
 import { Workspace } from './workspace';
 import { MapNavigation } from './map-navigation';
-import { DEFAULT_RECIPE, LEGACY_MODEL_VERSION, MULTISCALE_GEOGRAPHY_MODEL_VERSION, MULTISCALE_UPLANDS_MODEL_VERSION, parseRecipe } from '../core/recipe';
+import { DEFAULT_RECIPE, LEGACY_MODEL_VERSION, MULTISCALE_GEOGRAPHY_MODEL_VERSION, MULTISCALE_UPLANDS_MODEL_VERSION, NEW_WORLD_RECIPE, parseRecipe } from '../core/recipe';
 import type { Recipe } from '../core/recipe';
 import type { World } from '../core/world';
 import type { DesktopAPI, PreparedMoistureWorld, PreparedSoilWorld, PreparedWaterWorld, PrescribedWaterMode, WaterBudget, WaterFrame } from '../shared/desktop-api';
@@ -585,7 +585,7 @@ function updateGeneratorInputs(): void {
   const legacy = generatorFamilyInput.value === LEGACY_MODEL_VERSION;
   terrainPreparationInput.disabled = legacy;
   element('generator-note').textContent = generatorFamilyInput.value === MULTISCALE_UPLANDS_MODEL_VERSION
-    ? 'Experimental continental uplands reuse version-1 geographic structure with variable initial crust thickness. No geological history, river incision or automatic depression removal. Changing the model creates a different world.'
+    ? 'Default for new worlds. Continental uplands reuse version-1 geographic structure with variable initial crust thickness. No geological history, river incision or automatic depression removal. Changing the model creates a different world.'
     : generatorFamilyInput.value === MULTISCALE_GEOGRAPHY_MODEL_VERSION
     ? 'Experimental multiscale crust and terrain fields, with continuous plate roots. No geological history, integrated river erosion, biomes or higher surface resolution is implied. Changing the model creates a different world.'
     : legacy ? 'Legacy terrain without dry preparation. Changing the model creates a different world, not an upgrade of an existing save.'
@@ -1043,5 +1043,5 @@ window.addEventListener('beforeunload', event => {
   if (unsavedProgress || diagnosticDirty) { event.preventDefault(); event.returnValue = ''; }
 });
 window.addEventListener('unload', () => { navigation.dispose(); map.dispose(); });
-setInputs(DEFAULT_RECIPE);
-void generate({ ...DEFAULT_RECIPE });
+setInputs(NEW_WORLD_RECIPE);
+void generate({ ...NEW_WORLD_RECIPE });

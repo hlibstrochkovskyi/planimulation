@@ -186,7 +186,7 @@ try {
   await page.locator('#file-trigger').click();
   await page.locator('#open-seasonal').click();
   await page.locator('#replace-world').click();
-  await expect(canvas).toHaveAttribute('data-moisture-seconds', '3600');
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', '3600', { timeout: 120_000 });
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
   await page.locator('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '7200');

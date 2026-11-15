@@ -43,6 +43,17 @@ export const DEFAULT_RECIPE: Readonly<Recipe> = Object.freeze({
   water: Object.freeze({ mode: 'coverage', fraction: 0.71 }),
 });
 
+/**
+ * Recipe for a new desktop world. DEFAULT_RECIPE stays the frozen reference for
+ * headless runs and pinned fingerprints; promoting a generator family for new
+ * worlds never reinterprets existing recipes.
+ */
+export const NEW_WORLD_RECIPE: Readonly<Recipe> = Object.freeze({
+  ...DEFAULT_RECIPE,
+  modelVersion: MULTISCALE_UPLANDS_MODEL_VERSION,
+  subdivision: 6,
+});
+
 /** Strict parsing prevents an old or misspelled parameter from being silently ignored. */
 export function parseRecipe(value: unknown): Recipe {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {

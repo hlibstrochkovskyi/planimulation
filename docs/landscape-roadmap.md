@@ -262,6 +262,18 @@ not another global source reroll, are the next work. Full regression passes
 800 native tests across 142 targets and 96 Node tests, with the existing ignored
 native test retained, plus strict all-target Clippy/formatting/whitespace checks.
 
+## November 15, 2026: promotion for new desktop worlds
+
+The owner compared `terrain-prep-1`, `continuous-plates-1`,
+`multiscale-geography-1` and `multiscale-geography-2` at 40,962 regions on seeds
+`first-light`, `5c151f46` and `4836187e` with interpolated relief rendering, and
+selected `multiscale-geography-2` as the family for new desktop worlds
+(`NEW_WORLD_RECIPE`). This is a product decision based on visual comparison,
+not a claim that R3 metrics are satisfied. `DEFAULT_RECIPE`, headless defaults,
+old recipes and pinned fingerprints are unchanged. Visible remaining defects:
+mountain belts follow plate boundaries as straight walls, drainage lines are
+short and fragmented, and polar continents look smeared in the atlas.
+
 ## Fine physical landform increment
 
 The global 655362-region footprint is approximately 28 km. This cannot represent

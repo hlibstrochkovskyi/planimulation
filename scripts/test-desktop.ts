@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, open, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { _electron as electron, expect } from '@playwright/test';
-import { CONTINUOUS_PLATES_MODEL_VERSION, DEFAULT_RECIPE, parseRecipe } from '../src/core/recipe';
+import { CONTINUOUS_PLATES_MODEL_VERSION, DEFAULT_RECIPE, NEW_WORLD_RECIPE, parseRecipe } from '../src/core/recipe';
 import { NativeController } from '../src/native/client';
 import { basinTree } from '../src/core/basins';
 import { MAX_SEASONAL_CHECKPOINT_BYTES } from '../src/shared/seasonal-checkpoint';
@@ -73,8 +73,18 @@ try {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => { if (message.type() === 'error' && /THREE|WebGL|shader/i.test(message.text())) errors.push(message.text()); });
+  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 60_000 });
+  // A new desktop world uses the promoted family; the remaining checks use the frozen reference recipe.
+  await expect(page.locator('#region-count')).toHaveText('40,962');
+  await expect(page.locator('#generator-family')).toHaveValue(NEW_WORLD_RECIPE.modelVersion);
+  const startupReference = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
+  try { await expect(page.locator('#fingerprint')).toHaveText((await startupReference.generate(NEW_WORLD_RECIPE)).world.checksum); }
+  finally { startupReference.close(); }
+  await app.evaluate(({ dialog }, source) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [source] }); }, recipePath);
+  await writeFile(recipePath, JSON.stringify(DEFAULT_RECIPE));
+  await ui('#open-recipe').click();
+  await expect(page.locator('#region-count')).toHaveText('10,242', { timeout: 30_000 });
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
-  await expect(page.locator('#region-count')).toHaveText('10,242');
   const fingerprint = await page.locator('#fingerprint').textContent().then(value => value ?? '');
   await expect(page.locator('#legend-title')).toContainText('Land and water surface');
   await expect(page.locator('#water-summary')).toContainText('71.00% target');

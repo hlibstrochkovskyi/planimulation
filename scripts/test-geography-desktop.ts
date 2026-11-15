@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { _electron as electron, expect } from '@playwright/test';
 import type { ElectronApplication } from '@playwright/test';
-import { DEFAULT_RECIPE, LEGACY_MODEL_VERSION, MULTISCALE_GEOGRAPHY_MODEL_VERSION, MULTISCALE_UPLANDS_MODEL_VERSION, parseRecipe } from '../src/core/recipe';
+import { DEFAULT_RECIPE, LEGACY_MODEL_VERSION, MULTISCALE_GEOGRAPHY_MODEL_VERSION, MULTISCALE_UPLANDS_MODEL_VERSION, NEW_WORLD_RECIPE, parseRecipe } from '../src/core/recipe';
 import { NativeController } from '../src/native/client';
 
 // Build separately before running this bounded development/packaged smoke.
@@ -36,21 +36,39 @@ try {
   page.on('console', message => { if (message.type() === 'error') errors.push(`Console: ${message.text()}`); });
   page.on('crash', () => errors.push('Renderer crashed.'));
   const ready = () => expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
+  // Open the dialog or menu that owns a control, as a user would in the workspace.
+  const ui = (selector: string) => {
+    const reveal = async (): Promise<void> => {
+      const target = page.locator(selector);
+      const inForm = await target.evaluate(element => !!element.closest('#recipe-form'));
+      if (inForm && !await page.locator('#world-dialog').isVisible()) await page.locator('[data-dialog="world-dialog"]').click();
+      if (!inForm && await page.locator('#world-dialog').isVisible()) await page.locator('#world-dialog [data-close-dialog]').click();
+      if (await target.evaluate(element => !!element.closest('#file-menu')) && !await page.locator('#file-menu').isVisible()) await page.locator('#file-trigger').click();
+    };
+    return {
+      async click() {
+        await reveal(); await page.locator(selector).click();
+        if (await page.locator('#replace-dialog').isVisible()) await page.locator('#replace-world').click();
+      },
+      async selectOption(value: string) { await reveal(); await page.locator(selector).selectOption(value); },
+      async fill(value: string) { await reveal(); await page.locator(selector).fill(value); },
+    };
+  };
   await ready();
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await expect(page.locator('#generator-family')).toHaveValue(DEFAULT_RECIPE.modelVersion);
+  await expect(page.locator('#generator-family')).toHaveValue(NEW_WORLD_RECIPE.modelVersion);
   await expect(page.locator('#terrain-preparation-passes')).toBeEnabled();
-  await expect(page.locator('#region-count')).toHaveText('10,242');
-  const originalFingerprint = (await reference.generate(DEFAULT_RECIPE)).world.checksum;
+  await expect(page.locator('#region-count')).toHaveText('40,962');
+  const originalFingerprint = (await reference.generate(NEW_WORLD_RECIPE)).world.checksum;
   await expect(page.locator('#fingerprint')).toHaveText(originalFingerprint);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
 
   const candidate = parseRecipe({ ...DEFAULT_RECIPE, modelVersion, subdivision: 6 });
   const nativeCandidate = (await reference.generate(candidate)).world;
-  await page.locator('#generator-family').selectOption(modelVersion);
-  await page.locator('#subdivision').selectOption(String(candidate.subdivision));
-  await expect(page.locator('#generator-note')).toContainText(uplands ? 'Experimental continental uplands' : 'Experimental multiscale');
-  await page.locator('#generate').click();
+  await ui('#generator-family').selectOption(modelVersion);
+  await ui('#subdivision').selectOption(String(candidate.subdivision));
+  await expect(page.locator('#generator-note')).toContainText(uplands ? 'Continental uplands' : 'Experimental multiscale');
+  await ui('#generate').click();
   await ready();
   await expect(page.locator('#fingerprint')).toHaveText(nativeCandidate.checksum, { timeout: 30_000 });
   await expect(page.locator('#model-label')).toContainText(modelVersion.toUpperCase());
@@ -58,7 +76,7 @@ try {
   const canvas = page.locator('#map');
   await page.getByRole('button', { name: '2D map', exact: true }).click();
   await expect(canvas).toHaveAttribute('data-view', 'flat');
-  await page.getByRole('button', { name: 'Fit map', exact: true }).click();
+  await page.locator('#reset-view').click();
   await canvas.click();
   await expect(page.locator('#selection-title')).toContainText('Region');
   await expect(page.locator('#crust-note')).toContainText(uplands ? 'additional initial crust thickness' : 'smooth 3D value-noise fBm');
@@ -94,17 +112,17 @@ try {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [destination] });
   }, recipePath);
-  await page.locator('#save-recipe').click();
+  await ui('#save-recipe').click();
   await expect(page.locator('#status')).toContainText('Recipe saved');
   assert.deepEqual(parseRecipe(JSON.parse(await readFile(recipePath, 'utf8'))), candidate);
-  await page.locator('#generator-family').selectOption(DEFAULT_RECIPE.modelVersion);
-  await page.locator('#seed').fill('unsaved-selector-change');
-  await page.locator('#open-recipe').click();
+  await ui('#generator-family').selectOption(DEFAULT_RECIPE.modelVersion);
+  await ui('#seed').fill('unsaved-selector-change');
+  await ui('#open-recipe').click();
   await expect(page.locator('#generator-family')).toHaveValue(modelVersion);
   await expect(page.locator('#seed')).toHaveValue(candidate.seed);
   await ready();
   await expect(page.locator('#fingerprint')).toHaveText(nativeCandidate.checksum);
-  await page.locator('#generate').click();
+  await ui('#generate').click();
   await ready();
   await expect(page.locator('#generator-family')).toHaveValue(modelVersion);
   await expect(page.locator('#fingerprint')).toHaveText(nativeCandidate.checksum);
@@ -112,26 +130,26 @@ try {
   const { terrainPreparationPasses: _passes, ...legacyBase } = candidate;
   const legacy = parseRecipe({ ...legacyBase, modelVersion: LEGACY_MODEL_VERSION });
   const legacyFingerprint = (await reference.generate(legacy)).world.checksum;
-  await page.locator('#generator-family').selectOption(LEGACY_MODEL_VERSION);
+  await ui('#generator-family').selectOption(LEGACY_MODEL_VERSION);
   await expect(page.locator('#terrain-preparation-passes')).toBeDisabled();
-  await page.locator('#generate').click();
+  await ui('#generate').click();
   await ready();
   await expect(page.locator('#model-label')).toContainText('BASINS-1');
   await expect(page.locator('#fingerprint')).toHaveText(legacyFingerprint);
-  await page.locator('#save-recipe').click();
+  await ui('#save-recipe').click();
   await expect(page.locator('#status')).toContainText('Recipe saved');
   const savedLegacy = JSON.parse(await readFile(recipePath, 'utf8'));
   assert.equal(Object.hasOwn(savedLegacy, 'terrainPreparationPasses'), false);
   assert.deepEqual(parseRecipe(savedLegacy), legacy);
-  await page.locator('#generator-family').selectOption(modelVersion);
+  await ui('#generator-family').selectOption(modelVersion);
   await expect(page.locator('#terrain-preparation-passes')).toBeEnabled();
-  await page.locator('#open-recipe').click();
+  await ui('#open-recipe').click();
   await expect(page.locator('#generator-family')).toHaveValue(LEGACY_MODEL_VERSION);
   await expect(page.locator('#terrain-preparation-passes')).toBeDisabled();
   await expect(page.locator('#terrain-preparation-passes')).toHaveValue('0');
   await ready();
   await expect(page.locator('#fingerprint')).toHaveText(legacyFingerprint);
-  await page.locator('#generate').click();
+  await ui('#generate').click();
   await ready();
   await expect(page.locator('#fingerprint')).toHaveText(legacyFingerprint);
   assert.deepEqual(errors, [], 'The smoke must not emit renderer errors.');
