@@ -225,6 +225,7 @@ try {
   await expect(page.locator('#drainage-note')).toHaveText(drainageExplanation);
   await ui('#exaggeration').selectOption('0');
   await expect(canvas).toHaveAttribute('data-exaggeration', '0');
+  await page.keyboard.press('Escape');
   await canvas.click();
   await expect(canvas).toHaveAttribute('data-picked-surface', 'water');
   await page.setViewportSize({ width: 1600, height: 1000 });
@@ -277,7 +278,7 @@ try {
   await expect(page.locator('#boundary-legend')).toBeVisible();
   await expect(page.locator('#selection-details')).toContainText('Tectonic plate');
   await expect(page.locator('#selection-details')).toContainText('cm/year');
-  await page.getByRole('button', { name: 'Fit map' }).click();
+  await ui('#reset-view').click();
   await clickAtlas(desktopData.boundarySample);
   await expect(page.locator('#selection-title')).toHaveText(`Region ${desktopData.boundarySample.id.toLocaleString('en')}`);
   await expect(page.locator('#boundary-details')).toContainText('opening');
@@ -334,7 +335,7 @@ try {
   await ui('[data-layer="speed"]').click();
   await expect(page.locator('#boundary-legend')).toBeHidden();
   await page.getByRole('button', { name: 'Zoom in' }).click();
-  await page.getByRole('button', { name: 'Fit map' }).click();
+  await ui('#reset-view').click();
   await ui('[data-layer="area"]').click();
   await expect(page.locator('#legend-title')).toContainText('Region area');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
@@ -539,7 +540,7 @@ try {
   await ui('#generate').click();
   await expect(page.locator('#region-count')).toHaveText('162');
   await page.getByRole('button', { name: '2D map', exact: true }).click();
-  await page.getByRole('button', { name: 'Fit map' }).click();
+  await ui('#reset-view').click();
   await clickAtlas(spillSample);
   await expect(page.locator('#selection-title')).toHaveText(`Region ${spillSample.id}`);
   await ui('#water-spill').click();
@@ -579,7 +580,7 @@ try {
   await expect(page.locator('#region-count')).toHaveText('162');
   await expect(page.locator('#seed')).toHaveValue(DEFAULT_RECIPE.seed);
   await expect(page.locator('#water-coverage')).toHaveValue('0');
-  await page.getByRole('button', { name: 'Fit map' }).click();
+  await ui('#reset-view').click();
   await clickAtlas(spillSample);
   await ui('#water-add').click();
   await expect(page.locator('#water-step')).toHaveText(continuedStep);
