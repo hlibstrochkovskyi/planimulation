@@ -4,12 +4,16 @@ import type { RegionalWaterDisplay } from './regional-water';
 import type { BufferGeometry, Mesh, Raycaster } from 'three';
 
 /** Whole-region caps, with the exact angular triangles of the bed. No physical fields are changed. */
-export function buildWaterSurface(positions: Float32Array, regions: Float32Array, water: Water | WaterFrame | RegionalWaterDisplay, radius: number) {
+export function buildWaterSurface(positions: Float32Array, regions: Float32Array, water: Water | WaterFrame | RegionalWaterDisplay, radius: number,
+  interpolation?: { cornerPairs: Float32Array; weights: Float32Array }) {
   const mask = 'wetMask' in water ? water.wetMask : water.bodyIds;
   if (positions.length !== regions.length * 3 || regions.length % 3 || !Number.isFinite(radius) || radius <= 0
     || ('surfaceLevelsMeters' in water
       ? water.surfaceLevelsMeters.length !== mask.length || water.surfaceLevelsMeters.some((level) => !Number.isFinite(level))
-      : !Number.isFinite(water.levelMeters))) throw new Error('Invalid water surface geometry.');
+      : !Number.isFinite(water.levelMeters))
+    || (interpolation && (interpolation.cornerPairs.length !== regions.length * 2 || interpolation.weights.length !== regions.length * 3))) {
+    throw new Error('Invalid water surface geometry.');
+  }
   let count = 0;
   for (let i = 0; i < regions.length; i += 3) {
     const id = regions[i];
@@ -20,11 +24,16 @@ export function buildWaterSurface(positions: Float32Array, regions: Float32Array
   }
   const points = new Float32Array(count * 3), ids = new Float32Array(count), lines = new Float32Array(count * 2);
   const waterOffsets = new Float32Array(count), waterLineOffsets = new Float32Array(lines.length / 3);
+  const cornerPairs = new Float32Array(interpolation ? count * 2 : 0), weights = new Float32Array(interpolation ? count * 3 : 0);
   let cursor = 0;
   for (let i = 0; i < regions.length; i += 3) {
     const id = regions[i];
     if (!mask[id]) continue;
     points.set(positions.subarray(i * 3, i * 3 + 9), cursor * 3);
+    if (interpolation) {
+      cornerPairs.set(interpolation.cornerPairs.subarray(i * 2, i * 2 + 6), cursor * 2);
+      weights.set(interpolation.weights.subarray(i * 3, i * 3 + 9), cursor * 3);
+    }
     ids.fill(id, cursor, cursor + 3);
     // Each globe fan triangle's last two vertices lie on the dual-region boundary.
     for (let j = 0; j < 6; j++) lines[cursor * 2 + j] = positions[i * 3 + 3 + j] * 1.0002;
@@ -33,8 +42,8 @@ export function buildWaterSurface(positions: Float32Array, regions: Float32Array
     waterLineOffsets.fill(offset, cursor / 3 * 2, cursor / 3 * 2 + 2);
     cursor += 3;
   }
-  return { waterPositions: points, waterRegions: ids,
-    waterOffsets, waterLines: lines, waterLineOffsets };
+  return { waterPositions: points, waterRegions: ids, waterOffsets,
+    waterCornerPairs: cornerPairs, waterWeights: weights, waterLines: lines, waterLineOffsets };
 }
 
 /** Intersect visible surfaces only. Water wins coincident hits at zero exaggeration. */

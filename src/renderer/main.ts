@@ -522,7 +522,7 @@ const navigation = new MapNavigation(map);
 
 function updateLegend(): void {
   const legends: Record<Exclude<Layer, keyof typeof MOISTURE_LAYERS>, [string, string, string]> = {
-    surface: [`Land and water surface${hasRegionalSurface(moistureFrame) ? ' · regional seasonal liquid; initial reference heads prescribed' : waterFrame ? ' · prescribed-water display' : ''} · globe shoreline is a display approximation · colors are not biomes`, '', ''],
+    surface: [`Land and water surface${hasRegionalSurface(moistureFrame) ? ' · regional seasonal liquid; initial reference heads prescribed' : waterFrame ? ' · prescribed-water display' : ''} · hypsometric tint by elevation, not biomes · interpolated shoreline is a display approximation`, '', ''],
     signal: ['Seed field · dimensionless diagnostic', '−1', '+1'],
     area: ['Region area · true spherical area', world ? `${number.format(world.stats.minimumAreaSquareMeters / 1e6)} km²` : 'min', world ? `${number.format(world.stats.maximumAreaSquareMeters / 1e6)} km²` : 'max'],
     latitude: ['Latitude · distance from the equator', '90°', '0°'],
@@ -1032,6 +1032,9 @@ temperatureMonthInput.addEventListener('change', () => {
   updateLegend();
 });
 element<HTMLInputElement>('boundaries').addEventListener('change', (event) => map.setBoundaries((event.target as HTMLInputElement).checked));
+element<HTMLInputElement>('smooth-shading').addEventListener('change', (event) => map.setSmoothShading((event.target as HTMLInputElement).checked));
+element<HTMLInputElement>('relief-shading').addEventListener('change', (event) => map.setReliefShading((event.target as HTMLInputElement).checked));
+element<HTMLInputElement>('drainage-lines').addEventListener('change', (event) => map.setDrainageLines((event.target as HTMLInputElement).checked));
 element('reset-view').addEventListener('click', () => map.reset());
 element('zoom-in').addEventListener('click', () => map.zoomBy(1.5));
 element('zoom-out').addEventListener('click', () => map.zoomBy(1 / 1.5));

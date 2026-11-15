@@ -38,6 +38,31 @@ Chrome uses neutral graphite surfaces, restrained amber interaction accents, 4 p
 
 The interface has no button lift, scaling on press, ornamental gradients, or automatic entrance sequences. Temporary menus and dialogs use shadows to indicate elevation. Reduced-motion preferences disable transitions.
 
+## Map rendering
+
+November 15, 2026. Display settings expose three display-only options, all on by
+default:
+
+- **Interpolate between regions.** Continuous layers blend each region center
+  with its shared dual corners (mean of incident regions). Categorical layers
+  (plates, catchments, water bodies, basins, spill thresholds, plate speed) stay
+  whole-region. The shoreline uses a separately relaxed display mask; see
+  [water-surface display](water-surface.md#interpolated-display-shoreline).
+- **Relief shading.** Land and water and Bed elevation use a north-west
+  hillshade from per-region least-squares bed slopes in the local east/north
+  frame, scaled so the 90th-percentile dry-land slope shades visibly at any
+  resolution. Land treats neighboring water as the water level and vice versa;
+  bathymetric slopes are attenuated. The same local shading applies on the
+  globe, where geometry still uses the separate vertical exaggeration.
+- **Drainage lines.** Catmull-Rom curves follow static bed receivers wherever
+  the contributing dry area reaches max(10 mean regions, 100,000 km²), in three
+  widths by area. They are drainage potential, not discharge or channels, and
+  end at the shared boundary when entering water.
+
+None of these options changes native fields, fingerprints, picking or saved
+state. `scripts/render-review.ts` captures flat, globe and zoomed screenshots of
+a generated world for visual review.
+
 ## UX polish
 
 Follow-up on 2026-10-16: real application inspection identified heavy outer focus outlines on fields and tabs, and no direct copy actions. Keyboard focus now uses a thin inset outline; text fields use their existing border for focus. Mouse clicks on tabs retain their ordinary selected state. Forced-colors mode keeps an explicit system-color focus outline. Control labels avoid accidental text selection; inspection values remain selectable.

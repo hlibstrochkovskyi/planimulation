@@ -367,8 +367,18 @@ for (const level of [0, 1, 3]) test(`GPU geometry level ${level}: flat atlas cov
     area += Math.abs((bx - ax) * (cy - ay) - (by - ay) * (cx - ax)) / 2;
   }
   assert.ok(Math.abs(area - 2) < 1e-6, `Atlas area: ${area}`);
-  for (const view of Object.values(views)) {
+  for (const view of [views.flat, views.globe]) {
     assert.equal(view.positions.length, view.regions.length * 3);
+    assert.equal(view.cornerPairs.length, view.regions.length * 2);
+    assert.equal(view.weights.length, view.regions.length * 3);
+    for (let i = 0; i < view.regions.length; i++) {
+      const [wc, wa, wb] = view.weights.subarray(i * 3, i * 3 + 3);
+      assert.ok(Math.abs(wc + wa + wb - 1) < 1e-6 && Math.min(wc, wa, wb) > -1e-4, 'Display interpolation stays inside its fan.');
+      for (const corner of view.cornerPairs.subarray(i * 2, i * 2 + 2)) {
+        const id = view.regions[i], k = corner;
+        assert.ok(views.corners.regions.subarray(views.corners.offsets[k], views.corners.offsets[k + 1]).includes(id));
+      }
+    }
     assert.equal(new Set(view.regions).size, n);
     assert.ok(view.positions.every(Number.isFinite));
     for (let i = 0; i < view.regions.length; i += 3) {

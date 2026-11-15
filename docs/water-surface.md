@@ -67,9 +67,26 @@ final visual quality. Before choosing a repair:
 No rendering or physical-model change accompanies this record. The existing
 geometry/picking tests cover their contracts, not this report's visual quality.
 
+### Interpolated display shoreline
+
+November 15, 2026. With **Interpolate between regions** enabled (the default),
+the shader blends a display-only signed wet mask between each region center and
+its shared dual corners. Before blending, the mask is relaxed twice over
+neighbors, while every region keeps its own sign with magnitude at least 0.3, so
+single-region islands and lakes stay visible. The visible shoreline is the zero
+contour of that blended mask on both projections. On the globe, cap fragments on
+the dry side of the contour are discarded and bed fragments on the wet side use
+the water palette. The native wet mask, depths, stocks, body IDs and picking are
+unchanged; the inspector still reports whole-region values. Turning
+interpolation off restores the whole-region coloring described above.
+
+This addresses the visual review above in display only. Bed/cap geometry and
+depth testing are unchanged, so steep exaggerated coasts can still show the
+interpolated bed inside a wet region from oblique angles.
+
 ## Layers and colors
 
-**Land and water** shows the raised water mesh only on the globe. The flat view colors entire wet regions from the same native mask. Water color is a shallow-to-deep blue ramp using native region depth divided by the world's maximum depth. Land color is an elevation-above-initial-level ramp between muted green and stone; it does not indicate vegetation or biomes. Exposed bed inside a native wet region uses the low-land color. A tiny minimum color-ramp magnitude preserves a visible wet/dry distinction for extremely shallow water; it never changes depth or volume.
+**Land and water** shows the raised water mesh only on the globe. The flat view colors entire wet regions from the same native mask. Water color is a bathymetric ramp in meters of native depth. Land color is a hypsometric atlas tint in meters above the initial level (green lowlands through tan and brown to pale summits); it does not indicate vegetation or biomes. Exposed bed inside a native wet region uses the low-land color. A tiny minimum color-ramp magnitude preserves a visible wet/dry distinction for extremely shallow water; it never changes depth or volume.
 
 **Water depth**, **Water bodies**, and every other analytical layer hide the water mesh and expose the bed as before. Tectonic lines appear only in their own layers. The region-grid toggle adds lines on the water level in the surface view; bed lines are naturally occluded underwater. Water-grid endpoints use the existing small radial overlay bias, with no model effect.
 
