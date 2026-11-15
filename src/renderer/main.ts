@@ -588,9 +588,9 @@ function updateGeneratorInputs(): void {
   const legacy = generatorFamilyInput.value === LEGACY_MODEL_VERSION;
   terrainPreparationInput.disabled = legacy;
   element('generator-note').textContent = generatorFamilyInput.value === MULTISCALE_BELTS_MODEL_VERSION
-    ? 'Candidate: continental uplands with meandering, varied mountain belts and sediment-filled shallow depressions for connected drainage. Changing the model creates a different world.'
+    ? 'Default for new worlds. Continental uplands with meandering, varied mountain belts and sediment-filled shallow depressions for connected drainage. Changing the model creates a different world.'
     : generatorFamilyInput.value === MULTISCALE_UPLANDS_MODEL_VERSION
-    ? 'Default for new worlds. Continental uplands reuse version-1 geographic structure with variable initial crust thickness. No geological history, river incision or automatic depression removal. Changing the model creates a different world.'
+    ? 'Continental uplands reuse version-1 geographic structure with variable initial crust thickness. No geological history, river incision or automatic depression removal. Changing the model creates a different world.'
     : generatorFamilyInput.value === MULTISCALE_GEOGRAPHY_MODEL_VERSION
     ? 'Experimental multiscale crust and terrain fields, with continuous plate roots. No geological history, integrated river erosion, biomes or higher surface resolution is implied. Changing the model creates a different world.'
     : legacy ? 'Legacy terrain without dry preparation. Changing the model creates a different world, not an upgrade of an existing save.'

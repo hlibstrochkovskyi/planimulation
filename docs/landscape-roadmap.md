@@ -274,9 +274,10 @@ old recipes and pinned fingerprints are unchanged. Visible remaining defects:
 mountain belts follow plate boundaries as straight walls, drainage lines are
 short and fragmented, and polar continents look smeared in the atlas.
 
-The opt-in [`multiscale-geography-3` candidate](mountain-belts.md) addresses the
-first two: shaped belts and filled shallow depressions reduce land draining to
-closed sinks from 45–50% to 13–16% on the three review seeds. Scarce coastal
+The [`multiscale-geography-3` family](mountain-belts.md) addresses the first
+two: shaped belts and filled shallow depressions reduce land draining to closed
+sinks from 45–50% to 13–16% on the three review seeds. After a side-by-side
+review the owner promoted it to `NEW_WORLD_RECIPE` the same day. Scarce coastal
 lowlands remain.
 
 ## Fine physical landform increment

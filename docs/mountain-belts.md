@@ -1,8 +1,8 @@
 # Mountain belts and filled plains: `multiscale-geography-3`
 
-November 15, 2026. Opt-in desktop and headless generator family. Not the default
-for new worlds; `multiscale-geography-2` remains the default until the owner
-selects otherwise. Old recipes and fingerprints are unchanged.
+November 15, 2026. Generator family for new desktop worlds (`NEW_WORLD_RECIPE`),
+selected by the owner after visual comparison with `multiscale-geography-2`.
+`DEFAULT_RECIPE`, headless defaults, old recipes and fingerprints are unchanged.
 
 ## What changes relative to version 2
 
