@@ -376,6 +376,15 @@ Thus a direction-flexible native fine-generation path and inspectable physical
 output are the next implementation priority, not default promotion or another
 general parameter search. The component is not calibrated geological history;
 global geographic family acceptance and R4 coupling remain open.
+The [native irregular terrain path](native-irregular-terrain.md) now supplies
+seeded Poisson/Delaunay physical geometry and a direct procedural scaffold source
+without Python or a regular erosion prerequisite. Forty local records across
+twenty fixed seeds and a 63k-point workload pass geometry/route/material checks;
+actual maps no longer inherit the resampling control's large grid-aligned arms.
+The source is capped initial-condition construction, not resolved geological
+history, and its through-connected perimeter assumption is not planetary
+closed-basin policy. An inspectable desktop view is next. These local controls
+do not replace R3's global/directed morphology review or R4's coupling gates.
 Full regression for the initial fine-patch increment passes 831 native tests across 147 targets
 and 96 Node tests, with the pre-existing ignored test. The subsequently added
 plane-direction witness passes in the ten-test preparation target. Strict

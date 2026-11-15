@@ -234,3 +234,10 @@ search or rewrite every global subsystem around a TIN. This component does not
 close ordinary-seed/global coast quality, plate history, climate coupling,
 terrain tiles/LOD, seam/pole handling, conservative restriction or checkpoints.
 Those R3/R4 requirements remain open.
+
+October 17 follow-up: the [native irregular terrain path](native-irregular-terrain.md)
+now implements owned geometry and a direct initial-condition source. That
+increment adds the pinned Spade dependency; the construction kernel above is
+unchanged. Resampling remains a limited control, while the direct source avoids
+regular-preparation input and retains all intermediate assumptions. It is not
+desktop integration, a calibrated erosion history or completed R3/R4.

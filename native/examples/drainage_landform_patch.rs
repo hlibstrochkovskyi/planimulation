@@ -1,7 +1,10 @@
 //! Generate retained native physical patches and their construction comparison.
 //! No Python runtime, display-generated heights or seasonal water advancement.
+#[path = "support/irregular_landform_observer.rs"]
+mod irregular_observer;
 use planimulation_core::{
-    Recipe, Surface, drainage_landforms, fixed_geological_field, physical_seed_field,
+    Recipe, Surface, drainage_landforms, fixed_geological_field, irregular_patch,
+    physical_seed_field, structural_patch_source,
     terrain_patch_geometry::{self, Geometry},
     terrain_patch_landscape::{self, SpecificSettings},
 };
@@ -100,9 +103,16 @@ fn atlas(g: &Geometry, before: &[f64], patch: &drainage_landforms::Patch) -> Str
 
 fn main() -> Result<(), String> {
     let args: Vec<_> = std::env::args().skip(1).collect();
+    let structural = args.last().is_some_and(|s| s == "--structural");
+    let irregular = args.last().is_some_and(|s| s == "--irregular");
+    let args = if irregular || structural {
+        &args[..args.len() - 1]
+    } else {
+        &args[..]
+    };
     if args.is_empty() || args.len() > 3 {
         return Err(
-            "Usage: drainage_landform_patch NEW_DIRECTORY [SEED] [CELLS_PER_SIDE(40..160)]".into(),
+            "Usage: drainage_landform_patch NEW_DIRECTORY [SEED] [CELLS_PER_SIDE(40..160; structural:40..256)] [--irregular|--structural]".into(),
         );
     }
     let output = Path::new(&args[0]);
@@ -113,8 +123,15 @@ fn main() -> Result<(), String> {
     let cells = args.get(2).map_or(Ok(160_u32), |s| {
         s.parse().map_err(|_| "Invalid patch cells.")
     })?;
-    if !(40..=160).contains(&cells) {
-        return Err("Patch cells must be 40..160 per side.".into());
+    let maximum_cells = if structural {
+        irregular_patch::MAX_NOMINAL_SIDE
+    } else {
+        160
+    };
+    if !(40..=maximum_cells).contains(&cells) {
+        return Err(format!(
+            "Patch nominal cells must be 40..{maximum_cells} per side for this mode."
+        ));
     }
     let recipe = reference(seed)?;
     recipe.validate()?;
@@ -151,6 +168,76 @@ fn main() -> Result<(), String> {
     let mut records = Vec::new();
     for (case, anchor) in [("synthetic", [1., 0., 0.]), ("generated", center)] {
         let started = Instant::now();
+        if structural {
+            let mesh = irregular_patch::build(
+                seed,
+                terrain_patch_geometry::Settings {
+                    radius_meters: recipe.radius_meters,
+                    center_direction: anchor,
+                    orientation_radians: 0.,
+                    cells_x: cells,
+                    cells_y: cells,
+                    spacing_meters: 20000. / f64::from(cells),
+                },
+            )?;
+            let geometry_seconds = started.elapsed().as_secs_f64();
+            let started = Instant::now();
+            let mut potential = Vec::new();
+            let mut uplift = Vec::new();
+            for (i, &p) in mesh.point_directions.iter().enumerate() {
+                let s = field.sample(p)?;
+                let fixed = mesh.fixed_external_boundary[i];
+                let perturbation = noise.sample(p)?;
+                potential.push(if case == "synthetic" {
+                    if fixed { 0. } else { 1. + perturbation }
+                } else {
+                    s.elevation_meters + perturbation
+                });
+                uplift.push(if fixed {
+                    0.
+                } else if case == "synthetic" {
+                    0.0005
+                } else {
+                    1e-6 * 2000. * s.convergence_meters / 6000.
+                });
+            }
+            let initial = structural_patch_source::build(
+                &mesh,
+                &potential,
+                &uplift,
+                structural_patch_source::Settings {
+                    erodibility_per_year: 5.61e-7,
+                    maximum_profile_slope: std::f64::consts::FRAC_PI_6.tan(),
+                },
+            )?;
+            let source_seconds = started.elapsed().as_secs_f64();
+            let review = irregular_observer::from_geometry(
+                mesh,
+                initial.initial_bed_meters.clone(),
+                settings,
+                geometry_seconds,
+                structural_patch_source::MODEL_VERSION,
+            )?;
+            let image = irregular_observer::atlas(&review);
+            println!(
+                "{case}: geometry {geometry_seconds:.3}s, structural source {source_seconds:.3}s, construction {:.3}s, {} points, mesh R8 {:.4}, closed {:.2}%",
+                review.construction_and_routing_seconds,
+                review.geometry.chart_points_meters.len(),
+                review.mesh_eightfold_order,
+                review.closed_dry_fraction_of_active_area * 100.
+            );
+            let report = json!({"reportVersion":irregular_observer::STRUCTURAL_REPORT_VERSION,"case":case,"seed":seed,
+                "referenceRecipe":recipe,"sourceIdentity":field.source_identity(),"seedFieldIdentity":noise.identity(),
+                "geologicalPotentialMeters":potential,"prescribedUpliftMetersPerYear":uplift,
+                "structuralInitialSource":initial,"landforms":review,"sourceSeconds":source_seconds,
+                "scope":"Direct native procedural INITIAL conditions on irregular geometry. Minimax scaffold and capped steady-profile grades are generation assumptions, NOT funded lakes, time-resolved erosion, or filling an existing World. No geological duration is assigned. Channel/roof construction debits its actually removed reference prisms; actual dry drainage is rebuilt on final heights. No global World, checkpoint, existing stocks or desktop integration."});
+            records.push((
+                case,
+                serde_json::to_vec(&report).map_err(|e| e.to_string())?,
+                image,
+            ));
+            continue;
+        }
         let geometry = terrain_patch_geometry::build(terrain_patch_geometry::Settings {
             radius_meters: recipe.radius_meters,
             center_direction: anchor,
@@ -185,6 +272,34 @@ fn main() -> Result<(), String> {
             source_settings,
         )?;
         let source_seconds = started.elapsed().as_secs_f64();
+        if irregular {
+            let review = irregular_observer::build(
+                seed,
+                geometry.settings,
+                &source.elevation_meters,
+                settings,
+            )?;
+            let image = irregular_observer::atlas(&review);
+            println!(
+                "{case}: source {source_seconds:.3}s, irregular geometry {:.3}s, construction {:.3}s, {} points, mesh R8 {:.4}, closed {:.2}%",
+                review.geometry_seconds,
+                review.construction_and_routing_seconds,
+                review.geometry.chart_points_meters.len(),
+                review.mesh_eightfold_order,
+                review.closed_dry_fraction_of_active_area * 100.
+            );
+            let report = json!({"reportVersion":irregular_observer::REPORT_VERSION,"case":case,"seed":seed,
+                "referenceRecipe":recipe,"sourceIdentity":field.source_identity(),"seedFieldIdentity":noise.identity(),
+                "regularSourceGeometry":geometry,"initialBedMeters":initial,"upliftMetersPerYear":rates,
+                "regularPreparedSource":source,"irregularLandforms":review,"sourceSeconds":source_seconds,
+                "scope":"Fully native generation-only comparison. Existing regular preparation defines an explicit bilinear height interpolant; new irregular geometry uses its OWN spherical area thirds, not source stocks. Construction changes physical heights and rebuilds actual drainage. This is not erosion on an irregular mesh, conservative stock transfer, a global World, checkpoint or desktop integration."});
+            records.push((
+                case,
+                serde_json::to_vec(&report).map_err(|e| e.to_string())?,
+                image,
+            ));
+            continue;
+        }
         let started = Instant::now();
         let patch =
             drainage_landforms::construct_patch(&geometry, &source.elevation_meters, settings)?;
@@ -217,7 +332,7 @@ fn main() -> Result<(), String> {
         write_new(&output.join(format!("{case}.json")), &report)?;
         write_new(&output.join(format!("{case}.svg")), image.as_bytes())?;
     }
-    let manifest = json!({"reportVersion":"native-drainage-landform-patch-1","seed":seed,"cellsPerSide":cells,
+    let manifest = json!({"reportVersion":if structural {irregular_observer::STRUCTURAL_REPORT_VERSION} else if irregular {irregular_observer::REPORT_VERSION}else{"native-drainage-landform-patch-1"},"seed":seed,"cellsPerSide":cells,
         "constructionModelVersion":drainage_landforms::MODEL_VERSION,
         "records":["synthetic.json","generated.json"],"atlases":["synthetic.svg","generated.svg"],
         "scope":"Bounded native quality comparison, not a World or a completed R3/R4. Both source and final beds are retained."});
