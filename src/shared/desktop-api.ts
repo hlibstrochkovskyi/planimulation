@@ -17,6 +17,7 @@ export interface WaterBudget { epoch: number; step: number; initialTotalUnits: s
   storedTotalUnits: string; stocks: Array<{ branch: number; volumeUnits: string }> }
 
 export interface DesktopAPI {
+  copyText(text: string): Promise<void>;
   openRecipe(): Promise<Recipe | null>;
   saveRecipe(recipe: Recipe): Promise<boolean>;
   exportView(rect: CaptureRect): Promise<boolean>;

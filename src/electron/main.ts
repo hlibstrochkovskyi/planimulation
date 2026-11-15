@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, session } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, session } from 'electron';
 import type { IpcMainInvokeEvent } from 'electron';
 import { open, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -27,7 +27,7 @@ function senderWindow(event: IpcMainInvokeEvent): BrowserWindow {
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     title: 'Planimulation', width: 1440, height: 940, minWidth: 1000, minHeight: 700,
-    backgroundColor: '#111315', show: false,
+    backgroundColor: '#1a1a1a', show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true,
@@ -36,7 +36,20 @@ function createWindow(): void {
   if (process.platform !== 'darwin') mainWindow.setMenuBarVisibility(false);
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   mainWindow.webContents.on('will-navigate', (event) => event.preventDefault());
-  mainWindow.webContents.on('did-start-loading', () => core.close());
+  mainWindow.webContents.on('will-prevent-unload', event => {
+    if (!mainWindow) return;
+    const response = dialog.showMessageBoxSync(mainWindow, {
+      type: 'question', title: 'Unsaved experiment progress',
+      message: 'Discard unsaved experiment progress?',
+      detail: 'Keep the window open to save a checkpoint. Diagnostic diffusion is not included in checkpoints.',
+      buttons: ['Keep working', 'Discard progress'], defaultId: 0, cancelId: 0, noLink: true,
+    });
+    // Electron uses preventDefault here to allow an unload blocked by the page.
+    if (response === 1) event.preventDefault();
+  });
+  // A reload can begin loading before beforeunload is declined. Only retire
+  // the old session after navigation commits, so a canceled reload can resume.
+  mainWindow.webContents.on('did-navigate', () => core.close());
   mainWindow.webContents.on('render-process-gone', () => core.close());
   mainWindow.once('ready-to-show', () => mainWindow?.show());
   mainWindow.on('closed', () => { core.close(); mainWindow = null; });
@@ -47,6 +60,11 @@ app.setName('Planimulation');
 void app.whenReady().then(() => {
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   session.defaultSession.setPermissionCheckHandler(() => false);
+  ipcMain.handle('clipboard:writeText', (event, value: unknown) => {
+    senderWindow(event);
+    if (typeof value !== 'string' || value.length > 65_536) throw new Error('Copy requires text of at most 65,536 characters.');
+    return clipboard.writeText(value);
+  });
   ipcMain.handle('world:generate', (event, recipe: unknown) => { senderWindow(event); return core.generate(parseRecipe(recipe)); });
   ipcMain.handle('world:cancel', (event) => { senderWindow(event); core.cancel(); });
   ipcMain.handle('world:accept', (event, epoch: number) => { senderWindow(event); core.accept(epoch); });

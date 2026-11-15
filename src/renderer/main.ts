@@ -1,4 +1,6 @@
 import './style.css';
+import { Workspace } from './workspace';
+import { MapNavigation } from './map-navigation';
 import { DEFAULT_RECIPE, LEGACY_MODEL_VERSION, MULTISCALE_GEOGRAPHY_MODEL_VERSION, MULTISCALE_UPLANDS_MODEL_VERSION, parseRecipe } from '../core/recipe';
 import type { Recipe } from '../core/recipe';
 import type { World } from '../core/world';
@@ -14,10 +16,10 @@ import { basinTree, summarizeBasins } from '../core/basins';
 import { approximateCubicKilometers, runoffDestination } from './water-budget';
 import type { TemperatureNormals } from '../core/seasonal-temperature';
 import type { WindNormals } from '../core/seasonal-wind';
-import { MOISTURE_MAX_SECONDS, MOISTURE_STOCK_FIELDS, SURFACE_TRANSFER_FIELDS, RUNOFF_TRANSFER_FIELDS } from '../shared/seasonal-moisture';
+import { MOISTURE_MAX_SECONDS, MOISTURE_STOCK_FIELDS, MOISTURE_MODES, SURFACE_TRANSFER_FIELDS, RUNOFF_TRANSFER_FIELDS } from '../shared/seasonal-moisture';
 import type { SeasonalDisplayFrame } from '../shared/seasonal-display';
 import { hasRegionalSurface, isSoilMoistureFrame } from '../shared/seasonal-display';
-import { MOISTURE_LAYERS, isMoistureLayer, supportsMoistureLayer, moistureLayerTitle, moistureCalendar } from './seasonal-moisture';
+import { MOISTURE_LAYERS, isMoistureLayer, supportsMoistureLayer, moistureLayerTitle, moistureLayerValue, moistureCalendar } from './seasonal-moisture';
 import { soilWaterInspection } from './soil-water-inspector';
 
 function element<T extends HTMLElement>(id: string): T {
@@ -26,6 +28,7 @@ function element<T extends HTMLElement>(id: string): T {
   return result as T;
 }
 
+const workspace = new Workspace();
 const api: DesktopAPI = window.desktop;
 const seedInput = element<HTMLInputElement>('seed');
 const generatorFamilyInput = element<HTMLSelectElement>('generator-family');
@@ -96,10 +99,13 @@ let basinChildren: number[][] = [];
 let inspectedBasin: number | null = null;
 let plateAreas = new Float64Array(0);
 let boundarySegments = new Map<number, number[]>();
+let unsavedProgress = false;
+let diagnosticDirty = false;
 
 function showStatus(message: string, error = false): void {
   status.textContent = message;
   status.classList.toggle('error', error);
+  workspace.statusChanged(message, error);
 }
 
 function updateExperimentControls(): void {
@@ -116,7 +122,7 @@ function updateExperimentControls(): void {
   moistureStep.disabled = !hasSeasonal || busy || moisturePlaying || finished;
   // Pause must remain available while the current native step is in flight.
   moisturePlay.disabled = !hasSeasonal || finished || (!moisturePlaying && busy);
-  moisturePlay.textContent = moisturePlaying ? 'Pause seasonal water' : 'Run seasonal water';
+  moisturePlay.textContent = moisturePlaying ? 'Pause' : 'Run';
   moistureInterval.disabled = busy || moisturePlaying;
   // File actions require a settled, paused snapshot; the pause control remains
   // usable while an already requested interval finishes.
@@ -143,6 +149,15 @@ function updateExperimentControls(): void {
   waterOpen.disabled = busy || moisturePlaying || playing;
   element<HTMLButtonElement>('play').disabled = !world || hasSeasonal || (!playing && busy);
   document.body.dataset.seasonalWater = moisturePlaying ? 'running' : moistureBusyEpoch === epoch ? 'working' : hasSeasonal ? 'paused' : 'idle';
+  workspace.update({ layer: currentLayer, selected,
+    seasonalModel: moistureFrame ? isSoilMoistureFrame(moistureFrame) ? 'soil'
+      : Object.entries(MOISTURE_MODES).find(([, mode]) => mode.modelVersion === moistureFrame!.modelVersion)?.[0] ?? 'baseline' : null,
+    seasonalWorking: moistureBusyEpoch === epoch, seasonalRunning: moisturePlaying, seasonalFinished: finished,
+    diagnosticRunning: playing, diagnosticDirty, busy, unsaved: unsavedProgress || diagnosticDirty, manualStep: waterFrame?.step ?? 0,
+    layerReading: world && moistureFrame && selected !== null && isMoistureLayer(currentLayer) && supportsMoistureLayer(moistureFrame, currentLayer)
+      ? { label: moistureLayerTitle(moistureFrame, currentLayer),
+        value: `${budgetNumber.format(moistureLayerValue(moistureFrame, currentLayer, selected, world.surface.areasSquareMeters[selected]))} ${MOISTURE_LAYERS[currentLayer].unit}`,
+        scope: `Accepted frame · ${budgetNumber.format(moistureFrame.elapsedSeconds / 86400)} elapsed days` } : null });
 }
 
 function appendDetails(target: HTMLElement, rows: Array<[string, string]>): void {
@@ -162,7 +177,7 @@ function renderMoisture(): void {
     delete element('moisture-time').dataset.requestMilliseconds;
     delete element('moisture-budget-details').dataset.relativeMassResidual;
     delete element('moisture-budget-details').dataset.relativeLedgerResidual;
-    element('moisture-time').textContent = 'Not initialized · regeneration discards unsaved seasonal progress';
+    element('moisture-time').textContent = 'Not initialized. Choose a model and initialize.';
     element('moisture-step-note').textContent = 'No interval recorded. Playback waits for each native response; frame rate does not set model time.';
     element('moisture-budget-note').textContent = 'Initialize seasonal water to inspect its approximate binary64 accounting. Do not add it to the full initial water inventory.';
     element('moisture-budget-details').replaceChildren(); element('moisture-selection-details').replaceChildren();
@@ -258,7 +273,7 @@ async function requestMoisture(seconds: number, initialize?: 'orographic' | 'pre
     // An accepted old-world step may finish while a replacement is preparing.
     // Retain it until that world is actually replaced, including cancellation.
     if (frame.epoch !== epoch || world !== origin) return;
-    moistureFrame = frame; map.setMoistureFrame(frame);
+    moistureFrame = frame; unsavedProgress = true; map.setMoistureFrame(frame);
     if (hasRegionalSurface(frame)) {
       const depth = isSoilMoistureFrame(frame) ? frame.regionalLiquidDepthMeters : frame.regionalSurface!.depthMeters;
       maximumWaterDepth = Math.max(world.water.depthMeters.reduce((maximum, depth) => Math.max(maximum, depth), 0),
@@ -270,7 +285,7 @@ async function requestMoisture(seconds: number, initialize?: 'orographic' | 'pre
     element('model-label').textContent = `${world.recipe.modelVersion.toUpperCase()} · ${frame.modelVersion.toUpperCase()} · FIXED GEOGRAPHY`;
     const residual = isSoilMoistureFrame(frame) ? frame.budget.relativeGlobalResidual
       : frame.budget.residualKilograms / Math.max(frame.budget.initialMobileWaterKilograms, 1);
-    if (request === generationId) showStatus(`Seasonal water ${frame.elapsedSeconds / 86400} days · native request + IPC ${number.format(requestMilliseconds)} ms · relative total-water residual ${residual.toExponential(2)}.`);
+    if (request === generationId) showStatus(`Seasonal water ${budgetNumber.format(frame.elapsedSeconds / 86400)} days · native request + IPC ${number.format(requestMilliseconds)} ms · relative total-water residual ${residual.toExponential(2)}.`);
     if (frame.elapsedSeconds >= MOISTURE_MAX_SECONDS) pauseMoisture();
   } catch (error) {
     if (epoch === activeEpoch) {
@@ -464,6 +479,7 @@ function inspect(id: number, preserveBasin = false): void {
     row.textContent = `Plate ${other + 1} · ${BOUNDARY_NAMES[t.boundaryTypes[segment]]} · opening ${(t.boundaryMotion[segment * 2] * 100).toFixed(3)} cm/year · shear ${(t.boundaryMotion[segment * 2 + 1] * 100).toFixed(3)} cm/year`;
     boundaryDetails.append(row);
   }
+  workspace.inspectionChanged(!preserveBasin);
 }
 
 function inspectBasin(node: number): void {
@@ -502,6 +518,7 @@ function createMap(): SurfaceMap {
   }
 }
 const map = createMap();
+const navigation = new MapNavigation(map);
 
 function updateLegend(): void {
   const legends: Record<Exclude<Layer, keyof typeof MOISTURE_LAYERS>, [string, string, string]> = {
@@ -602,6 +619,8 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
   waterOpen.disabled = true; waterSave.disabled = true; waterBudgetButton.disabled = true;
   showStatus(prepared ? 'Preparing restored world views…' : 'Building the surface in the native core…');
   document.body.dataset.state = 'generating';
+  if (!world) { element('map-empty').hidden = false; element('map-empty').textContent = 'Generating world…'; }
+  workspace.generationStarted();
   element<HTMLButtonElement>('play').disabled = true;
   updateExperimentControls();
   try {
@@ -620,6 +639,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
     // publication and this request. The old native world survives preparation.
     const accepted = api.acceptWorld(result.epoch);
     world = result.world; epoch = result.epoch; selected = null; waterFrame = null; waterBudget = null;
+    unsavedProgress = false; diagnosticDirty = false;
     moistureFrame = restoredMoisture;
     map.setMoistureFrame(moistureFrame); renderMoisture();
     temperatureNormals = null; windNormals = null;
@@ -748,6 +768,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
       element<HTMLButtonElement>('play').disabled = world === null;
       showStatus(error instanceof Error ? error.message : String(error), true);
       document.body.dataset.state = 'error';
+      if (!world) element('map-empty').textContent = 'World generation failed. Choose New world to review the settings.';
       waterAdd.disabled = world === null || selected === null || waterBusy;
       waterSpill.disabled = waterAdd.disabled;
       updateExperimentControls();
@@ -782,6 +803,7 @@ async function prescribeWater(mode: PrescribedWaterMode): Promise<void> {
   try {
     const frame = await api.prescribeWater(activeEpoch, source, mode);
     if (request !== generationId || frame.epoch !== epoch || !world) return;
+    unsavedProgress = true;
     applyWaterFrame(frame);
     await refreshWaterBudget();
     if (waterBudget?.step === frame.step) {
@@ -806,6 +828,7 @@ waterAdd.addEventListener('click', () => void prescribeWater('oneCubicKilometer'
 waterSpill.addEventListener('click', () => void prescribeWater('fillToSpill'));
 waterOpen.addEventListener('click', async () => {
   if (checkpointOpening || document.body.dataset.state === 'generating') return;
+  if (!await workspace.confirmReplacement()) return;
   pause(); checkpointOpening = true;
   waterOpen.disabled = true; waterAdd.disabled = true; waterSpill.disabled = true;
   waterSave.disabled = true; waterBudgetButton.disabled = true;
@@ -843,13 +866,14 @@ waterSave.addEventListener('click', async () => {
   waterBusy = true; updateExperimentControls();
   waterSave.disabled = true;
   try {
-    if (await api.saveWaterCheckpoint(epoch)) showStatus('Exact prescribed-water checkpoint saved.');
+    if (await api.saveWaterCheckpoint(epoch)) { unsavedProgress = false; showStatus('Exact prescribed-water checkpoint saved.'); }
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
   finally { if (epoch === activeEpoch) waterBusy = false; updateExperimentControls(); }
 });
 moistureOpen.addEventListener('click', async () => {
   if (checkpointOpening || waterBusy || advancing || moistureBusyEpoch === epoch || budgetBusyEpoch === epoch
     || document.body.dataset.state === 'generating') return;
+  if (!await workspace.confirmReplacement()) return;
   pause(); checkpointOpening = true; updateExperimentControls();
   try {
     const prepared = await api.openSeasonalCheckpoint();
@@ -865,7 +889,7 @@ moistureSave.addEventListener('click', async () => {
   const activeEpoch = epoch, seconds = moistureFrame.elapsedSeconds;
   waterBusy = true; updateExperimentControls();
   try {
-    if (await api.saveSeasonalCheckpoint(activeEpoch)) showStatus(`Complete seasonal checkpoint saved at ${seconds} elapsed seconds.`);
+    if (await api.saveSeasonalCheckpoint(activeEpoch)) { unsavedProgress = false; showStatus(`Complete seasonal checkpoint saved at ${seconds} elapsed seconds.`); }
     else showStatus('Seasonal checkpoint saving canceled.');
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
   finally { if (epoch === activeEpoch) waterBusy = false; updateExperimentControls(); }
@@ -876,6 +900,7 @@ function pause(): void {
   element('play').textContent = 'Run diagnostic';
   pauseMoisture();
 }
+element('pause-active').addEventListener('click', pause);
 async function advance(): Promise<void> {
   if (!playing || advancing || !world) return;
   advancing = true;
@@ -884,7 +909,7 @@ async function advance(): Promise<void> {
   try {
     const frame = await api.advance(activeEpoch, 4);
     if (request !== generationId || frame.epoch !== epoch || !world) return;
-    world.diagnosticField = frame.field; map.refreshField();
+    world.diagnosticField = frame.field; diagnosticDirty = true; map.refreshField();
     if (selected !== null) inspect(selected, true);
     element('diagnostic-tick').textContent = `Step ${frame.tick}`;
     showStatus(`Diagnostic diffusion · relative mass error ${frame.relativeMassError.toExponential(2)} · Recipe saves the initial state, not this diagnostic step.`);
@@ -906,21 +931,23 @@ for (const button of document.querySelectorAll<HTMLButtonElement>('button[data-v
     for (const other of document.querySelectorAll('button[data-view]')) {
       other.classList.toggle('active', other === button); other.setAttribute('aria-pressed', String(other === button));
     }
-    element('projection-label').textContent = mode === 'flat' ? 'EQUIRECTANGULAR PROJECTION' : 'GLOBE · COMPUTED RELIEF';
+    element('projection-label').textContent = mode === 'flat' ? 'Equirectangular projection' : 'Globe · computed relief';
   });
 }
 
-element('recipe-form').addEventListener('submit', (event) => {
+element('recipe-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   try {
     const { terrainPreparationPasses: _defaultPasses, ...baseRecipe } = DEFAULT_RECIPE;
-    void generate(parseRecipe({ ...baseRecipe, modelVersion: generatorFamilyInput.value, seed: seedInput.value, subdivision: Number(resolutionInput.value), radiusMeters: Number(radiusInput.value) * 1000,
+    const recipe = parseRecipe({ ...baseRecipe, modelVersion: generatorFamilyInput.value, seed: seedInput.value, subdivision: Number(resolutionInput.value), radiusMeters: Number(radiusInput.value) * 1000,
       plateCount: Number(plateCountInput.value), maxPlateSpeedCmPerYear: Number(plateSpeedInput.value),
       continentalFraction: Number(continentalFractionInput.value) / 100, continentalScale: Number(continentalScaleInput.value),
       reliefScale: Number(reliefScaleInput.value), boundaryWidthKm: Number(boundaryWidthInput.value), detailAmplitudeMeters: Number(detailAmplitudeInput.value),
       ...(generatorFamilyInput.value !== LEGACY_MODEL_VERSION ? { terrainPreparationPasses: Number(terrainPreparationInput.value) } : {}),
       water: waterModeInput.value === 'coverage' ? { mode: 'coverage', fraction: Number(waterCoverageInput.value) / 100 }
-        : { mode: 'volume', volumeCubicMeters: Number(waterVolumeInput.value) * 1e9 } }));
+        : { mode: 'volume', volumeCubicMeters: Number(waterVolumeInput.value) * 1e9 } });
+    if (!workspace.hasUnsavedProgress) void generate(recipe);
+    else { pause(); if (await workspace.confirmReplacement()) void generate(recipe); }
   } catch (error) { showStatus(error instanceof Error ? error.message : String(error), true); }
 });
 element('recipe-form').addEventListener('invalid', (event) => {
@@ -939,6 +966,7 @@ cancel.addEventListener('click', () => {
   waterBudgetButton.disabled = world === null || budgetBusyEpoch === epoch;
   element<HTMLButtonElement>('play').disabled = world === null;
   document.body.dataset.state = world ? 'ready' : 'idle';
+  if (!world) element('map-empty').textContent = 'No world loaded. Choose New world to begin.';
   waterAdd.disabled = world === null || selected === null || waterBusy;
   waterSpill.disabled = waterAdd.disabled;
   showStatus(world ? 'Generation canceled. The previous surface is still displayed.' : 'Generation canceled.');
@@ -947,6 +975,8 @@ cancel.addEventListener('click', () => {
 element('new-seed').addEventListener('click', () => { seedInput.value = crypto.randomUUID().slice(0, 8); });
 element('open-recipe').addEventListener('click', async () => {
   if (checkpointOpening || waterBusy) return;
+  if (workspace.hasUnsavedProgress) pause();
+  if (!await workspace.confirmReplacement()) return;
   try {
     const recipe = await api.openRecipe();
     if (recipe && !checkpointOpening && !waterBusy) { const validated = parseRecipe(recipe); setInputs(validated); void generate(validated); }
@@ -990,7 +1020,7 @@ function selectLayer(layer: Layer): void {
     other.classList.toggle('active', active);
     other.setAttribute('aria-pressed', String(active));
   }
-  map.setLayer(currentLayer); updateLegend();
+  map.setLayer(currentLayer); updateLegend(); updateExperimentControls();
 }
 for (const button of document.querySelectorAll<HTMLButtonElement>('[data-layer]')) {
   button.addEventListener('click', () => selectLayer(button.dataset.layer as Layer));
@@ -1005,6 +1035,10 @@ element<HTMLInputElement>('boundaries').addEventListener('change', (event) => ma
 element('reset-view').addEventListener('click', () => map.reset());
 element('zoom-in').addEventListener('click', () => map.zoomBy(1.5));
 element('zoom-out').addEventListener('click', () => map.zoomBy(1 / 1.5));
-window.addEventListener('beforeunload', () => { pause(); map.dispose(); });
+window.addEventListener('beforeunload', event => {
+  pause();
+  if (unsavedProgress || diagnosticDirty) { event.preventDefault(); event.returnValue = ''; }
+});
+window.addEventListener('unload', () => { navigation.dispose(); map.dispose(); });
 setInputs(DEFAULT_RECIPE);
 void generate({ ...DEFAULT_RECIPE });

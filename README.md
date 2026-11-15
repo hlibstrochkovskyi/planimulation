@@ -10,13 +10,15 @@ A native [moisture-transport kernel and headless report](docs/moisture-transport
 
 A separate [regional surface-flow candidate](docs/regional-surface-flow.md) uses compensated regional columns and neighboring physical faces instead of enumerating basin-parent transitions. It couples capped Manning-inspired flow to seasonal exchange and passes the recorded 25-case annual cohort, including explicitly funded active-flow/refinement controls. Its opt-in [desktop mode](docs/regional-water-desktop.md) adds regional depth, cumulative flow layers, separate body budgets, changing regional water caps and complete checkpoint replay in both projections. This is a different, uncalibrated approximation, not a migration; coarse wet/dry/soil coupling, fixed reference heads, capped mobility and spatial sensitivity remain review gates.
 
-The separate [unified regional soil cycle](docs/regional-soil-cycle.md) applies source-independent liquid/soil exchange without the legacy whole-column wet-film switch. Vapor, delayed soil drainage and every directed transfer retain paired precision and complete replay. Strict numerical refusal and explicitly selected donor retention are separately pinned. Its [protocol-15 transport and typed session](docs/soil-water-transport.md) now support an opt-in [desktop mode](docs/soil-water-desktop.md): **Initialize unified soil water** on a fresh world. Ownership-aware layers, paired inspectors, donor-retention diagnostics and complete checkpoint replay work in both projections. Defaults and old saves are unchanged; physical calibration and broader spatial/long-term qualification remain open.
+The separate [unified regional soil cycle](docs/regional-soil-cycle.md) applies source-independent liquid/soil exchange without the legacy whole-column wet-film switch. Vapor, delayed soil drainage and every directed transfer retain paired precision and complete replay. Strict numerical refusal and explicitly selected donor retention are separately pinned. Its [protocol-15 transport and typed session](docs/soil-water-transport.md) now support an opt-in [desktop mode](docs/soil-water-desktop.md): choose **Unified soil water** in the seasonal model selector, then **Initialize** on a fresh world. Ownership-aware layers, paired inspectors, donor-retention diagnostics and complete checkpoint replay work in both projections. Defaults and old saves are unchanged; physical calibration and broader spatial/long-term qualification remain open.
 
 ## Documentation
 
 | Document | Contents |
 | --- | --- |
 | [DESIGN.md](DESIGN.md) | Vision, world laws, future civilization mechanics, and scope |
+| [Desktop workspace](docs/ui-workspace.md) | Layer navigation, map and contextual inspector, experiment controls, checkpoints, and interface verification |
+| [Planet navigation](docs/globe-navigation.md) | Surface-relative globe camera, compass, map controls, and space presentation |
 | [World generation](docs/world-generation.md) | Proposed algorithms, spherical surface, controls, initialization, dynamics, and 2D/3D views |
 | [Implementation plan](docs/implementation-plan.md) | Early milestones, minimal architecture, validation, and acceptance criteria |
 | [Development guide](docs/development.md) | Desktop commands, testing strategy, reproducibility, and current limits |

@@ -1,6 +1,6 @@
 import { BufferAttribute, BufferGeometry, DataTexture, DoubleSide, FloatType, Group, LineBasicMaterial,
   LineSegments, Mesh, MOUSE, NearestFilter, OrthographicCamera, PerspectiveCamera, Raycaster, RedFormat,
-  Scene, ShaderMaterial, Vector2, WebGLRenderer } from 'three';
+  Scene, ShaderMaterial, Vector2, Vector3, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { World } from '../core/world';
 import type { WaterFrame } from '../shared/desktop-api';
@@ -18,32 +18,42 @@ import { isMoistureLayer, supportsMoistureLayer, moistureLayerColor, moistureLay
 import type { MoistureLayer } from './seasonal-moisture';
 import { regionalWaterDisplay } from './regional-water';
 import type { RegionalWaterDisplay } from './regional-water';
+import { PlanetCamera } from './planet-camera';
+import type { PlanetView } from './planet-camera';
+import { SpaceBackdrop } from './space';
 
 export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill' | 'temperature' | 'windSpeed' | MoistureLayer;
 export type ViewMode = 'flat' | 'globe';
+export interface NavigationView extends PlanetView { mode: ViewMode; radiusMeters: number }
 
 export class SurfaceMap {
   private readonly renderer: WebGLRenderer;
   private readonly scene = new Scene();
   private readonly flatCamera = new OrthographicCamera(-1.2, 1.2, .6, -.6, .01, 100);
-  private readonly globeCamera = new PerspectiveCamera(42, 1, .01, 100);
+  private readonly globeCamera = new PerspectiveCamera(42, 1, .001, 200);
   private readonly controls: OrbitControls;
+  private readonly planetCamera: PlanetCamera;
+  private readonly space: SpaceBackdrop;
   private readonly resizeObserver: ResizeObserver;
   private readonly raycaster = new Raycaster();
+  private readonly worldSun = new Vector3(.25, .28, .927).normalize();
+  private distantLighting = true;
   private readonly material = new ShaderMaterial({
     side: DoubleSide,
     uniforms: { field: { value: null }, textureWidth: { value: 1 }, textureHeight: { value: 1 },
       selected: { value: -1 }, globe: { value: 0 }, categorical: { value: 0 }, muted: { value: 0 }, waterMode: { value: 0 },
       surfaceMode: { value: 0 }, waterSurface: { value: 0 }, missingMode: { value: 0 },
-      basinMode: { value: 0 }, spillFrom: { value: -1 }, spillTo: { value: -1 }, temperatureMode: { value: 0 }, windMode: { value: 0 } },
-    vertexShader: `attribute float region; varying float cell; varying vec3 direction;
-      void main() { cell=region; direction=normalMatrix*normal;
+      basinMode: { value: 0 }, spillFrom: { value: -1 }, spillTo: { value: -1 }, temperatureMode: { value: 0 }, windMode: { value: 0 },
+      distantLightMix: { value: 0 }, sunDirection: { value: this.worldSun } },
+    vertexShader: `attribute float region; varying float cell; varying vec3 direction; varying vec3 planetDirection;
+      void main() { cell=region; direction=normalMatrix*normal; planetDirection=(modelMatrix*vec4(position,1.0)).xyz;
         gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
     fragmentShader: `uniform sampler2D field; uniform float textureWidth; uniform float textureHeight;
       uniform float selected; uniform float globe; uniform float categorical; uniform float muted; uniform float waterMode;
       uniform float surfaceMode; uniform float waterSurface; uniform float missingMode;
       uniform float basinMode; uniform float spillFrom; uniform float spillTo; uniform float temperatureMode; uniform float windMode;
-      varying float cell; varying vec3 direction;
+      uniform float distantLightMix; uniform vec3 sunDirection;
+      varying float cell; varying vec3 direction; varying vec3 planetDirection;
       void main() {
         float id=floor(cell+0.5);
         vec2 uv=vec2((mod(id,textureWidth)+0.5)/textureWidth,(floor(id/textureWidth)+0.5)/textureHeight);
@@ -71,7 +81,15 @@ export class SurfaceMap {
         color*=1.0-muted*0.65;
         if(basinMode>0.5 && (abs(cell-spillFrom)<0.25 || abs(cell-spillTo)<0.25)) color=vec3(0.15,0.95,0.94);
         if(abs(cell-selected)<0.25) color=vec3(0.96,0.78,0.42);
-        if(globe>0.5) color*=0.4+0.6*max(0.0,dot(normalize(direction),normalize(vec3(-0.4,0.6,1.0))));
+        if(globe>0.5) {
+          vec3 normal=normalize(direction), light=normalize(vec3(-0.4,0.6,1.0));
+          vec3 survey=color*(0.4+0.6*max(0.0,dot(normal,light)));
+          float solar=dot(normalize(planetDirection),sunDirection);
+          float day=smoothstep(-0.035,0.065,solar);
+          vec3 daylight=mix(vec3(1.0,0.78,0.58),vec3(1.0),smoothstep(0.0,0.25,solar))*(0.16+0.84*max(0.0,solar));
+          vec3 orbital=color*mix(vec3(0.012,0.018,0.03),daylight,day);
+          color=mix(survey,orbital,distantLightMix);
+        }
         gl_FragColor=vec4(color,1.0);
       }`,
   });
@@ -103,8 +121,49 @@ export class SurfaceMap {
   private worker: Worker | null = null;
   private abortPreparation: (() => void) | null = null;
   private frame = 0;
+  private dampingFrame = 0;
+  private dampingChanged = false;
   private lost = false;
   private pointerStart = [0, 0];
+  private pointerMoved = false;
+  private dragPointer: number | null = null;
+  private readonly handleControlsChange = (): void => {
+    this.draw(); this.notifyNavigation();
+    if (this.dampingFrame) this.dampingChanged = true;
+    else if (this.dragPointer !== null) this.scheduleDamping();
+  };
+  private readonly updateDamping = (): void => {
+    this.dampingFrame = 0;
+    this.dampingChanged = false;
+    this.controls.update();
+    if (this.dragPointer !== null || this.dampingChanged) this.scheduleDamping();
+  };
+  private scheduleDamping(): void {
+    if (!this.dampingFrame) this.dampingFrame = requestAnimationFrame(this.updateDamping);
+  }
+  private stopDamping(): void {
+    if (this.dampingFrame) cancelAnimationFrame(this.dampingFrame);
+    this.dampingFrame = 0;
+    this.dampingChanged = false;
+  }
+  private readonly beginMapDrag = (event: PointerEvent): void => {
+    if (this.mode !== 'flat' || event.button !== 0 || this.dragPointer !== null) return;
+    this.stopDamping();
+    this.dragPointer = event.pointerId;
+    this.canvas.classList.add('dragging');
+    document.body.classList.add('map-dragging');
+  };
+  private readonly endMapDrag = (event: PointerEvent): void => {
+    if (this.dragPointer !== event.pointerId) return;
+    const moved = Math.hypot(event.clientX - this.pointerStart[0], event.clientY - this.pointerStart[1]) > 4;
+    this.clearMapDrag();
+    if (event.type === 'pointerup' && moved) this.scheduleDamping();
+  };
+  private readonly clearMapDrag = (): void => {
+    this.dragPointer = null;
+    this.canvas.classList.remove('dragging');
+    document.body.classList.remove('map-dragging');
+  };
 
   constructor(private readonly canvas: HTMLCanvasElement, private readonly select: (id: number) => void) {
     // Share field/selection uniforms, but distinguish the raised water mesh.
@@ -117,14 +176,34 @@ export class SurfaceMap {
     this.flatCamera.position.set(0, 0, 3);
     this.globeCamera.position.set(3, 0, 0);
     this.controls = new OrbitControls(this.flatCamera, canvas);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = .08;
     this.controls.enableRotate = false;
     this.controls.screenSpacePanning = true;
+    this.controls.zoomToCursor = true;
     this.controls.minZoom = .5; this.controls.maxZoom = 30;
     this.controls.minDistance = 1.3; this.controls.maxDistance = 8;
-    this.controls.addEventListener('change', () => this.draw());
-    canvas.addEventListener('pointerdown', (e) => { this.pointerStart = [e.clientX, e.clientY]; });
+    this.controls.addEventListener('change', this.handleControlsChange);
+    canvas.dataset.sky = 'loading';
+    this.space = new SpaceBackdrop(this.renderer.getPixelRatio(), ready => {
+      canvas.dataset.sky = ready ? 'ready' : 'fallback'; this.notifyNavigation(); this.draw();
+    });
+    this.scene.add(this.space);
+    this.planetCamera = new PlanetCamera(this.globeCamera, canvas, () => { this.draw(); this.notifyNavigation(); });
+    canvas.addEventListener('pointerdown', (e) => {
+      if (!e.isPrimary) return;
+      this.pointerStart = [e.clientX, e.clientY]; this.pointerMoved = false;
+      canvas.focus({ preventScroll: true });
+    });
+    canvas.addEventListener('pointermove', e => {
+      if (e.isPrimary && Math.hypot(e.clientX - this.pointerStart[0], e.clientY - this.pointerStart[1]) > 4) this.pointerMoved = true;
+    });
+    canvas.addEventListener('pointerdown', this.beginMapDrag);
+    window.addEventListener('pointerup', this.endMapDrag);
+    window.addEventListener('pointercancel', this.endMapDrag);
+    window.addEventListener('blur', this.clearMapDrag);
     canvas.addEventListener('pointerup', (e) => {
-      if (Math.hypot(e.clientX - this.pointerStart[0], e.clientY - this.pointerStart[1]) > 4 || e.button !== 0 || !this.views) return;
+      if (!e.isPrimary || this.pointerMoved || this.mode === 'globe' && this.planetCamera.wasDragged || e.button !== 0 || !this.views) return;
       const rect = canvas.getBoundingClientRect();
       this.raycaster.setFromCamera(new Vector2((e.clientX - rect.left) / rect.width * 2 - 1, 1 - (e.clientY - rect.top) / rect.height * 2), this.camera);
       const view = this.views[this.mode];
@@ -132,6 +211,30 @@ export class SurfaceMap {
       if (!hit) return;
       const id = hit.id; this.canvas.dataset.pickedSurface = hit.surface;
       this.material.uniforms.selected.value = id; this.select(id); this.draw();
+    });
+    canvas.addEventListener('dblclick', event => {
+      if (this.mode !== 'flat') return;
+      event.preventDefault(); this.controls.zoomToCursor = true;
+      // OrbitControls owns wheel anchoring. Center the clicked map point for a deliberate approach.
+      const bounds = canvas.getBoundingClientRect();
+      const point = new Vector2((event.clientX - bounds.left) / bounds.width * 2 - 1, 1 - (event.clientY - bounds.top) / bounds.height * 2);
+      this.raycaster.setFromCamera(point, this.flatCamera);
+      const distance = -this.raycaster.ray.origin.z / this.raycaster.ray.direction.z;
+      const hit = this.raycaster.ray.at(distance, this.controls.target.clone());
+      const shift = hit.sub(this.controls.target).multiplyScalar(.5);
+      this.controls.target.add(shift); this.flatCamera.position.add(shift); this.zoomBy(2);
+    });
+    canvas.addEventListener('keydown', event => {
+      if (this.mode !== 'flat' || event.ctrlKey || event.metaKey) return;
+      const key = event.key.toLowerCase();
+      if (key === 'r' || key === 'home') this.reset();
+      else if (key === 'n' || key === 'u') { /* The flat map is north up. */ }
+      else if (key === '+' || key === '=' || key === 'pageup') this.zoomBy(1.5);
+      else if (key === '-' || key === 'pagedown') this.zoomBy(1 / 1.5);
+      else if (key === ' ') this.stopCamera();
+      else if (key.startsWith('arrow')) this.controls.pan(key === 'arrowleft' ? 32 : key === 'arrowright' ? -32 : 0, key === 'arrowup' ? 32 : key === 'arrowdown' ? -32 : 0);
+      else return;
+      event.preventDefault(); this.scheduleDamping();
     });
     canvas.addEventListener('webglcontextlost', (event) => { event.preventDefault(); this.lost = true; canvas.dataset.gpu = 'lost'; });
     canvas.addEventListener('webglcontextrestored', () => { this.lost = false; canvas.dataset.gpu = 'ready'; this.draw(); });
@@ -148,7 +251,7 @@ export class SurfaceMap {
     const aspect = width / height, halfHeight = Math.max(.6, 1.1 / aspect);
     Object.assign(this.flatCamera, { left: -halfHeight * aspect, right: halfHeight * aspect, top: halfHeight, bottom: -halfHeight });
     this.flatCamera.updateProjectionMatrix();
-    this.globeCamera.aspect = aspect; this.globeCamera.updateProjectionMatrix(); this.draw();
+    this.globeCamera.aspect = aspect; this.globeCamera.updateProjectionMatrix(); this.planetCamera.resize(); this.draw();
   }
   private makeView(data: ViewGeometry): Group {
     const geometry = new BufferGeometry();
@@ -189,6 +292,9 @@ export class SurfaceMap {
       worker.postMessage({ surface: world.surface, tectonics: world.tectonics, elevation: world.terrain.elevation, water: world.water });
     }).finally(() => { worker.terminate(); if (this.worker === worker) { this.worker = null; this.abortPreparation = null; } });
     const next = { flat: this.makeView(pair.flat), globe: this.makeView(pair.globe) };
+    // Model longitude increases toward +Z. Reflect the display embedding so east
+    // appears on the right in a north-up globe, matching the flat projection.
+    next.globe.scale.z = -1;
     this.releaseViews(); this.views = next;
     this.scene.add(next.flat, next.globe); this.world = world; this.waterFrame = null; this.temperatureNormals = null; this.windNormals = null;
     this.moistureFrame = null; this.regionalWater = null; this.waterSurfaceDirty = false;
@@ -212,7 +318,7 @@ export class SurfaceMap {
     this.material.uniforms.selected.value = -1;
     this.setBasinContact();
     delete this.canvas.dataset.pickedSurface;
-    this.setLayer(this.layer); this.setMode(this.mode); this.setBoundaries(this.boundaries);
+    this.setLayer(this.layer); this.setMode(this.mode); this.setBoundaries(this.boundaries); this.reset();
   }
   setWaterFrame(frame: WaterFrame): void {
     if (!this.world || !this.views || frame.depthMeters.length !== this.world.stats.regionCount
@@ -306,23 +412,29 @@ export class SurfaceMap {
     this.refreshField();
   }
   setMode(mode: ViewMode): void {
+    this.stopCamera();
+    this.clearMapDrag();
     this.mode = mode; this.canvas.dataset.view = mode;
     if (mode === 'globe' && this.layer === 'surface' && this.regionalWater && this.waterSurfaceDirty) {
       this.updateWaterSurface(this.regionalWater);
     }
     this.material.uniforms.globe.value = mode === 'globe' ? 1 : 0;
+    this.space.visible = mode === 'globe';
+    this.renderer.setClearColor(mode === 'globe' ? '#040507' : '#0c1721');
     if (this.views) { this.views.flat.visible = mode === 'flat'; this.views.globe.visible = mode === 'globe'; }
-    this.controls.object = this.camera; this.controls.enableRotate = mode === 'globe';
-    this.controls.enablePan = mode === 'flat';
-    this.controls.mouseButtons.LEFT = mode === 'flat' ? MOUSE.PAN : MOUSE.ROTATE;
-    this.reset();
+    this.controls.enabled = mode === 'flat';
+    this.controls.mouseButtons.LEFT = MOUSE.PAN;
+    this.planetCamera.setEnabled(mode === 'globe');
+    this.notifyNavigation(); this.draw();
   }
   setLayer(layer: Layer): void {
     this.layer = layer;
+    this.space.setSurfaceMode(layer === 'surface');
     if (layer === 'surface' && this.mode === 'globe' && this.regionalWater && this.waterSurfaceDirty) {
       this.updateWaterSurface(this.regionalWater);
     }
     this.canvas.dataset.activeLayer = layer;
+    this.notifyNavigation();
     this.material.uniforms.surfaceMode.value = layer === 'surface' ? 1 : 0;
     this.material.uniforms.temperatureMode.value = layer === 'temperature' ? 1 : 0;
     this.material.uniforms.windMode.value = layer === 'windSpeed' ? 1 : 0;
@@ -406,22 +518,62 @@ export class SurfaceMap {
       if (object instanceof Mesh) geometry.computeVertexNormals();
       geometry.computeBoundingSphere(); geometry.computeBoundingBox();
     }
+    const outerRadius = this.world ? Math.max(1, 1 + applied * Math.max(0, this.terrainRange.maximumMeters, waterExtent ?? 0) / this.world.recipe.radiusMeters) : 1;
+    const atmosphericReference = this.world?.water.mainOceanId
+      ? 1 + applied * this.world.water.levelMeters / this.world.recipe.radiusMeters : 1;
+    this.planetCamera.setRadius(outerRadius); this.space.setRadius(outerRadius, atmosphericReference);
     this.canvas.dataset.exaggeration = String(applied); this.draw(); return applied;
   }
   reset(): void {
+    this.stopCamera();
+    if (this.mode === 'globe') { this.planetCamera.reset(); return; }
     this.controls.target.set(0, 0, 0);
-    if (this.mode === 'flat') { this.flatCamera.position.set(0, 0, 3); this.flatCamera.zoom = 1; this.flatCamera.updateProjectionMatrix(); }
-    else this.globeCamera.position.set(3, 0, 0);
-    this.controls.update(); this.draw();
+    this.flatCamera.position.set(0, 0, 3); this.flatCamera.zoom = 1; this.flatCamera.updateProjectionMatrix();
+    this.controls.update(); this.notifyNavigation(); this.draw();
   }
   zoomBy(factor: number): void {
+    if (this.mode === 'globe') { this.planetCamera.zoom(factor); return; }
     if (this.mode === 'flat') { this.flatCamera.zoom = Math.max(.5, Math.min(30, this.flatCamera.zoom * factor)); this.flatCamera.updateProjectionMatrix(); }
-    else this.globeCamera.position.multiplyScalar(Math.max(1.3, Math.min(8, this.globeCamera.position.length() / factor)) / this.globeCamera.position.length());
-    this.controls.update(); this.draw();
+    this.controls.update(); this.notifyNavigation(); this.draw();
   }
+  get navigation(): NavigationView {
+    return { ...(this.mode === 'globe' ? this.planetCamera.view : { heading: 0, tilt: 0, latitude: Math.max(-90, Math.min(90, this.controls.target.y * 180)),
+      longitude: ((this.controls.target.x * 180 + 180) % 360 + 360) % 360 - 180, distance: 0 }), mode: this.mode, radiusMeters: this.world?.recipe.radiusMeters ?? 0 };
+  }
+  private notifyNavigation(): void {
+    if (!this.planetCamera) return;
+    const view = this.navigation;
+    this.canvas.dataset.heading = view.heading.toFixed(2); this.canvas.dataset.tilt = view.tilt.toFixed(2);
+    this.canvas.dataset.viewDistance = view.distance.toFixed(5);
+    this.canvas.dispatchEvent(new CustomEvent<NavigationView>('viewchange', { detail: view }));
+  }
+  northUp(): void { if (this.mode === 'globe') this.planetCamera.north(); }
+  rotateView(degrees: number): void { if (this.mode === 'globe') this.planetCamera.rotate(degrees); }
+  toggleTilt(): void { if (this.mode === 'globe') this.planetCamera.toggleTilt(); }
+  stopCamera(): void {
+    this.planetCamera.stop(); this.stopDamping();
+    this.controls.enableDamping = false; this.controls.update(); this.controls.enableDamping = true;
+  }
+  setStars(visible: boolean): void {
+    this.space.setStars(visible); this.canvas.dataset.skyVisible = String(visible); this.notifyNavigation(); this.draw();
+  }
+  setAtmosphere(visible: boolean): void { this.space.setAtmosphere(visible); this.draw(); }
+  setDistantLighting(enabled: boolean): void { this.distantLighting = enabled; this.draw(); }
   private draw(): void {
     if (this.frame || this.lost) return;
-    this.frame = requestAnimationFrame(() => { this.frame = 0; if (!this.lost) this.renderer.render(this.scene, this.camera); });
+    this.frame = requestAnimationFrame(() => {
+      this.frame = 0;
+      if (!this.lost) {
+        const distance = this.planetCamera.view.distance;
+        const fade = Math.max(0, Math.min(1, (distance - 3) / 2));
+        const nightBlend = this.mode === 'globe' && this.layer === 'surface' && this.distantLighting ? fade * fade * (3 - 2 * fade) : 0;
+        this.material.uniforms.distantLightMix.value = nightBlend;
+        this.canvas.dataset.dayNight = nightBlend.toFixed(3);
+        this.lineMaterial.opacity = .45 * (1 - nightBlend * .8);
+        if (this.mode === 'globe') this.space.updateView(this.camera, distance, nightBlend, this.worldSun);
+        this.renderer.render(this.scene, this.camera);
+      }
+    });
   }
   private releaseViews(): void {
     if (this.views) for (const group of Object.values(this.views)) {
@@ -431,7 +583,13 @@ export class SurfaceMap {
     this.texture?.dispose(); this.texture = null; this.views = null;
   }
   dispose(): void {
-    this.cancelPreparation(); cancelAnimationFrame(this.frame); this.resizeObserver.disconnect();
-    this.controls.dispose(); this.releaseViews(); this.material.dispose(); this.waterMaterial.dispose(); this.lineMaterial.dispose(); this.tectonicMaterial.dispose(); this.renderer.dispose();
+    this.cancelPreparation(); cancelAnimationFrame(this.frame); this.stopDamping(); this.resizeObserver.disconnect();
+    this.clearMapDrag();
+    this.canvas.removeEventListener('pointerdown', this.beginMapDrag);
+    window.removeEventListener('pointerup', this.endMapDrag);
+    window.removeEventListener('pointercancel', this.endMapDrag);
+    window.removeEventListener('blur', this.clearMapDrag);
+    this.controls.removeEventListener('change', this.handleControlsChange);
+    this.controls.dispose(); this.planetCamera.dispose(); this.space.dispose(); this.releaseViews(); this.material.dispose(); this.waterMaterial.dispose(); this.lineMaterial.dispose(); this.tectonicMaterial.dispose(); this.renderer.dispose();
   }
 }

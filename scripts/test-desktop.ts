@@ -18,12 +18,64 @@ const executablePath = process.argv[2] ? path.resolve(process.argv[2]) : undefin
 const app = await electron.launch({ executablePath, args: [...(executablePath ? [] : ['.']), `--user-data-dir=${temp}`], env, timeout: 30_000 });
 try {
   const page = await app.firstWindow();
+  page.on('dialog', () => {});
+  page.setDefaultTimeout(15_000);
+  await app.evaluate(({ dialog }) => { dialog.showMessageBoxSync = () => 1; });
+  // Reveal controls through the same panels a user opens in the workspace.
+  async function reveal(selector: string): Promise<void> {
+    const target = page.locator(selector);
+    if (await target.evaluate(element => !!element.closest('#recipe-form'))) {
+      if (!await page.locator('#world-dialog').isVisible()) await page.locator('[data-dialog="world-dialog"]').click();
+    } else if (await page.locator('#world-dialog').isVisible()) {
+      await page.locator('#world-dialog [data-close-dialog]').click();
+    }
+    if (await target.evaluate(element => !!element.closest('#file-menu'))) {
+      if (!await page.locator('#file-menu').isVisible()) await page.locator('#file-trigger').click();
+    }
+    if (await target.evaluate(element => !!element.closest('#display-menu'))) {
+      if (!await page.locator('#display-menu').isVisible()) await page.locator('#display-trigger').click();
+    } else if (await page.locator('#display-menu').isVisible()) await page.keyboard.press('Escape');
+    const group = await target.evaluate(element => element.closest<HTMLDetailsElement>('.layer-group')?.dataset.group);
+    if (group) {
+      if (await page.locator('#toggle-layers').getAttribute('aria-expanded') === 'false') await page.locator('#toggle-layers').click();
+      const details = page.locator(`[data-group="${group}"]`);
+      if (!await details.evaluate(element => (element as HTMLDetailsElement).open)) await details.locator('summary').click();
+    }
+    const experiment = await target.evaluate(element => element.closest('.experiment-panel')?.id);
+    if (experiment) await page.locator(`[aria-controls="${experiment}"]`).click();
+    const initializer: Record<string, string> = { '#moisture-start': 'baseline', '#moisture-start-orographic': 'orographic',
+      '#moisture-start-precise': 'precise', '#moisture-start-regional': 'regional', '#moisture-start-soil': 'soil' };
+    if (initializer[selector] && await page.locator('#moisture-model').isEnabled()) await page.locator('#moisture-model').selectOption(initializer[selector]);
+    if (await target.evaluate(element => !!element.closest('#inspector-pane'))) {
+      if (await page.locator('#toggle-inspector').getAttribute('aria-expanded') === 'false') await page.locator('#toggle-inspector').click();
+      const panel = await target.evaluate(element => element.closest('[role="tabpanel"]')?.id);
+      if (panel) await page.locator(`[aria-controls="${panel}"]`).click();
+    }
+    if (selector === '#temperature-month' && !await target.isVisible()) {
+      await reveal('[data-layer="temperature"]'); await page.locator('[data-layer="temperature"]').click();
+    }
+  }
+  function ui(selector: string) {
+    return {
+      async click() {
+        await reveal(selector); await page.locator(selector).click();
+        if (await page.locator('#replace-dialog').isVisible()) await page.locator('#replace-world').click();
+      },
+      async fill(value: string) { await reveal(selector); await page.locator(selector).fill(value); },
+      async selectOption(value: string) {
+        const previous = await page.locator('[data-layer].active').getAttribute('data-layer');
+        const restore = selector === '#temperature-month' && !await page.locator('#temperature-month').isVisible();
+        await reveal(selector); await page.locator(selector).selectOption(value);
+        if (restore && previous) { await reveal(`[data-layer="${previous}"]`); await page.locator(`[data-layer="${previous}"]`).click(); }
+      },
+    };
+  }
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => { if (message.type() === 'error' && /THREE|WebGL|shader/i.test(message.text())) errors.push(message.text()); });
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.locator('#region-count')).toHaveText('10,242');
-  const fingerprint = await page.locator('#fingerprint').innerText();
+  const fingerprint = await page.locator('#fingerprint').textContent().then(value => value ?? '');
   await expect(page.locator('#legend-title')).toContainText('Land and water surface');
   await expect(page.locator('#water-summary')).toContainText('71.00% target');
   await expect(page.locator('#drainage-summary')).toContainText('closed dry sinks');
@@ -54,28 +106,28 @@ try {
   }, { ...DEFAULT_RECIPE });
   assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'exportView', 'generate', 'initializeOrographicMoisture', 'initializePreciseMoisture', 'initializeRegionalMoisture', 'initializeSoilMoisture', 'inspectWaterBudget', 'openRecipe', 'openSeasonalCheckpoint', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveSeasonalCheckpoint', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalSoilMoisture', 'seasonalTemperature', 'seasonalWind']);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'copyText', 'exportView', 'generate', 'initializeOrographicMoisture', 'initializePreciseMoisture', 'initializeRegionalMoisture', 'initializeSoilMoisture', 'inspectWaterBudget', 'openRecipe', 'openSeasonalCheckpoint', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveSeasonalCheckpoint', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalSoilMoisture', 'seasonalTemperature', 'seasonalWind']);
   await expect(page.locator('[data-layer="temperature"]')).toBeEnabled();
   await expect(page.locator('#temperature-month')).toBeEnabled();
-  await page.locator('[data-layer="temperature"]').click();
+  await ui('[data-layer="temperature"]').click();
   await expect(page.locator('#legend-title')).toContainText('temperature normal');
   await expect(page.locator('#legend-low')).toContainText('°C');
   await expect(page.locator('#map')).toHaveAttribute('data-temperature-month', '3');
-  await page.locator('#temperature-month').selectOption('9');
+  await ui('#temperature-month').selectOption('9');
   await expect(page.locator('#map')).toHaveAttribute('data-temperature-month', '9');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
-  await page.locator('[data-layer="surface"]').click();
+  await ui('[data-layer="surface"]').click();
   await expect(page.locator('[data-layer="windSpeed"]')).toBeEnabled();
-  await page.locator('[data-layer="windSpeed"]').click();
+  await ui('[data-layer="windSpeed"]').click();
   await expect(page.locator('#legend-title')).toContainText('surface-wind speed');
   await expect(page.locator('#legend-high')).toContainText('m/s');
   await mkdir('artifacts', { recursive: true });
   await page.locator('#map').screenshot({ path: executablePath ? 'artifacts/wind-map-packaged.png' : 'artifacts/wind-map.png' });
-  await page.locator('#temperature-month').selectOption('9');
+  await ui('#temperature-month').selectOption('9');
   await expect(page.locator('#map')).toHaveAttribute('data-climate-month', '9');
-  await page.locator('[data-layer="surface"]').click();
-  await page.locator('#temperature-month').selectOption('3');
-  await page.locator('#water-budget-refresh').click();
+  await ui('[data-layer="surface"]').click();
+  await ui('#temperature-month').selectOption('3');
+  await ui('#water-budget-refresh').click();
   await expect(page.locator('#water-budget-note')).toContainText('Prescribed step 0');
   await expect(page.locator('#water-budget-details')).toContainText('Exact balance residual');
   await expect(page.locator('#water-budget-details')).toContainText('0 units');
@@ -88,7 +140,7 @@ try {
   await app.evaluate(({ dialog }, destination) => {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
   }, resolvedPath);
-  await page.locator('#save-resolved').click();
+  await ui('#save-resolved').click();
   await expect(page.locator('#status')).toContainText('Calculated initial world data exported');
   const resolved = JSON.parse(await readFile(resolvedPath, 'utf8'));
   assert.equal(resolved.format, 'planimulation-resolved-initial-world');
@@ -107,7 +159,7 @@ try {
   await app.evaluate(({ dialog }, destination) => {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
   }, atlasExportPath);
-  await page.locator('#export-view').click();
+  await ui('#export-view').click();
   await expect(page.locator('#status')).toContainText('exported as PNG');
   const atlasPng = await readFile(atlasExportPath);
   assert.deepEqual(atlasPng.subarray(0, 8), Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
@@ -131,33 +183,33 @@ try {
   await expect(page.locator('#selection-details')).toContainText('wind speed normal');
   await expect(page.locator('#wind-note')).toContainText('prescribed east/north');
   await expect(page.locator('#temperature-note')).toContainText('Initial');
-  const selectedRegion = await page.locator('#selection-title').innerText();
-  const selectedDetails = await page.locator('#selection-details').innerText();
+  const selectedRegion = await page.locator('#selection-title').textContent().then(value => value ?? '');
+  const selectedDetails = await page.locator('#selection-details').textContent().then(value => value ?? '');
   await expect(page.locator('#elevation-details')).toContainText('Total elevation');
-  const elevationExplanation = await page.locator('#elevation-details').innerText();
+  const elevationExplanation = await page.locator('#elevation-details').textContent().then(value => value ?? '');
   await expect(page.locator('#selection-details')).toContainText('Crust thickness');
   await expect(page.locator('#selection-details')).toContainText('kg/m³');
   await expect(page.locator('#selection-details')).toContainText('Initial water depth');
   await expect(page.locator('#water-note')).toContainText('Regional stock');
-  const waterExplanation = await page.locator('#water-note').innerText();
-  const drainageExplanation = await page.locator('#drainage-note').innerText();
+  const waterExplanation = await page.locator('#water-note').textContent().then(value => value ?? '');
+  const drainageExplanation = await page.locator('#drainage-note').textContent().then(value => value ?? '');
   await expect(page.locator('#selection-details')).toContainText('Contributing land area');
-  const crustExplanation = await page.locator('#crust-note').innerText();
+  const crustExplanation = await page.locator('#crust-note').textContent().then(value => value ?? '');
   assert.ok(crustExplanation.includes('fitted threshold'));
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
   await expect(canvas).toHaveAttribute('data-view', 'globe');
-  await page.locator('[data-layer="temperature"]').click();
+  await ui('[data-layer="temperature"]').click();
   await expect(canvas).toHaveAttribute('data-active-layer', 'temperature');
-  await page.locator('[data-layer="windSpeed"]').click();
+  await ui('[data-layer="windSpeed"]').click();
   await expect(canvas).toHaveAttribute('data-active-layer', 'windSpeed');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
-  await page.locator('[data-layer="surface"]').click();
+  await ui('[data-layer="surface"]').click();
   const globeExportPath = path.join(temp, 'globe-export.png');
   await app.evaluate(({ dialog }, destination) => {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
   }, globeExportPath);
-  await page.locator('#export-view').click();
+  await ui('#export-view').click();
   await expect(page.locator('#status')).toContainText('exported as PNG');
   const globePng = await readFile(globeExportPath);
   assert.deepEqual(globePng.subarray(0, 8), atlasPng.subarray(0, 8));
@@ -166,31 +218,31 @@ try {
   await expect(canvas).toHaveAttribute('data-view', 'globe');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await expect(page.locator('#selection-title')).toHaveText(selectedRegion);
-  await expect(page.locator('#selection-details')).toHaveText(selectedDetails, { useInnerText: true });
+  await expect(page.locator('#selection-details')).toHaveText(selectedDetails);
   await expect(page.locator('#crust-note')).toHaveText(crustExplanation);
-  await expect(page.locator('#elevation-details')).toHaveText(elevationExplanation, { useInnerText: true });
+  await expect(page.locator('#elevation-details')).toHaveText(elevationExplanation);
   await expect(page.locator('#water-note')).toHaveText(waterExplanation);
   await expect(page.locator('#drainage-note')).toHaveText(drainageExplanation);
-  await page.locator('#exaggeration').selectOption('0');
+  await ui('#exaggeration').selectOption('0');
   await expect(canvas).toHaveAttribute('data-exaggeration', '0');
   await canvas.click();
   await expect(canvas).toHaveAttribute('data-picked-surface', 'water');
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.locator('#exaggeration').selectOption('25');
+  await ui('#exaggeration').selectOption('25');
   await expect(canvas).toHaveAttribute('data-exaggeration', '25');
-  await expect(page.locator('#selection-details')).toHaveText(selectedDetails, { useInnerText: true });
+  await expect(page.locator('#selection-details')).toHaveText(selectedDetails);
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
-  await page.locator('#exaggeration').selectOption('10');
+  await ui('#exaggeration').selectOption('10');
   await canvas.click();
   await expect(page.locator('#selection-title')).toHaveText(selectedRegion);
   await expect(page.locator('button[data-view="globe"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(canvas).toHaveAttribute('data-picked-surface', 'water');
-  await page.locator('[data-layer="depth"]').click();
+  await ui('[data-layer="depth"]').click();
   await canvas.click();
   await expect(canvas).toHaveAttribute('data-picked-surface', 'bed');
   await expect(page.locator('#selection-title')).toHaveText(selectedRegion);
-  await expect(page.locator('#selection-details')).toHaveText(selectedDetails, { useInnerText: true });
-  await page.locator('[data-layer="surface"]').click();
+  await expect(page.locator('#selection-details')).toHaveText(selectedDetails);
+  await ui('[data-layer="surface"]').click();
   await page.locator('#boundaries').check();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await page.locator('#boundaries').uncheck();
@@ -198,29 +250,29 @@ try {
   await page.screenshot({ path: executablePath ? 'artifacts/globe-desktop-packaged.png' : 'artifacts/globe-desktop.png' });
   await page.getByRole('button', { name: '2D map', exact: true }).click();
   await expect(canvas).toHaveAttribute('data-view', 'flat');
-  await page.locator('[data-layer="catchments"]').click();
+  await ui('[data-layer="catchments"]').click();
   await expect(page.locator('#legend-title')).toContainText('Drainage catchments');
   await expect(page.locator('#legend-scale')).toBeHidden();
   await expect(page.locator('#boundary-legend')).toBeHidden();
-  await page.locator('[data-layer="contributingArea"]').click();
+  await ui('[data-layer="contributingArea"]').click();
   await expect(page.locator('#legend-title')).toContainText('not river discharge');
   await expect(page.locator('#legend-low')).toHaveText('0 km²');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
-  await page.locator('[data-layer="waterBodies"]').click();
+  await ui('[data-layer="waterBodies"]').click();
   await expect(page.locator('#legend-title')).toContainText('Connected water bodies');
   await expect(page.locator('#boundary-legend')).toBeHidden();
   await expect(page.locator('#legend-scale')).toBeHidden();
-  await page.locator('[data-layer="depth"]').click();
+  await ui('[data-layer="depth"]').click();
   await expect(page.locator('#legend-low')).toHaveText('0 m');
   await expect(page.locator('#legend-gradient')).toHaveClass('water-gradient');
-  await page.locator('[data-layer="thickness"]').click();
+  await ui('[data-layer="thickness"]').click();
   await expect(page.locator('#legend-low')).toHaveText('7 km');
   await expect(page.locator('#legend-high')).toHaveText('35 km');
-  await page.locator('[data-layer="uplift"]').click();
+  await ui('[data-layer="uplift"]').click();
   await expect(page.locator('#legend-title')).toContainText('Convergence uplift');
   await expect(page.locator('#legend-high')).toHaveText('12,000 m');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
-  await page.locator('[data-layer="boundaries"]').click();
+  await ui('[data-layer="boundaries"]').click();
   await expect(page.locator('#legend-title')).toContainText('Boundary motion');
   await expect(page.locator('#boundary-legend')).toBeVisible();
   await expect(page.locator('#selection-details')).toContainText('Tectonic plate');
@@ -234,7 +286,7 @@ try {
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await page.locator('#boundaries').uncheck();
   await page.screenshot({ path: executablePath ? 'artifacts/boundaries-desktop-packaged.png' : 'artifacts/boundaries-desktop.png' });
-  await page.locator('[data-layer="catchments"]').click();
+  await ui('[data-layer="catchments"]').click();
   await clickAtlas(desktopData.drainageSample);
   await expect(page.locator('#selection-title')).toHaveText(`Region ${desktopData.drainageSample.id.toLocaleString('en')}`);
   await expect(page.locator('#drainage-note')).toContainText('Steepest bed descent');
@@ -243,51 +295,51 @@ try {
   await expect(page.locator('#drainage-note')).toContainText('Steepest bed descent');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await page.getByRole('button', { name: '2D map', exact: true }).click();
-  await page.locator('[data-layer="speed"]').click();
+  await ui('[data-layer="speed"]').click();
   await expect(page.locator('#legend-high')).toHaveText('8 cm/year');
-  await page.locator('[data-layer="basins"]').click();
+  await ui('[data-layer="basins"]').click();
   await expect(page.locator('#legend-scale')).toBeHidden();
   await expect(page.locator('#legend-title')).toContainText('exclusive ownership');
   await clickAtlas(desktopData.basinSample);
   await expect(page.locator('#selection-title')).toHaveText(`Region ${desktopData.basinSample.id.toLocaleString('en')}`);
-  const basinRegionTitle = await page.locator('#selection-title').innerText();
-  const basinDetails = await page.locator('#basin-details').innerText();
+  const basinRegionTitle = await page.locator('#selection-title').textContent().then(value => value ?? '');
+  const basinDetails = await page.locator('#basin-details').textContent().then(value => value ?? '');
   await expect(page.locator('#basin-title')).toContainText(`Branch ${desktopData.basinSample.node} ·`);
   await expect(page.locator('#basin-details')).toContainText('not current water level');
   await expect(page.locator('#basin-details')).toContainText('includes children');
   await expect(canvas).toHaveAttribute('data-spill-from', String(desktopData.basinSample.from));
   await expect(canvas).toHaveAttribute('data-spill-to', String(desktopData.basinSample.to));
   await page.screenshot({ path: executablePath ? 'artifacts/basins-desktop-packaged.png' : 'artifacts/basins-desktop.png' });
-  await page.locator('#basin-parent').click();
+  await ui('#basin-parent').click();
   await expect(page.locator('#basin-title')).toContainText(`Branch ${desktopData.basinSample.parent} ·`);
   await expect(page.locator('#selection-title')).toHaveText(basinRegionTitle);
-  const beforeBasinPlayback = await page.locator('#diagnostic-tick').innerText();
-  await page.locator('#play').click();
+  const beforeBasinPlayback = await page.locator('#diagnostic-tick').textContent().then(value => value ?? '');
+  await ui('#play').click();
   await expect(page.locator('#diagnostic-tick')).not.toHaveText(beforeBasinPlayback);
-  await page.locator('#play').click();
+  await ui('#play').click();
   await expect(page.locator('#basin-title')).toContainText(`Branch ${desktopData.basinSample.parent} ·`);
-  await page.locator('#basin-owner').click();
-  await expect(page.locator('#basin-details')).toHaveText(basinDetails, { useInnerText: true });
+  await ui('#basin-owner').click();
+  await expect(page.locator('#basin-details')).toHaveText(basinDetails);
   await page.locator('#basin-details').scrollIntoViewIfNeeded();
   await page.screenshot({ path: executablePath ? 'artifacts/basin-inspector-packaged.png' : 'artifacts/basin-inspector.png' });
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
-  await expect(page.locator('#basin-details')).toHaveText(basinDetails, { useInnerText: true });
-  await page.locator('[data-layer="spill"]').click();
+  await expect(page.locator('#basin-details')).toHaveText(basinDetails);
+  await ui('[data-layer="spill"]').click();
   await expect(page.locator('#legend-title')).toContainText('not current water level');
   await expect(page.locator('#legend-scale')).toBeVisible();
   await expect(page.locator('#boundary-legend')).toBeHidden();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await page.screenshot({ path: executablePath ? 'artifacts/spill-globe-packaged.png' : 'artifacts/spill-globe.png' });
   await page.getByRole('button', { name: '2D map', exact: true }).click();
-  await page.locator('[data-layer="speed"]').click();
+  await ui('[data-layer="speed"]').click();
   await expect(page.locator('#boundary-legend')).toBeHidden();
   await page.getByRole('button', { name: 'Zoom in' }).click();
   await page.getByRole('button', { name: 'Fit map' }).click();
-  await page.locator('[data-layer="area"]').click();
+  await ui('[data-layer="area"]').click();
   await expect(page.locator('#legend-title')).toContainText('Region area');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
-  await page.locator('[data-layer="signal"]').click();
-  await page.locator('#play').click();
+  await ui('[data-layer="signal"]').click();
+  await ui('#play').click();
   await expect(page.locator('#diagnostic-tick')).not.toHaveText('Step 0');
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
   await page.getByRole('button', { name: 'Pause diagnostic', exact: true }).click();
@@ -300,25 +352,25 @@ try {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [destination] });
   }, recipePath);
-  await page.getByRole('button', { name: 'Save recipe' }).click();
+  await ui('#save-recipe').click();
   await expect(page.locator('#status')).toContainText('Recipe saved');
   assert.deepEqual(parseRecipe(JSON.parse(await readFile(recipePath, 'utf8'))), DEFAULT_RECIPE);
 
-  await page.locator('#seed').fill('desktop-roundtrip');
-  await page.locator('#subdivision').selectOption('3');
+  await ui('#seed').fill('desktop-roundtrip');
+  await ui('#subdivision').selectOption('3');
   const advancedSettings = page.locator('details.advanced-settings');
   if (await advancedSettings.count()) await advancedSettings.locator('summary').click();
-  await page.locator('#plate-count').fill('7');
-  await page.locator('#plate-speed').fill('0');
-  await page.locator('#continental-fraction').fill('0');
-  await page.locator('#continental-scale').fill('2');
-  await page.locator('#relief-scale').fill('0');
-  await page.locator('#detail-amplitude').fill('0');
-  await page.locator('#boundary-width').fill('500');
-  await page.locator('#water-mode').selectOption('volume');
+  await ui('#plate-count').fill('7');
+  await ui('#plate-speed').fill('0');
+  await ui('#continental-fraction').fill('0');
+  await ui('#continental-scale').fill('2');
+  await ui('#relief-scale').fill('0');
+  await ui('#detail-amplitude').fill('0');
+  await ui('#boundary-width').fill('500');
+  await ui('#water-mode').selectOption('volume');
   await expect(page.locator('#water-coverage')).toBeDisabled();
-  await page.locator('#water-volume').fill('0');
-  await page.locator('#generate').click();
+  await ui('#water-volume').fill('0');
+  await ui('#generate').click();
   await expect(page.locator('#world-name')).toHaveText('desktop-roundtrip');
   await expect(page.locator('#region-count')).toHaveText('642');
   await expect(page.locator('#crust-summary')).toContainText('0.00% actual / 0.00% target');
@@ -327,7 +379,7 @@ try {
   await expect(page.locator('#basin-summary')).toContainText('1 minima · 1 hierarchy branches');
   await expect(page.locator('#basin-title')).toHaveText('Select a region');
   await expect(page.locator('#basin-parent')).toBeDisabled();
-  await page.locator('[data-layer="surface"]').click();
+  await ui('[data-layer="surface"]').click();
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
   await canvas.click();
   await expect(canvas).toHaveAttribute('data-picked-surface', 'bed');
@@ -335,46 +387,46 @@ try {
   await expect(page.locator('#basin-title')).toContainText('global root');
   await expect(page.locator('#basin-details')).toContainText('No finite spill capacity');
   await expect(page.locator('#basin-parent')).toBeDisabled();
-  await page.locator('#water-spill').click();
+  await ui('#water-spill').click();
   await expect(page.locator('#status')).toContainText('no spill threshold');
   await expect(page.locator('#water-step')).toContainText('Select a source region');
   await expect(canvas).toHaveAttribute('data-spill-from', '-1');
-  await page.locator('[data-layer="spill"]').click();
+  await ui('[data-layer="spill"]').click();
   await expect(page.locator('#legend-low')).toHaveText('No finite thresholds');
-  await page.locator('[data-layer="plates"]').click();
+  await ui('[data-layer="plates"]').click();
   await expect(page.locator('#legend-title')).toContainText('7 connected plates');
-  await page.locator('[data-layer="speed"]').click();
+  await ui('[data-layer="speed"]').click();
   await expect(page.locator('#legend-high')).toHaveText('0 cm/year');
-  assert.notEqual(await page.locator('#fingerprint').innerText(), fingerprint);
+  assert.notEqual(await page.locator('#fingerprint').textContent().then(value => value ?? ''), fingerprint);
   // A uniform bed with positive volume is fully wet; save/import retains volume mode.
-  await page.locator('#water-volume').fill('1000000');
-  await page.locator('#generate').click();
+  await ui('#water-volume').fill('1000000');
+  await ui('#generate').click();
   await expect(page.locator('#water-summary')).toContainText('100.00% actual / 1,000,000 km³ requested');
   await expect(page.locator('#drainage-summary')).toContainText('1 terminal catchments · 0 closed dry sinks');
-  const volumeHash = await page.locator('#fingerprint').innerText();
-  await page.locator('[data-layer="surface"]').click();
+  const volumeHash = await page.locator('#fingerprint').textContent().then(value => value ?? '');
+  await ui('[data-layer="surface"]').click();
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
   for (const factor of ['0', '1', '10']) {
-    await page.locator('#exaggeration').selectOption(factor);
+    await ui('#exaggeration').selectOption(factor);
     await canvas.click();
     await expect(canvas).toHaveAttribute('data-picked-surface', 'water');
     await expect(page.locator('#fingerprint')).toHaveText(volumeHash);
   }
   await page.getByRole('button', { name: '2D map', exact: true }).click();
-  await page.getByRole('button', { name: 'Save recipe' }).click();
+  await ui('#save-recipe').click();
   await expect(page.locator('#status')).toContainText('Recipe saved');
   const volumeRecipe = parseRecipe(JSON.parse(await readFile(recipePath, 'utf8')));
   assert.deepEqual(volumeRecipe.water, { mode: 'volume', volumeCubicMeters: 1e15 });
-  await page.locator('#water-volume').fill('0');
-  await page.locator('#generate').click();
+  await ui('#water-volume').fill('0');
+  await ui('#generate').click();
   await expect(page.locator('#water-summary')).toContainText('0.00% actual / 0 km³ requested');
-  await page.getByRole('button', { name: 'Open recipe' }).click();
+  await ui('#open-recipe').click();
   await expect(page.locator('#water-mode')).toHaveValue('volume');
   await expect(page.locator('#water-volume')).toHaveValue('1000000');
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.locator('#fingerprint')).toHaveText(volumeHash);
   await writeFile(recipePath, JSON.stringify(DEFAULT_RECIPE));
-  await page.getByRole('button', { name: 'Open recipe' }).click();
+  await ui('#open-recipe').click();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
   await expect(page.locator('#plate-count')).toHaveValue('12');
   await expect(page.locator('#plate-speed')).toHaveValue('8');
@@ -393,10 +445,10 @@ try {
   try { continuousHash = (await continuousCore.generate(continuousRecipe)).world.checksum; }
   finally { continuousCore.close(); }
   await writeFile(recipePath, JSON.stringify(continuousRecipe));
-  await page.getByRole('button', { name: 'Open recipe' }).click();
+  await ui('#open-recipe').click();
   await expect(page.locator('#fingerprint')).toHaveText(continuousHash, { timeout: 30_000 });
   await expect(page.locator('#model-label')).toContainText('CONTINUOUS-PLATES-1');
-  await page.getByRole('button', { name: 'Save recipe' }).click();
+  await ui('#save-recipe').click();
   assert.deepEqual(parseRecipe(JSON.parse(await readFile(recipePath, 'utf8'))), continuousRecipe);
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
   await expect(page.locator('#fingerprint')).toHaveText(continuousHash);
@@ -409,33 +461,33 @@ try {
   try { legacyHash = (await legacyCore.generate(legacyRecipe)).world.checksum; }
   finally { legacyCore.close(); }
   await writeFile(recipePath, JSON.stringify(legacyRecipe));
-  await page.getByRole('button', { name: 'Open recipe' }).click();
+  await ui('#open-recipe').click();
   await expect(page.locator('#fingerprint')).toHaveText(legacyHash, { timeout: 30_000 });
   await expect(page.locator('#model-label')).toContainText('BASINS-1');
   await expect(page.locator('#terrain-preparation-passes')).toHaveValue('0');
-  await page.getByRole('button', { name: 'Save recipe' }).click();
+  await ui('#save-recipe').click();
   assert.deepEqual(parseRecipe(JSON.parse(await readFile(recipePath, 'utf8'))), legacyRecipe);
   await writeFile(recipePath, JSON.stringify(DEFAULT_RECIPE));
-  await page.getByRole('button', { name: 'Open recipe' }).click();
+  await ui('#open-recipe').click();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
   await expect(page.locator('#terrain-preparation-passes')).toHaveValue('4');
 
   // Experimental small planets must limit display distortion, never physical heights.
-  await page.locator('#radius').fill('100');
-  await page.locator('#subdivision').selectOption('2');
-  await page.locator('#generate').click();
+  await ui('#radius').fill('100');
+  await ui('#subdivision').selectOption('2');
+  await ui('#generate').click();
   await expect(page.locator('#region-count')).toHaveText('162');
-  const smallHash = await page.locator('#fingerprint').innerText();
-  await page.locator('#exaggeration').selectOption('50');
+  const smallHash = await page.locator('#fingerprint').textContent().then(value => value ?? '');
+  await ui('#exaggeration').selectOption('50');
   await expect(page.locator('#exaggeration-note')).toContainText('20% radius display limit');
   assert.ok(Number(await canvas.getAttribute('data-exaggeration')) < 50);
   await expect(page.locator('#fingerprint')).toHaveText(smallHash);
-  await page.locator('#exaggeration').selectOption('10');
-  await page.getByRole('button', { name: 'Open recipe' }).click();
+  await ui('#exaggeration').selectOption('10');
+  await ui('#open-recipe').click();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
 
   await writeFile(recipePath, JSON.stringify({ ...DEFAULT_RECIPE, modelVersion: 'future' }));
-  await page.getByRole('button', { name: 'Open recipe' }).click();
+  await ui('#open-recipe').click();
   await expect(page.locator('#status')).toContainText('Unsupported recipe or random version');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
 
@@ -448,7 +500,7 @@ try {
     seed.value = 'latest'; level.value = '2'; form.requestSubmit();
   });
   await expect(page.locator('#world-name')).toHaveText('latest');
-  const latestHash = await page.locator('#fingerprint').innerText();
+  const latestHash = await page.locator('#fingerprint').textContent().then(value => value ?? '');
   await page.evaluate(() => {
     document.querySelector<HTMLSelectElement>('#subdivision')!.value = '6';
     document.querySelector<HTMLFormElement>('#recipe-form')!.requestSubmit();
@@ -456,12 +508,12 @@ try {
   });
   await expect(page.locator('#status')).toContainText('canceled');
   await expect(page.locator('#fingerprint')).toHaveText(latestHash);
-  await page.locator('#play').click();
+  await ui('#play').click();
   await expect(page.locator('#diagnostic-tick')).not.toHaveText('Step 0');
-  await page.locator('#play').click();
-  await page.locator('#seed').fill(DEFAULT_RECIPE.seed);
-  await page.locator('#subdivision').selectOption(String(DEFAULT_RECIPE.subdivision));
-  await page.locator('#generate').click();
+  await ui('#play').click();
+  await ui('#seed').fill(DEFAULT_RECIPE.seed);
+  await ui('#subdivision').selectOption(String(DEFAULT_RECIPE.subdivision));
+  await ui('#generate').click();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
   const dryRecipe = { ...DEFAULT_RECIPE, subdivision: 2, water: { mode: 'coverage' as const, fraction: 0 } };
   const spillReference = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
@@ -481,16 +533,16 @@ try {
     spillSample = { id, x: Math.atan2(generated.surface.centers[id * 3 + 2], generated.surface.centers[id * 3]) / Math.PI,
       y: Math.asin(generated.surface.centers[id * 3 + 1]) / Math.PI };
   } finally { spillReference.close(); }
-  await page.locator('#subdivision').selectOption('2');
-  await page.locator('#water-mode').selectOption('coverage');
-  await page.locator('#water-coverage').fill('0');
-  await page.locator('#generate').click();
+  await ui('#subdivision').selectOption('2');
+  await ui('#water-mode').selectOption('coverage');
+  await ui('#water-coverage').fill('0');
+  await ui('#generate').click();
   await expect(page.locator('#region-count')).toHaveText('162');
   await page.getByRole('button', { name: '2D map', exact: true }).click();
   await page.getByRole('button', { name: 'Fit map' }).click();
   await clickAtlas(spillSample);
   await expect(page.locator('#selection-title')).toHaveText(`Region ${spillSample.id}`);
-  await page.locator('#water-spill').click();
+  await ui('#water-spill').click();
   await expect(page.locator('#water-step')).toContainText('Prescribed step 1');
   await expect(page.locator('#water-budget-note')).toContainText('Prescribed step 1');
   await expect(page.locator('#water-budget-details')).toContainText('Destination branch stock');
@@ -498,7 +550,7 @@ try {
   await expect(page.locator('#water-summary')).toContainText('manual input');
   await expect(page.locator('#selection-details')).toContainText('Displayed prescribed-water depth');
   await expect(page.locator('#moisture-start')).toBeDisabled();
-  await page.locator('[data-layer="surface"]').click();
+  await ui('[data-layer="surface"]').click();
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
   await page.screenshot({ path: executablePath ? 'artifacts/spill-desktop-packaged.png' : 'artifacts/spill-desktop.png' });
   await page.getByRole('button', { name: '2D map', exact: true }).click();
@@ -506,21 +558,21 @@ try {
   await app.evaluate(({ dialog }, destination) => {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
   }, waterCheckpointPath);
-  await page.locator('#save-water').click();
+  await ui('#save-water').click();
   await expect(page.locator('#status')).toContainText('checkpoint saved');
   const savedWater = JSON.parse(await readFile(waterCheckpointPath, 'utf8'));
   assert.equal(savedWater.step, 1);
   assert.equal(savedWater.origin.originRecipe.water.fraction, 0);
-  await page.locator('#water-add').click();
+  await ui('#water-add').click();
   await expect(page.locator('#water-step')).toContainText('Prescribed step 2');
-  const continuedStep = await page.locator('#water-step').innerText();
-  const continuedBudget = await page.locator('#water-budget-details').innerText();
-  await page.locator('#seed').fill('unsaved-form-edit');
-  await page.locator('#water-coverage').fill('17');
+  const continuedStep = await page.locator('#water-step').textContent().then(value => value ?? '');
+  const continuedBudget = await page.locator('#water-budget-details').textContent().then(value => value ?? '');
+  await ui('#seed').fill('unsaved-form-edit');
+  await ui('#water-coverage').fill('17');
   await app.evaluate(({ dialog }, destination) => {
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [destination] });
   }, waterCheckpointPath);
-  await page.locator('#open-water').click();
+  await ui('#open-water').click();
   await expect(page.locator('#status')).toContainText('Water checkpoint restored');
   await expect(page.locator('#water-step')).toContainText('Prescribed step 1');
   await expect(page.locator('#water-budget-note')).toContainText('Prescribed step 1');
@@ -529,15 +581,15 @@ try {
   await expect(page.locator('#water-coverage')).toHaveValue('0');
   await page.getByRole('button', { name: 'Fit map' }).click();
   await clickAtlas(spillSample);
-  await page.locator('#water-add').click();
+  await ui('#water-add').click();
   await expect(page.locator('#water-step')).toHaveText(continuedStep);
-  await expect(page.locator('#water-budget-details')).toHaveText(continuedBudget, { useInnerText: true });
+  await expect(page.locator('#water-budget-details')).toHaveText(continuedBudget);
   const damagedCheckpointPath = path.join(temp, 'damaged-water-checkpoint.json');
   await writeFile(damagedCheckpointPath, JSON.stringify({ ...savedWater, acceptedInputUnits: '0' }));
   await app.evaluate(({ dialog }, destination) => {
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [destination] });
   }, damagedCheckpointPath);
-  await page.locator('#open-water').click();
+  await ui('#open-water').click();
   await expect(page.locator('#status')).toContainText('balance');
   await expect(page.locator('#water-step')).toHaveText(continuedStep);
   await expect(page.locator('#region-count')).toHaveText('162');
@@ -546,19 +598,19 @@ try {
   await app.evaluate(({ dialog }, destination) => {
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [destination] });
   }, oversizedCheckpointPath);
-  await page.locator('#open-water').click();
+  await ui('#open-water').click();
   await expect(page.locator('#status')).toContainText('exceeds the 8 MiB limit');
   await expect(page.locator('#water-step')).toHaveText(continuedStep);
-  await page.locator('#water-coverage').fill('71');
-  await page.locator('#subdivision').selectOption(String(DEFAULT_RECIPE.subdivision));
-  await page.locator('#generate').click();
+  await ui('#water-coverage').fill('71');
+  await ui('#subdivision').selectOption(String(DEFAULT_RECIPE.subdivision));
+  await ui('#generate').click();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint, { timeout: 30_000 });
   await canvas.click();
   // Use the real native calculation, bridge, GPU fields, and inspector. Seasonal
   // playback must not mutate the original geography or manual inventory.
   await expect(page.locator('#moisture-start')).toBeEnabled();
   await expect(page.locator('[data-layer="vaporWater"]')).toBeDisabled();
-  await page.locator('#moisture-start').click();
+  await ui('#moisture-start').click();
   await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '0');
   await expect(page.locator('#moisture-budget-details')).toContainText('Initial mobile partition');
@@ -567,40 +619,40 @@ try {
   await expect(page.locator('#save-water')).toBeDisabled();
   await expect(page.locator('#water-budget-refresh')).toBeDisabled();
   await expect(page.locator('#play')).toBeDisabled();
-  await page.locator('[data-layer="vaporWater"]').click();
+  await ui('[data-layer="vaporWater"]').click();
   await expect(page.locator('#legend-title')).toContainText('fixed logarithmic scale');
   await expect(page.locator('#legend-high')).toHaveText('≥ 60 mm WE');
   const initialVaporImage = await canvas.screenshot();
-  await page.locator('#moisture-interval').selectOption('3600');
-  await page.locator('#moisture-step').click();
+  await ui('#moisture-interval').selectOption('3600');
+  await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '3600');
   await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
   await expect(page.locator('#moisture-step-note')).toContainText('Last interval 1 h');
-  await page.locator('#moisture-interval').selectOption('86400');
-  await page.locator('#moisture-step').click();
+  await ui('#moisture-interval').selectOption('86400');
+  await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '90000');
   await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
-  const seasonalDetails = await page.locator('#moisture-selection-details').innerText();
-  const seasonalBudget = await page.locator('#moisture-budget-details').innerText();
+  const seasonalDetails = await page.locator('#moisture-selection-details').textContent().then(value => value ?? '');
+  const seasonalBudget = await page.locator('#moisture-budget-details').textContent().then(value => value ?? '');
   assert.notDeepEqual(await canvas.screenshot(), initialVaporImage, 'Vapor texture updates must change the rendered map, not just inspector values.');
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
-  await page.locator('[data-layer="terminalWater"]').click();
+  await ui('[data-layer="terminalWater"]').click();
   await expect(page.locator('#legend-title')).toContainText('not lake depth');
-  await expect(page.locator('#moisture-selection-details')).toHaveText(seasonalDetails, { useInnerText: true });
-  await expect(page.locator('#moisture-budget-details')).toHaveText(seasonalBudget, { useInnerText: true });
-  await page.locator('#temperature-month').selectOption('9');
+  await expect(page.locator('#moisture-selection-details')).toHaveText(seasonalDetails);
+  await expect(page.locator('#moisture-budget-details')).toHaveText(seasonalBudget);
+  await ui('#temperature-month').selectOption('9');
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '90000');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await canvas.screenshot({ path: executablePath ? 'artifacts/seasonal-water-globe-packaged.png' : 'artifacts/seasonal-water-globe.png' });
   await page.getByRole('button', { name: '2D map', exact: true }).click();
-  await page.locator('[data-layer="precipitation"]').click();
+  await ui('[data-layer="precipitation"]').click();
   await expect(page.locator('#legend-high')).toHaveText('≥ 20 mm/day');
   const beforePlay = Number(await canvas.getAttribute('data-moisture-seconds'));
-  await page.locator('#moisture-play').click();
+  await ui('#moisture-play').click();
   await expect(canvas).not.toHaveAttribute('data-moisture-seconds', String(beforePlay));
   await expect(page.locator('#save-seasonal')).toBeDisabled();
   await expect(page.locator('#open-seasonal')).toBeDisabled();
-  await page.getByRole('button', { name: 'Pause seasonal water', exact: true }).click();
+  await ui('#moisture-play').click();
   await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
   const pausedTime = await canvas.getAttribute('data-moisture-seconds');
   await page.waitForTimeout(150);
@@ -610,8 +662,9 @@ try {
     document.querySelector<HTMLButtonElement>('#moisture-play')!.click();
     document.querySelector<HTMLInputElement>('#seed')!.value = 'canceled-seasonal-replacement';
     document.querySelector<HTMLFormElement>('#recipe-form')!.requestSubmit();
-    document.querySelector<HTMLButtonElement>('#cancel')!.click();
   });
+  await page.locator('#replace-world').click();
+  await page.locator('#cancel').click();
   await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
   const seasonalSeconds = Number(await canvas.getAttribute('data-moisture-seconds'));
   assert.equal(seasonalSeconds, Number(pausedTime) + 86400);
@@ -622,7 +675,7 @@ try {
     await seasonalReference.seasonalMoisture(initial.epoch, 0);
     let expected = await seasonalReference.seasonalMoisture(initial.epoch, 3600);
     while (expected.elapsedSeconds < seasonalSeconds) expected = await seasonalReference.seasonalMoisture(initial.epoch, 86400);
-    const id = Number((await page.locator('#moisture-selection-title').innerText()).match(/Region (\d+)/)![1]);
+    const id = Number((await page.locator('#moisture-selection-title').textContent().then(value => value ?? '')).match(/Region (\d+)/)![1]);
     const actual = await page.locator('#moisture-selection-details').evaluate((dl) => {
       const terms = Array.from(dl.querySelectorAll('dt')), descriptions = Array.from(dl.querySelectorAll('dd'));
       return Object.fromEntries(terms.map((term, i) => [term.textContent, descriptions[i].textContent]));
@@ -634,7 +687,7 @@ try {
       assert.equal(actual[name], `${format.format(expected.stocks[key][id] / initial.world.surface.areasSquareMeters[id])} mm WE`);
     }
   } finally { seasonalReference.close(); }
-  await page.locator('[data-layer="vaporWater"]').click();
+  await ui('[data-layer="vaporWater"]').click();
   await canvas.screenshot({ path: executablePath ? 'artifacts/seasonal-water-map-packaged.png' : 'artifacts/seasonal-water-map.png' });
   // Persist complete native state through real file I/O, not a mocked bridge.
   const seasonalPath = path.join(temp, 'seasonal-water-checkpoint.json');
@@ -642,16 +695,16 @@ try {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
   }, seasonalPath);
   await expect(page.locator('#save-seasonal')).toBeEnabled();
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText(`saved at ${seasonalSeconds} elapsed seconds`);
   const savedSeasonalText = await readFile(seasonalPath, 'utf8'), savedSeasonal = JSON.parse(savedSeasonalText);
   assert.equal(savedSeasonal.schemaVersion, 3);
   assert.equal(savedSeasonal.elapsedSeconds, seasonalSeconds);
   assert.equal(savedSeasonal.surfaceKilograms.length, 10242);
   assert.equal(savedSeasonal.cumulativeSurfaceTransferRoundoff.length, 10242);
-  const savedSeasonalBudget = await page.locator('#moisture-budget-details').innerText();
+  const savedSeasonalBudget = await page.locator('#moisture-budget-details').textContent().then(value => value ?? '');
   await app.evaluate(({ dialog }) => { dialog.showSaveDialog = async () => ({ canceled: true, filePath: '' }); });
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('saving canceled');
   assert.equal(await readFile(seasonalPath, 'utf8'), savedSeasonalText);
   // A failed rename must not replace a target directory or discard native state.
@@ -659,16 +712,16 @@ try {
   await app.evaluate(({ dialog }, destination) => {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
   }, deniedSeasonalPath);
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toHaveClass(/error/);
   await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds));
   await app.evaluate(({ dialog }, destination) => {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
   }, seasonalPath);
-  await page.locator('#moisture-step').click();
+  await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds + 86400));
   await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText(`saved at ${seasonalSeconds + 86400} elapsed seconds`);
   const uninterrupted = await readFile(seasonalPath, 'utf8');
   await writeFile(seasonalPath, savedSeasonalText);
@@ -678,16 +731,16 @@ try {
   await app.evaluate(({ dialog }, destination) => {
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [destination] });
   }, damagedSeasonalPath);
-  await page.locator('#open-seasonal').click();
+  await ui('#open-seasonal').click();
   await expect(page.locator('#status')).toHaveClass(/error/);
   await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds + 86400));
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   assert.equal(await readFile(seasonalPath, 'utf8'), uninterrupted);
   await writeFile(seasonalPath, savedSeasonalText);
   await app.evaluate(({ dialog }) => { dialog.showOpenDialog = async () => ({ canceled: true, filePaths: [] }); });
-  await page.locator('#open-seasonal').click();
+  await ui('#open-seasonal').click();
   await expect(page.locator('#status')).toContainText('opening canceled');
   await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds + 86400));
   const oversizedSeasonalPath = path.join(temp, 'oversized-seasonal.json');
@@ -697,7 +750,7 @@ try {
   await app.evaluate(({ dialog }, destination) => {
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [destination] });
   }, oversizedSeasonalPath);
-  await page.locator('#open-seasonal').click();
+  await ui('#open-seasonal').click();
   await expect(page.locator('#status')).toContainText('exceeds the 64 MiB limit');
   await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds + 86400));
   // Exercise the main-process intent guard independently of disabled UI buttons:
@@ -722,44 +775,44 @@ try {
   await app.evaluate(() => (globalThis as unknown as { releaseCheckpointDialog: () => void }).releaseCheckpointDialog());
   assert.match(await delayedOpen, /canceled or replaced/);
   await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds + 86400));
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   assert.equal(await readFile(seasonalPath, 'utf8'), uninterrupted);
   await writeFile(seasonalPath, savedSeasonalText);
   // Restore into a different accepted world; its saved origin must win, not the
   // unsaved form values or current geography. Both GPU views remain usable.
-  await page.locator('#seed').fill('world-before-seasonal-restore');
-  await page.locator('#subdivision').selectOption('2');
-  await page.locator('#generate').click();
+  await ui('#seed').fill('world-before-seasonal-restore');
+  await ui('#subdivision').selectOption('2');
+  await ui('#generate').click();
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
   await expect(page.locator('#region-count')).toHaveText('162');
   await app.evaluate(({ dialog }, destination) => {
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [destination] });
   }, seasonalPath);
-  await page.locator('#open-seasonal').click();
+  await ui('#open-seasonal').click();
   await expect(page.locator('#status')).toContainText(`restored at ${seasonalSeconds} elapsed seconds`, { timeout: 30000 });
   await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds));
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await expect(page.locator('#seed')).toHaveValue(DEFAULT_RECIPE.seed);
   await expect(page.locator('#subdivision')).toHaveValue(String(DEFAULT_RECIPE.subdivision));
-  await expect(page.locator('#moisture-budget-details')).toHaveText(savedSeasonalBudget, { useInnerText: true });
+  await expect(page.locator('#moisture-budget-details')).toHaveText(savedSeasonalBudget);
   await expect(page.locator('#moisture-step-note')).toContainText('no interval transfers');
   await expect(page.locator('#save-water')).toBeDisabled();
-  await page.locator('[data-layer="vaporWater"]').click();
+  await ui('[data-layer="vaporWater"]').click();
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
   await expect(canvas).toHaveAttribute('data-active-layer', 'vaporWater');
   await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds));
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   assert.equal(await readFile(seasonalPath, 'utf8'), savedSeasonalText);
-  await page.locator('#moisture-step').click();
+  await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', String(seasonalSeconds + 86400));
   await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   assert.equal(await readFile(seasonalPath, 'utf8'), uninterrupted, 'GUI save/load retains exact uninterrupted full-checkpoint continuation.');
-  await page.locator('#seed').fill(DEFAULT_RECIPE.seed);
-  await page.locator('#generate').click();
+  await ui('#seed').fill(DEFAULT_RECIPE.seed);
+  await ui('#generate').click();
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await expect(page.locator('[data-layer="vaporWater"]')).toBeDisabled();
@@ -768,51 +821,51 @@ try {
   // Select the experimental mode before initialization. Save/load must retain
   // its version rather than silently returning to the baseline calculation.
   await expect(page.locator('#moisture-start-orographic')).toBeEnabled();
-  await page.locator('#moisture-start-orographic').click();
+  await ui('#moisture-start-orographic').click();
   await expect(page.locator('#model-label')).toContainText('SEASONAL-MOISTURE-4');
   await expect(page.locator('#moisture-budget-note')).toContainText('not calibrated');
   await expect(page.locator('#moisture-start')).toBeDisabled();
   await expect(page.locator('#moisture-start-orographic')).toBeDisabled();
-  await page.locator('#moisture-interval').selectOption('3600');
-  await page.locator('#moisture-step').click();
+  await ui('#moisture-interval').selectOption('3600');
+  await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '3600');
   await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   const orographicText = await readFile(seasonalPath, 'utf8');
   assert.equal(JSON.parse(orographicText).schemaVersion, 4);
   assert.equal(JSON.parse(orographicText).orographicModelVersion, 'orographic-response-1');
-  await page.locator('#moisture-step').click();
+  await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '7200');
   await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   const orographicContinued = await readFile(seasonalPath, 'utf8');
   await writeFile(seasonalPath, orographicText);
-  await page.locator('#open-seasonal').click();
+  await ui('#open-seasonal').click();
   await expect(page.locator('#status')).toContainText('restored at 3600 elapsed seconds');
   await expect(page.locator('#model-label')).toContainText('SEASONAL-MOISTURE-4');
-  await page.locator('[data-layer="vaporWater"]').click();
+  await ui('[data-layer="vaporWater"]').click();
   await expect(canvas).toHaveAttribute('data-active-layer', 'vaporWater');
-  await page.locator('#moisture-step').click();
+  await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '7200');
   await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   assert.equal(await readFile(seasonalPath, 'utf8'), orographicContinued);
-  await page.locator('#generate').click();
+  await ui('#generate').click();
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
   await expect(page.locator('#moisture-start-precise')).toBeEnabled();
-  await page.locator('#moisture-start-precise').click();
+  await ui('#moisture-start-precise').click();
   await expect(page.locator('#model-label')).toContainText('SEASONAL-MOISTURE-7');
   await expect(page.locator('#moisture-start-orographic')).toBeDisabled();
   await expect(page.locator('#moisture-start-precise')).toBeDisabled();
   await page.getByRole('button', { name: '2D map', exact: true }).click();
-  await page.locator('[data-layer="soilWater"]').click();
-  await page.locator('#moisture-step').click();
+  await ui('[data-layer="soilWater"]').click();
+  await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '3600');
   await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   const preciseText = await readFile(seasonalPath, 'utf8'), precise = JSON.parse(preciseText);
   assert.equal(precise.schemaVersion, 7); assert.equal(precise.terminalStockModelVersion, 'terminal-stock-compensated-1');
@@ -821,57 +874,57 @@ try {
   }
   await page.getByRole('button', { name: 'Globe', exact: true }).click();
   await expect(canvas).toHaveAttribute('data-active-layer', 'soilWater');
-  await page.locator('#moisture-step').click();
+  await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '7200');
   await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   const preciseContinued = await readFile(seasonalPath, 'utf8');
   await writeFile(seasonalPath, preciseText);
-  await page.locator('#open-seasonal').click();
+  await ui('#open-seasonal').click();
   await expect(page.locator('#status')).toContainText('restored at 3600 elapsed seconds');
   await expect(page.locator('#model-label')).toContainText('SEASONAL-MOISTURE-7');
-  await page.locator('#moisture-step').click();
+  await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '7200');
   await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   assert.equal(await readFile(seasonalPath, 'utf8'), preciseContinued);
   // The new ownership mode must work through the real bridge and file dialogs,
   // without relabeling the old terminal-column mode or mutating initial relief.
-  await page.locator('#generate').click();
+  await ui('#generate').click();
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
   await expect(page.locator('[data-layer="regionalDepth"]')).toBeDisabled();
-  await page.locator('#moisture-start-regional').click();
+  await ui('#moisture-start-regional').click();
   await expect(page.locator('#model-label')).toContainText('SEASONAL-MOISTURE-15');
   await expect(canvas).toHaveAttribute('data-regional-surface', 'active');
   await expect(page.locator('[data-layer="terminalWater"]')).toBeDisabled();
   await expect(page.locator('#moisture-budget-note')).toContainText('counted once per body');
-  await page.locator('#moisture-interval').selectOption('3600');
-  await page.locator('#moisture-step').click();
+  await ui('#moisture-interval').selectOption('3600');
+  await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '3600');
   for (const mode of ['2D map', 'Globe']) {
     await page.getByRole('button', { name: mode, exact: true }).click();
     for (const layer of ['regionalDepth', 'surfaceInflow', 'surfaceOutflow', 'surface']) {
-      await page.locator(`[data-layer="${layer}"]`).click();
+      await ui(`[data-layer="${layer}"]`).click();
       await expect(canvas).toHaveAttribute('data-active-layer', layer);
     }
   }
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   const regionalText = await readFile(seasonalPath, 'utf8');
   assert.equal(JSON.parse(regionalText).schemaVersion, 15);
-  await page.locator('#moisture-step').click();
+  await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '7200');
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   const regionalContinued = await readFile(seasonalPath, 'utf8');
   await writeFile(seasonalPath, regionalText);
-  await page.locator('#open-seasonal').click();
+  await ui('#open-seasonal').click();
   await expect(page.locator('#status')).toContainText('restored at 3600 elapsed seconds');
-  await page.locator('#moisture-step').click();
+  await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '7200');
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   assert.equal(await readFile(seasonalPath, 'utf8'), regionalContinued);
 
@@ -887,13 +940,13 @@ try {
     const expected = await flowReference.seasonalMoisture(candidate.epoch, 3600);
     assert.ok(expected.regionalSurface!.flow.transferredKilograms > 0);
     const expectedText = await flowReference.exportSeasonalCheckpoint(candidate.epoch);
-    await page.locator('#open-seasonal').click();
+    await ui('#open-seasonal').click();
     await expect(page.locator('#status')).toContainText('restored at 900 elapsed seconds');
     await expect(page.locator('#fingerprint')).toHaveText(generated.world.checksum);
     await page.getByRole('button', { name: '2D map', exact: true }).click();
-    await page.locator('[data-layer="surfaceInflow"]').click();
+    await ui('[data-layer="surfaceInflow"]').click();
     const beforeFlowImage = await canvas.screenshot();
-    await page.locator('#moisture-step').click();
+    await ui('#moisture-step').click();
     await expect(canvas).toHaveAttribute('data-moisture-seconds', '4500');
     assert.notDeepEqual(await canvas.screenshot(), beforeFlowImage, 'Actual surface transfers must update the cumulative inflow texture.');
     const centers = generated.world.surface.centers, region = 8;
@@ -902,25 +955,25 @@ try {
     await expect(page.locator('#moisture-selection-title')).toContainText(`Region ${region}`);
     const format = new Intl.NumberFormat('en', { maximumSignificantDigits: 6 });
     await expect(page.locator('#moisture-selection-details')).toContainText(`${format.format(expected.regionalSurface!.depthMeters[region])} m`);
-    const landDetails = await page.locator('#moisture-selection-details').innerText();
-    await page.locator('[data-layer="surfaceInflow"]').click();
+    const landDetails = await page.locator('#moisture-selection-details').textContent().then(value => value ?? '');
+    await ui('[data-layer="surfaceInflow"]').click();
     await expect(page.locator('#legend-title')).toContainText('not a stock');
     await page.getByRole('button', { name: 'Globe', exact: true }).click();
-    await page.locator('[data-layer="surface"]').click();
-    await expect(page.locator('#moisture-selection-details')).toHaveText(landDetails, { useInnerText: true });
+    await ui('[data-layer="surface"]').click();
+    await expect(page.locator('#moisture-selection-details')).toHaveText(landDetails);
     await expect(page.locator('#legend-title')).toContainText('initial reference heads prescribed');
     await expect(canvas).toHaveAttribute('data-regional-surface', 'active');
-    await page.locator('#save-seasonal').click();
+    await ui('#save-seasonal').click();
     await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
     assert.equal(await readFile(seasonalPath, 'utf8'), expectedText);
     await canvas.screenshot({ path: executablePath ? 'artifacts/regional-water-globe-packaged.png' : 'artifacts/regional-water-globe.png' });
   } finally { flowReference.close(); }
-  await page.locator('#generate').click();
+  await ui('#generate').click();
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
   await expect(page.locator('#moisture-start')).toBeEnabled();
   await expect(page.locator('[data-layer="regionalDepth"]')).toBeDisabled();
   await expect(canvas).not.toHaveAttribute('data-regional-surface', 'active');
-  await page.locator('#moisture-start-soil').click();
+  await ui('#moisture-start-soil').click();
   await expect(canvas).toHaveAttribute('data-seasonal-model', 'regional-seasonal-water-1');
   await expect(page.locator('#moisture-budget-note')).toContainText('five paired regional owners');
   await expect(page.locator('#moisture-budget-details')).toContainText('Deferred numerical requests');
@@ -928,32 +981,32 @@ try {
   await expect(page.locator('[data-layer="liquidWater"]')).toContainText('Unified terrestrial liquid');
   await expect(page.locator('[data-layer="terminalWater"]')).toBeDisabled();
   await expect(page.locator('#moisture-start-regional')).toBeDisabled();
-  await page.locator('#moisture-interval').selectOption('3600');
-  await page.locator('#moisture-step').click();
+  await ui('#moisture-interval').selectOption('3600');
+  await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '3600');
   for (const view of ['2D map', 'Globe']) {
     await page.getByRole('button', { name: view, exact: true }).click();
     for (const layer of ['liquidWater', 'snowWater', 'soilWater', 'runoffWater', 'vaporWater', 'precipitation', 'runoffFlow', 'regionalDepth', 'surfaceInflow', 'surfaceOutflow', 'surface']) {
-      await page.locator(`[data-layer="${layer}"]`).click();
+      await ui(`[data-layer="${layer}"]`).click();
       await expect(canvas).toHaveAttribute('data-active-layer', layer);
     }
   }
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   const soilSaved = await readFile(seasonalPath, 'utf8');
   assert.equal(JSON.parse(soilSaved).modelVersion, 'regional-seasonal-water-1');
   assert.equal(JSON.parse(soilSaved).schemaVersion, 1);
-  await page.locator('#moisture-step').click();
+  await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '7200');
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   const soilContinued = await readFile(seasonalPath, 'utf8');
   await writeFile(seasonalPath, soilSaved);
-  await page.locator('#open-seasonal').click();
+  await ui('#open-seasonal').click();
   await expect(page.locator('#status')).toContainText('restored at 3600 elapsed seconds');
-  await page.locator('#moisture-step').click();
+  await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '7200');
-  await page.locator('#save-seasonal').click();
+  await ui('#save-seasonal').click();
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   assert.equal(await readFile(seasonalPath, 'utf8'), soilContinued);
 
@@ -967,12 +1020,12 @@ try {
     const expected = await soilReference.seasonalSoilMoisture(candidate.epoch, 3600);
     const expectedText = await soilReference.exportSeasonalCheckpoint(candidate.epoch);
     await writeFile(seasonalPath, fixture);
-    await page.locator('#open-seasonal').click();
+    await ui('#open-seasonal').click();
     await expect(page.locator('#status')).toContainText('restored at 900 elapsed seconds');
     await page.getByRole('button', { name: '2D map', exact: true }).click();
-    await page.locator('[data-layer="surfaceInflow"]').click();
+    await ui('[data-layer="surfaceInflow"]').click();
     const before = await canvas.screenshot();
-    await page.locator('#moisture-step').click();
+    await ui('#moisture-step').click();
     await expect(canvas).toHaveAttribute('data-moisture-seconds', '4500');
     assert.notDeepEqual(await canvas.screenshot(), before, 'Unified actual face flow must update the map texture.');
     const centers = generated.world.surface.centers;
@@ -983,21 +1036,21 @@ try {
       y: Math.asin(centers[region * 3 + 1]) / Math.PI });
     await expect(page.locator('#moisture-selection-title')).toContainText(`Region ${region}`);
     await expect(page.locator('#moisture-selection-details')).toContainText(`${expected.stocks.soil.high[region]} kg / ${expected.stocks.soil.low[region]} kg`);
-    const details = await page.locator('#moisture-selection-details').innerText();
+    const details = await page.locator('#moisture-selection-details').textContent().then(value => value ?? '');
     await page.getByRole('button', { name: 'Globe', exact: true }).click();
-    await page.locator('[data-layer="surface"]').click();
-    await expect(page.locator('#moisture-selection-details')).toHaveText(details, { useInnerText: true });
+    await ui('[data-layer="surface"]').click();
+    await expect(page.locator('#moisture-selection-details')).toHaveText(details);
     await expect(canvas).toHaveAttribute('data-regional-surface', 'active');
-    await page.locator('#save-seasonal').click();
+    await ui('#save-seasonal').click();
     await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
     assert.equal(await readFile(seasonalPath, 'utf8'), expectedText);
     await canvas.screenshot({ path: 'artifacts/soil-water-globe.png' });
   } finally { soilReference.close(); }
-  await page.locator('#generate').click();
+  await ui('#generate').click();
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
   await expect(page.locator('#moisture-start-soil')).toBeEnabled();
   await expect(canvas).not.toHaveAttribute('data-seasonal-model', 'regional-seasonal-water-1');
-  await page.locator('[data-layer="surface"]').click();
+  await ui('[data-layer="surface"]').click();
   await mkdir('artifacts', { recursive: true });
   const screenshot = executablePath ? 'artifacts/surface-desktop-packaged.png' : 'artifacts/surface-desktop.png';
   await page.screenshot({ path: screenshot });

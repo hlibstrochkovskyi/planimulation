@@ -19,6 +19,7 @@
     "benchmark": "node --import tsx scripts/benchmark.ts",
     "benchmark:desktop": "npm run build && node --import tsx scripts/benchmark-desktop.ts",
     "test:desktop": "npm run build && node --import tsx scripts/test-desktop.ts",
+    "test:workspace": "npm run build && node --import tsx scripts/test-workspace.ts",
     "package": "npm run build && node --import tsx scripts/package.ts"
   },
   "devDependencies": {
