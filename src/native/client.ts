@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import type { ChildProcessWithoutNullStreams } from 'node:child_process';
-import { MULTISCALE_UPLANDS_MODEL_VERSION, parseRecipe } from '../core/recipe';
+import { BELTS_MAX_FILL_METERS, MULTISCALE_BELTS_MODEL_VERSION, MULTISCALE_UPLANDS_MODEL_VERSION, parseRecipe } from '../core/recipe';
 import { continentalUplandsThickness, columnBuoyancyBaseline } from '../core/continental-uplands';
 import type { Recipe } from '../core/recipe';
 import type { World } from '../core/world';
@@ -89,7 +89,8 @@ export function decodeWorld(packet: Packet): World {
   const { header: h, bytes } = packet;
   if (h.kind !== 'world') throw new Error('Expected native world.');
   const recipe = parseRecipe(h.recipe), n = 10 * 4 ** recipe.subdivision + 2;
-  const continentalUplands = recipe.modelVersion === MULTISCALE_UPLANDS_MODEL_VERSION;
+  const belts = recipe.modelVersion === MULTISCALE_BELTS_MODEL_VERSION;
+  const continentalUplands = recipe.modelVersion === MULTISCALE_UPLANDS_MODEL_VERSION || belts;
   const prepared = recipe.modelVersion !== 'basins-1';
   if (h.protocol !== (prepared ? 10 : 9)) throw new Error('Native protocol does not match the terrain model.');
   const neighbors = 6 * n - 12, faces = 60 * 4 ** recipe.subdivision;
@@ -138,7 +139,7 @@ export function decodeWorld(packet: Packet): World {
       || terrain.convergence[i] < 0 || terrain.convergence[i] > 12000
       || terrain.divergence[i] < -3000 || terrain.divergence[i] > 5000
       || Math.abs(terrain.detail[i]) > recipe.detailAmplitudeMeters + 1e-9
-      || Math.abs(terrain.preparation[i]) > (recipe.terrainPreparationPasses ?? 0) * 100 + 1e-8
+      || Math.abs(terrain.preparation[i]) > (recipe.terrainPreparationPasses ?? 0) * 100 + (belts ? BELTS_MAX_FILL_METERS : 0) + 1e-8
       || Math.abs(terrain.elevation[i] - (terrain.baseline[i] + terrain.convergence[i] + terrain.divergence[i]
         + terrain.detail[i] + terrain.preparation[i])) > 1e-8) {
       throw new Error('Invalid native elevation contributions.');

@@ -1,11 +1,11 @@
 // Capture flat-map and globe screenshots of selected worlds for visual review.
-// Usage: node --import tsx scripts/render-review.ts OUTPUT_DIR [family] [subdivision] [seed]
+// Usage: node --import tsx scripts/render-review.ts OUTPUT_DIR [family] [subdivision] [seed] [zoomX zoomY as canvas fractions]
 import { mkdir, mkdtemp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { _electron as electron, expect } from '@playwright/test';
 
-const [output = 'artifacts/render-review', family = 'terrain-prep-1', subdivision = '5', seed = 'first-light'] = process.argv.slice(2);
+const [output = 'artifacts/render-review', family = 'terrain-prep-1', subdivision = '5', seed = 'first-light', zoomX = '.3', zoomY = '.45'] = process.argv.slice(2);
 await mkdir(output, { recursive: true });
 const temporary = await mkdtemp(path.join(os.tmpdir(), 'planimulation-review-'));
 const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined));
@@ -41,7 +41,7 @@ try {
   await page.locator('[data-view="flat"]').click();
   await page.waitForTimeout(500);
   const box = (await page.locator('#map').boundingBox())!;
-  for (let i = 0; i < 6; i++) { await page.mouse.move(box.x + box.width * .3, box.y + box.height * .45); await page.mouse.wheel(0, -300); await page.waitForTimeout(100); }
+  for (let i = 0; i < 6; i++) { await page.mouse.move(box.x + box.width * Number(zoomX), box.y + box.height * Number(zoomY)); await page.mouse.wheel(0, -300); await page.waitForTimeout(100); }
   await page.waitForTimeout(1200);
   await page.locator('#map').screenshot({ path: path.join(output, `${name}-flat-zoom.png`) });
   console.log(`wrote ${name}`, await page.locator('#map').getAttribute('data-drainage-line-segments'));

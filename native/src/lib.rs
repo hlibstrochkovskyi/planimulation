@@ -34,7 +34,8 @@ impl Recipe {
                 "terrain-prep-1"
                 | "continuous-plates-1"
                 | geography::MODEL_VERSION
-                | continental_uplands::MODEL_VERSION,
+                | continental_uplands::MODEL_VERSION
+                | mountain_belts::MODEL_VERSION,
                 Some(passes),
             ) if passes <= terrain_preparation::MAX_PASSES => {}
             _ => return Err("Unsupported terrain model or preparation pass count.".into()),
@@ -282,7 +283,8 @@ impl World {
     pub fn generate(recipe: Recipe) -> Result<Self, String> {
         recipe.validate()?;
         let surface = Surface::build(recipe.subdivision, recipe.radius_meters);
-        let crust = if recipe.model_version == continental_uplands::MODEL_VERSION {
+        let belts = recipe.model_version == mountain_belts::MODEL_VERSION;
+        let crust = if recipe.model_version == continental_uplands::MODEL_VERSION || belts {
             continental_uplands::build_crust(
                 &surface,
                 &recipe.seed,
@@ -307,6 +309,7 @@ impl World {
         let tectonics = if recipe.model_version == "continuous-plates-1"
             || recipe.model_version == geography::MODEL_VERSION
             || recipe.model_version == continental_uplands::MODEL_VERSION
+            || belts
         {
             tectonics::Tectonics::build_with_continuous_roots(
                 &surface,
@@ -327,11 +330,22 @@ impl World {
         let mut terrain = terrain::Terrain::build(&surface, &crust, &tectonics, &recipe);
         if recipe.model_version == geography::MODEL_VERSION
             || recipe.model_version == continental_uplands::MODEL_VERSION
+            || belts
         {
             let field = geography::Field::new(&recipe.seed, recipe.continental_scale)?;
+            let shaped = if belts {
+                Some(mountain_belts::uplift(
+                    &surface, &crust, &tectonics, &recipe,
+                )?)
+            } else {
+                None
+            };
             for (i, &p) in surface.centers.iter().enumerate() {
                 let sample = field.relief(p, crust.continentality[i])?;
-                terrain.convergence[i] *= sample.convergence_factor;
+                match &shaped {
+                    Some(uplift) => terrain.convergence[i] = uplift[i],
+                    None => terrain.convergence[i] *= sample.convergence_factor,
+                }
                 terrain.divergence[i] *= sample.divergence_factor;
                 terrain.detail[i] = sample.detail * recipe.detail_amplitude_meters;
                 terrain.elevation[i] = terrain.baseline[i]
@@ -350,7 +364,21 @@ impl World {
             terrain.transported_cubic_meters = prepared.transported_cubic_meters;
             terrain.applied_passes = prepared.applied_passes;
         }
-        let water = water::Water::generate(&surface, &terrain.elevation, &recipe.water)?;
+        let mut water = water::Water::generate(&surface, &terrain.elevation, &recipe.water)?;
+        if belts {
+            let fill = mountain_belts::fill_shallow_depressions(
+                &surface,
+                &terrain.elevation,
+                &water.body_ids,
+                water.level_meters,
+                mountain_belts::MAX_FILL_DEPTH_METERS,
+            )?;
+            for (region, added) in fill.into_iter().enumerate() {
+                terrain.preparation[region] += added;
+                terrain.elevation[region] += added;
+            }
+            water = water::Water::generate(&surface, &terrain.elevation, &recipe.water)?;
+        }
         let drainage = drainage::Drainage::build(&surface, &terrain.elevation, &water.body_ids);
         let basins = basins::Basins::build(&surface, &terrain.elevation)?;
         let mut rng = Random::stream(&recipe.seed, "diagnostic-field");
@@ -455,6 +483,7 @@ pub mod irregular_patch;
 pub mod landscape;
 pub mod landscape_evolution;
 pub mod moisture_transport;
+pub mod mountain_belts;
 pub mod nested_reservoir;
 pub mod orographic_response;
 pub mod physical_seed_field;

@@ -26,6 +26,7 @@ The separate [unified regional soil cycle](docs/regional-soil-cycle.md) applies 
 | [Foundation validation](docs/validation-native-foundation.md) | Native and desktop measurements, checks, memory costs, and limitations |
 | [Plate kinematics](docs/tectonics.md) | Connected plates, velocity conventions, boundary classification, parameters, and validation |
 | [Continuous plate-root candidate](docs/plate-root-candidate.md) | Opt-in versioned generator path and paired seeded resolution-stability measurements |
+| [Mountain belts and filled plains](docs/mountain-belts.md) | Opt-in `multiscale-geography-3`: meandering varied convergent belts, filled shallow depressions, connected drainage measurements |
 | [Initial crust](docs/crust.md) | Spherical continentality, area fitting, approximate material properties, and validation |
 | [Explainable elevation](docs/terrain.md) | Elevation contributions, physical-distance propagation, globe relief, and display-only exaggeration |
 | [Dry terrain preparation](docs/terrain-preparation.md) | Versioned bounded material transfer before initial water filling, limits, and validation |
