@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import type { ChildProcessWithoutNullStreams } from 'node:child_process';
-import { BELTS_MAX_FILL_METERS, MULTISCALE_BELTS_MODEL_VERSION, MULTISCALE_UPLANDS_MODEL_VERSION, parseRecipe } from '../core/recipe';
+import { BELTS_MAX_FILL_METERS, MULTISCALE_BELTS_MODEL_VERSION, MULTISCALE_LOWLANDS_MODEL_VERSION, MULTISCALE_UPLANDS_MODEL_VERSION, parseRecipe } from '../core/recipe';
 import { continentalUplandsThickness, columnBuoyancyBaseline } from '../core/continental-uplands';
 import type { Recipe } from '../core/recipe';
 import type { World } from '../core/world';
@@ -89,7 +89,8 @@ export function decodeWorld(packet: Packet): World {
   const { header: h, bytes } = packet;
   if (h.kind !== 'world') throw new Error('Expected native world.');
   const recipe = parseRecipe(h.recipe), n = 10 * 4 ** recipe.subdivision + 2;
-  const belts = recipe.modelVersion === MULTISCALE_BELTS_MODEL_VERSION;
+  const lowlands = recipe.modelVersion === MULTISCALE_LOWLANDS_MODEL_VERSION;
+  const belts = recipe.modelVersion === MULTISCALE_BELTS_MODEL_VERSION || lowlands;
   const continentalUplands = recipe.modelVersion === MULTISCALE_UPLANDS_MODEL_VERSION || belts;
   const prepared = recipe.modelVersion !== 'basins-1';
   if (h.protocol !== (prepared ? 10 : 9)) throw new Error('Native protocol does not match the terrain model.');
@@ -99,7 +100,7 @@ export function decodeWorld(packet: Packet): World {
   const k = h.basinNodeCount;
   if (typeof k !== 'number' || !Number.isInteger(k) || k < 1 || k > 2 * n - 1 || h.basinAnalysisVersion !== BASIN_ANALYSIS_VERSION) throw new Error('Invalid native basin metadata.');
   const expectedBytes = n * 24 + faces * 4 + (n + 1) * 8 + neighbors * 12 + n * 16 + neighbors * 48
-    + n * 4 + recipe.plateCount * 28 + b * 76 + 8 + n * (prepared ? 80 : 72) + 20 + n * 32 + n * 4 + k * 44;
+    + n * 4 + recipe.plateCount * 28 + b * 76 + 8 + n * ((prepared ? 80 : 72) + (lowlands ? 8 : 0)) + 20 + n * 32 + n * 4 + k * 44;
   if (bytes.length !== expectedBytes) throw new Error('Invalid native world array lengths.');
   let cursor = 0;
   const f64 = (length: number): Float64Array => {
@@ -119,6 +120,7 @@ export function decodeWorld(packet: Packet): World {
   const crust = { threshold: f64(1)[0], potential: f64(n), continentality: f64(n), thicknessMeters: f64(n), densityKgPerCubicMeter: f64(n) };
   const baseline = f64(n), convergence = f64(n), divergence = f64(n), detail = f64(n);
   const preparation = prepared ? f64(n) : new Float64Array(n);
+  const lowland = lowlands ? f64(n) : undefined;
   const elevation = f64(n);
   const metadata = h.terrainPreparation as { appliedPasses?: unknown; transportedCubicMeters?: unknown } | undefined;
   if ((prepared && (!metadata || !Number.isSafeInteger(metadata.appliedPasses)
@@ -127,7 +129,7 @@ export function decodeWorld(packet: Packet): World {
     || metadata.transportedCubicMeters < 0)) || (!prepared && h.terrainPreparation !== undefined)) {
     throw new Error('Invalid native terrain-preparation metadata.');
   }
-  const terrain = { baseline, convergence, divergence, detail, preparation, elevation,
+  const terrain = { baseline, convergence, divergence, detail, preparation, ...(lowland ? { lowland } : {}), elevation,
     appliedPasses: prepared ? metadata!.appliedPasses as number : 0,
     transportedCubicMeters: prepared ? metadata!.transportedCubicMeters as number : 0 };
   const water = { levelMeters: f64(1)[0], resolvedVolumeCubicMeters: f64(1)[0], depthMeters: f64(n), bodyIds: u32(n), mainOceanId: u32(1)[0] };
@@ -140,8 +142,9 @@ export function decodeWorld(packet: Packet): World {
       || terrain.divergence[i] < -3000 || terrain.divergence[i] > 5000
       || Math.abs(terrain.detail[i]) > recipe.detailAmplitudeMeters + 1e-9
       || Math.abs(terrain.preparation[i]) > (recipe.terrainPreparationPasses ?? 0) * 100 + (belts ? BELTS_MAX_FILL_METERS : 0) + 1e-8
+      || (lowland && !(lowland[i] <= 0 && lowland[i] >= -12000))
       || Math.abs(terrain.elevation[i] - (terrain.baseline[i] + terrain.convergence[i] + terrain.divergence[i]
-        + terrain.detail[i] + terrain.preparation[i])) > 1e-8) {
+        + terrain.detail[i] + terrain.preparation[i] + (lowland ? lowland[i] : 0))) > 1e-8) {
       throw new Error('Invalid native elevation contributions.');
     }
     if (continentalUplands && (Math.abs(crust.thicknessMeters[i] - continentalUplandsThickness(

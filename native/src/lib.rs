@@ -35,7 +35,8 @@ impl Recipe {
                 | "continuous-plates-1"
                 | geography::MODEL_VERSION
                 | continental_uplands::MODEL_VERSION
-                | mountain_belts::MODEL_VERSION,
+                | mountain_belts::MODEL_VERSION
+                | coastal_lowlands::MODEL_VERSION,
                 Some(passes),
             ) if passes <= terrain_preparation::MAX_PASSES => {}
             _ => return Err("Unsupported terrain model or preparation pass count.".into()),
@@ -283,7 +284,8 @@ impl World {
     pub fn generate(recipe: Recipe) -> Result<Self, String> {
         recipe.validate()?;
         let surface = Surface::build(recipe.subdivision, recipe.radius_meters);
-        let belts = recipe.model_version == mountain_belts::MODEL_VERSION;
+        let lowlands = recipe.model_version == coastal_lowlands::MODEL_VERSION;
+        let belts = recipe.model_version == mountain_belts::MODEL_VERSION || lowlands;
         let crust = if recipe.model_version == continental_uplands::MODEL_VERSION || belts {
             continental_uplands::build_crust(
                 &surface,
@@ -365,6 +367,20 @@ impl World {
             terrain.applied_passes = prepared.applied_passes;
         }
         let mut water = water::Water::generate(&surface, &terrain.elevation, &recipe.water)?;
+        if lowlands {
+            let lowering = coastal_lowlands::lowering(
+                &surface,
+                &terrain.elevation,
+                &terrain.baseline,
+                &terrain.convergence,
+                &water.body_ids,
+                water.level_meters,
+            )?;
+            for (region, lowered) in lowering.into_iter().enumerate() {
+                terrain.lowland[region] = lowered;
+                terrain.elevation[region] += lowered;
+            }
+        }
         if belts {
             let fill = mountain_belts::fill_shallow_depressions(
                 &surface,
@@ -464,6 +480,7 @@ impl World {
 }
 
 pub mod basins;
+pub mod coastal_lowlands;
 pub mod continental_uplands;
 pub mod crust;
 pub mod depression_analysis;

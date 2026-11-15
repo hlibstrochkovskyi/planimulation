@@ -115,6 +115,8 @@ pub struct Terrain {
     pub divergence: Vec<f64>,
     pub detail: Vec<f64>,
     pub preparation: Vec<f64>,
+    /// Version-4 coastal-lowland compression; zero for other model versions.
+    pub lowland: Vec<f64>,
     pub elevation: Vec<f64>,
     pub transported_cubic_meters: f64,
     pub applied_passes: u32,
@@ -157,6 +159,7 @@ impl Terrain {
             divergence: Vec::with_capacity(n),
             detail: Vec::with_capacity(n),
             preparation: vec![0.; n],
+            lowland: vec![0.; n],
             elevation: Vec::with_capacity(n),
             transported_cubic_meters: 0.,
             applied_passes: 0,

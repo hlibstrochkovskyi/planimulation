@@ -27,6 +27,7 @@ The separate [unified regional soil cycle](docs/regional-soil-cycle.md) applies 
 | [Plate kinematics](docs/tectonics.md) | Connected plates, velocity conventions, boundary classification, parameters, and validation |
 | [Continuous plate-root candidate](docs/plate-root-candidate.md) | Opt-in versioned generator path and paired seeded resolution-stability measurements |
 | [Mountain belts and filled plains](docs/mountain-belts.md) | Default for new desktop worlds, `multiscale-geography-3`: meandering varied convergent belts, filled shallow depressions, connected drainage measurements |
+| [Coastal lowlands](docs/coastal-lowlands.md) | Opt-in `multiscale-geography-4` candidate: crust-baseline height compressed toward coasts, unchanged shorelines, hypsometry measurements |
 | [Initial crust](docs/crust.md) | Spherical continentality, area fitting, approximate material properties, and validation |
 | [Explainable elevation](docs/terrain.md) | Elevation contributions, physical-distance propagation, globe relief, and display-only exaggeration |
 | [Dry terrain preparation](docs/terrain-preparation.md) | Versioned bounded material transfer before initial water filling, limits, and validation |

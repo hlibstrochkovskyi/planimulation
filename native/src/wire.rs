@@ -57,6 +57,9 @@ pub fn arrays(w: &World) -> Vec<u8> {
     if w.recipe.terrain_preparation_passes.is_some() {
         f64s(&mut out, t.preparation.iter().copied());
     }
+    if w.recipe.model_version == crate::coastal_lowlands::MODEL_VERSION {
+        f64s(&mut out, t.lowland.iter().copied());
+    }
     f64s(&mut out, t.elevation.iter().copied());
     f64s(
         &mut out,

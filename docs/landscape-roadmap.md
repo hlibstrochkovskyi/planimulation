@@ -278,7 +278,9 @@ The [`multiscale-geography-3` family](mountain-belts.md) addresses the first
 two: shaped belts and filled shallow depressions reduce land draining to closed
 sinks from 45–50% to 13–16% on the three review seeds. After a side-by-side
 review the owner promoted it to `NEW_WORLD_RECIPE` the same day. Scarce coastal
-lowlands remain.
+lowlands remain; the opt-in [`multiscale-geography-4` candidate](coastal-lowlands.md)
+compresses crust-baseline height toward the coast and raises land below 200 m
+from 6–8% to 22–28% with unchanged shorelines.
 
 ## Fine physical landform increment
 

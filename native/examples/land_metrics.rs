@@ -1,6 +1,7 @@
 //! Land metrics for one generated world: closed dry depressions, closed-sink drainage share
 //! and land hypsometry above the initial water level.
-//! Usage: land_metrics [SEED] [MODEL_VERSION]  (subdivision 6, default recipe parameters)
+//! Usage: land_metrics [SEED] [MODEL_VERSION]  (subdivision 6, default recipe parameters;
+//! MODEL_VERSION defaults to multiscale-geography-3)
 use planimulation_core::{Recipe, World};
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
@@ -9,7 +10,7 @@ fn main() {
     let seed = std::env::args().nth(1).unwrap_or("first-light".into());
     let model = std::env::args()
         .nth(2)
-        .unwrap_or("multiscale-geography-2".into());
+        .unwrap_or("multiscale-geography-3".into());
     let recipe: Recipe = serde_json::from_str(&format!(r#"{{"schemaVersion":1,"modelVersion":"{model}","randomVersion":"fnv1a-utf8-mulberry32-1","seed":"{seed}","subdivision":6,"radiusMeters":6371000,"plateCount":12,"maxPlateSpeedCmPerYear":8,"continentalFraction":0.38,"continentalScale":1,"reliefScale":1,"boundaryWidthKm":300,"detailAmplitudeMeters":300,"terrainPreparationPasses":4,"water":{{"mode":"coverage","fraction":0.71}}}}"#)).unwrap();
     let w = World::generate(recipe).unwrap();
     let s = &w.surface;

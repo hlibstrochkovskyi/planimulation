@@ -7,6 +7,8 @@ export interface Terrain {
   divergence: Float64Array;
   detail: Float64Array;
   preparation: Float64Array;
+  /** Coastal-lowland compression (zero or negative); present only for multiscale-geography-4. */
+  lowland?: Float64Array;
   elevation: Float64Array;
   transportedCubicMeters: number;
   appliedPasses: number;

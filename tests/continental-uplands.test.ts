@@ -20,7 +20,7 @@ test('uplands scalar reference and strict recipes keep bounded physical columns 
   assert.equal(DEFAULT_RECIPE.modelVersion, 'terrain-prep-1');
   assert.throws(() => continentalUplandsThickness(1.01, 0, 0));
   assert.throws(() => parseRecipe({ ...recipe, terrainPreparationPasses: 17 }));
-  assert.throws(() => parseRecipe({ ...recipe, modelVersion: 'multiscale-geography-4' }));
+  assert.throws(() => parseRecipe({ ...recipe, modelVersion: 'multiscale-geography-5' }));
 });
 
 test('uplands native fields repeat, preserve structure and export inspectable material provenance', async () => {

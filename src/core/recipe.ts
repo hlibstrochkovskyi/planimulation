@@ -3,8 +3,11 @@ export const CONTINUOUS_PLATES_MODEL_VERSION = 'continuous-plates-1';
 export const MULTISCALE_GEOGRAPHY_MODEL_VERSION = 'multiscale-geography-1';
 export const MULTISCALE_UPLANDS_MODEL_VERSION = 'multiscale-geography-2';
 export const MULTISCALE_BELTS_MODEL_VERSION = 'multiscale-geography-3';
+export const MULTISCALE_LOWLANDS_MODEL_VERSION = 'multiscale-geography-4';
 /** Upper bound of version-3 sediment-filled depression thickness, in meters. */
 export const BELTS_MAX_FILL_METERS = 200;
+/** Display copy of the native multiscale-geography-4 coastal-lowland constants. */
+export const COASTAL_LOWLAND = Object.freeze({ coast: 0.25, interior: 0.85, rampKm: 1200 });
 export const LEGACY_MODEL_VERSION = 'basins-1';
 export const RANDOM_VERSION = 'fnv1a-utf8-mulberry32-1';
 
@@ -12,7 +15,7 @@ export type WaterSettings = { mode: 'coverage'; fraction: number } | { mode: 'vo
 
 export interface Recipe {
   schemaVersion: 1;
-  modelVersion: typeof MODEL_VERSION | typeof CONTINUOUS_PLATES_MODEL_VERSION | typeof MULTISCALE_GEOGRAPHY_MODEL_VERSION | typeof MULTISCALE_UPLANDS_MODEL_VERSION | typeof MULTISCALE_BELTS_MODEL_VERSION | typeof LEGACY_MODEL_VERSION;
+  modelVersion: typeof MODEL_VERSION | typeof CONTINUOUS_PLATES_MODEL_VERSION | typeof MULTISCALE_GEOGRAPHY_MODEL_VERSION | typeof MULTISCALE_UPLANDS_MODEL_VERSION | typeof MULTISCALE_BELTS_MODEL_VERSION | typeof MULTISCALE_LOWLANDS_MODEL_VERSION | typeof LEGACY_MODEL_VERSION;
   randomVersion: typeof RANDOM_VERSION;
   seed: string;
   subdivision: number;
@@ -70,7 +73,7 @@ export function parseRecipe(value: unknown): Recipe {
   }
   if (input.schemaVersion !== 1 || (input.modelVersion !== MODEL_VERSION && input.modelVersion !== CONTINUOUS_PLATES_MODEL_VERSION
     && input.modelVersion !== MULTISCALE_GEOGRAPHY_MODEL_VERSION && input.modelVersion !== MULTISCALE_UPLANDS_MODEL_VERSION
-    && input.modelVersion !== MULTISCALE_BELTS_MODEL_VERSION && !legacy) || input.randomVersion !== RANDOM_VERSION) {
+    && input.modelVersion !== MULTISCALE_BELTS_MODEL_VERSION && input.modelVersion !== MULTISCALE_LOWLANDS_MODEL_VERSION && !legacy) || input.randomVersion !== RANDOM_VERSION) {
     throw new Error('Unsupported recipe or random version.');
   }
   for (const key of keys) {

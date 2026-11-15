@@ -17,7 +17,7 @@ pub const WARP_RADIANS: f64 = 0.045;
 pub const MAX_FILL_DEPTH_METERS: f64 = 200.;
 
 #[derive(Clone, Copy, PartialEq)]
-struct Key(f64, usize);
+pub(crate) struct Key(pub(crate) f64, pub(crate) usize);
 impl Eq for Key {}
 impl PartialOrd for Key {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
