@@ -282,6 +282,17 @@ lowlands remain; the opt-in [`multiscale-geography-4` candidate](coastal-lowland
 compresses crust-baseline height toward the coast and raises land below 200 m
 from 6–8% to 22–28% with unchanged shorelines.
 
+## November 16, 2026: terrain freeze
+
+The owner promoted `multiscale-geography-4` to `NEW_WORLD_RECIPE` and agreed to
+freeze terrain generation. Versions 3 and 4 add two explicit proxies (filled
+shallow depressions, coastal compression) in place of the preparatory erosion
+and deposition that DESIGN describes; each fixed one symptom and introduced a
+side effect. No further per-metric terrain versions are planned. Preparatory
+erosion stays deferred until ecology or drainage results show that the proxies
+block real work, and then only as a time-boxed slice. The next work is
+Milestone E: biomes from the existing seasonal climate.
+
 ## Fine physical landform increment
 
 The global 655362-region footprint is approximately 28 km. This cannot represent

@@ -1,7 +1,9 @@
 # Mountain belts and filled plains: `multiscale-geography-3`
 
-November 15, 2026. Generator family for new desktop worlds (`NEW_WORLD_RECIPE`),
-selected by the owner after visual comparison with `multiscale-geography-2`.
+November 15, 2026. Generator family for new desktop worlds (`NEW_WORLD_RECIPE`)
+on November 15, 2026, selected by the owner after visual comparison with
+`multiscale-geography-2`; replaced by [`multiscale-geography-4`](coastal-lowlands.md)
+on November 16.
 `DEFAULT_RECIPE`, headless defaults, old recipes and fingerprints are unchanged.
 
 ## What changes relative to version 2

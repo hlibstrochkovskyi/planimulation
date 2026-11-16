@@ -593,9 +593,9 @@ function updateGeneratorInputs(): void {
   const legacy = generatorFamilyInput.value === LEGACY_MODEL_VERSION;
   terrainPreparationInput.disabled = legacy;
   element('generator-note').textContent = generatorFamilyInput.value === MULTISCALE_LOWLANDS_MODEL_VERSION
-    ? 'Candidate: version 3 with coastal lowlands. Non-belt land height rises gradually with distance from water, so coastal plains are wider and interiors lower. Shorelines match version 3. Changing the model creates a different world.'
+    ? 'Default for new worlds. Version 3 with coastal lowlands. Non-belt land height rises gradually with distance from water, so coastal plains are wider and interiors lower. Shorelines match version 3. Changing the model creates a different world.'
     : generatorFamilyInput.value === MULTISCALE_BELTS_MODEL_VERSION
-    ? 'Default for new worlds. Continental uplands with meandering, varied mountain belts and sediment-filled shallow depressions for connected drainage. Changing the model creates a different world.'
+    ? 'Continental uplands with meandering, varied mountain belts and sediment-filled shallow depressions for connected drainage. Changing the model creates a different world.'
     : generatorFamilyInput.value === MULTISCALE_UPLANDS_MODEL_VERSION
     ? 'Continental uplands reuse version-1 geographic structure with variable initial crust thickness. No geological history, river incision or automatic depression removal. Changing the model creates a different world.'
     : generatorFamilyInput.value === MULTISCALE_GEOGRAPHY_MODEL_VERSION

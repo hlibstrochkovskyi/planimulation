@@ -56,7 +56,7 @@ export const DEFAULT_RECIPE: Readonly<Recipe> = Object.freeze({
  */
 export const NEW_WORLD_RECIPE: Readonly<Recipe> = Object.freeze({
   ...DEFAULT_RECIPE,
-  modelVersion: MULTISCALE_BELTS_MODEL_VERSION,
+  modelVersion: MULTISCALE_LOWLANDS_MODEL_VERSION,
   subdivision: 6,
 });
 

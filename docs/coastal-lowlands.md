@@ -1,8 +1,8 @@
 # Coastal lowlands: `multiscale-geography-4`
 
-November 15, 2026. Opt-in desktop and headless candidate. Not the default for new
-worlds; `multiscale-geography-3` remains the default until the owner selects
-otherwise. Old recipes and fingerprints are unchanged.
+November 15, 2026. Generator family for new desktop worlds (`NEW_WORLD_RECIPE`)
+since November 16, 2026, replacing `multiscale-geography-3`. `DEFAULT_RECIPE`,
+headless defaults, old recipes and fingerprints are unchanged.
 
 ## Problem
 
