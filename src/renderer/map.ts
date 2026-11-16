@@ -17,6 +17,8 @@ import { summarizeTerrain } from '../core/terrain';
 import { buildWaterSurface, pickSurface } from './water-surface';
 import { summarizeBasins } from '../core/basins';
 import type { TemperatureNormals } from '../core/seasonal-temperature';
+import { BIOMES } from '../core/climate-normals';
+import type { ClimateNormals } from '../core/climate-normals';
 import type { WindNormals } from '../core/seasonal-wind';
 import type { SeasonalDisplayFrame } from '../shared/seasonal-display';
 import { hasRegionalSurface, isSoilMoistureFrame } from '../shared/seasonal-display';
@@ -28,12 +30,14 @@ import { PlanetCamera } from './planet-camera';
 import type { PlanetView } from './planet-camera';
 import { SpaceBackdrop } from './space';
 
-export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill' | 'temperature' | 'windSpeed' | MoistureLayer;
+export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill' | 'temperature' | 'windSpeed' | 'biome' | 'annualPrecipitation' | MoistureLayer;
 export type ViewMode = 'flat' | 'globe';
 /** Continuous layers can be interpolated between regions; categorical and sentinel layers cannot. */
 const SMOOTH_LAYERS = new Set<string>(['surface', 'signal', 'area', 'latitude', 'crust', 'thickness', 'elevation', 'uplift',
-  'depth', 'contributingArea', 'temperature', 'windSpeed']);
-const RELIEF_LAYERS: Partial<Record<string, number>> = { surface: 1, elevation: .8 };
+  'depth', 'contributingArea', 'temperature', 'windSpeed', 'biome', 'annualPrecipitation']);
+const RELIEF_LAYERS: Partial<Record<string, number>> = { surface: 1, biome: 1, elevation: .8 };
+/** Layers drawn as land and water with a shoreline, bathymetry and the globe water surface. */
+const surfaceLike = (layer: string): boolean => layer === 'surface' || layer === 'biome';
 /** Child order inside each view group. Picking and visibility depend on these indices. */
 const RIVERS = 5;
 export interface NavigationView extends PlanetView { mode: ViewMode; radiusMeters: number }
@@ -54,6 +58,7 @@ export class SurfaceMap {
     side: DoubleSide,
     uniforms: { field: { value: null }, textureWidth: { value: 1 }, textureHeight: { value: 1 },
       cornerField: { value: null }, cornerWidth: { value: 1 }, cornerHeight: { value: 1 },
+      tintField: { value: null }, cornerTintField: { value: null }, biomeMode: { value: 0 }, precipitationMode: { value: 0 },
       smoothMode: { value: 0 }, reliefStrength: { value: 0 },
       selected: { value: -1 }, globe: { value: 0 }, categorical: { value: 0 }, muted: { value: 0 }, waterMode: { value: 0 },
       surfaceMode: { value: 0 }, waterSurface: { value: 0 }, missingMode: { value: 0 },
@@ -64,7 +69,8 @@ export class SurfaceMap {
     vertexShader: `attribute float region; attribute vec2 cornerPair; attribute vec3 weight;
       uniform sampler2D field; uniform float textureWidth; uniform float textureHeight;
       uniform sampler2D cornerField; uniform float cornerWidth; uniform float cornerHeight;
-      varying float cell; varying vec4 blended; varying vec3 direction; varying vec3 planetDirection;
+      uniform sampler2D tintField; uniform sampler2D cornerTintField;
+      varying float cell; varying vec4 blended; varying vec3 tint; varying vec3 direction; varying vec3 planetDirection;
       vec4 texel(sampler2D map, float id, float width, float height) {
         return texture2D(map, vec2((mod(id,width)+0.5)/width,(floor(id/width)+0.5)/height));
       }
@@ -72,6 +78,9 @@ export class SurfaceMap {
         blended=weight.x*texel(field,region,textureWidth,textureHeight)
           +weight.y*texel(cornerField,cornerPair.x,cornerWidth,cornerHeight)
           +weight.z*texel(cornerField,cornerPair.y,cornerWidth,cornerHeight);
+        tint=(weight.x*texel(tintField,region,textureWidth,textureHeight)
+          +weight.y*texel(cornerTintField,cornerPair.x,cornerWidth,cornerHeight)
+          +weight.z*texel(cornerTintField,cornerPair.y,cornerWidth,cornerHeight)).rgb;
         direction=normalMatrix*(length(position)>0.0 ? normalize(position) : vec3(0.0,0.0,1.0));
         planetDirection=(modelMatrix*vec4(position,1.0)).xyz;
         gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
@@ -80,8 +89,8 @@ export class SurfaceMap {
       uniform float selected; uniform float globe; uniform float categorical; uniform float muted; uniform float waterMode;
       uniform float surfaceMode; uniform float waterSurface; uniform float missingMode;
       uniform float basinMode; uniform float spillFrom; uniform float spillTo; uniform float temperatureMode; uniform float windMode;
-      uniform float distantLightMix; uniform vec3 sunDirection;
-      varying float cell; varying vec4 blended; varying vec3 direction; varying vec3 planetDirection;
+      uniform float distantLightMix; uniform vec3 sunDirection; uniform float biomeMode; uniform float precipitationMode;
+      varying float cell; varying vec4 blended; varying vec3 tint; varying vec3 direction; varying vec3 planetDirection;
       // Atlas-style hypsometric and bathymetric tints in meters. They are not biomes.
       vec3 hypsometric(float h) {
         vec3 c=vec3(0.33,0.47,0.29);
@@ -113,7 +122,7 @@ export class SurfaceMap {
           // Interpolated masks give a display shoreline midway between wet and dry centers.
           if(waterSurface>0.5 && smoothMode>0.5 && m>0.0) discard;
           wet=waterSurface>0.5 || m<0.0;
-          color=wet ? bathymetric(max(-v,0.0)) : hypsometric(max(v,0.0));
+          color=wet ? bathymetric(max(-v,0.0)) : biomeMode>0.5 ? tint : hypsometric(max(v,0.0));
         }
         if(reliefStrength>0.0) {
           vec3 n=normalize(vec3(-blended.b,-blended.a,1.0)), light=normalize(vec3(-0.55,0.65,0.75));
@@ -126,6 +135,12 @@ export class SurfaceMap {
           color=v<0.33 ? mix(cold,cool,clamp(v/0.33,0.0,1.0))
             : v<0.66 ? mix(cool,mild,clamp((v-0.33)/0.33,0.0,1.0))
             : mix(mild,hot,clamp((v-0.66)/0.34,0.0,1.0));
+        }
+        if(precipitationMode>0.5) {
+          vec3 arid=vec3(0.58,0.44,0.26), steppe=vec3(0.82,0.78,0.48), humid=vec3(0.32,0.62,0.36), soaked=vec3(0.13,0.36,0.62);
+          color=v<0.4 ? mix(arid,steppe,clamp(v/0.4,0.0,1.0))
+            : v<0.7 ? mix(steppe,humid,clamp((v-0.4)/0.3,0.0,1.0))
+            : mix(humid,soaked,clamp((v-0.7)/0.3,0.0,1.0));
         }
         if(windMode>0.5) {
           color=mix(vec3(0.10,0.18,0.23),vec3(0.30,0.77,0.83),clamp(v/0.6,0.0,1.0));
@@ -164,6 +179,11 @@ export class SurfaceMap {
   private regionalWater: RegionalWaterDisplay | null = null;
   private waterSurfaceDirty = false;
   private temperatureNormals: TemperatureNormals | null = null;
+  private climateNormals: ClimateNormals | null = null;
+  private tintTexture: DataTexture | null = null;
+  private cornerTintTexture: DataTexture | null = null;
+  private tintValues = new Float32Array(0);
+  private cornerTintValues = new Float32Array(0);
   private windNormals: WindNormals | null = null;
   private moistureFrame: SeasonalDisplayFrame | null = null;
   private temperatureMonth = 3;
@@ -360,7 +380,7 @@ export class SurfaceMap {
     // appears on the right in a north-up globe, matching the flat projection.
     next.globe.scale.z = -1;
     this.releaseViews(); this.views = next;
-    this.scene.add(next.flat, next.globe); this.world = world; this.waterFrame = null; this.temperatureNormals = null; this.windNormals = null;
+    this.scene.add(next.flat, next.globe); this.world = world; this.waterFrame = null; this.temperatureNormals = null; this.windNormals = null; this.climateNormals = null;
     this.moistureFrame = null; this.regionalWater = null; this.waterSurfaceDirty = false;
     delete this.canvas.dataset.regionalSurface;
     delete this.canvas.dataset.moistureSeconds;
@@ -382,11 +402,14 @@ export class SurfaceMap {
     this.corners = pair.corners;
     this.values = texels(world.stats.regionCount); this.cornerValues = texels(pair.corners.offsets.length - 1);
     this.texture = fieldTexture(this.values); this.cornerTexture = fieldTexture(this.cornerValues);
+    this.tintValues = texels(world.stats.regionCount); this.cornerTintValues = texels(pair.corners.offsets.length - 1);
+    this.tintTexture = fieldTexture(this.tintValues); this.cornerTintTexture = fieldTexture(this.cornerTintValues);
     const { gradients } = reliefGradients(world.surface, world.terrain.elevation, world.water.bodyIds, world.water.levelMeters);
     for (let id = 0; id < world.stats.regionCount; id++) this.values.set(gradients.subarray(id * 2, id * 2 + 2), id * 4 + 2);
     this.blendCorners(2);
     const uniforms = this.material.uniforms;
     uniforms.field.value = this.texture; uniforms.cornerField.value = this.cornerTexture;
+    uniforms.tintField.value = this.tintTexture; uniforms.cornerTintField.value = this.cornerTintTexture;
     uniforms.textureWidth.value = this.texture.image.width; uniforms.textureHeight.value = this.texture.image.height;
     uniforms.cornerWidth.value = this.cornerTexture.image.width; uniforms.cornerHeight.value = this.cornerTexture.image.height;
     this.material.uniforms.selected.value = -1;
@@ -442,6 +465,60 @@ export class SurfaceMap {
     }
     this.refreshField();
   }
+  /** Land colors for the biome layer; shared corners average only their dry regions. */
+  setClimateNormals(normals: ClimateNormals | null): void {
+    if (normals && (!this.world || normals.biome.length !== this.world.stats.regionCount)) {
+      throw new Error('Climate normals do not match this world.');
+    }
+    this.climateNormals = normals;
+    if (normals && this.corners && this.tintTexture && this.cornerTintTexture) {
+      const tint = this.tintValues, out = this.cornerTintValues;
+      for (let id = 0; id < normals.biome.length; id++) {
+        const color = BIOMES[normals.biome[id]].color;
+        for (let c = 0; c < 3; c++) tint[id * 4 + c] = color[c] / 255;
+      }
+      // Display-only softening: each dry region mixes half of its dry neighbors' mean
+      // color so 110 km region edges read as transitions. Classes are unchanged.
+      const surface = this.world!.surface, own = tint.slice();
+      for (let id = 0; id < normals.biome.length; id++) {
+        if (normals.biome[id] === 0) continue;
+        let r = 0, g = 0, b = 0, count = 0;
+        for (let k = surface.neighborOffsets[id]; k < surface.neighborOffsets[id + 1]; k++) {
+          const j = surface.neighbors[k];
+          if (normals.biome[j] === 0) continue;
+          r += own[j * 4]; g += own[j * 4 + 1]; b += own[j * 4 + 2]; count++;
+        }
+        if (count) { tint[id * 4] = .5 * own[id * 4] + .5 * r / count; tint[id * 4 + 1] = .5 * own[id * 4 + 1] + .5 * g / count; tint[id * 4 + 2] = .5 * own[id * 4 + 2] + .5 * b / count; }
+      }
+      // Water regions borrow their dry neighbors' mean so interpolated shores do not darken.
+      for (let id = 0; id < normals.biome.length; id++) {
+        if (normals.biome[id] !== 0) continue;
+        let r = 0, g = 0, b = 0, count = 0;
+        for (let k = surface.neighborOffsets[id]; k < surface.neighborOffsets[id + 1]; k++) {
+          const j = surface.neighbors[k];
+          if (normals.biome[j] === 0) continue;
+          r += tint[j * 4]; g += tint[j * 4 + 1]; b += tint[j * 4 + 2]; count++;
+        }
+        if (count) { tint[id * 4] = r / count; tint[id * 4 + 1] = g / count; tint[id * 4 + 2] = b / count; }
+      }
+      const { offsets, regions } = this.corners;
+      for (let k = 0; k + 1 < offsets.length; k++) {
+        let r = 0, g = 0, b = 0, count = 0;
+        for (const dryOnly of [true, false]) {
+          for (let j = offsets[k]; j < offsets[k + 1]; j++) {
+            const id = regions[j];
+            if (dryOnly && normals.biome[id] === 0) continue;
+            r += tint[id * 4]; g += tint[id * 4 + 1]; b += tint[id * 4 + 2]; count++;
+          }
+          if (count) break;
+        }
+        out[k * 4] = r / count; out[k * 4 + 1] = g / count; out[k * 4 + 2] = b / count;
+      }
+      this.tintTexture.needsUpdate = true; this.cornerTintTexture.needsUpdate = true;
+    }
+    this.material.uniforms.biomeMode.value = this.layer === 'biome' && normals ? 1 : 0;
+    this.refreshField();
+  }
   setWindNormals(normals: WindNormals | null): void {
     if (normals && (!this.world || normals.monthlyEastMetersPerSecond.some((values) => values.length !== this.world!.stats.regionCount)
       || normals.monthlyNorthMetersPerSecond.some((values) => values.length !== this.world!.stats.regionCount))) {
@@ -470,7 +547,7 @@ export class SurfaceMap {
       this.maximumDepth = this.regionalWater.depthMeters.reduce((maximum, depth) => Math.max(maximum, depth), 0);
       this.waterSurfaceDirty = true;
       this.canvas.dataset.regionalSurface = 'active';
-      if (this.layer === 'surface' && this.mode === 'globe') this.updateWaterSurface(this.regionalWater);
+      if (surfaceLike(this.layer) && this.mode === 'globe') this.updateWaterSurface(this.regionalWater);
     } else {
       this.regionalWater = null;
       delete this.canvas.dataset.regionalSurface;
@@ -481,7 +558,7 @@ export class SurfaceMap {
     else delete this.canvas.dataset.seasonalModel;
     // Legacy modes update only textures. Regional caps rebuild lazily only for
     // the visible physical globe; flat/analytical playback never rebuilds them.
-    if (isMoistureLayer(this.layer) || (hasRegionalSurface(frame) && ['surface', 'depth'].includes(this.layer))) this.refreshField();
+    if (isMoistureLayer(this.layer) || (hasRegionalSurface(frame) && ['surface', 'biome', 'depth'].includes(this.layer))) this.refreshField();
   }
   setTemperatureMonth(month: number): void {
     if (!Number.isInteger(month) || month < 0 || month >= 12) throw new Error('Invalid seasonal month.');
@@ -492,7 +569,7 @@ export class SurfaceMap {
     this.stopCamera();
     this.clearMapDrag();
     this.mode = mode; this.canvas.dataset.view = mode;
-    if (mode === 'globe' && this.layer === 'surface' && this.regionalWater && this.waterSurfaceDirty) {
+    if (mode === 'globe' && surfaceLike(this.layer) && this.regionalWater && this.waterSurfaceDirty) {
       this.updateWaterSurface(this.regionalWater);
     }
     this.material.uniforms.globe.value = mode === 'globe' ? 1 : 0;
@@ -506,13 +583,15 @@ export class SurfaceMap {
   }
   setLayer(layer: Layer): void {
     this.layer = layer;
-    this.space.setSurfaceMode(layer === 'surface');
-    if (layer === 'surface' && this.mode === 'globe' && this.regionalWater && this.waterSurfaceDirty) {
+    this.space.setSurfaceMode(surfaceLike(layer));
+    if (surfaceLike(layer) && this.mode === 'globe' && this.regionalWater && this.waterSurfaceDirty) {
       this.updateWaterSurface(this.regionalWater);
     }
     this.canvas.dataset.activeLayer = layer;
     this.notifyNavigation();
-    this.material.uniforms.surfaceMode.value = layer === 'surface' ? 1 : 0;
+    this.material.uniforms.surfaceMode.value = surfaceLike(layer) ? 1 : 0;
+    this.material.uniforms.biomeMode.value = layer === 'biome' && this.climateNormals ? 1 : 0;
+    this.material.uniforms.precipitationMode.value = layer === 'annualPrecipitation' ? 1 : 0;
     this.material.uniforms.temperatureMode.value = layer === 'temperature' ? 1 : 0;
     this.material.uniforms.windMode.value = layer === 'windSpeed' ? 1 : 0;
     this.material.uniforms.categorical.value = layer === 'plates' || layer === 'boundaries' || layer === 'waterBodies' || layer === 'catchments' || layer === 'basins' ? 1 : 0;
@@ -523,8 +602,8 @@ export class SurfaceMap {
     this.applyShadingModes();
     if (this.views) for (const view of Object.values(this.views)) {
       view.children[2].visible = layer === 'plates' || layer === 'boundaries';
-      view.children[3].visible = layer === 'surface';
-      view.children[4].visible = layer === 'surface' && this.boundaries;
+      view.children[3].visible = surfaceLike(layer);
+      view.children[4].visible = surfaceLike(layer) && this.boundaries;
     }
     this.refreshField();
   }
@@ -534,7 +613,7 @@ export class SurfaceMap {
     const depth = this.regionalWater?.depthMeters ?? this.waterFrame?.depthMeters ?? w.water.depthMeters;
     const bodyIds = this.waterFrame?.bodyIds ?? w.water.bodyIds;
     const surfaceMask = this.regionalWater?.wetMask ?? bodyIds;
-    const values = this.values, masked = this.layer === 'surface' || this.layer === 'depth';
+    const values = this.values, masked = surfaceLike(this.layer) || this.layer === 'depth';
     const mask = masked ? relaxedMask(w.surface, surfaceMask) : null;
     for (let id = 0; id < w.stats.regionCount; id++) {
       const wet = surfaceMask[id] ? 1 : 0;
@@ -553,7 +632,9 @@ export class SurfaceMap {
           : (w.basins.spillLevels[w.basins.regionNodes[id]] - this.spillRange.minimum) / Math.max(1, this.spillRange.maximum - this.spillRange.minimum))
         : this.layer === 'catchments' ? w.drainage.outlets[id]
         : this.layer === 'contributingArea' ? Math.log1p(w.drainage.contributingArea[id] / 1e6) / Math.max(1e-30, Math.log1p(this.maximumContributingArea / 1e6))
-        : this.layer === 'surface' ? (wet ? -depth[id] : w.terrain.elevation[id] - w.water.levelMeters)
+        : surfaceLike(this.layer) ? (wet ? -depth[id] : w.terrain.elevation[id] - w.water.levelMeters)
+        : this.layer === 'annualPrecipitation' ? (this.climateNormals
+          ? Math.min(1, Math.log1p(this.climateNormals.annualPrecipitationMm[id] / 50) / Math.log1p(4000 / 50)) : 0)
         : this.layer === 'depth' ? (wet ? depth[id] / Math.max(1e-30, this.maximumDepth) : 0)
         : this.layer === 'waterBodies' ? bodyIds[id]
         : this.layer === 'elevation' ? (w.terrain.elevation[id] - this.terrainRange.minimumMeters) / Math.max(1, this.terrainRange.maximumMeters - this.terrainRange.minimumMeters)
@@ -587,7 +668,7 @@ export class SurfaceMap {
     this.material.uniforms.reliefStrength.value = this.reliefShading ? RELIEF_LAYERS[this.layer] ?? 0 : 0;
     this.canvas.dataset.smoothShading = String(smooth);
     if (this.views) for (const view of Object.values(this.views)) {
-      view.children[RIVERS].visible = this.drainageLines && (this.layer === 'surface' || this.layer === 'elevation');
+      view.children[RIVERS].visible = this.drainageLines && (surfaceLike(this.layer) || this.layer === 'elevation');
     }
   }
   setSmoothShading(enabled: boolean): void { this.smoothShading = enabled; this.applyShadingModes(); this.refreshField(); }
@@ -611,7 +692,7 @@ export class SurfaceMap {
   setBoundaries(visible: boolean): void {
     this.boundaries = visible;
     if (this.views) for (const group of Object.values(this.views)) {
-      group.children[1].visible = visible; group.children[4].visible = visible && this.layer === 'surface';
+      group.children[1].visible = visible; group.children[4].visible = visible && surfaceLike(this.layer);
     }
     this.draw();
   }
@@ -691,7 +772,7 @@ export class SurfaceMap {
       if (!this.lost) {
         const distance = this.planetCamera.view.distance;
         const fade = Math.max(0, Math.min(1, (distance - 3) / 2));
-        const nightBlend = this.mode === 'globe' && this.layer === 'surface' && this.distantLighting ? fade * fade * (3 - 2 * fade) : 0;
+        const nightBlend = this.mode === 'globe' && surfaceLike(this.layer) && this.distantLighting ? fade * fade * (3 - 2 * fade) : 0;
         this.material.uniforms.distantLightMix.value = nightBlend;
         this.canvas.dataset.dayNight = nightBlend.toFixed(3);
         this.lineMaterial.opacity = .45 * (1 - nightBlend * .8);
@@ -707,6 +788,7 @@ export class SurfaceMap {
       group.traverse((object: Object3D) => { if ('geometry' in object) (object as Mesh<BufferGeometry>).geometry.dispose(); });
     }
     this.texture?.dispose(); this.texture = null; this.cornerTexture?.dispose(); this.cornerTexture = null;
+    this.tintTexture?.dispose(); this.tintTexture = null; this.cornerTintTexture?.dispose(); this.cornerTintTexture = null;
     this.corners = null; this.views = null;
   }
   dispose(): void {

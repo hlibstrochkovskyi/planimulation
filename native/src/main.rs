@@ -34,6 +34,7 @@ enum Command {
     },
     SeasonalTemperature,
     SeasonalWind,
+    ClimateNormals,
     SeasonalMoisture {
         seconds: u32,
     },
@@ -124,6 +125,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let w = world.as_ref().ok_or("Generate a world first.")?;
                     let normals = Normals::from_world(w, Settings::default())?;
                     wire::seasonal_temperature(&mut output, &normals).map_err(|e| e.to_string())?;
+                }
+                Command::ClimateNormals => {
+                    let w = world.as_ref().ok_or("Generate a world first.")?;
+                    let normals = planimulation_core::climate_normals::Normals::from_world(w)?;
+                    wire::climate_normals(&mut output, &normals).map_err(|e| e.to_string())?;
                 }
                 Command::SeasonalWind => {
                     let w = world.as_ref().ok_or("Generate a world first.")?;

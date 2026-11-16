@@ -172,6 +172,10 @@ canvas[data-gpu=lost] ~ #gpu-status { display: grid; }
 #legend-gradient { display: inline-block; width: 110px; height: 6px; border-radius: 2px; background: linear-gradient(90deg, #294855, #648985, #b9cba0); }
 #legend-gradient.water-gradient { background: linear-gradient(90deg, #2e9ebf, #061a42); }
 #legend-gradient.temperature-gradient { background: linear-gradient(90deg, #1a337a, #4aaed1, #e3e0a3, #d43d21); }
+#legend-gradient.precipitation-gradient { background: linear-gradient(90deg, #94703f, #d1c77a 40%, #529e5c 70%, #215c9e); }
+#biome-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--muted, #9aa); }
+#biome-legend span { display: inline-flex; align-items: center; gap: 4px; }
+#biome-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
 #legend-gradient.wind-gradient { background: linear-gradient(90deg, #1a2e3b, #4cc4d4 60%, #ebe68a); }
 #boundary-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 5px; font-size: 11px; }
 [data-kind="0"] { color: #a3adb2; } [data-kind="1"] { color: #ee9e92; } [data-kind="2"] { color: #8ac9e2; } [data-kind="3"] { color: #dfcb8c; }

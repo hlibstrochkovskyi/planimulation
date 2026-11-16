@@ -265,6 +265,8 @@ Work includes growth, water/temperature limitations, recovery, water-retention a
 
 Acceptance: biomes do not flicker with every short fluctuation; stable conditions produce bounded states; drought leaves a measurable effect; recovery takes time. Run ensembles of ordinary and extreme supported parameters, retaining distributions and problematic seeds.
 
+The first increment, [climate normals and biomes](climate-normals.md), adds a prescribed annual climatology (zonal temperature with lagged seasonality, precipitation from zonal potential, upwind moisture supply and windward lift) and Köppen-style climate classes as read-only map layers. It replaces neither the seasonal-water budget nor vegetation dynamics; the seasonal-water model was measured to be about three times too dry for this purpose, and its calibration remains open.
+
 Preserve differences between worlds. Checks detect broken laws rather than requiring every planet to have the same forest area.
 
 ## 8. Adding 3D

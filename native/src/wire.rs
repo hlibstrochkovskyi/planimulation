@@ -248,6 +248,40 @@ pub fn seasonal_wind(out: &mut impl Write, normals: &WindNormals) -> io::Result<
     )
 }
 
+/// Prescribed climate normals and climate-class biomes; read-only, never part of the world fingerprint.
+pub fn climate_normals(
+    out: &mut impl Write,
+    normals: &crate::climate_normals::Normals,
+) -> io::Result<()> {
+    let count = normals.biome.len();
+    let mut bytes = Vec::with_capacity(count * 68);
+    for field in [
+        &normals.annual_mean_celsius,
+        &normals.warmest_month_celsius,
+        &normals.coldest_month_celsius,
+        &normals.annual_precipitation_mm,
+        &normals.driest_month_mm,
+        &normals.zonal_precipitation_mm,
+        &normals.moisture_supply,
+        &normals.lift,
+    ] {
+        f64s(&mut bytes, field.iter().copied());
+    }
+    u32s(
+        &mut bytes,
+        &normals
+            .biome
+            .iter()
+            .map(|&b| u32::from(b))
+            .collect::<Vec<_>>(),
+    );
+    send(
+        out,
+        json!({"kind":"climate", "climateModelVersion":normals.model_version, "regionCount":count}),
+        &bytes,
+    )
+}
+
 pub fn water_frame(
     out: &mut impl Write,
     display: &WaterDisplay,

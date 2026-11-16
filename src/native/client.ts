@@ -10,6 +10,8 @@ import { BASIN_ANALYSIS_VERSION, validateBasins } from '../core/basins';
 import type { DiagnosticFrame, PreparedMoistureWorld, PreparedSoilWorld, PreparedWaterWorld, PrescribedWaterMode, WaterBudget, WaterFrame } from '../shared/desktop-api';
 import { DEFAULT_TEMPERATURE_SETTINGS, TEMPERATURE_DAYS_PER_YEAR, TEMPERATURE_MODEL_VERSION, TEMPERATURE_MONTHS_PER_YEAR } from '../core/seasonal-temperature';
 import type { TemperatureNormals } from '../core/seasonal-temperature';
+import { BIOMES, CLIMATE_MODEL_VERSION } from '../core/climate-normals';
+import type { ClimateNormals } from '../core/climate-normals';
 import { DEFAULT_WIND_SETTINGS, WIND_MODEL_VERSION } from '../core/seasonal-wind';
 import type { WindNormals } from '../core/seasonal-wind';
 import { decodeSeasonalMoisture } from './seasonal-moisture';
@@ -64,7 +66,7 @@ export class FrameReader {
         if (!h || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0
           || h.byteLength > (checkpoint ? MAX_SEASONAL_CHECKPOINT_BYTES : MAX_BYTES)
           || (seasonal ? h.protocol !== seasonal.protocol : (h.protocol !== 9 && h.protocol !== 10)
-            || !['world', 'frame', 'water', 'temperature', 'wind', 'checkpoint', 'error'].includes(h.kind))) throw new Error('Invalid native protocol header.');
+            || !['world', 'frame', 'water', 'temperature', 'wind', 'climate', 'checkpoint', 'error'].includes(h.kind))) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
       if (this.length < this.header.byteLength) return;
@@ -267,6 +269,29 @@ function decodeWaterFrame(packet: Packet, count: number, epoch: number, expected
   return { epoch, step: header.step as number, inputUnits: header.inputUnits as string,
     acceptedInputUnits: header.acceptedInputUnits as string, depthMeters, surfaceLevelsMeters, bodyIds,
     mainOceanId: header.mainOceanId as number };
+}
+
+export function decodeClimateNormals(packet: Packet, count: number, epoch: number): ClimateNormals {
+  const { header, bytes } = packet;
+  if (header.kind !== 'climate' || header.protocol !== 9 || header.climateModelVersion !== CLIMATE_MODEL_VERSION
+    || header.regionCount !== count || !Number.isSafeInteger(count) || count < 1 || bytes.length !== count * 68) {
+    throw new Error('Invalid native climate-normal metadata.');
+  }
+  let offset = 0;
+  const next = (): Float64Array => { const field = floats(bytes.subarray(offset, offset + count * 8)); offset += count * 8; return field; };
+  const annualMeanCelsius = next(), warmestMonthCelsius = next(), coldestMonthCelsius = next(), annualPrecipitationMm = next(),
+    driestMonthMm = next(), zonalPrecipitationMm = next(), moistureSupply = next(), lift = next();
+  const biome = new Uint32Array(count);
+  for (let i = 0; i < count; i++) biome[i] = bytes.readUInt32LE(offset + i * 4);
+  for (let i = 0; i < count; i++) {
+    if (!(coldestMonthCelsius[i] <= annualMeanCelsius[i] + 1e-9 && annualMeanCelsius[i] <= warmestMonthCelsius[i] + 1e-9)
+      || coldestMonthCelsius[i] < -200 || warmestMonthCelsius[i] > 200
+      || !(annualPrecipitationMm[i] >= 0 && annualPrecipitationMm[i] < 1e5) || !(driestMonthMm[i] >= 0 && driestMonthMm[i] <= annualPrecipitationMm[i])
+      || !(zonalPrecipitationMm[i] > 0) || !(moistureSupply[i] > 0 && moistureSupply[i] <= 1 + 1e-12) || !(lift[i] >= 1 && lift[i] <= 3)
+      || biome[i] >= BIOMES.length) throw new Error('Invalid native climate-normal values.');
+  }
+  return { epoch, modelVersion: CLIMATE_MODEL_VERSION, annualMeanCelsius, warmestMonthCelsius, coldestMonthCelsius,
+    annualPrecipitationMm, driestMonthMm, zonalPrecipitationMm, moistureSupply, lift, biome };
 }
 
 export function decodeSeasonalTemperature(packet: Packet, count: number, epoch: number): TemperatureNormals {
@@ -506,6 +531,14 @@ export class NativeController {
     const packet = await session.request({ command: 'seasonalTemperature' });
     if (this.active !== session || this.epoch !== epoch) throw new Error('Stale seasonal-temperature response.');
     try { return decodeSeasonalTemperature(packet, this.count, epoch); }
+    catch (error) { session.close(); throw error; }
+  }
+  async climateNormals(epoch: number): Promise<ClimateNormals> {
+    if (!this.active || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    const session = this.active;
+    const packet = await session.request({ command: 'climateNormals' });
+    if (this.active !== session || this.epoch !== epoch) throw new Error('Stale climate-normal response.');
+    try { return decodeClimateNormals(packet, this.count, epoch); }
     catch (error) { session.close(); throw error; }
   }
   async seasonalWind(epoch: number): Promise<WindNormals> {

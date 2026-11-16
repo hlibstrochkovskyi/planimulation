@@ -21,6 +21,8 @@ import type { SeasonalDisplayFrame } from '../shared/seasonal-display';
 import { hasRegionalSurface, isSoilMoistureFrame } from '../shared/seasonal-display';
 import { MOISTURE_LAYERS, isMoistureLayer, supportsMoistureLayer, moistureLayerTitle, moistureLayerValue, moistureCalendar } from './seasonal-moisture';
 import { soilWaterInspection } from './soil-water-inspector';
+import { BIOMES, aridityThreshold } from '../core/climate-normals';
+import type { ClimateNormals } from '../core/climate-normals';
 
 function element<T extends HTMLElement>(id: string): T {
   const result = document.getElementById(id);
@@ -57,6 +59,11 @@ const waterSave = element<HTMLButtonElement>('save-water');
 const waterBudgetButton = element<HTMLButtonElement>('water-budget-refresh');
 const temperatureMonthInput = element<HTMLSelectElement>('temperature-month');
 const temperatureLayerButton = document.querySelector<HTMLButtonElement>('[data-layer="temperature"]')!;
+const climateLayerButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-layer="biome"], [data-layer="annualPrecipitation"]')];
+element('biome-legend').replaceChildren(...BIOMES.slice(1).map(({ name, color }) => {
+  const item = document.createElement('span'), swatch = document.createElement('i');
+  swatch.style.background = `rgb(${color.join(',')})`; item.append(swatch, name); return item;
+}));
 const windLayerButton = document.querySelector<HTMLButtonElement>('[data-layer="windSpeed"]')!;
 const moistureStart = element<HTMLButtonElement>('moisture-start');
 const moistureStartOrographic = element<HTMLButtonElement>('moisture-start-orographic');
@@ -75,6 +82,7 @@ let waterFrame: WaterFrame | null = null;
 let waterBudget: WaterBudget | null = null;
 let temperatureNormals: TemperatureNormals | null = null;
 let windNormals: WindNormals | null = null;
+let climateNormals: ClimateNormals | null = null;
 let moistureFrame: SeasonalDisplayFrame | null = null;
 let moistureBusyEpoch: number | null = null;
 let moisturePlaying = false;
@@ -411,6 +419,15 @@ function inspect(id: number, preserveBasin = false): void {
       ['Annual mean temperature normal', `${temperatureNormals.annualMeanCelsius[id].toFixed(1)} °C`],
       ['Daily normal range', `${temperatureNormals.annualMinimumCelsius[id].toFixed(1)} to ${temperatureNormals.annualMaximumCelsius[id].toFixed(1)} °C`],
     ] : []),
+    ...(climateNormals ? [
+      ['Biome (climate class)', BIOMES[climateNormals.biome[id]].name],
+      ['Climate annual mean', `${climateNormals.annualMeanCelsius[id].toFixed(1)} °C`],
+      ['Climate warmest / coldest month', `${climateNormals.warmestMonthCelsius[id].toFixed(1)} / ${climateNormals.coldestMonthCelsius[id].toFixed(1)} °C`],
+      ['Annual precipitation', `${number.format(climateNormals.annualPrecipitationMm[id])} mm/year · driest month ${number.format(climateNormals.driestMonthMm[id])} mm`],
+      ['Zonal precipitation potential', `${number.format(climateNormals.zonalPrecipitationMm[id])} mm/year`],
+      ['Moisture supply', `${(climateNormals.moistureSupply[id] * 100).toFixed(0)}% of zonal potential`],
+      ['Windward lift', `×${climateNormals.lift[id].toFixed(2)}`],
+    ] : []),
     ...(windNormals ? [
       [`Month ${Number(temperatureMonthInput.value) + 1} wind speed normal`, `${Math.hypot(windNormals.monthlyEastMetersPerSecond[Number(temperatureMonthInput.value)][id], windNormals.monthlyNorthMetersPerSecond[Number(temperatureMonthInput.value)][id]).toFixed(2)} m/s`],
       ['Eastward wind component', `${windNormals.monthlyEastMetersPerSecond[Number(temperatureMonthInput.value)][id].toFixed(2)} m/s`],
@@ -470,6 +487,8 @@ function inspect(id: number, preserveBasin = false): void {
   element('temperature-note').textContent = temperatureNormals
     ? `Latitude ${lat.toFixed(2)}° sets daily solar geometry for a ${temperatureNormals.settings.axialTiltDegrees}° tilt and 365-day circular orbit. Initial ${world.water.depthMeters[id] > 0 ? 'water' : 'dry land'} uses a ${world.water.depthMeters[id] > 0 ? temperatureNormals.settings.waterResponseDays : temperatureNormals.settings.landResponseDays}-day response time. ${world.water.depthMeters[id] > 0 ? 'Wet regions receive no bed-height lapse correction.' : `Positive bed elevation contributes a −${(temperatureNormals.settings.lapseRateCelsiusPerMeter * Math.max(0, world.terrain.elevation[id])).toFixed(1)} °C correction.`} The solar-to-temperature sensitivity is prescribed; no atmospheric heat transport, weather, ice feedback, or complete energy budget is modeled.`
     : 'Seasonal temperature normals are being calculated from initial geography.';
+  element('climate-note').textContent = climateNormals ? climateExplanation(climateNormals, id, world.water.bodyIds[id] !== 0)
+    : 'Climate normals are unavailable for this world.';
   element('wind-note').textContent = windNormals
     ? `Latitude ${lat.toFixed(2)}° and the selected month determine a prescribed east/north tangent vector. Trades are easterly, midlatitude winds westerly, and polar winds easterly; the convergence belt follows half the subsolar declination. These are smooth, zonally symmetric model choices, not simulated atmospheric circulation. Terrain and water do not redirect wind. Seasonal water uses these normals on its own elapsed-time clock.`
     : 'Seasonal surface-wind normals are being calculated.';
@@ -551,6 +570,8 @@ function updateLegend(): void {
       basinStats?.maximumSpillMeters === null ? '' : `${number.format(basinStats?.maximumSpillMeters ?? 0)} m`],
     temperature: [`Month ${Number(temperatureMonthInput.value) + 1} temperature normal · fixed initial geography, not weather`,
       `${number.format(temperatureRange.minimum)} °C`, `${number.format(temperatureRange.maximum)} °C`],
+    biome: ['Biomes · climate classes from prescribed normals, not simulated vegetation', '', ''],
+    annualPrecipitation: ['Annual precipitation · prescribed estimate, not the seasonal-water budget · logarithmic', '0 mm', '≥4,000 mm'],
     windSpeed: [`Month ${Number(temperatureMonthInput.value) + 1} prescribed surface-wind speed · no atmospheric dynamics`,
       '0 m/s', `${number.format(windMaximum)} m/s`],
   };
@@ -562,11 +583,31 @@ function updateLegend(): void {
   element('legend-low').textContent = low;
   element('legend-high').textContent = high;
   const plateLayer = currentLayer === 'plates' || currentLayer === 'boundaries';
-  element('legend-scale').hidden = plateLayer || currentLayer === 'waterBodies' || currentLayer === 'surface' || currentLayer === 'catchments' || currentLayer === 'basins';
+  element('legend-scale').hidden = plateLayer || currentLayer === 'waterBodies' || currentLayer === 'surface' || currentLayer === 'catchments' || currentLayer === 'basins' || currentLayer === 'biome';
+  element('biome-legend').hidden = currentLayer !== 'biome';
+  element('legend-gradient').classList.toggle('precipitation-gradient', currentLayer === 'annualPrecipitation');
   element('boundary-legend').hidden = !plateLayer;
   element('legend-gradient').classList.toggle('water-gradient', currentLayer === 'depth');
   element('legend-gradient').classList.toggle('temperature-gradient', currentLayer === 'temperature');
   element('legend-gradient').classList.toggle('wind-gradient', currentLayer === 'windSpeed');
+}
+
+/** Mirrors the native climate-normals-1 classifier so the inspector names the deciding rule. */
+function climateExplanation(normals: ClimateNormals, id: number, wet: boolean): string {
+  const mean = normals.annualMeanCelsius[id], warm = normals.warmestMonthCelsius[id], cold = normals.coldestMonthCelsius[id];
+  const annual = normals.annualPrecipitationMm[id], threshold = aridityThreshold(mean);
+  const f = (value: number): string => number.format(value);
+  const precipitation = `Precipitation ${f(annual)} mm/year = monthly zonal potential (${f(normals.zonalPrecipitationMm[id])} mm/year for this latitude, shifted with the sun) × moisture supply ${(normals.moistureSupply[id] * 100).toFixed(0)}% × windward lift ×${normals.lift[id].toFixed(2)}. Supply decays with the cheapest path from water that follows the prescribed winds; paths against the wind and every meter of climbing cost extra (rain shadow).`;
+  const temperature = `Temperatures come from a prescribed sea-level profile by latitude, a lagged seasonal insolation response (damped near windward water) and −6.5 °C/km above the water level.`;
+  if (wet) return `Initial water region; no biome. ${precipitation}`;
+  const rule = warm < 0 ? `Warmest month ${warm.toFixed(1)} °C is below 0 °C → ice.`
+    : warm < 10 ? `Warmest month ${warm.toFixed(1)} °C is below 10 °C → tundra.`
+    : annual < threshold ? `${f(annual)} mm is below the aridity threshold ${f(threshold)} mm (20 × mean + 140) → ${mean >= 18 ? 'hot' : 'cold'} desert.`
+    : annual < 2 * threshold ? `${f(annual)} mm is between the aridity threshold ${f(threshold)} mm and twice it → ${mean >= 18 ? 'savanna' : 'temperate grassland'}.`
+    : cold >= 18 ? `Humid and coldest month ${cold.toFixed(1)} °C ≥ 18 °C → tropical; driest month ${f(normals.driestMonthMm[id])} mm ${normals.driestMonthMm[id] >= 60 ? '≥' : '<'} 60 mm → ${normals.driestMonthMm[id] >= 60 ? 'rainforest' : 'seasonal forest'}.`
+    : cold > -3 || warm >= 22 ? `Humid; coldest month ${cold.toFixed(1)} °C above −3 °C or warmest ≥ 22 °C → temperate forest.`
+    : `Humid; coldest month ${cold.toFixed(1)} °C and warmest ${warm.toFixed(1)} °C → boreal forest.`;
+  return `${BIOMES[normals.biome[id]].name}. ${rule} ${precipitation} ${temperature} These are prescribed climate normals, not weather, a water budget or vegetation dynamics.`;
 }
 
 function setInputs(recipe: Recipe): void {
@@ -654,7 +695,8 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
     unsavedProgress = false; diagnosticDirty = false;
     moistureFrame = restoredMoisture;
     map.setMoistureFrame(moistureFrame); renderMoisture();
-    temperatureNormals = null; windNormals = null;
+    temperatureNormals = null; windNormals = null; climateNormals = null;
+    for (const button of climateLayerButtons) button.disabled = true;
     map.setTemperatureNormals(null); map.setWindNormals(null);
     waterBusy = false; budgetBusyEpoch = null;
     if (prepared) setInputs(world.recipe);
@@ -754,7 +796,21 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
       windError = error instanceof Error ? error.message : String(error);
       element('wind-note').textContent = `Seasonal surface-wind normals unavailable: ${windError}`;
     }
+    showStatus('Calculating climate normals and biomes in the native core…');
+    let climateError: string | null = null;
+    try {
+      const normals = await api.climateNormals(epoch);
+      if (request !== generationId || normals.epoch !== epoch) return;
+      climateNormals = normals; map.setClimateNormals(normals);
+      for (const button of climateLayerButtons) button.disabled = false;
+      updateLegend();
+    } catch (error) {
+      if (request !== generationId) return;
+      climateError = error instanceof Error ? error.message : String(error);
+      element('climate-note').textContent = `Climate normals unavailable: ${climateError}`;
+    }
     if ((currentLayer === 'temperature' && !temperatureNormals) || (currentLayer === 'windSpeed' && !windNormals)
+      || ((currentLayer === 'biome' || currentLayer === 'annualPrecipitation') && !climateNormals)
       || (isMoistureLayer(currentLayer) && !supportsMoistureLayer(moistureFrame, currentLayer))) {
       document.querySelector<HTMLButtonElement>('[data-layer="surface"]')?.click();
     }
@@ -763,7 +819,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
     element<HTMLButtonElement>('play').disabled = false;
     document.body.dataset.state = 'ready';
     updateExperimentControls();
-    showStatus(temperatureError || windError ? `World ready; climate layer unavailable: ${temperatureError ?? windError}`
+    showStatus(temperatureError || windError || climateError ? `World ready; climate layer unavailable: ${temperatureError ?? windError ?? climateError}`
       : restoredMoisture ? `Seasonal checkpoint restored at ${restoredMoisture.elapsedSeconds} elapsed seconds. Complete stocks and ledgers are ready to continue.`
       : restoredFrame ? `Water checkpoint restored at prescribed step ${restoredFrame.step}. Exact stocks are ready to continue.`
       : `${world.recipe.plateCount} connected plates · ${world.tectonics.boundaryTypes.length} boundary segments · ${(world.stats.arrayBytes / 2 ** 20).toFixed(1)} MiB of model arrays · Static kinematics, no geological time integration`);
@@ -775,6 +831,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
       waterOpen.disabled = false; waterSave.disabled = world === null || waterBusy;
       temperatureLayerButton.disabled = temperatureNormals === null;
       windLayerButton.disabled = windNormals === null;
+      for (const button of climateLayerButtons) button.disabled = climateNormals === null;
       temperatureMonthInput.disabled = temperatureNormals === null && windNormals === null;
       waterBudgetButton.disabled = world === null || budgetBusyEpoch === epoch;
       element<HTMLButtonElement>('play').disabled = world === null;

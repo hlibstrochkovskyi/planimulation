@@ -116,7 +116,7 @@ try {
   }, { ...DEFAULT_RECIPE });
   assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'copyText', 'exportView', 'generate', 'initializeOrographicMoisture', 'initializePreciseMoisture', 'initializeRegionalMoisture', 'initializeSoilMoisture', 'inspectWaterBudget', 'openRecipe', 'openSeasonalCheckpoint', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveSeasonalCheckpoint', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalSoilMoisture', 'seasonalTemperature', 'seasonalWind']);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'climateNormals', 'copyText', 'exportView', 'generate', 'initializeOrographicMoisture', 'initializePreciseMoisture', 'initializeRegionalMoisture', 'initializeSoilMoisture', 'inspectWaterBudget', 'openRecipe', 'openSeasonalCheckpoint', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveSeasonalCheckpoint', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalSoilMoisture', 'seasonalTemperature', 'seasonalWind']);
   await expect(page.locator('[data-layer="temperature"]')).toBeEnabled();
   await expect(page.locator('#temperature-month')).toBeEnabled();
   await ui('[data-layer="temperature"]').click();
@@ -133,6 +133,19 @@ try {
   await expect(page.locator('#legend-high')).toContainText('m/s');
   await mkdir('artifacts', { recursive: true });
   await page.locator('#map').screenshot({ path: executablePath ? 'artifacts/wind-map-packaged.png' : 'artifacts/wind-map.png' });
+  await expect(page.locator('[data-layer="biome"]')).toBeEnabled();
+  await ui('[data-layer="biome"]').click();
+  await expect(page.locator('#legend-title')).toContainText('Biomes');
+  await expect(page.locator('#biome-legend')).toBeVisible();
+  await expect(page.locator('#biome-legend')).toContainText('Tropical rainforest');
+  await page.locator('#map').screenshot({ path: executablePath ? 'artifacts/biome-map-packaged.png' : 'artifacts/biome-map.png' });
+  await page.keyboard.press('Escape');
+  await page.locator('#map').click();
+  await expect(page.locator('#climate-note')).toContainText('prescribed');
+  await ui('[data-layer="annualPrecipitation"]').click();
+  await expect(page.locator('#legend-high')).toContainText('4,000 mm');
+  await expect(page.locator('#biome-legend')).toBeHidden();
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await ui('#temperature-month').selectOption('9');
   await expect(page.locator('#map')).toHaveAttribute('data-climate-month', '9');
   await ui('[data-layer="surface"]').click();

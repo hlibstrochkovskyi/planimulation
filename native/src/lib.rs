@@ -480,6 +480,7 @@ impl World {
 }
 
 pub mod basins;
+pub mod climate_normals;
 pub mod coastal_lowlands;
 pub mod continental_uplands;
 pub mod crust;

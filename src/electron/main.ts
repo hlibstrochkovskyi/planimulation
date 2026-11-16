@@ -70,6 +70,7 @@ void app.whenReady().then(() => {
   ipcMain.handle('world:accept', (event, epoch: number) => { senderWindow(event); core.accept(epoch); });
   ipcMain.handle('world:advance', (event, epoch: number, steps: number) => { senderWindow(event); return core.advance(epoch, steps); });
   ipcMain.handle('world:seasonalTemperature', (event, epoch: number) => { senderWindow(event); return core.seasonalTemperature(epoch); });
+  ipcMain.handle('world:climateNormals', (event, epoch: number) => { senderWindow(event); return core.climateNormals(epoch); });
   ipcMain.handle('world:seasonalWind', (event, epoch: number) => { senderWindow(event); return core.seasonalWind(epoch); });
   ipcMain.handle('world:seasonalMoisture', (event, epoch: number, seconds: number) => {
     senderWindow(event); return core.seasonalMoisture(epoch, seconds);

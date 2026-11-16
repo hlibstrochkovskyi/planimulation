@@ -1,5 +1,6 @@
 // Capture flat-map and globe screenshots of selected worlds for visual review.
 // Usage: node --import tsx scripts/render-review.ts OUTPUT_DIR [family] [subdivision] [seed] [zoomX zoomY as canvas fractions]
+// REVIEW_LAYER=biome (any data-layer name) selects a layer before capturing.
 import { mkdir, mkdtemp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -24,8 +25,10 @@ try {
   await page.locator('#seed').fill(seed);
   await page.locator('#generate').click();
   await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 300_000 });
+  const layer = process.env.REVIEW_LAYER;
+  if (layer) await page.locator(`[data-layer="${layer}"]`).click();
   await page.waitForTimeout(1500);
-  const name = `${family}-s${subdivision}-${seed}`;
+  const name = `${family}-s${subdivision}-${seed}${layer ? `-${layer}` : ''}`;
   await page.locator('#map').screenshot({ path: path.join(output, `${name}-flat.png`) });
   await page.locator('[data-view="globe"]').click();
   await page.waitForTimeout(1500);

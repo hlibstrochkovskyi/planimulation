@@ -272,6 +272,7 @@ export class Workspace {
     seasonal.hidden = !this.state?.seasonalModel;
     node('basin-title').closest<HTMLElement>('.inspector')!.hidden = !['basins', 'spill', 'catchments'].includes(this.state?.layer ?? '');
     const relevant: Record<string, string[]> = {
+      'climate-note': ['biome', 'annualPrecipitation'],
       'crust-note': ['crust', 'thickness', 'plates', 'surface'],
       'water-note': ['surface', 'depth', 'waterBodies'],
       'drainage-note': ['catchments', 'contributingArea', 'runoffFlow', 'runoffWater', 'basins', 'spill'],
@@ -290,6 +291,8 @@ export class Workspace {
       waterBodies: ['Initial water body', 'Initial water depth', 'Elevation (reference datum)'],
       temperature: ['temperature normal', 'Annual mean temperature normal', 'Daily normal range', 'Elevation (reference datum)'],
       windSpeed: ['wind speed normal', 'wind component', 'Elevation (reference datum)'],
+      biome: ['Biome (climate class)', 'Climate annual mean', 'Climate warmest / coldest month', 'Annual precipitation'],
+      annualPrecipitation: ['Annual precipitation', 'Zonal precipitation potential', 'Moisture supply', 'Windward lift'],
       catchments: ['Drainage receiver', 'Catchment outlet', 'Contributing', 'Elevation (reference datum)'],
       contributingArea: ['Contributing', 'Drainage receiver', 'Catchment outlet'],
       plates: ['Tectonic plate', 'Plate area', 'Speed (model frame)', 'Continentality'],
