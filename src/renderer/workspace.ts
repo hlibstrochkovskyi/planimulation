@@ -275,7 +275,7 @@ export class Workspace {
     node('basin-title').closest<HTMLElement>('.inspector')!.hidden = !['basins', 'spill', 'catchments'].includes(this.state?.layer ?? '');
     const relevant: Record<string, string[]> = {
       'climate-note': ['biome', 'annualPrecipitation'],
-      'vegetation-note': ['vegetationState', 'woodyCover', 'precipitationAnomaly'],
+      'vegetation-note': ['vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly'],
       'crust-note': ['crust', 'thickness', 'plates', 'surface'],
       'water-note': ['surface', 'depth', 'waterBodies'],
       'drainage-note': ['catchments', 'contributingArea', 'runoffFlow', 'runoffWater', 'basins', 'spill'],
@@ -298,6 +298,8 @@ export class Workspace {
       annualPrecipitation: ['Annual precipitation', 'Zonal precipitation potential', 'Moisture supply', 'Windward lift'],
       vegetationState: ['Vegetation state', 'Biome (climate class)', 'Woody / herb cover', 'Established cover'],
       woodyCover: ['Woody / herb cover', 'Woody capacity', 'Root-zone moisture', 'Vegetation state'],
+      woodyChange: ['Woody change, 10 years', 'Woody / herb cover', 'This year\'s precipitation', 'Vegetation state'],
+      productivity: ['Net primary productivity', 'Woody / herb cover', 'This year\'s precipitation', 'Annual mean temperature normal'],
       precipitationAnomaly: ['This year\'s precipitation', 'Root-zone moisture', 'Annual precipitation', 'Vegetation state'],
       catchments: ['Drainage receiver', 'Catchment outlet', 'Contributing', 'Elevation (reference datum)'],
       contributingArea: ['Contributing', 'Drainage receiver', 'Catchment outlet'],

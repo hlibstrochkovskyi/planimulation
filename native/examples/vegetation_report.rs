@@ -1,4 +1,4 @@
-//! Ensemble report for vegetation-1 on the new-world recipe: class shares at year 0 and
+//! Ensemble report for vegetation-2 on the new-world recipe: class shares at year 0 and
 //! after the run, label changes and their most common transitions, drought marks and
 //! timing. Usage: vegetation_report [YEARS] [SEED...]  (multiscale-geography-4, subdivision 6)
 use planimulation_core::climate_normals::Normals;
@@ -33,7 +33,12 @@ fn main() {
         let w = World::generate(recipe).unwrap();
         let normals = Normals::from_world(&w).unwrap();
         let started = Instant::now();
-        let (model, mut state) = Model::new(&w, &normals, Settings::default()).unwrap();
+        let length = std::env::var("ANOMALY_KM").map_or(1000., |v| v.parse().unwrap());
+        let settings = Settings {
+            anomaly_length_meters: length * 1000.,
+            ..Settings::default()
+        };
+        let (model, mut state) = Model::new(&w, &normals, settings).unwrap();
         let setup = started.elapsed().as_secs_f64();
         let initial = state.clone();
         let mut transitions: BTreeMap<(u8, u8), u32> = BTreeMap::new();
@@ -118,6 +123,28 @@ fn main() {
                 / land_area,
             100. * s.iter().map(|x| x.forest_share).fold(1., f64::min),
             100. * s.last().unwrap().forest_share,
+        );
+        let productivity: Vec<f64> = s.iter().map(|x| x.productivity_petagrams).collect();
+        println!(
+            "  land productivity {:.1} Pg dry matter/year at year 1, range {:.1}–{:.1}",
+            productivity[0],
+            productivity.iter().copied().fold(f64::INFINITY, f64::min),
+            productivity.iter().copied().fold(0., f64::max),
+        );
+        let stats = |v: &[f64]| {
+            let mean = v.iter().sum::<f64>() / v.len() as f64;
+            let sd = (v.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / v.len() as f64).sqrt();
+            (mean, sd)
+        };
+        let factors: Vec<f64> = s.iter().map(|x| x.precipitation_factor).collect();
+        let forest: Vec<f64> = s.iter().map(|x| x.forest_share).collect();
+        let half = forest.len() / 2;
+        println!(
+            "  global land factor sd {:.3}; forest share mean {:.1}% first half, {:.1}% second half, sd {:.1} pp",
+            stats(&factors).1,
+            100. * stats(&forest[..half]).0,
+            100. * stats(&forest[half..]).0,
+            100. * stats(&forest).1,
         );
         let mut regional: Vec<f64> = land
             .iter()

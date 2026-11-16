@@ -160,6 +160,11 @@ try {
   await expect(page.locator('#vegetation-note')).toContainText(/at year 10\.|Initial water region/);
   await ui('[data-layer="woodyCover"]').click();
   await expect(page.locator('#legend-high')).toHaveText('1');
+  await ui('[data-layer="woodyChange"]').click();
+  await expect(page.locator('#legend-title')).toContainText('Woody change · years 0–10');
+  await ui('[data-layer="productivity"]').click();
+  await expect(page.locator('#legend-high')).toContainText('g/m²/year');
+  await expect(page.locator('#vegetation-summary')).toContainText('Pg dry matter/year');
   await ui('[data-layer="precipitationAnomaly"]').click();
   await expect(page.locator('#legend-high')).toContainText('200%');
   await expect(page.locator('#biome-legend')).toBeHidden();

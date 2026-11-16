@@ -23,7 +23,7 @@ import { MOISTURE_LAYERS, isMoistureLayer, supportsMoistureLayer, moistureLayerT
 import { soilWaterInspection } from './soil-water-inspector';
 import { BIOMES, aridityThreshold } from '../core/climate-normals';
 import type { ClimateNormals } from '../core/climate-normals';
-import { COVER_ARIDITY, DEFAULT_VEGETATION_SETTINGS, FOREST_COVER, OPEN_COVER, WOODY_ARIDITY } from '../core/vegetation';
+import { CHANGE_YEARS, COVER_ARIDITY, DEFAULT_VEGETATION_SETTINGS, FOREST_COVER, MINIMUM_REFERENCE_COVER, OPEN_COVER, VARIABILITY_PRECIPITATION_MM, WOODY_ARIDITY, miami } from '../core/vegetation';
 import type { VegetationFrame, VegetationSeries } from '../core/vegetation';
 
 function element<T extends HTMLElement>(id: string): T {
@@ -71,7 +71,7 @@ element('biome-legend').replaceChildren(...BIOMES.slice(1).map(({ name, color })
   const item = document.createElement('span'), swatch = document.createElement('i');
   swatch.style.background = `rgb(${color.join(',')})`; item.append(swatch, name); return item;
 }));
-const vegetationLayerButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-layer="vegetationState"], [data-layer="woodyCover"], [data-layer="precipitationAnomaly"]')];
+const vegetationLayerButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-layer="vegetationState"], [data-layer="woodyCover"], [data-layer="woodyChange"], [data-layer="productivity"], [data-layer="precipitationAnomaly"]')];
 const vegetationButtons = ([[1, 'vegetation-1'], [10, 'vegetation-10'], [100, 'vegetation-100']] as const).map(([years, id]) => ({ years, button: element<HTMLButtonElement>(id) }));
 const vegetationReset = element<HTMLButtonElement>('vegetation-reset');
 const windLayerButton = document.querySelector<HTMLButtonElement>('[data-layer="windSpeed"]')!;
@@ -448,6 +448,8 @@ function inspect(id: number, preserveBasin = false): void {
     ...(vegetation ? [
       ['Vegetation state', `${BIOMES[vegetation.label[id]].name} · year ${vegetation.year}`],
       ['Woody / herb cover', `${vegetation.woody[id].toFixed(2)} / ${vegetation.herb[id].toFixed(2)}`],
+      [`Woody change, ${CHANGE_YEARS} years`, `${vegetation.woodyChange[id] >= 0 ? '+' : ''}${vegetation.woodyChange[id].toFixed(2)}`],
+      ['Net primary productivity', `${number.format(Math.round(vegetation.productivity[id]))} g dry matter/m²/year`],
       ['Established cover', `${vegetation.establishedCover[id].toFixed(2)} · ${DEFAULT_VEGETATION_SETTINGS.labelMemoryYears}-year memory`],
       ['Woody capacity', `${vegetation.woodyCapacity[id].toFixed(2)} · total cover capacity ${vegetation.coverCapacity[id].toFixed(2)}`],
       ['This year\'s precipitation', `${(vegetation.precipitationFactor[id] * 100).toFixed(0)}% of normal`],
@@ -601,6 +603,8 @@ function updateLegend(): void {
     annualPrecipitation: ['Annual precipitation · prescribed estimate, not the seasonal-water budget · logarithmic', '0 mm', '≥4,000 mm'],
     vegetationState: [`Vegetation state · year ${vegetation?.year ?? 0} · accumulated cover with hysteresis; same class colors as Biomes`, '', ''],
     woodyCover: [`Woody cover · year ${vegetation?.year ?? 0} · fraction of the region under woody plants`, '0', '1'],
+    woodyChange: [`Woody change · years ${Math.max(0, (vegetation?.year ?? 0) - CHANGE_YEARS)}–${vegetation?.year ?? 0} · drought losses and regrowth`, '−0.3', '+0.3'],
+    productivity: [`Net primary productivity · year ${vegetation?.year ?? 0} · Miami model × realized cover`, '0', '≥2,500 g/m²/year'],
     precipitationAnomaly: [`Year ${vegetation?.year ?? 0} precipitation · fraction of the climate normal · land only`, '≤50%', '≥200%'],
     windSpeed: [`Month ${Number(temperatureMonthInput.value) + 1} prescribed surface-wind speed · no atmospheric dynamics`,
       '0 m/s', `${number.format(windMaximum)} m/s`],
@@ -617,6 +621,8 @@ function updateLegend(): void {
   element('biome-legend').hidden = currentLayer !== 'biome' && currentLayer !== 'vegetationState';
   element('legend-gradient').classList.toggle('woody-gradient', currentLayer === 'woodyCover');
   element('legend-gradient').classList.toggle('anomaly-gradient', currentLayer === 'precipitationAnomaly');
+  element('legend-gradient').classList.toggle('change-gradient', currentLayer === 'woodyChange');
+  element('legend-gradient').classList.toggle('productivity-gradient', currentLayer === 'productivity');
   element('legend-gradient').classList.toggle('precipitation-gradient', currentLayer === 'annualPrecipitation');
   element('boundary-legend').hidden = !plateLayer;
   element('legend-gradient').classList.toggle('water-gradient', currentLayer === 'depth');
@@ -676,11 +682,11 @@ function renderVegetation(): void {
   const forest = s.map(x => x.forestShare), low = Math.max(0, Math.min(...forest) - 0.05), high = Math.max(...forest) + 0.05;
   element('vegetation-time').textContent = `Year ${vegetation.year}`;
   if (!last) {
-    element('vegetation-summary').textContent = 'Year 0 equals the climate classes: woody and total cover sit at the capacity of normal precipitation. Advance to draw spatially coherent wet and dry years. Not saved in checkpoints; the recipe and year count reproduce a run exactly.';
+    element('vegetation-summary').textContent = `Year 0 follows a ${DEFAULT_VEGETATION_SETTINGS.spinUpYears}-year spin-up on its own random stream, so it is a typical state rather than the capacity of normal precipitation. Advance to draw spatially coherent wet and dry years. Not saved in checkpoints; the recipe and year count reproduce a run exactly.`;
   } else {
     let driest = 0;
     for (let y = 1; y < s.length; y++) if (s[y].precipitationFactor < s[driest].precipitationFactor) driest = y;
-    element('vegetation-summary').textContent = `Land precipitation this year ${(last.precipitationFactor * 100).toFixed(0)}% of normal · forest ${(last.forestShare * 100).toFixed(1)}% of land (range ${(Math.min(...forest) * 100).toFixed(1)}–${(Math.max(...forest) * 100).toFixed(1)}%) · ${(last.labelChanges / Math.max(1, world.water.bodyIds.filter(body => body === 0).length) * 100).toFixed(2)}% of land regions changed class this year · driest year so far ${driest + 1} at ${(s[driest].precipitationFactor * 100).toFixed(0)}%. Green: forest share between ${(low * 100).toFixed(0)}% and ${(high * 100).toFixed(0)}%; blue: land precipitation, 80–120% of normal (dashed = normal).`;
+    element('vegetation-summary').textContent = `Land precipitation this year ${(last.precipitationFactor * 100).toFixed(0)}% of normal · forest ${(last.forestShare * 100).toFixed(1)}% of land (range ${(Math.min(...forest) * 100).toFixed(1)}–${(Math.max(...forest) * 100).toFixed(1)}%) · ${(last.labelChanges / Math.max(1, world.water.bodyIds.filter(body => body === 0).length) * 100).toFixed(2)}% of land regions changed class this year · driest year so far ${driest + 1} at ${(s[driest].precipitationFactor * 100).toFixed(0)}% · land productivity ${last.productivityPetagrams.toFixed(0)} Pg dry matter/year (Earth about 115–125). Green: forest share between ${(low * 100).toFixed(0)}% and ${(high * 100).toFixed(0)}%; blue: land precipitation, 80–120% of normal (dashed = normal).`;
   }
   drawChart(chart, [{ className: 'forest', values: s.map(x => (x.forestShare - low) / (high - low)) },
     { className: 'rain', values: s.map(x => 0.5 + (x.precipitationFactor - 1) * 2.5) }], 0.5);
@@ -731,29 +737,45 @@ async function requestVegetationSeries(id: number): Promise<void> {
   }
 }
 
-/** Mirrors the native vegetation-1 rules so the inspector names the deciding state. */
+/** Mirrors the native vegetation-2 rules so the inspector names the deciding state. */
 function renderVegetationNote(id: number): void {
-  const chart = svgElement('vegetation-region-chart');
+  const chart = svgElement('vegetation-region-chart'), list = element('vegetation-details');
+  list.replaceChildren();
   if (!world || !vegetation || !climateNormals) {
     element('vegetation-note').textContent = 'Vegetation starts after climate normals load.'; chart.toggleAttribute('hidden', true); return;
   }
   if (world.water.bodyIds[id] !== 0) {
     element('vegetation-note').textContent = 'Initial water region; no vegetation.'; chart.toggleAttribute('hidden', true); return;
   }
-  const v = vegetation, f = (x: number): string => x.toFixed(2), pct = (x: number): string => `${(x * 100).toFixed(0)}%`;
+  const v = vegetation, settings = DEFAULT_VEGETATION_SETTINGS, f = (x: number): string => x.toFixed(2), pct = (x: number): string => `${(x * 100).toFixed(0)}%`;
   const label = v.label[id], warm = climateNormals.warmestMonthCelsius[id], mean = climateNormals.annualMeanCelsius[id];
   const normal = climateNormals.annualPrecipitationMm[id], threshold = aridityThreshold(mean);
-  const ratio = (factor: number): string => threshold <= 0 ? 'unlimited (threshold ≤ 0)' : f(normal * factor / threshold);
-  const capacity = `Capacities follow the aridity ratio, precipitation / Köppen threshold ${number.format(threshold)} mm: woody rises from 0 at ${WOODY_ARIDITY[0]} to 1 at ${WOODY_ARIDITY[1]} using root-zone moisture ${pct(v.rootMoisture[id])} of normal (ratio ${ratio(v.rootMoisture[id])}); total cover rises from 0 at ${COVER_ARIDITY[0]} to 1 at ${COVER_ARIDITY[1]} using this year's ${pct(v.precipitationFactor[id])} (ratio ${ratio(v.precipitationFactor[id])}).`;
-  const dynamics = `Woody cover ${f(v.woody[id])} moves toward capacity ${f(v.woodyCapacity[id])}: logistic growth at ${DEFAULT_VEGETATION_SETTINGS.woodyGrowthPerYear}/year below it, dieback of ${pct(DEFAULT_VEGETATION_SETTINGS.woodyDiebackPerYear)} of the excess per year above it. Herbs (${f(v.herb[id])}) fill the remaining cover capacity within a few years.`;
+  const ratio = (factor: number): string => threshold <= 0 ? 'unlimited' : f(normal * factor / threshold);
   const forest = [3, 4, 9, 10].includes(label), open = label === 5 || label === 8;
-  const rule = warm < 0 ? `Warmest month ${warm.toFixed(1)} °C < 0 °C → ice regardless of cover.`
-    : warm < 10 ? `Warmest month ${warm.toFixed(1)} °C < 10 °C → tundra regardless of cover; herb cover is scaled by summer warmth.`
-    : forest ? `Woody cover ${f(v.woody[id])} ≥ ${FOREST_COVER[1]} (forest starts at ${FOREST_COVER[0]} and holds down to ${FOREST_COVER[1]}) → forest; the climate rules pick the type.`
-    : open ? `Woody cover below the forest threshold; established cover ${f(v.establishedCover[id])} (${DEFAULT_VEGETATION_SETTINGS.labelMemoryYears}-year memory) ≥ ${OPEN_COVER[1]} (starts at ${OPEN_COVER[0]}) → ${mean >= 18 ? 'savanna' : 'grassland'}.`
-    : `Established cover ${f(v.establishedCover[id])} is below ${OPEN_COVER[0]} (or fell below ${OPEN_COVER[1]}) → ${mean >= 18 ? 'hot' : 'cold'} desert.`;
-  const climate = climateNormals.biome[id] !== label ? ` The climate class here is ${BIOMES[climateNormals.biome[id]].name}; the state differs because of recent years.` : '';
-  let history = '';
+  const rule = warm < 0 ? `warmest month ${warm.toFixed(1)} °C < 0 °C → ice regardless of cover`
+    : warm < 10 ? `warmest month ${warm.toFixed(1)} °C < 10 °C → tundra; no trees, herbs scaled by summer warmth`
+    : forest ? `woody cover ${f(v.woody[id])} ≥ ${FOREST_COVER[1]} → forest (starts at ${FOREST_COVER[0]}, holds down to ${FOREST_COVER[1]}); climate picks the type`
+    : open ? `woody below the forest threshold; established cover ${f(v.establishedCover[id])} ≥ ${OPEN_COVER[1]} → ${mean >= 18 ? 'savanna' : 'grassland'} (${settings.labelMemoryYears}-year memory)`
+    : `established cover ${f(v.establishedCover[id])} below ${OPEN_COVER[0]} (or fell below ${OPEN_COVER[1]}) → ${mean >= 18 ? 'hot' : 'cold'} desert`;
+  const climate = climateNormals.biome[id] !== label ? ` Climate class: ${BIOMES[climateNormals.biome[id]].name}.` : '';
+  element('vegetation-note').textContent = `${BIOMES[label].name} at year ${v.year}: ${rule}.${climate}`;
+  const s = world.surface;
+  let neighbors = 0;
+  for (let k = s.neighborOffsets[id]; k < s.neighborOffsets[id + 1]; k++) neighbors += v.woody[s.neighbors[k]];
+  neighbors /= Math.max(1, s.neighborOffsets[id + 1] - s.neighborOffsets[id]);
+  const [wet, dry] = VARIABILITY_PRECIPITATION_MM;
+  const sigma = settings.humidVariability + Math.min(1, Math.max(0, Math.log10(wet / Math.max(normal, Number.MIN_VALUE)) / Math.log10(wet / dry)))
+    * (settings.aridVariability - settings.humidVariability);
+  const [heat, water] = miami(mean, normal * v.precipitationFactor[id]);
+  const reference = Math.max(MINIMUM_REFERENCE_COVER, coverCapacityAtNormal(id)), cover = v.woody[id] + v.herb[id];
+  const rows = [
+    `Woody ${f(v.woody[id])} → capacity ${f(v.woodyCapacity[id])}: root-zone moisture ${pct(v.rootMoisture[id])} of normal, aridity ${ratio(v.rootMoisture[id])} (0 at ${WOODY_ARIDITY[0]}, full at ${WOODY_ARIDITY[1]}). Grows ${settings.woodyGrowthPerYear}/year, loses ${pct(settings.woodyDiebackPerYear)} of any excess per year.`,
+    `Herbs ${f(v.herb[id])} fill total cover capacity ${f(v.coverCapacity[id])}: this year ${pct(v.precipitationFactor[id])} of normal, aridity ${ratio(v.precipitationFactor[id])} (0 at ${COVER_ARIDITY[0]}, full at ${COVER_ARIDITY[1]}).`,
+    `Seeds: neighbors' woody cover ${f(neighbors)} gives establishment ${(settings.backgroundEstablishment + settings.seedEstablishment * neighbors).toFixed(3)} for next year; bare land fills from wooded edges.`,
+    `Wet and dry years: about ±${pct(Math.expm1(sigma))} in a typical year here (${number.format(Math.round(normal))} mm normal; drier climates vary more).`,
+    `Productivity ${number.format(Math.round(v.productivity[id]))} g/m²/year: Miami limits ${number.format(Math.round(heat))} (temperature) and ${number.format(Math.round(water))} (this year's precipitation), the smaller × ${pct(Math.min(1, cover / reference))} of normal cover realized.`,
+    `Woody change over ${CHANGE_YEARS} years: ${v.woodyChange[id] >= 0 ? '+' : ''}${f(v.woodyChange[id])}.`,
+  ];
   const series = vegetationSeries?.region === id && vegetationSeries.years.length === v.year + 1 ? vegetationSeries.years : null;
   if (series && series.length > 1) {
     let driest = 1;
@@ -764,13 +786,27 @@ function renderVegetationNote(id: number): void {
     let recovered = -1;
     for (let y = low; y < series.length; y++) if (series[y].woody >= before - 0.05) { recovered = y; break; }
     const loss = before - series[low].woody;
-    history = ` History: driest year ${driest} at ${pct(series[driest].precipitationFactor)} of normal.${loss > 0.02
-      ? ` Woody cover fell from ${f(before)} to ${f(series[low].woody)} by year ${low}; ${recovered >= 0 ? `back within 0.05 by year ${recovered} (${recovered - low} years).` : 'not yet recovered.'}`
-      : ' Woody cover barely changed.'} Chart: green woody, yellow herbs, blue precipitation (log scale, dashed = normal).`;
+    rows.push(`History: driest year ${driest} at ${pct(series[driest].precipitationFactor)} of normal. ${loss > 0.02
+      ? `Woody cover fell from ${f(before)} to ${f(series[low].woody)} by year ${low}; ${recovered >= 0 ? `back within 0.05 by year ${recovered} (${recovered - low} years).` : 'not yet recovered.'}`
+      : 'Woody cover barely changed.'} Chart: green woody, yellow herbs, blue precipitation (log scale, dashed = normal).`);
     drawChart(chart, [{ className: 'rain', values: series.map(y => factorScale(y.precipitationFactor)) },
       { className: 'herb', values: series.map(y => y.herb) }, { className: 'woody', values: series.map(y => y.woody) }], 0.5);
-  } else chart.toggleAttribute('hidden', true);
-  element('vegetation-note').textContent = `${BIOMES[label].name} at year ${v.year}. ${rule} ${dynamics} ${capacity}${climate}${history} Not modeled: fire, grazing, seed spread between regions, soils, temperature anomalies and feedback to water.`;
+  } else {
+    if (v.year > 0) rows.push(`History: replaying ${v.year} years in the native core…`);
+    chart.toggleAttribute('hidden', true);
+  }
+  rows.push('Not modeled: fire, grazing, soils, temperature anomalies, feedback to water.');
+  for (const text of rows) { const row = document.createElement('li'); row.textContent = text; list.append(row); }
+}
+
+/** Total cover capacity under normal precipitation, as in the native model. */
+function coverCapacityAtNormal(id: number): number {
+  if (!climateNormals || climateNormals.warmestMonthCelsius[id] < 0) return 0;
+  const mean = climateNormals.annualMeanCelsius[id], threshold = aridityThreshold(mean);
+  const ratio = threshold <= 0 ? Infinity : climateNormals.annualPrecipitationMm[id] / threshold;
+  const t = Math.min(1, Math.max(0, (ratio - COVER_ARIDITY[0]) / (COVER_ARIDITY[1] - COVER_ARIDITY[0]))), cover = t * t * (3 - 2 * t);
+  const warm = climateNormals.warmestMonthCelsius[id];
+  return warm < 10 ? cover * warm / 10 : cover;
 }
 
 function setInputs(recipe: Recipe): void {
@@ -980,7 +1016,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
     }
     if ((currentLayer === 'temperature' && !temperatureNormals) || (currentLayer === 'windSpeed' && !windNormals)
       || ((currentLayer === 'biome' || currentLayer === 'annualPrecipitation') && !climateNormals)
-      || (['vegetationState', 'woodyCover', 'precipitationAnomaly'].includes(currentLayer) && !vegetation)
+      || (['vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly'].includes(currentLayer) && !vegetation)
       || (isMoistureLayer(currentLayer) && !supportsMoistureLayer(moistureFrame, currentLayer))) {
       document.querySelector<HTMLButtonElement>('[data-layer="surface"]')?.click();
     }

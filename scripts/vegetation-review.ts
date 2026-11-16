@@ -30,12 +30,12 @@ try {
     await page.locator('#vegetation-100').click();
     await expect(page.locator('#vegetation-time')).toHaveText(`Year ${year + 100}`, { timeout: 120_000 });
   }
-  for (const layer of ['vegetationState', 'woodyCover', 'precipitationAnomaly']) {
+  for (const layer of ['vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly']) {
     await page.locator(`[data-layer="${layer}"]`).click();
     await page.waitForTimeout(1000);
     await page.locator('#map').screenshot({ path: path.join(output, `${seed}-year${years}-${layer}.png`) });
   }
-  await page.locator('[data-layer="woodyCover"]').click();
+  await page.locator('[data-layer="woodyChange"]').click();
   // Find a land region whose history shows a drought mark, then capture the whole window.
   const box = (await page.locator('#map').boundingBox())!;
   if (await page.locator('#toggle-inspector').getAttribute('aria-expanded') === 'false') await page.locator('#toggle-inspector').click();
@@ -44,10 +44,12 @@ try {
     const x = box.x + box.width * (0.2 + 0.6 * ((attempt * 0.618) % 1)), y = box.y + box.height * (0.25 + 0.5 * ((attempt * 0.382) % 1));
     await page.mouse.click(x, y);
     await page.waitForTimeout(400);
-    if (/Woody cover fell/.test(await page.locator('#vegetation-note').textContent() ?? '')) break;
+    await expect(page.locator('#vegetation-details')).not.toContainText('replaying', { timeout: 30_000 });
+    if (/Woody cover fell/.test(await page.locator('#vegetation-details').textContent() ?? '')) break;
   }
   await page.screenshot({ path: path.join(output, `${seed}-year${years}-window.png`) });
   console.log(await page.locator('#vegetation-note').textContent());
+  console.log(await page.locator('#vegetation-details').textContent());
   console.log(await page.locator('#vegetation-summary').textContent());
 } finally {
   await app.close();

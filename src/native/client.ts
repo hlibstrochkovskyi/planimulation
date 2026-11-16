@@ -307,14 +307,15 @@ export function decodeVegetation(packet: Packet, count: number, epoch: number): 
   const year = header.year as number;
   if (header.kind !== 'vegetation' || header.protocol !== 9 || header.vegetationModelVersion !== VEGETATION_MODEL_VERSION
     || header.climateModelVersion !== CLIMATE_MODEL_VERSION || header.regionCount !== count || !Number.isSafeInteger(count) || count < 1
-    || !Number.isSafeInteger(year) || year < 0 || year > VEGETATION_MAX_YEARS || bytes.length !== count * 60 + year * 40
+    || !Number.isSafeInteger(year) || year < 0 || year > VEGETATION_MAX_YEARS || bytes.length !== count * 76 + year * 48
     || !sameSettings(header.settings, DEFAULT_VEGETATION_SETTINGS)) {
     throw new Error('Invalid native vegetation metadata.');
   }
   let offset = 0;
   const next = (length: number): Float64Array => { const field = floats(bytes.subarray(offset, offset + length * 8)); offset += length * 8; return field; };
   const woody = next(count), herb = next(count), precipitationFactor = next(count), rootMoisture = next(count),
-    establishedCover = next(count), woodyCapacity = next(count), coverCapacity = next(count);
+    establishedCover = next(count), woodyCapacity = next(count), coverCapacity = next(count), woodyChange = next(count),
+    productivity = next(count);
   const label = new Uint32Array(count);
   for (let i = 0; i < count; i++) label[i] = bytes.readUInt32LE(offset + i * 4);
   offset += count * 4;
@@ -322,31 +323,33 @@ export function decodeVegetation(packet: Packet, count: number, epoch: number): 
   for (let i = 0; i < count; i++) {
     if (!fraction(woody[i]) || !fraction(herb[i]) || woody[i] + herb[i] > 1 + 1e-9 || !fraction(establishedCover[i])
       || !fraction(woodyCapacity[i]) || !fraction(coverCapacity[i]) || !(precipitationFactor[i] > 0) || !(rootMoisture[i] > 0)
-      || label[i] >= BIOMES.length) throw new Error('Invalid native vegetation values.');
+      || !(Math.abs(woodyChange[i]) <= 1) || !(productivity[i] >= 0 && productivity[i] <= 3000) || label[i] >= BIOMES.length) throw new Error('Invalid native vegetation values.');
   }
-  const summary = next(year * 5), summaries = [];
+  const summary = next(year * 6), summaries = [];
   for (let y = 0; y < year; y++) {
-    const [factor, woodyCover, totalCover, forestShare, labelChanges] = summary.subarray(y * 5, y * 5 + 5);
+    const [factor, woodyCover, totalCover, forestShare, labelChanges, productivityPetagrams] = summary.subarray(y * 6, y * 6 + 6);
     if (!(factor > 0) || !fraction(woodyCover) || !fraction(totalCover) || !fraction(forestShare)
-      || !Number.isSafeInteger(labelChanges) || labelChanges < 0 || labelChanges > count) throw new Error('Invalid native vegetation summary.');
-    summaries.push({ precipitationFactor: factor, woodyCover, totalCover, forestShare, labelChanges });
+      || !Number.isSafeInteger(labelChanges) || labelChanges < 0 || labelChanges > count || !(productivityPetagrams >= 0)) {
+      throw new Error('Invalid native vegetation summary.');
+    }
+    summaries.push({ precipitationFactor: factor, woodyCover, totalCover, forestShare, labelChanges, productivityPetagrams });
   }
   return { epoch, modelVersion: VEGETATION_MODEL_VERSION, year, woody, herb, precipitationFactor, rootMoisture,
-    establishedCover, woodyCapacity, coverCapacity, label, summaries };
+    establishedCover, woodyCapacity, coverCapacity, woodyChange, productivity, label, summaries };
 }
 
 export function decodeVegetationSeries(packet: Packet, region: number, year: number, epoch: number): VegetationSeries {
   const { header, bytes } = packet;
   if (header.kind !== 'vegetationSeries' || header.protocol !== 9 || header.vegetationModelVersion !== VEGETATION_MODEL_VERSION
-    || header.region !== region || header.year !== year || bytes.length !== (year + 1) * 64) {
+    || header.region !== region || header.year !== year || bytes.length !== (year + 1) * 72) {
     throw new Error('Invalid native vegetation series.');
   }
   const values = floats(bytes), years: VegetationRegionYear[] = [];
   for (let y = 0; y <= year; y++) {
-    const [precipitationFactor, rootMoisture, establishedCover, woody, herb, woodyCapacity, coverCapacity, label] = values.subarray(y * 8, y * 8 + 8);
-    if (!(precipitationFactor > 0) || !(rootMoisture > 0) || woody < 0 || herb < 0 || woody + herb > 1 + 1e-9
+    const [precipitationFactor, rootMoisture, establishedCover, woody, herb, woodyCapacity, coverCapacity, productivity, label] = values.subarray(y * 9, y * 9 + 9);
+    if (!(precipitationFactor > 0) || !(rootMoisture > 0) || woody < 0 || herb < 0 || woody + herb > 1 + 1e-9 || !(productivity >= 0)
       || !Number.isInteger(label) || label < 0 || label >= BIOMES.length) throw new Error('Invalid native vegetation series values.');
-    years.push({ precipitationFactor, rootMoisture, establishedCover, woody, herb, woodyCapacity, coverCapacity, label });
+    years.push({ precipitationFactor, rootMoisture, establishedCover, woody, herb, woodyCapacity, coverCapacity, productivity, label });
   }
   return { epoch, region, years };
 }

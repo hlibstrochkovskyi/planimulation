@@ -174,10 +174,12 @@ canvas[data-gpu=lost] ~ #gpu-status { display: grid; }
 #legend-gradient.temperature-gradient { background: linear-gradient(90deg, #1a337a, #4aaed1, #e3e0a3, #d43d21); }
 #legend-gradient.precipitation-gradient { background: linear-gradient(90deg, #94703f, #d1c77a 40%, #529e5c 70%, #215c9e); }
 #legend-gradient.woody-gradient { background: linear-gradient(90deg, #d6cca0, #84a058 50%, #1c582c); }
+#legend-gradient.change-gradient { background: linear-gradient(90deg, #a84024, #eeeadc 50%, #1e7a40); }
+#legend-gradient.productivity-gradient { background: linear-gradient(90deg, #ece4c8, #d6c45c 25%, #6ea03c 55%, #0c524e); }
 #legend-gradient.anomaly-gradient { background: linear-gradient(90deg, #b05c28, #eeeadc 50%, #286cb6); }
 .vegetation-chart { display: block; width: 100%; height: 72px; margin-top: 6px; background: rgba(255,255,255,.03); border-radius: 4px; }
 .vegetation-chart .woody { stroke: #5fa56a; } .vegetation-chart .herb { stroke: #c9b86a; } .vegetation-chart .rain { stroke: #6fa3d8; }
-.vegetation-chart .forest { stroke: #5fa56a; } .vegetation-chart .normal { stroke: rgba(255,255,255,.18); stroke-dasharray: 3 3; }
+.vegetation-chart .forest { stroke: #5fa56a; } .vegetation-chart .productivity { stroke: #d6b25a; } .vegetation-chart .normal { stroke: rgba(255,255,255,.18); stroke-dasharray: 3 3; }
 .vegetation-chart polyline, .vegetation-chart line { fill: none; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 #biome-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--muted, #9aa); }
 #biome-legend span { display: inline-flex; align-items: center; gap: 4px; }

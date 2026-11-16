@@ -2,21 +2,25 @@
 //! and herbaceous cover fractions that relax yearly toward a capacity set by the
 //! climate normals and that year's precipitation. Interannual precipitation anomalies
 //! are spatially coherent and persistent: smooth random fields from fixed anomaly
-//! centers with first-order autoregressive amplitudes. Dieback is fast and regrowth
-//! slow, so a drought leaves a mark that lasts years to decades. Labels describe the
-//! accumulated state with hysteresis, reusing the climate-normals-1 thermal rules.
+//! centers with first-order autoregressive amplitudes, larger in dry climates. Dieback
+//! is fast and regrowth slow, and woody plants re-establish mainly from wooded
+//! neighbors, so bare land fills from its edges. A spin-up on its own random stream
+//! starts year 0 in a typical state. Labels describe the accumulated state with
+//! hysteresis, reusing the climate-normals-1 thermal rules. Net primary productivity
+//! follows the Miami model, scaled by the realized share of normal cover.
 //!
-//! Not modeled: temperature anomalies, fire, grazing, seed dispersal between regions,
-//! soil depth or fertility, and feedback from vegetation to water or climate.
-//! Precipitation comes from climate-normals-1, not the seasonal-water budget.
+//! Not modeled: temperature anomalies, fire, grazing, soil depth or fertility, and
+//! feedback from vegetation to water or climate. Precipitation comes from
+//! climate-normals-1, not the seasonal-water budget.
 use crate::{
     Random, Recipe, World,
     climate_normals::{self, Biome, Normals, aridity_threshold},
 };
 use serde::{Deserialize, Serialize};
 
-pub const MODEL_VERSION: &str = "vegetation-1";
-pub const MAXIMUM_YEARS: u32 = 10_000;
+pub const MODEL_VERSION: &str = "vegetation-2";
+/// Region histories are replayed over the whole surface, so runs stay short.
+pub const MAXIMUM_YEARS: u32 = 2_000;
 pub const MAXIMUM_YEARS_PER_REQUEST: u32 = 1_000;
 /// Aridity ratio (annual precipitation / Köppen threshold) where woody capacity rises
 /// from zero to full; it is one half at the Köppen forest boundary of 2.
@@ -28,6 +32,13 @@ pub const COVER_ARIDITY: (f64, f64) = (0.6, 1.4);
 /// until cover falls below the second (hysteresis).
 pub const FOREST_COVER: (f64, f64) = (0.5, 0.4);
 pub const OPEN_COVER: (f64, f64) = (0.5, 0.4);
+/// Window of the woody-change field, years.
+pub const CHANGE_YEARS: usize = 10;
+/// Normal annual precipitation (mm) at which variability takes its humid and arid
+/// values; it is interpolated on a logarithmic scale between them.
+pub const VARIABILITY_PRECIPITATION_MM: (f64, f64) = (2_000., 200.);
+/// Normal cover below which productivity is not scaled by its realized share.
+pub const MINIMUM_REFERENCE_COVER: f64 = 0.05;
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -38,38 +49,51 @@ pub struct Settings {
     pub anomaly_length_meters: f64,
     /// Year-to-year correlation of anomaly amplitudes.
     pub anomaly_persistence: f64,
-    /// Standard deviation of the natural logarithm of the yearly precipitation factor.
-    pub precipitation_variability: f64,
+    /// Standard deviation of the natural logarithm of the yearly precipitation factor
+    /// in humid climates.
+    pub humid_variability: f64,
+    /// The same in arid climates.
+    pub arid_variability: f64,
     pub woody_growth_per_year: f64,
     pub herb_growth_per_year: f64,
     /// Fraction of the excess above capacity lost per year.
     pub woody_dieback_per_year: f64,
     pub herb_dieback_per_year: f64,
-    /// Cover added to the logistic seed term, standing in for colonization from
-    /// outside the region.
-    pub establishment: f64,
+    /// Woody cover added to the logistic seed term without wooded neighbors (seed
+    /// bank and long-distance dispersal).
+    pub background_establishment: f64,
+    /// Woody seed term per unit of mean neighboring woody cover.
+    pub seed_establishment: f64,
+    /// Herb seed term; herbs disperse widely and are not neighbor-limited.
+    pub herb_establishment: f64,
     /// Memory of the precipitation factor seen by deep-rooted woody plants (soil and
     /// groundwater storage), years. Herbs respond to the current year.
     pub root_memory_years: f64,
     /// Memory of total cover used for open-vegetation labels (perennial structure and
     /// seed banks), years.
     pub label_memory_years: f64,
+    /// Years run on a separate random stream before year 0.
+    pub spin_up_years: u32,
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            anomaly_centers: 240,
-            anomaly_length_meters: 1_500_000.,
+            anomaly_centers: 480,
+            anomaly_length_meters: 1_000_000.,
             anomaly_persistence: 0.4,
-            precipitation_variability: 0.22,
+            humid_variability: 0.12,
+            arid_variability: 0.4,
             woody_growth_per_year: 0.15,
             herb_growth_per_year: 1.5,
             woody_dieback_per_year: 0.3,
             herb_dieback_per_year: 0.8,
-            establishment: 0.02,
+            background_establishment: 0.002,
+            seed_establishment: 0.05,
+            herb_establishment: 0.02,
             root_memory_years: 3.,
             label_memory_years: 8.,
+            spin_up_years: 200,
         }
     }
 }
@@ -78,20 +102,24 @@ impl Settings {
     pub fn validate(&self) -> Result<(), String> {
         let rate = |v: f64| v.is_finite() && v > 0. && v <= 2.;
         let fraction = |v: f64| v.is_finite() && (0. ..=1.).contains(&v);
+        let seed = |v: f64| fraction(v) && v <= 0.2;
+        let memory = |v: f64| v.is_finite() && (1. ..=50.).contains(&v);
         if !(12..=5000).contains(&self.anomaly_centers)
             || !(self.anomaly_length_meters.is_finite()
                 && (100_000. ..=10_000_000.).contains(&self.anomaly_length_meters))
             || !(fraction(self.anomaly_persistence) && self.anomaly_persistence < 1.)
-            || !fraction(self.precipitation_variability)
+            || !fraction(self.humid_variability)
+            || !fraction(self.arid_variability)
             || !rate(self.woody_growth_per_year)
             || !rate(self.herb_growth_per_year)
             || !fraction(self.woody_dieback_per_year)
             || !fraction(self.herb_dieback_per_year)
-            || !(fraction(self.establishment) && self.establishment <= 0.2)
-            || !(self.root_memory_years.is_finite()
-                && (1. ..=50.).contains(&self.root_memory_years))
-            || !(self.label_memory_years.is_finite()
-                && (1. ..=50.).contains(&self.label_memory_years))
+            || !seed(self.background_establishment)
+            || !seed(self.seed_establishment)
+            || !seed(self.herb_establishment)
+            || !memory(self.root_memory_years)
+            || !memory(self.label_memory_years)
+            || !(CHANGE_YEARS as u32..=1_000).contains(&self.spin_up_years)
         {
             return Err("Vegetation settings are outside the supported range.".into());
         }
@@ -108,25 +136,31 @@ pub struct YearSummary {
     pub total_cover: f64,
     pub forest_share: f64,
     pub label_changes: u32,
+    /// Land net primary productivity, petagrams of dry matter per year.
+    pub productivity_petagrams: f64,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct State {
     pub year: u32,
     pub random: u32,
     pub amplitudes: Vec<f64>,
-    /// Amplitudes used in years 1..=year, year-major; enough to replay any region.
+    /// Amplitudes used in years 1..=year, year-major; enough to replay the run.
     pub amplitude_history: Vec<f64>,
     pub woody: Vec<f64>,
     pub herb: Vec<f64>,
     pub label: Vec<u8>,
-    /// Precipitation factor of the most recent year (1 at year 0).
+    /// Precipitation factor of the most recent year (the last spin-up year at year 0).
     pub precipitation_factor: Vec<f64>,
     /// Exponential memory of the precipitation factor seen by woody roots.
     pub root_moisture: Vec<f64>,
     /// Exponential memory of total cover that decides open-vegetation labels.
     pub established_cover: Vec<f64>,
+    /// Woody cover of the last `CHANGE_YEARS` years; slot `year mod CHANGE_YEARS`.
+    pub woody_history: Vec<f64>,
+    /// Woody cover now minus `CHANGE_YEARS` years ago.
+    pub woody_change: Vec<f64>,
     pub summaries: Vec<YearSummary>,
 }
 
@@ -140,7 +174,7 @@ pub struct Checkpoint {
     pub state: State,
 }
 
-/// One year of a single region, replayed from the recorded anomaly amplitudes.
+/// One year of a single region.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct RegionYear {
     pub precipitation_factor: f64,
@@ -150,6 +184,8 @@ pub struct RegionYear {
     pub herb: f64,
     pub woody_capacity: f64,
     pub cover_capacity: f64,
+    /// Net primary productivity, grams of dry matter per square meter per year.
+    pub productivity: f64,
     pub label: u8,
 }
 
@@ -158,15 +194,23 @@ pub struct Model {
     settings: Settings,
     land: Vec<bool>,
     areas: Vec<f64>,
+    neighbor_offsets: Vec<u32>,
+    neighbors: Vec<u32>,
     precipitation_mm: Vec<f64>,
     threshold_mm: Vec<f64>,
     mean: Vec<f64>,
     warmest: Vec<f64>,
     coldest: Vec<f64>,
     driest_mm: Vec<f64>,
+    /// Log-standard deviation of the yearly precipitation factor per region.
+    variability: Vec<f64>,
+    /// Total cover capacity under normal precipitation.
+    normal_cover: Vec<f64>,
     offsets: Vec<u32>,
     centers: Vec<u32>,
     weights: Vec<f64>,
+    /// State at year 0, after the spin-up; region histories replay from it.
+    initial: State,
 }
 
 fn smoothstep((low, high): (f64, f64), x: f64) -> f64 {
@@ -202,6 +246,23 @@ fn relax(value: f64, capacity: f64, growth: f64, dieback: f64, establishment: f6
         (value + growth * (value + establishment) * (capacity - value) / capacity).min(capacity)
     } else {
         value - dieback * (value - capacity)
+    }
+}
+
+/// Miami model (Lieth 1975): net primary productivity in g dry matter / m² / year,
+/// the smaller of the temperature and precipitation limits.
+pub fn miami(annual_mean_celsius: f64, precipitation_mm: f64) -> (f64, f64) {
+    (
+        3000. / (1. + (1.315 - 0.119 * annual_mean_celsius).exp()),
+        3000. * (1. - (-0.000664 * precipitation_mm).exp()),
+    )
+}
+
+/// Advance an AR(1) amplitude vector one year.
+fn next_amplitudes(amplitudes: &mut [f64], persistence: f64, random: &mut Random) {
+    let innovation = (1. - persistence * persistence).sqrt();
+    for a in amplitudes {
+        *a = persistence * *a + innovation * normal(random);
     }
 }
 
@@ -254,11 +315,24 @@ impl Model {
             }
             offsets.push(weights.len() as u32);
         }
-        let model = Self {
+        let (wet, dry) = VARIABILITY_PRECIPITATION_MM;
+        let variability = normals
+            .annual_precipitation_mm
+            .iter()
+            .map(|&p| {
+                let t =
+                    ((wet / p.max(f64::MIN_POSITIVE)).log10() / (wet / dry).log10()).clamp(0., 1.);
+                settings.humid_variability
+                    + t * (settings.arid_variability - settings.humid_variability)
+            })
+            .collect();
+        let mut model = Self {
             recipe: world.recipe.clone(),
             settings,
             land: world.water.body_ids.iter().map(|&b| b == 0).collect(),
             areas: s.areas.clone(),
+            neighbor_offsets: s.offsets.clone(),
+            neighbors: s.neighbors.clone(),
             precipitation_mm: normals.annual_precipitation_mm.clone(),
             threshold_mm: normals
                 .annual_mean_celsius
@@ -269,26 +343,40 @@ impl Model {
             warmest: normals.warmest_month_celsius.clone(),
             coldest: normals.coldest_month_celsius.clone(),
             driest_mm: normals.driest_month_mm.clone(),
+            variability,
+            normal_cover: Vec::new(),
             offsets,
             centers,
             weights,
+            initial: State::default(),
         };
-        let mut random = Random::stream(&world.recipe.seed, MODEL_VERSION);
-        let amplitudes = (0..count).map(|_| normal(&mut random)).collect();
+        model.normal_cover = (0..n).map(|i| model.capacity(i, 1., 1.).1).collect();
+        // Start from the capacity of normal precipitation, then spin up on a separate
+        // stream so year 0 is a typical state and the run's stream is unaffected.
         let initial: Vec<RegionYear> = (0..n).map(|i| model.initial_region(i)).collect();
-        let state = State {
-            year: 0,
-            random: random.0,
-            amplitudes,
-            amplitude_history: Vec::new(),
-            woody: initial.iter().map(|r| r.woody).collect(),
+        let woody: Vec<f64> = initial.iter().map(|r| r.woody).collect();
+        let mut state = State {
+            woody_history: woody.repeat(CHANGE_YEARS),
+            woody,
             herb: initial.iter().map(|r| r.herb).collect(),
             label: initial.iter().map(|r| r.label).collect(),
             precipitation_factor: vec![1.; n],
             root_moisture: vec![1.; n],
             established_cover: initial.iter().map(|r| r.established_cover).collect(),
-            summaries: Vec::new(),
+            woody_change: vec![0.; n],
+            ..State::default()
         };
+        let mut spin = Random::stream(&world.recipe.seed, "vegetation-2/spin-up");
+        let mut amplitudes: Vec<f64> = (0..count).map(|_| normal(&mut spin)).collect();
+        let years = i64::from(settings.spin_up_years);
+        for k in 1..=years {
+            next_amplitudes(&mut amplitudes, settings.anomaly_persistence, &mut spin);
+            model.step_year(&mut state, &amplitudes, k - years);
+        }
+        let mut random = Random::stream(&world.recipe.seed, MODEL_VERSION);
+        state.amplitudes = (0..count).map(|_| normal(&mut random)).collect();
+        state.random = random.0;
+        model.initial = state.clone();
         Ok((model, state))
     }
 
@@ -332,13 +420,20 @@ impl Model {
                 &state.precipitation_factor,
                 &state.root_moisture,
                 &state.established_cover,
+                &state.woody_change,
             ]
             .iter()
             .any(|v| v.len() != n)
+            || state.woody_history.len() != n * CHANGE_YEARS
             || state.label.len() != n
             || !bounded(&state.woody)
             || !bounded(&state.herb)
             || !bounded(&state.established_cover)
+            || !bounded(&state.woody_history)
+            || state
+                .woody_change
+                .iter()
+                .any(|c| !(c.is_finite() && (-1. ..=1.).contains(c)))
             || state
                 .precipitation_factor
                 .iter()
@@ -364,6 +459,11 @@ impl Model {
         }
     }
 
+    /// Log-standard deviation of the region's yearly precipitation factor.
+    pub fn variability(&self, i: usize) -> f64 {
+        self.variability[i]
+    }
+
     /// Woody capacity from the root-zone factor and total cover capacity from the
     /// current year's factor.
     pub fn capacity(&self, i: usize, factor: f64, root_moisture: f64) -> (f64, f64) {
@@ -381,6 +481,31 @@ impl Model {
         }
     }
 
+    /// Miami productivity of the year's climate, scaled by the realized share of the
+    /// cover that normal precipitation supports.
+    pub fn productivity(&self, i: usize, factor: f64, cover: f64) -> f64 {
+        if !self.land[i] {
+            return 0.;
+        }
+        let (temperature, precipitation) = miami(self.mean[i], self.precipitation_mm[i] * factor);
+        let reference = self.normal_cover[i].max(MINIMUM_REFERENCE_COVER);
+        temperature.min(precipitation) * (cover / reference).min(1.)
+    }
+
+    /// Woody seed term from the mean woody cover of the neighbors last year.
+    pub fn woody_establishment(&self, i: usize, woody: &[f64]) -> f64 {
+        let (a, b) = (
+            self.neighbor_offsets[i] as usize,
+            self.neighbor_offsets[i + 1] as usize,
+        );
+        let mean = self.neighbors[a..b]
+            .iter()
+            .map(|&j| woody[j as usize])
+            .sum::<f64>()
+            / (b - a).max(1) as f64;
+        self.settings.background_establishment + self.settings.seed_establishment * mean
+    }
+
     fn initial_region(&self, i: usize) -> RegionYear {
         let (woody, cover) = self.capacity(i, 1., 1.);
         let herb = (cover - woody).max(0.);
@@ -392,6 +517,7 @@ impl Model {
             herb,
             woody_capacity: woody,
             cover_capacity: cover,
+            productivity: self.productivity(i, 1., woody + herb),
             label: self.label(i, woody, woody + herb, None),
         }
     }
@@ -454,11 +580,17 @@ impl Model {
         let z: f64 = (a..b)
             .map(|k| self.weights[k] * amplitudes[self.centers[k] as usize])
             .sum();
-        let sigma = self.settings.precipitation_variability;
+        let sigma = self.variability[i];
         (sigma * z - 0.5 * sigma * sigma).exp()
     }
 
-    fn step_region(&self, i: usize, previous: &RegionYear, factor: f64) -> RegionYear {
+    fn step_region(
+        &self,
+        i: usize,
+        previous: &RegionYear,
+        factor: f64,
+        woody_establishment: f64,
+    ) -> RegionYear {
         let s = &self.settings;
         let root_moisture =
             previous.root_moisture + (factor - previous.root_moisture) / s.root_memory_years;
@@ -468,7 +600,7 @@ impl Model {
             woody_capacity,
             s.woody_growth_per_year,
             s.woody_dieback_per_year,
-            s.establishment,
+            woody_establishment,
         );
         // Canopy displaces herbs immediately; herbs fill the remaining cover capacity.
         let herb = relax(
@@ -476,7 +608,7 @@ impl Model {
             (cover_capacity - woody).max(0.),
             s.herb_growth_per_year,
             s.herb_dieback_per_year,
-            s.establishment,
+            s.herb_establishment,
         )
         .min(1. - woody);
         let established_cover = previous.established_cover
@@ -489,34 +621,65 @@ impl Model {
             herb,
             woody_capacity,
             cover_capacity,
+            productivity: self.productivity(i, factor, woody + herb),
             label: self.label(i, woody, established_cover, Some(previous.label)),
         }
     }
 
-    fn region(&self, state: &State, i: usize) -> RegionYear {
-        let (woody_capacity, cover_capacity) =
-            self.capacity(i, state.precipitation_factor[i], state.root_moisture[i]);
+    pub fn region(&self, state: &State, i: usize) -> RegionYear {
+        let factor = state.precipitation_factor[i];
+        let (woody_capacity, cover_capacity) = self.capacity(i, factor, state.root_moisture[i]);
         RegionYear {
-            precipitation_factor: state.precipitation_factor[i],
+            precipitation_factor: factor,
             root_moisture: state.root_moisture[i],
             established_cover: state.established_cover[i],
             woody: state.woody[i],
             herb: state.herb[i],
             woody_capacity,
             cover_capacity,
+            productivity: self.productivity(i, factor, state.woody[i] + state.herb[i]),
             label: state.label[i],
         }
     }
 
-    fn next_amplitudes(&self, state: &mut State) {
-        let rho = self.settings.anomaly_persistence;
-        let innovation = (1. - rho * rho).sqrt();
-        let mut random = Random(state.random);
-        for a in &mut state.amplitudes {
-            *a = rho * *a + innovation * normal(&mut random);
+    /// One year over the whole surface with the given anomaly amplitudes. `year` (zero
+    /// or negative during the spin-up) selects the woody-history slot.
+    fn step_year(&self, state: &mut State, amplitudes: &[f64], year: i64) -> YearSummary {
+        let n = self.land.len();
+        let slot = year.rem_euclid(CHANGE_YEARS as i64) as usize * n;
+        let woody = state.woody.clone();
+        let mut sums = [0.; 6];
+        let mut changes = 0;
+        for i in (0..n).filter(|&i| self.land[i]) {
+            let factor = self.factor(i, amplitudes);
+            let seed = self.woody_establishment(i, &woody);
+            let next = self.step_region(i, &self.region(state, i), factor, seed);
+            changes += u32::from(next.label != state.label[i]);
+            let area = self.areas[i];
+            sums[0] += area;
+            sums[1] += area * factor;
+            sums[2] += area * next.woody;
+            sums[3] += area * (next.woody + next.herb);
+            sums[4] += if is_forest(next.label) { area } else { 0. };
+            sums[5] += area * next.productivity;
+            state.woody_change[i] = next.woody - state.woody_history[slot + i];
+            state.woody_history[slot + i] = next.woody;
+            state.woody[i] = next.woody;
+            state.herb[i] = next.herb;
+            state.label[i] = next.label;
+            state.precipitation_factor[i] = factor;
+            state.root_moisture[i] = next.root_moisture;
+            state.established_cover[i] = next.established_cover;
         }
-        state.random = random.0;
-        state.amplitude_history.extend_from_slice(&state.amplitudes);
+        let land = sums[0].max(f64::MIN_POSITIVE);
+        YearSummary {
+            precipitation_factor: sums[1] / land,
+            woody_cover: sums[2] / land,
+            total_cover: sums[3] / land,
+            forest_share: sums[4] / land,
+            label_changes: changes,
+            productivity_petagrams: sums[5] / 1e15,
+        }
     }
 
     pub fn advance(&self, state: &mut State, years: u32) -> Result<(), String> {
@@ -531,63 +694,54 @@ impl Model {
             ));
         }
         for _ in 0..years {
-            self.next_amplitudes(state);
-            let mut sums = [0.; 5];
-            let mut changes = 0;
-            for i in (0..self.land.len()).filter(|&i| self.land[i]) {
-                let factor = self.factor(i, &state.amplitudes);
-                let next = self.step_region(i, &self.region(state, i), factor);
-                changes += u32::from(next.label != state.label[i]);
-                let area = self.areas[i];
-                sums[0] += area;
-                sums[1] += area * factor;
-                sums[2] += area * next.woody;
-                sums[3] += area * (next.woody + next.herb);
-                sums[4] += if is_forest(next.label) { area } else { 0. };
-                state.woody[i] = next.woody;
-                state.herb[i] = next.herb;
-                state.label[i] = next.label;
-                state.precipitation_factor[i] = factor;
-                state.root_moisture[i] = next.root_moisture;
-                state.established_cover[i] = next.established_cover;
-            }
-            let land = sums[0].max(f64::MIN_POSITIVE);
-            state.summaries.push(YearSummary {
-                precipitation_factor: sums[1] / land,
-                woody_cover: sums[2] / land,
-                total_cover: sums[3] / land,
-                forest_share: sums[4] / land,
-                label_changes: changes,
-            });
+            let mut random = Random(state.random);
+            next_amplitudes(
+                &mut state.amplitudes,
+                self.settings.anomaly_persistence,
+                &mut random,
+            );
+            state.random = random.0;
+            state.amplitude_history.extend_from_slice(&state.amplitudes);
+            let amplitudes = state.amplitudes.clone();
+            let summary = self.step_year(state, &amplitudes, i64::from(state.year) + 1);
+            state.summaries.push(summary);
             state.year += 1;
         }
         Ok(())
     }
 
-    /// Capacities of the most recent year for every region (initial normals at year 0).
+    /// Capacities of the most recent year for every region.
     pub fn capacities(&self, state: &State) -> (Vec<f64>, Vec<f64>) {
         (0..self.land.len())
             .map(|i| self.capacity(i, state.precipitation_factor[i], state.root_moisture[i]))
             .unzip()
     }
 
-    /// Replay one region from year 0; vegetation is local, so this reproduces the
-    /// global run exactly.
+    /// Productivity of the most recent year for every region.
+    pub fn productivities(&self, state: &State) -> Vec<f64> {
+        (0..self.land.len())
+            .map(|i| {
+                self.productivity(
+                    i,
+                    state.precipitation_factor[i],
+                    state.woody[i] + state.herb[i],
+                )
+            })
+            .collect()
+    }
+
+    /// One region from year 0 to the current year. Seed dispersal couples neighbors,
+    /// so the whole surface is replayed from the recorded amplitudes.
     pub fn region_series(&self, state: &State, i: usize) -> Result<Vec<RegionYear>, String> {
         if i >= self.land.len() {
             return Err("Vegetation region is outside the generated world.".into());
         }
         let k = self.settings.anomaly_centers as usize;
-        let mut current = self.initial_region(i);
-        let mut series = vec![current];
-        if !self.land[i] {
-            series.resize(state.year as usize + 1, current);
-            return Ok(series);
-        }
-        for amplitudes in state.amplitude_history.chunks_exact(k) {
-            let factor = self.factor(i, amplitudes);
-            current = self.step_region(i, &current, factor);
-            series.push(current);
+        let mut replay = self.initial.clone();
+        let mut series = vec![self.region(&replay, i)];
+        for (year, amplitudes) in state.amplitude_history.chunks_exact(k).enumerate() {
+            self.step_year(&mut replay, amplitudes, year as i64 + 1);
+            series.push(self.region(&replay, i));
         }
         Ok(series)
     }
@@ -607,6 +761,14 @@ mod tests {
         World::generate(recipe).unwrap()
     }
 
+    fn steady() -> Settings {
+        Settings {
+            humid_variability: 0.,
+            arid_variability: 0.,
+            ..Default::default()
+        }
+    }
+
     #[test]
     fn relaxation_is_bounded_and_asymmetric() {
         let s = Settings::default();
@@ -615,14 +777,14 @@ mod tests {
             1.,
             s.woody_growth_per_year,
             s.woody_dieback_per_year,
-            s.establishment,
+            s.background_establishment,
         );
         let die = relax(
             0.5,
             0.,
             s.woody_growth_per_year,
             s.woody_dieback_per_year,
-            s.establishment,
+            s.background_establishment,
         );
         assert!(grow > 0.5 && grow < 0.6 && die < 0.4 && die > 0.);
         assert_eq!(relax(0.9, 0.95, 2., 1., 0.2), 0.95);
@@ -630,14 +792,18 @@ mod tests {
     }
 
     #[test]
+    fn miami_productivity_matches_published_values() {
+        // Lieth (1975): about 2,230 g/m² allowed by 20 °C and 1,460 g/m² by 1,000 mm.
+        let (t, p) = miami(20., 1000.);
+        assert!((t - 2231.).abs() < 2. && (p - 1456.).abs() < 2., "{t} {p}");
+        assert!(miami(-20., 3000.).0 < 100. && miami(30., 0.).1 == 0.);
+    }
+
+    #[test]
     fn without_variability_the_state_is_the_climate_classification_forever() {
         let world = test_world("vegetation");
         let normals = Normals::from_world(&world).unwrap();
-        let settings = Settings {
-            precipitation_variability: 0.,
-            ..Default::default()
-        };
-        let (model, mut state) = Model::new(&world, &normals, settings).unwrap();
+        let (model, mut state) = Model::new(&world, &normals, steady()).unwrap();
         let initial = state.clone();
         for i in 0..normals.biome.len() {
             if world.water.body_ids[i] == 0 {
@@ -648,7 +814,25 @@ mod tests {
         assert_eq!(state.woody, initial.woody);
         assert_eq!(state.herb, initial.herb);
         assert_eq!(state.label, initial.label);
+        assert!(state.woody_change.iter().all(|&c| c == 0.));
         assert!(state.summaries.iter().all(|s| s.label_changes == 0));
+    }
+
+    #[test]
+    fn variability_is_larger_in_dry_climates() {
+        let world = test_world("vegetation");
+        let normals = Normals::from_world(&world).unwrap();
+        let (model, _) = Model::new(&world, &normals, Settings::default()).unwrap();
+        for (i, &p) in normals.annual_precipitation_mm.iter().enumerate() {
+            let sigma = model.variability(i);
+            assert!((0.12 - 1e-12..=0.4 + 1e-12).contains(&sigma));
+            if p >= 2000. {
+                assert!((sigma - 0.12).abs() < 1e-12);
+            }
+            if p <= 200. {
+                assert!((sigma - 0.4).abs() < 1e-12);
+            }
+        }
     }
 
     #[test]
@@ -680,14 +864,59 @@ mod tests {
         }
         assert!(near < 0.4 * far, "neighbor {near} vs distant {far}");
         // Labels do not flicker: under 1.5% of land changes class in an average year.
-        let changes: u32 = state
-            .summaries
-            .iter()
-            .skip(50)
-            .map(|s| s.label_changes)
-            .sum();
-        let rate = f64::from(changes) / 150. / land.len() as f64;
+        let changes: u32 = state.summaries.iter().map(|s| s.label_changes).sum();
+        let rate = f64::from(changes) / 200. / land.len() as f64;
         assert!(rate < 0.015, "yearly label change rate {rate}");
+    }
+
+    #[test]
+    fn the_spin_up_starts_year_zero_in_the_long_run_state() {
+        let world = test_world("vegetation");
+        let (model, mut state) = Model::from_world(&world, Settings::default()).unwrap();
+        model.advance(&mut state, 300).unwrap();
+        let mean = |years: &[YearSummary]| {
+            years.iter().map(|s| s.forest_share).sum::<f64>() / years.len() as f64
+        };
+        let (early, late) = (mean(&state.summaries[..50]), mean(&state.summaries[250..]));
+        assert!((early - late).abs() < 0.02, "forest {early} then {late}");
+        // The spin-up leaves forest below the capacity of normal precipitation.
+        let (_, steady) = Model::from_world(&world, steady()).unwrap();
+        let forest = |labels: &[u8]| labels.iter().filter(|&&l| is_forest(l)).count();
+        assert!(forest(&model.initial.label) < forest(&steady.label));
+    }
+
+    #[test]
+    fn cleared_forest_regrows_from_wooded_neighbors() {
+        let world = test_world("vegetation");
+        let s = &world.surface;
+        let ring = |i: usize| {
+            s.neighbors[s.offsets[i] as usize..s.offsets[i + 1] as usize]
+                .iter()
+                .map(|&j| j as usize)
+        };
+        let regrowth = |seed_establishment: f64| {
+            let settings = Settings {
+                seed_establishment,
+                ..steady()
+            };
+            let (model, mut state) = Model::from_world(&world, settings).unwrap();
+            let wooded = |j: usize| model.capacity(j, 1., 1.).0 > 0.8;
+            let center = (0..state.woody.len())
+                .find(|&c| wooded(c) && ring(c).all(wooded))
+                .expect("a region inside a forest");
+            state.woody[center] = 0.;
+            let amplitudes = vec![0.; model.settings.anomaly_centers as usize];
+            for year in 1..=20 {
+                model.step_year(&mut state, &amplitudes, year);
+            }
+            (state.woody[center], state.woody_change[center])
+        };
+        let ((seeded, change), (isolated, _)) = (regrowth(0.05), regrowth(0.));
+        assert!(
+            seeded > 2. * isolated && seeded > 0.3,
+            "seeded {seeded} isolated {isolated}"
+        );
+        assert!(change > 0.);
     }
 
     #[test]
@@ -705,11 +934,7 @@ mod tests {
         for i in [0, 100, 1000, 2000] {
             let series = model.region_series(&whole, i).unwrap();
             assert_eq!(series.len(), 31);
-            let last = series[30];
-            assert_eq!(
-                (last.woody, last.herb, last.label),
-                (whole.woody[i], whole.herb[i], whole.label[i])
-            );
+            assert_eq!(series[30], model.region(&whole, i));
         }
         assert!(Model::restore(&test_world("another"), model.checkpoint(&whole)).is_err());
     }
@@ -720,18 +945,24 @@ mod tests {
         let (model, state) = Model::from_world(&world, Settings::default()).unwrap();
         // A forest region near its aridity margin, where a dry year lowers capacity.
         let i = (0..state.woody.len())
-            .find(|&i| model.capacity(i, 1., 1.).0 > 0.95 && model.capacity(i, 1., 0.75).0 < 0.3)
+            .find(|&i| {
+                state.woody[i] > 0.9
+                    && model.capacity(i, 1., 1.).0 > 0.95
+                    && model.capacity(i, 1., 0.75).0 < 0.3
+            })
             .expect("a marginal forest region");
+        let seed = model.woody_establishment(i, &state.woody);
         let mut current = model.region(&state, i);
         let before = current.woody;
         for _ in 0..3 {
-            current = model.step_region(i, &current, 0.6);
+            current = model.step_region(i, &current, 0.6, seed);
         }
         let after = current.woody;
         assert!(after < before - 0.2, "drought effect {before} → {after}");
+        assert!(current.productivity < model.region(&state, i).productivity);
         let mut years = 0;
         while current.woody < before - 0.05 {
-            current = model.step_region(i, &current, 1.);
+            current = model.step_region(i, &current, 1., seed);
             years += 1;
             assert!(years < 200);
         }

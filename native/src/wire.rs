@@ -291,7 +291,8 @@ pub fn vegetation(
 ) -> io::Result<()> {
     let count = state.label.len();
     let (woody_capacity, cover_capacity) = model.capacities(state);
-    let mut bytes = Vec::with_capacity(count * 60 + state.summaries.len() * 40);
+    let productivity = model.productivities(state);
+    let mut bytes = Vec::with_capacity(count * 76 + state.summaries.len() * 48);
     for field in [
         &state.woody,
         &state.herb,
@@ -300,6 +301,8 @@ pub fn vegetation(
         &state.established_cover,
         &woody_capacity,
         &cover_capacity,
+        &state.woody_change,
+        &productivity,
     ] {
         f64s(&mut bytes, field.iter().copied());
     }
@@ -320,6 +323,7 @@ pub fn vegetation(
                 summary.total_cover,
                 summary.forest_share,
                 f64::from(summary.label_changes),
+                summary.productivity_petagrams,
             ]
             .into_iter(),
         );
@@ -333,13 +337,13 @@ pub fn vegetation(
     )
 }
 
-/// One region replayed from year 0: eight f64 values per year.
+/// One region replayed from year 0: nine f64 values per year.
 pub fn vegetation_series(
     out: &mut impl Write,
     region: usize,
     series: &[crate::vegetation::RegionYear],
 ) -> io::Result<()> {
-    let mut bytes = Vec::with_capacity(series.len() * 64);
+    let mut bytes = Vec::with_capacity(series.len() * 72);
     for y in series {
         f64s(
             &mut bytes,
@@ -351,6 +355,7 @@ pub fn vegetation_series(
                 y.herb,
                 y.woody_capacity,
                 y.cover_capacity,
+                y.productivity,
                 f64::from(y.label),
             ]
             .into_iter(),

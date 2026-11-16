@@ -31,14 +31,14 @@ import { PlanetCamera } from './planet-camera';
 import type { PlanetView } from './planet-camera';
 import { SpaceBackdrop } from './space';
 
-export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill' | 'temperature' | 'windSpeed' | 'biome' | 'annualPrecipitation' | 'vegetationState' | 'woodyCover' | 'precipitationAnomaly' | MoistureLayer;
+export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill' | 'temperature' | 'windSpeed' | 'biome' | 'annualPrecipitation' | 'vegetationState' | 'woodyCover' | 'woodyChange' | 'productivity' | 'precipitationAnomaly' | MoistureLayer;
 export type ViewMode = 'flat' | 'globe';
 /** Continuous layers can be interpolated between regions; categorical and sentinel layers cannot. */
 const SMOOTH_LAYERS = new Set<string>(['surface', 'signal', 'area', 'latitude', 'crust', 'thickness', 'elevation', 'uplift',
-  'depth', 'contributingArea', 'temperature', 'windSpeed', 'biome', 'annualPrecipitation', 'vegetationState', 'woodyCover', 'precipitationAnomaly']);
-const RELIEF_LAYERS: Partial<Record<string, number>> = { surface: 1, biome: 1, vegetationState: 1, woodyCover: 1, precipitationAnomaly: 1, elevation: .8 };
+  'depth', 'contributingArea', 'temperature', 'windSpeed', 'biome', 'annualPrecipitation', 'vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly']);
+const RELIEF_LAYERS: Partial<Record<string, number>> = { surface: 1, biome: 1, vegetationState: 1, woodyCover: 1, woodyChange: 1, productivity: 1, precipitationAnomaly: 1, elevation: .8 };
 /** Land layers colored by a per-region tint over relief, with bathymetric water. */
-const TINT_LAYERS = new Set<string>(['biome', 'vegetationState', 'woodyCover', 'precipitationAnomaly']);
+const TINT_LAYERS = new Set<string>(['biome', 'vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly']);
 /** Layers drawn as land and water with a shoreline, bathymetry and the globe water surface. */
 const surfaceLike = (layer: string): boolean => layer === 'surface' || TINT_LAYERS.has(layer);
 type Rgb = readonly [number, number, number];
@@ -47,6 +47,18 @@ const mixRgb = (a: Rgb, b: Rgb, t: number): Rgb => [a[0] + (b[0] - a[0]) * t, a[
 export function woodyColor(woody: number): Rgb {
   const t = Math.min(1, Math.max(0, woody));
   return t < 0.5 ? mixRgb([214, 204, 160], [132, 160, 88], t / 0.5) : mixRgb([132, 160, 88], [28, 88, 44], (t - 0.5) / 0.5);
+}
+/** Diverging woody-cover change: a loss or gain of 0.3 or more is fully colored. */
+export function changeColor(change: number): Rgb {
+  const t = Math.min(1, Math.max(-1, change / 0.3));
+  return t < 0 ? mixRgb([238, 234, 220], [168, 64, 36], -t) : mixRgb([238, 234, 220], [30, 122, 64], t);
+}
+/** Net primary productivity, 0 to 2,500 g dry matter / m² / year or more. */
+export function productivityColor(grams: number): Rgb {
+  const t = Math.min(1, Math.max(0, grams / 2500));
+  return t < 0.25 ? mixRgb([236, 228, 200], [214, 196, 92], t / 0.25)
+    : t < 0.55 ? mixRgb([214, 196, 92], [110, 160, 60], (t - 0.25) / 0.3)
+    : mixRgb([110, 160, 60], [12, 82, 78], (t - 0.55) / 0.45);
 }
 /** Diverging precipitation factor: half of normal or less is fully dry, double or more fully wet. */
 export function anomalyColor(factor: number): Rgb {
@@ -503,6 +515,8 @@ export class SurfaceMap {
     const color: ((id: number) => Rgb) | null = layer === 'biome' && climate ? (id) => BIOMES[climate.biome[id]].color
       : layer === 'vegetationState' && vegetation ? (id) => BIOMES[vegetation.label[id]].color
       : layer === 'woodyCover' && vegetation ? (id) => woodyColor(vegetation.woody[id])
+      : layer === 'woodyChange' && vegetation ? (id) => changeColor(vegetation.woodyChange[id])
+      : layer === 'productivity' && vegetation ? (id) => productivityColor(vegetation.productivity[id])
       : layer === 'precipitationAnomaly' && vegetation ? (id) => anomalyColor(vegetation.precipitationFactor[id]) : null;
     this.material.uniforms.biomeMode.value = color ? 1 : 0;
     if (color && this.world && this.corners && this.tintTexture && this.cornerTintTexture) {
