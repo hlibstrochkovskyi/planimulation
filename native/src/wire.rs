@@ -282,6 +282,88 @@ pub fn climate_normals(
     )
 }
 
+/// Vegetation display frame: seven per-region f64 fields, labels and the yearly
+/// global summaries.
+pub fn vegetation(
+    out: &mut impl Write,
+    model: &crate::vegetation::Model,
+    state: &crate::vegetation::State,
+) -> io::Result<()> {
+    let count = state.label.len();
+    let (woody_capacity, cover_capacity) = model.capacities(state);
+    let mut bytes = Vec::with_capacity(count * 60 + state.summaries.len() * 40);
+    for field in [
+        &state.woody,
+        &state.herb,
+        &state.precipitation_factor,
+        &state.root_moisture,
+        &state.established_cover,
+        &woody_capacity,
+        &cover_capacity,
+    ] {
+        f64s(&mut bytes, field.iter().copied());
+    }
+    u32s(
+        &mut bytes,
+        &state
+            .label
+            .iter()
+            .map(|&l| u32::from(l))
+            .collect::<Vec<_>>(),
+    );
+    for summary in &state.summaries {
+        f64s(
+            &mut bytes,
+            [
+                summary.precipitation_factor,
+                summary.woody_cover,
+                summary.total_cover,
+                summary.forest_share,
+                f64::from(summary.label_changes),
+            ]
+            .into_iter(),
+        );
+    }
+    send(
+        out,
+        json!({"kind":"vegetation", "vegetationModelVersion":crate::vegetation::MODEL_VERSION,
+            "climateModelVersion":crate::climate_normals::MODEL_VERSION, "settings":model.settings(),
+            "year":state.year, "regionCount":count}),
+        &bytes,
+    )
+}
+
+/// One region replayed from year 0: eight f64 values per year.
+pub fn vegetation_series(
+    out: &mut impl Write,
+    region: usize,
+    series: &[crate::vegetation::RegionYear],
+) -> io::Result<()> {
+    let mut bytes = Vec::with_capacity(series.len() * 64);
+    for y in series {
+        f64s(
+            &mut bytes,
+            [
+                y.precipitation_factor,
+                y.root_moisture,
+                y.established_cover,
+                y.woody,
+                y.herb,
+                y.woody_capacity,
+                y.cover_capacity,
+                f64::from(y.label),
+            ]
+            .into_iter(),
+        );
+    }
+    send(
+        out,
+        json!({"kind":"vegetationSeries", "vegetationModelVersion":crate::vegetation::MODEL_VERSION,
+            "region":region, "year":series.len() - 1}),
+        &bytes,
+    )
+}
+
 pub fn water_frame(
     out: &mut impl Write,
     display: &WaterDisplay,

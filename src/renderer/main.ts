@@ -23,11 +23,18 @@ import { MOISTURE_LAYERS, isMoistureLayer, supportsMoistureLayer, moistureLayerT
 import { soilWaterInspection } from './soil-water-inspector';
 import { BIOMES, aridityThreshold } from '../core/climate-normals';
 import type { ClimateNormals } from '../core/climate-normals';
+import { COVER_ARIDITY, DEFAULT_VEGETATION_SETTINGS, FOREST_COVER, OPEN_COVER, WOODY_ARIDITY } from '../core/vegetation';
+import type { VegetationFrame, VegetationSeries } from '../core/vegetation';
 
 function element<T extends HTMLElement>(id: string): T {
   const result = document.getElementById(id);
   if (!result) throw new Error(`Missing interface element: ${id}`);
   return result as T;
+}
+function svgElement(id: string): SVGSVGElement {
+  const result = document.getElementById(id);
+  if (!(result instanceof SVGSVGElement)) throw new Error(`Missing interface element: ${id}`);
+  return result;
 }
 
 const workspace = new Workspace();
@@ -64,6 +71,9 @@ element('biome-legend').replaceChildren(...BIOMES.slice(1).map(({ name, color })
   const item = document.createElement('span'), swatch = document.createElement('i');
   swatch.style.background = `rgb(${color.join(',')})`; item.append(swatch, name); return item;
 }));
+const vegetationLayerButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-layer="vegetationState"], [data-layer="woodyCover"], [data-layer="precipitationAnomaly"]')];
+const vegetationButtons = ([[1, 'vegetation-1'], [10, 'vegetation-10'], [100, 'vegetation-100']] as const).map(([years, id]) => ({ years, button: element<HTMLButtonElement>(id) }));
+const vegetationReset = element<HTMLButtonElement>('vegetation-reset');
 const windLayerButton = document.querySelector<HTMLButtonElement>('[data-layer="windSpeed"]')!;
 const moistureStart = element<HTMLButtonElement>('moisture-start');
 const moistureStartOrographic = element<HTMLButtonElement>('moisture-start-orographic');
@@ -83,6 +93,10 @@ let waterBudget: WaterBudget | null = null;
 let temperatureNormals: TemperatureNormals | null = null;
 let windNormals: WindNormals | null = null;
 let climateNormals: ClimateNormals | null = null;
+let vegetation: VegetationFrame | null = null;
+let vegetationSeries: VegetationSeries | null = null;
+let vegetationBusy = false;
+let seriesRequest = 0;
 let moistureFrame: SeasonalDisplayFrame | null = null;
 let moistureBusyEpoch: number | null = null;
 let moisturePlaying = false;
@@ -156,12 +170,15 @@ function updateExperimentControls(): void {
   waterSave.disabled = manualBlocked; waterBudgetButton.disabled = manualBlocked;
   waterOpen.disabled = busy || moisturePlaying || playing;
   element<HTMLButtonElement>('play').disabled = !world || hasSeasonal || (!playing && busy);
+  for (const { button } of vegetationButtons) button.disabled = !vegetation || vegetationBusy || generating || vegetation.year >= 10_000;
+  vegetationReset.disabled = !vegetation || vegetationBusy || generating || vegetation.year === 0;
   document.body.dataset.seasonalWater = moisturePlaying ? 'running' : moistureBusyEpoch === epoch ? 'working' : hasSeasonal ? 'paused' : 'idle';
   workspace.update({ layer: currentLayer, selected,
     seasonalModel: moistureFrame ? isSoilMoistureFrame(moistureFrame) ? 'soil'
       : Object.entries(MOISTURE_MODES).find(([, mode]) => mode.modelVersion === moistureFrame!.modelVersion)?.[0] ?? 'baseline' : null,
     seasonalWorking: moistureBusyEpoch === epoch, seasonalRunning: moisturePlaying, seasonalFinished: finished,
     diagnosticRunning: playing, diagnosticDirty, busy, unsaved: unsavedProgress || diagnosticDirty, manualStep: waterFrame?.step ?? 0,
+    vegetationYear: vegetation?.year ?? null, vegetationWorking: vegetationBusy,
     layerReading: world && moistureFrame && selected !== null && isMoistureLayer(currentLayer) && supportsMoistureLayer(moistureFrame, currentLayer)
       ? { label: moistureLayerTitle(moistureFrame, currentLayer),
         value: `${budgetNumber.format(moistureLayerValue(moistureFrame, currentLayer, selected, world.surface.areasSquareMeters[selected]))} ${MOISTURE_LAYERS[currentLayer].unit}`,
@@ -428,6 +445,14 @@ function inspect(id: number, preserveBasin = false): void {
       ['Moisture supply', `${(climateNormals.moistureSupply[id] * 100).toFixed(0)}% of zonal potential`],
       ['Windward lift', `×${climateNormals.lift[id].toFixed(2)}`],
     ] : []),
+    ...(vegetation ? [
+      ['Vegetation state', `${BIOMES[vegetation.label[id]].name} · year ${vegetation.year}`],
+      ['Woody / herb cover', `${vegetation.woody[id].toFixed(2)} / ${vegetation.herb[id].toFixed(2)}`],
+      ['Established cover', `${vegetation.establishedCover[id].toFixed(2)} · ${DEFAULT_VEGETATION_SETTINGS.labelMemoryYears}-year memory`],
+      ['Woody capacity', `${vegetation.woodyCapacity[id].toFixed(2)} · total cover capacity ${vegetation.coverCapacity[id].toFixed(2)}`],
+      ['This year\'s precipitation', `${(vegetation.precipitationFactor[id] * 100).toFixed(0)}% of normal`],
+      ['Root-zone moisture', `${(vegetation.rootMoisture[id] * 100).toFixed(0)}% of normal · ${DEFAULT_VEGETATION_SETTINGS.rootMemoryYears}-year memory`],
+    ] : []),
     ...(windNormals ? [
       [`Month ${Number(temperatureMonthInput.value) + 1} wind speed normal`, `${Math.hypot(windNormals.monthlyEastMetersPerSecond[Number(temperatureMonthInput.value)][id], windNormals.monthlyNorthMetersPerSecond[Number(temperatureMonthInput.value)][id]).toFixed(2)} m/s`],
       ['Eastward wind component', `${windNormals.monthlyEastMetersPerSecond[Number(temperatureMonthInput.value)][id].toFixed(2)} m/s`],
@@ -489,6 +514,8 @@ function inspect(id: number, preserveBasin = false): void {
     : 'Seasonal temperature normals are being calculated from initial geography.';
   element('climate-note').textContent = climateNormals ? climateExplanation(climateNormals, id, world.water.bodyIds[id] !== 0)
     : 'Climate normals are unavailable for this world.';
+  renderVegetationNote(id);
+  void requestVegetationSeries(id);
   element('wind-note').textContent = windNormals
     ? `Latitude ${lat.toFixed(2)}° and the selected month determine a prescribed east/north tangent vector. Trades are easterly, midlatitude winds westerly, and polar winds easterly; the convergence belt follows half the subsolar declination. These are smooth, zonally symmetric model choices, not simulated atmospheric circulation. Terrain and water do not redirect wind. Seasonal water uses these normals on its own elapsed-time clock.`
     : 'Seasonal surface-wind normals are being calculated.';
@@ -572,6 +599,9 @@ function updateLegend(): void {
       `${number.format(temperatureRange.minimum)} °C`, `${number.format(temperatureRange.maximum)} °C`],
     biome: ['Biomes · climate classes from prescribed normals, not simulated vegetation', '', ''],
     annualPrecipitation: ['Annual precipitation · prescribed estimate, not the seasonal-water budget · logarithmic', '0 mm', '≥4,000 mm'],
+    vegetationState: [`Vegetation state · year ${vegetation?.year ?? 0} · accumulated cover with hysteresis; same class colors as Biomes`, '', ''],
+    woodyCover: [`Woody cover · year ${vegetation?.year ?? 0} · fraction of the region under woody plants`, '0', '1'],
+    precipitationAnomaly: [`Year ${vegetation?.year ?? 0} precipitation · fraction of the climate normal · land only`, '≤50%', '≥200%'],
     windSpeed: [`Month ${Number(temperatureMonthInput.value) + 1} prescribed surface-wind speed · no atmospheric dynamics`,
       '0 m/s', `${number.format(windMaximum)} m/s`],
   };
@@ -583,8 +613,10 @@ function updateLegend(): void {
   element('legend-low').textContent = low;
   element('legend-high').textContent = high;
   const plateLayer = currentLayer === 'plates' || currentLayer === 'boundaries';
-  element('legend-scale').hidden = plateLayer || currentLayer === 'waterBodies' || currentLayer === 'surface' || currentLayer === 'catchments' || currentLayer === 'basins' || currentLayer === 'biome';
-  element('biome-legend').hidden = currentLayer !== 'biome';
+  element('legend-scale').hidden = plateLayer || currentLayer === 'waterBodies' || currentLayer === 'surface' || currentLayer === 'catchments' || currentLayer === 'basins' || currentLayer === 'biome' || currentLayer === 'vegetationState';
+  element('biome-legend').hidden = currentLayer !== 'biome' && currentLayer !== 'vegetationState';
+  element('legend-gradient').classList.toggle('woody-gradient', currentLayer === 'woodyCover');
+  element('legend-gradient').classList.toggle('anomaly-gradient', currentLayer === 'precipitationAnomaly');
   element('legend-gradient').classList.toggle('precipitation-gradient', currentLayer === 'annualPrecipitation');
   element('boundary-legend').hidden = !plateLayer;
   element('legend-gradient').classList.toggle('water-gradient', currentLayer === 'depth');
@@ -608,6 +640,137 @@ function climateExplanation(normals: ClimateNormals, id: number, wet: boolean): 
     : cold > -3 || warm >= 22 ? `Humid; coldest month ${cold.toFixed(1)} °C above −3 °C or warmest ≥ 22 °C → temperate forest.`
     : `Humid; coldest month ${cold.toFixed(1)} °C and warmest ${warm.toFixed(1)} °C → boreal forest.`;
   return `${BIOMES[normals.biome[id]].name}. ${rule} ${precipitation} ${temperature} These are prescribed climate normals, not weather, a water budget or vegetation dynamics.`;
+}
+
+/** Polylines over [0, 1] in a fixed SVG viewBox; values outside are clamped. */
+function drawChart(svg: SVGSVGElement, lines: Array<{ className: string; values: number[] }>, normal?: number): void {
+  const [, , width, height] = svg.getAttribute('viewBox')!.split(' ').map(Number);
+  const ns = 'http://www.w3.org/2000/svg';
+  svg.replaceChildren();
+  if (normal !== undefined) {
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('class', 'normal');
+    line.setAttribute('x1', '0'); line.setAttribute('x2', String(width));
+    line.setAttribute('y1', String(height * (1 - normal))); line.setAttribute('y2', String(height * (1 - normal)));
+    svg.append(line);
+  }
+  for (const { className, values } of lines) {
+    const polyline = document.createElementNS(ns, 'polyline');
+    polyline.setAttribute('class', className);
+    polyline.setAttribute('points', values.map((v, i) => `${(i / Math.max(1, values.length - 1) * width).toFixed(2)},${(height * (1 - Math.min(1, Math.max(0, v)))).toFixed(2)}`).join(' '));
+    svg.append(polyline);
+  }
+  svg.toggleAttribute('hidden', lines.every(l => l.values.length < 2));
+}
+/** Precipitation factor on a log scale: 50% → 0, normal → 0.5, 200% → 1. */
+const factorScale = (factor: number): number => 0.5 + Math.log2(factor) / 2;
+
+function renderVegetation(): void {
+  const chart = svgElement('vegetation-chart');
+  if (!vegetation || !world) {
+    element('vegetation-time').textContent = climateNormals === null ? 'Starts after climate normals load.' : 'Not initialized.';
+    chart.toggleAttribute('hidden', true); updateExperimentControls(); return;
+  }
+  const s = vegetation.summaries, last = s[s.length - 1];
+  // Forest share drawn over its own range with five points of padding.
+  const forest = s.map(x => x.forestShare), low = Math.max(0, Math.min(...forest) - 0.05), high = Math.max(...forest) + 0.05;
+  element('vegetation-time').textContent = `Year ${vegetation.year}`;
+  if (!last) {
+    element('vegetation-summary').textContent = 'Year 0 equals the climate classes: woody and total cover sit at the capacity of normal precipitation. Advance to draw spatially coherent wet and dry years. Not saved in checkpoints; the recipe and year count reproduce a run exactly.';
+  } else {
+    let driest = 0;
+    for (let y = 1; y < s.length; y++) if (s[y].precipitationFactor < s[driest].precipitationFactor) driest = y;
+    element('vegetation-summary').textContent = `Land precipitation this year ${(last.precipitationFactor * 100).toFixed(0)}% of normal · forest ${(last.forestShare * 100).toFixed(1)}% of land (range ${(Math.min(...forest) * 100).toFixed(1)}–${(Math.max(...forest) * 100).toFixed(1)}%) · ${(last.labelChanges / Math.max(1, world.water.bodyIds.filter(body => body === 0).length) * 100).toFixed(2)}% of land regions changed class this year · driest year so far ${driest + 1} at ${(s[driest].precipitationFactor * 100).toFixed(0)}%. Green: forest share between ${(low * 100).toFixed(0)}% and ${(high * 100).toFixed(0)}%; blue: land precipitation, 80–120% of normal (dashed = normal).`;
+  }
+  drawChart(chart, [{ className: 'forest', values: s.map(x => (x.forestShare - low) / (high - low)) },
+    { className: 'rain', values: s.map(x => 0.5 + (x.precipitationFactor - 1) * 2.5) }], 0.5);
+  updateExperimentControls();
+}
+
+function applyVegetation(frame: VegetationFrame): void {
+  vegetation = frame; vegetationSeries = null; map.setVegetation(frame);
+  for (const button of vegetationLayerButtons) button.disabled = false;
+  renderVegetation(); updateLegend();
+  if (selected !== null) inspect(selected, true);
+}
+
+async function runVegetation(years: number | 'reset'): Promise<void> {
+  if (!world || !vegetation || vegetationBusy || document.body.dataset.state === 'generating') return;
+  const activeEpoch = epoch, request = generationId;
+  vegetationBusy = true; updateExperimentControls();
+  const started = performance.now();
+  try {
+    const frame = years === 'reset' ? await api.initializeVegetation(activeEpoch) : await api.advanceVegetation(activeEpoch, years);
+    if (request !== generationId || frame.epoch !== epoch) return;
+    vegetationBusy = false;
+    applyVegetation(frame);
+    showStatus(`Vegetation year ${frame.year} · native request + IPC ${number.format(performance.now() - started)} ms.`);
+  } catch (error) {
+    if (request === generationId) showStatus(error instanceof Error ? error.message : String(error), true);
+  } finally {
+    if (epoch === activeEpoch) vegetationBusy = false;
+    updateExperimentControls();
+  }
+}
+for (const { years, button } of vegetationButtons) button.addEventListener('click', () => void runVegetation(years));
+vegetationReset.addEventListener('click', () => void runVegetation('reset'));
+
+async function requestVegetationSeries(id: number): Promise<void> {
+  const chart = svgElement('vegetation-region-chart');
+  const request = ++seriesRequest;
+  if (!vegetation || vegetation.year === 0 || world?.water.bodyIds[id] !== 0) { chart.toggleAttribute('hidden', true); return; }
+  if (vegetationSeries?.region === id && vegetationSeries.years.length === vegetation.year + 1) return;
+  // Native requests are serialized; skip while a run is in flight and refresh after it.
+  if (vegetationBusy) return;
+  try {
+    const series = await api.vegetationSeries(epoch, id);
+    if (request !== seriesRequest || series.epoch !== epoch || selected !== id) return;
+    vegetationSeries = series; renderVegetationNote(id);
+  } catch (error) {
+    if (request === seriesRequest) element('vegetation-note').textContent = `Vegetation history unavailable: ${error instanceof Error ? error.message : String(error)}`;
+  }
+}
+
+/** Mirrors the native vegetation-1 rules so the inspector names the deciding state. */
+function renderVegetationNote(id: number): void {
+  const chart = svgElement('vegetation-region-chart');
+  if (!world || !vegetation || !climateNormals) {
+    element('vegetation-note').textContent = 'Vegetation starts after climate normals load.'; chart.toggleAttribute('hidden', true); return;
+  }
+  if (world.water.bodyIds[id] !== 0) {
+    element('vegetation-note').textContent = 'Initial water region; no vegetation.'; chart.toggleAttribute('hidden', true); return;
+  }
+  const v = vegetation, f = (x: number): string => x.toFixed(2), pct = (x: number): string => `${(x * 100).toFixed(0)}%`;
+  const label = v.label[id], warm = climateNormals.warmestMonthCelsius[id], mean = climateNormals.annualMeanCelsius[id];
+  const normal = climateNormals.annualPrecipitationMm[id], threshold = aridityThreshold(mean);
+  const ratio = (factor: number): string => threshold <= 0 ? 'unlimited (threshold ≤ 0)' : f(normal * factor / threshold);
+  const capacity = `Capacities follow the aridity ratio, precipitation / Köppen threshold ${number.format(threshold)} mm: woody rises from 0 at ${WOODY_ARIDITY[0]} to 1 at ${WOODY_ARIDITY[1]} using root-zone moisture ${pct(v.rootMoisture[id])} of normal (ratio ${ratio(v.rootMoisture[id])}); total cover rises from 0 at ${COVER_ARIDITY[0]} to 1 at ${COVER_ARIDITY[1]} using this year's ${pct(v.precipitationFactor[id])} (ratio ${ratio(v.precipitationFactor[id])}).`;
+  const dynamics = `Woody cover ${f(v.woody[id])} moves toward capacity ${f(v.woodyCapacity[id])}: logistic growth at ${DEFAULT_VEGETATION_SETTINGS.woodyGrowthPerYear}/year below it, dieback of ${pct(DEFAULT_VEGETATION_SETTINGS.woodyDiebackPerYear)} of the excess per year above it. Herbs (${f(v.herb[id])}) fill the remaining cover capacity within a few years.`;
+  const forest = [3, 4, 9, 10].includes(label), open = label === 5 || label === 8;
+  const rule = warm < 0 ? `Warmest month ${warm.toFixed(1)} °C < 0 °C → ice regardless of cover.`
+    : warm < 10 ? `Warmest month ${warm.toFixed(1)} °C < 10 °C → tundra regardless of cover; herb cover is scaled by summer warmth.`
+    : forest ? `Woody cover ${f(v.woody[id])} ≥ ${FOREST_COVER[1]} (forest starts at ${FOREST_COVER[0]} and holds down to ${FOREST_COVER[1]}) → forest; the climate rules pick the type.`
+    : open ? `Woody cover below the forest threshold; established cover ${f(v.establishedCover[id])} (${DEFAULT_VEGETATION_SETTINGS.labelMemoryYears}-year memory) ≥ ${OPEN_COVER[1]} (starts at ${OPEN_COVER[0]}) → ${mean >= 18 ? 'savanna' : 'grassland'}.`
+    : `Established cover ${f(v.establishedCover[id])} is below ${OPEN_COVER[0]} (or fell below ${OPEN_COVER[1]}) → ${mean >= 18 ? 'hot' : 'cold'} desert.`;
+  const climate = climateNormals.biome[id] !== label ? ` The climate class here is ${BIOMES[climateNormals.biome[id]].name}; the state differs because of recent years.` : '';
+  let history = '';
+  const series = vegetationSeries?.region === id && vegetationSeries.years.length === v.year + 1 ? vegetationSeries.years : null;
+  if (series && series.length > 1) {
+    let driest = 1;
+    for (let y = 2; y < series.length; y++) if (series[y].precipitationFactor < series[driest].precipitationFactor) driest = y;
+    const before = series[driest - 1].woody;
+    let low = driest;
+    for (let y = driest; y < Math.min(series.length, driest + 8); y++) if (series[y].woody < series[low].woody) low = y;
+    let recovered = -1;
+    for (let y = low; y < series.length; y++) if (series[y].woody >= before - 0.05) { recovered = y; break; }
+    const loss = before - series[low].woody;
+    history = ` History: driest year ${driest} at ${pct(series[driest].precipitationFactor)} of normal.${loss > 0.02
+      ? ` Woody cover fell from ${f(before)} to ${f(series[low].woody)} by year ${low}; ${recovered >= 0 ? `back within 0.05 by year ${recovered} (${recovered - low} years).` : 'not yet recovered.'}`
+      : ' Woody cover barely changed.'} Chart: green woody, yellow herbs, blue precipitation (log scale, dashed = normal).`;
+    drawChart(chart, [{ className: 'rain', values: series.map(y => factorScale(y.precipitationFactor)) },
+      { className: 'herb', values: series.map(y => y.herb) }, { className: 'woody', values: series.map(y => y.woody) }], 0.5);
+  } else chart.toggleAttribute('hidden', true);
+  element('vegetation-note').textContent = `${BIOMES[label].name} at year ${v.year}. ${rule} ${dynamics} ${capacity}${climate}${history} Not modeled: fire, grazing, seed spread between regions, soils, temperature anomalies and feedback to water.`;
 }
 
 function setInputs(recipe: Recipe): void {
@@ -696,7 +859,9 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
     moistureFrame = restoredMoisture;
     map.setMoistureFrame(moistureFrame); renderMoisture();
     temperatureNormals = null; windNormals = null; climateNormals = null;
-    for (const button of climateLayerButtons) button.disabled = true;
+    vegetation = null; vegetationSeries = null; vegetationBusy = false; map.setVegetation(null);
+    for (const button of [...climateLayerButtons, ...vegetationLayerButtons]) button.disabled = true;
+    renderVegetation();
     map.setTemperatureNormals(null); map.setWindNormals(null);
     waterBusy = false; budgetBusyEpoch = null;
     if (prepared) setInputs(world.recipe);
@@ -804,13 +969,18 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
       climateNormals = normals; map.setClimateNormals(normals);
       for (const button of climateLayerButtons) button.disabled = false;
       updateLegend();
+      showStatus('Starting vegetation at the climate-normal equilibrium…');
+      const frame = await api.initializeVegetation(epoch);
+      if (request !== generationId || frame.epoch !== epoch) return;
+      applyVegetation(frame);
     } catch (error) {
       if (request !== generationId) return;
       climateError = error instanceof Error ? error.message : String(error);
-      element('climate-note').textContent = `Climate normals unavailable: ${climateError}`;
+      element('climate-note').textContent = `Climate normals or vegetation unavailable: ${climateError}`;
     }
     if ((currentLayer === 'temperature' && !temperatureNormals) || (currentLayer === 'windSpeed' && !windNormals)
       || ((currentLayer === 'biome' || currentLayer === 'annualPrecipitation') && !climateNormals)
+      || (['vegetationState', 'woodyCover', 'precipitationAnomaly'].includes(currentLayer) && !vegetation)
       || (isMoistureLayer(currentLayer) && !supportsMoistureLayer(moistureFrame, currentLayer))) {
       document.querySelector<HTMLButtonElement>('[data-layer="surface"]')?.click();
     }
@@ -832,6 +1002,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
       temperatureLayerButton.disabled = temperatureNormals === null;
       windLayerButton.disabled = windNormals === null;
       for (const button of climateLayerButtons) button.disabled = climateNormals === null;
+      for (const button of vegetationLayerButtons) button.disabled = vegetation === null;
       temperatureMonthInput.disabled = temperatureNormals === null && windNormals === null;
       waterBudgetButton.disabled = world === null || budgetBusyEpoch === epoch;
       element<HTMLButtonElement>('play').disabled = world === null;

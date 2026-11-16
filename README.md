@@ -28,6 +28,7 @@ The separate [unified regional soil cycle](docs/regional-soil-cycle.md) applies 
 | [Continuous plate-root candidate](docs/plate-root-candidate.md) | Opt-in versioned generator path and paired seeded resolution-stability measurements |
 | [Mountain belts and filled plains](docs/mountain-belts.md) | `multiscale-geography-3`: meandering varied convergent belts, filled shallow depressions, connected drainage measurements |
 | [Climate normals and biomes](docs/climate-normals.md) | Prescribed `climate-normals-1` temperature and precipitation normals, Köppen-style biome classes, Biomes and Annual precipitation layers |
+| [Vegetation with memory](docs/vegetation.md) | `vegetation-1`: yearly woody and herb cover under coherent wet and dry years, slow recovery, labels with hysteresis, Vegetation tab and region history |
 | [Coastal lowlands](docs/coastal-lowlands.md) | Default for new desktop worlds, `multiscale-geography-4`: crust-baseline height compressed toward coasts, unchanged shorelines, hypsometry measurements |
 | [Initial crust](docs/crust.md) | Spherical continentality, area fitting, approximate material properties, and validation |
 | [Explainable elevation](docs/terrain.md) | Elevation contributions, physical-distance propagation, globe relief, and display-only exaggeration |

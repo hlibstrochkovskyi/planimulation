@@ -11,6 +11,8 @@ export interface WorkspaceState {
   busy: boolean;
   unsaved: boolean;
   manualStep: number;
+  vegetationYear: number | null;
+  vegetationWorking: boolean;
   layerReading: { label: string; value: string; scope: string } | null;
 }
 
@@ -273,6 +275,7 @@ export class Workspace {
     node('basin-title').closest<HTMLElement>('.inspector')!.hidden = !['basins', 'spill', 'catchments'].includes(this.state?.layer ?? '');
     const relevant: Record<string, string[]> = {
       'climate-note': ['biome', 'annualPrecipitation'],
+      'vegetation-note': ['vegetationState', 'woodyCover', 'precipitationAnomaly'],
       'crust-note': ['crust', 'thickness', 'plates', 'surface'],
       'water-note': ['surface', 'depth', 'waterBodies'],
       'drainage-note': ['catchments', 'contributingArea', 'runoffFlow', 'runoffWater', 'basins', 'spill'],
@@ -293,6 +296,9 @@ export class Workspace {
       windSpeed: ['wind speed normal', 'wind component', 'Elevation (reference datum)'],
       biome: ['Biome (climate class)', 'Climate annual mean', 'Climate warmest / coldest month', 'Annual precipitation'],
       annualPrecipitation: ['Annual precipitation', 'Zonal precipitation potential', 'Moisture supply', 'Windward lift'],
+      vegetationState: ['Vegetation state', 'Biome (climate class)', 'Woody / herb cover', 'Established cover'],
+      woodyCover: ['Woody / herb cover', 'Woody capacity', 'Root-zone moisture', 'Vegetation state'],
+      precipitationAnomaly: ['This year\'s precipitation', 'Root-zone moisture', 'Annual precipitation', 'Vegetation state'],
       catchments: ['Drainage receiver', 'Catchment outlet', 'Contributing', 'Elevation (reference datum)'],
       contributingArea: ['Contributing', 'Drainage receiver', 'Catchment outlet'],
       plates: ['Tectonic plate', 'Plate area', 'Speed (model frame)', 'Continentality'],
@@ -330,6 +336,7 @@ export class Workspace {
       : state.diagnosticRunning && this.experimentTab !== 'diagnostic' ? 'Diagnostic running'
       : this.experimentTab === 'manual' ? `Step ${state.manualStep} · no clock`
       : this.experimentTab === 'diagnostic' ? state.diagnosticRunning ? 'Running' : 'Paused'
+      : this.experimentTab === 'vegetation' ? state.vegetationWorking ? 'Working…' : state.vegetationYear === null ? 'Not initialized' : `Year ${state.vegetationYear}`
       : state.seasonalFinished ? 'Limit reached' : state.seasonalRunning ? 'Running' : state.seasonalWorking ? state.seasonalModel ? 'Finishing interval…' : 'Initializing…' : state.seasonalModel ? 'Paused' : 'Not initialized';
   }
 

@@ -19,6 +19,7 @@ import { summarizeBasins } from '../core/basins';
 import type { TemperatureNormals } from '../core/seasonal-temperature';
 import { BIOMES } from '../core/climate-normals';
 import type { ClimateNormals } from '../core/climate-normals';
+import type { VegetationFrame } from '../core/vegetation';
 import type { WindNormals } from '../core/seasonal-wind';
 import type { SeasonalDisplayFrame } from '../shared/seasonal-display';
 import { hasRegionalSurface, isSoilMoistureFrame } from '../shared/seasonal-display';
@@ -30,14 +31,28 @@ import { PlanetCamera } from './planet-camera';
 import type { PlanetView } from './planet-camera';
 import { SpaceBackdrop } from './space';
 
-export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill' | 'temperature' | 'windSpeed' | 'biome' | 'annualPrecipitation' | MoistureLayer;
+export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill' | 'temperature' | 'windSpeed' | 'biome' | 'annualPrecipitation' | 'vegetationState' | 'woodyCover' | 'precipitationAnomaly' | MoistureLayer;
 export type ViewMode = 'flat' | 'globe';
 /** Continuous layers can be interpolated between regions; categorical and sentinel layers cannot. */
 const SMOOTH_LAYERS = new Set<string>(['surface', 'signal', 'area', 'latitude', 'crust', 'thickness', 'elevation', 'uplift',
-  'depth', 'contributingArea', 'temperature', 'windSpeed', 'biome', 'annualPrecipitation']);
-const RELIEF_LAYERS: Partial<Record<string, number>> = { surface: 1, biome: 1, elevation: .8 };
+  'depth', 'contributingArea', 'temperature', 'windSpeed', 'biome', 'annualPrecipitation', 'vegetationState', 'woodyCover', 'precipitationAnomaly']);
+const RELIEF_LAYERS: Partial<Record<string, number>> = { surface: 1, biome: 1, vegetationState: 1, woodyCover: 1, precipitationAnomaly: 1, elevation: .8 };
+/** Land layers colored by a per-region tint over relief, with bathymetric water. */
+const TINT_LAYERS = new Set<string>(['biome', 'vegetationState', 'woodyCover', 'precipitationAnomaly']);
 /** Layers drawn as land and water with a shoreline, bathymetry and the globe water surface. */
-const surfaceLike = (layer: string): boolean => layer === 'surface' || layer === 'biome';
+const surfaceLike = (layer: string): boolean => layer === 'surface' || TINT_LAYERS.has(layer);
+type Rgb = readonly [number, number, number];
+const mixRgb = (a: Rgb, b: Rgb, t: number): Rgb => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+/** Woody cover 0–1 from open ground to closed canopy. */
+export function woodyColor(woody: number): Rgb {
+  const t = Math.min(1, Math.max(0, woody));
+  return t < 0.5 ? mixRgb([214, 204, 160], [132, 160, 88], t / 0.5) : mixRgb([132, 160, 88], [28, 88, 44], (t - 0.5) / 0.5);
+}
+/** Diverging precipitation factor: half of normal or less is fully dry, double or more fully wet. */
+export function anomalyColor(factor: number): Rgb {
+  const t = Math.min(1, Math.max(-1, Math.log2(factor)));
+  return t < 0 ? mixRgb([238, 234, 220], [176, 92, 40], -t) : mixRgb([238, 234, 220], [40, 108, 182], t);
+}
 /** Child order inside each view group. Picking and visibility depend on these indices. */
 const RIVERS = 5;
 export interface NavigationView extends PlanetView { mode: ViewMode; radiusMeters: number }
@@ -180,6 +195,7 @@ export class SurfaceMap {
   private waterSurfaceDirty = false;
   private temperatureNormals: TemperatureNormals | null = null;
   private climateNormals: ClimateNormals | null = null;
+  private vegetation: VegetationFrame | null = null;
   private tintTexture: DataTexture | null = null;
   private cornerTintTexture: DataTexture | null = null;
   private tintValues = new Float32Array(0);
@@ -380,7 +396,7 @@ export class SurfaceMap {
     // appears on the right in a north-up globe, matching the flat projection.
     next.globe.scale.z = -1;
     this.releaseViews(); this.views = next;
-    this.scene.add(next.flat, next.globe); this.world = world; this.waterFrame = null; this.temperatureNormals = null; this.windNormals = null; this.climateNormals = null;
+    this.scene.add(next.flat, next.globe); this.world = world; this.waterFrame = null; this.temperatureNormals = null; this.windNormals = null; this.climateNormals = null; this.vegetation = null;
     this.moistureFrame = null; this.regionalWater = null; this.waterSurfaceDirty = false;
     delete this.canvas.dataset.regionalSurface;
     delete this.canvas.dataset.moistureSeconds;
@@ -465,58 +481,79 @@ export class SurfaceMap {
     }
     this.refreshField();
   }
-  /** Land colors for the biome layer; shared corners average only their dry regions. */
+  /** Climate classes for the biome layer. */
   setClimateNormals(normals: ClimateNormals | null): void {
     if (normals && (!this.world || normals.biome.length !== this.world.stats.regionCount)) {
       throw new Error('Climate normals do not match this world.');
     }
     this.climateNormals = normals;
-    if (normals && this.corners && this.tintTexture && this.cornerTintTexture) {
-      const tint = this.tintValues, out = this.cornerTintValues;
-      for (let id = 0; id < normals.biome.length; id++) {
-        const color = BIOMES[normals.biome[id]].color;
-        for (let c = 0; c < 3; c++) tint[id * 4 + c] = color[c] / 255;
+    this.applyTint();
+  }
+  /** Vegetation state for the vegetation layers; display only. */
+  setVegetation(frame: VegetationFrame | null): void {
+    if (frame && (!this.world || frame.label.length !== this.world.stats.regionCount)) {
+      throw new Error('Vegetation state does not match this world.');
+    }
+    this.vegetation = frame;
+    this.applyTint();
+  }
+  /** Per-region land colors of the active tint layer; shared corners average only dry regions. */
+  private applyTint(): void {
+    const climate = this.climateNormals, vegetation = this.vegetation, layer = this.layer;
+    const color: ((id: number) => Rgb) | null = layer === 'biome' && climate ? (id) => BIOMES[climate.biome[id]].color
+      : layer === 'vegetationState' && vegetation ? (id) => BIOMES[vegetation.label[id]].color
+      : layer === 'woodyCover' && vegetation ? (id) => woodyColor(vegetation.woody[id])
+      : layer === 'precipitationAnomaly' && vegetation ? (id) => anomalyColor(vegetation.precipitationFactor[id]) : null;
+    this.material.uniforms.biomeMode.value = color ? 1 : 0;
+    if (color && this.world && this.corners && this.tintTexture && this.cornerTintTexture) {
+      const tint = this.tintValues, out = this.cornerTintValues, surface = this.world.surface;
+      const wet = (id: number): boolean => this.world!.water.bodyIds[id] !== 0;
+      const count = this.world.stats.regionCount;
+      for (let id = 0; id < count; id++) {
+        const rgb = color(id);
+        for (let c = 0; c < 3; c++) tint[id * 4 + c] = rgb[c] / 255;
       }
-      // Display-only softening: each dry region mixes half of its dry neighbors' mean
-      // color so 110 km region edges read as transitions. Classes are unchanged.
-      const surface = this.world!.surface, own = tint.slice();
-      for (let id = 0; id < normals.biome.length; id++) {
-        if (normals.biome[id] === 0) continue;
-        let r = 0, g = 0, b = 0, count = 0;
-        for (let k = surface.neighborOffsets[id]; k < surface.neighborOffsets[id + 1]; k++) {
-          const j = surface.neighbors[k];
-          if (normals.biome[j] === 0) continue;
-          r += own[j * 4]; g += own[j * 4 + 1]; b += own[j * 4 + 2]; count++;
+      if (layer === 'biome' || layer === 'vegetationState') {
+        // Display-only softening: each dry region mixes half of its dry neighbors' mean
+        // color so 110 km region edges read as transitions. Classes are unchanged.
+        const own = tint.slice();
+        for (let id = 0; id < count; id++) {
+          if (wet(id)) continue;
+          let r = 0, g = 0, b = 0, n = 0;
+          for (let k = surface.neighborOffsets[id]; k < surface.neighborOffsets[id + 1]; k++) {
+            const j = surface.neighbors[k];
+            if (wet(j)) continue;
+            r += own[j * 4]; g += own[j * 4 + 1]; b += own[j * 4 + 2]; n++;
+          }
+          if (n) { tint[id * 4] = .5 * own[id * 4] + .5 * r / n; tint[id * 4 + 1] = .5 * own[id * 4 + 1] + .5 * g / n; tint[id * 4 + 2] = .5 * own[id * 4 + 2] + .5 * b / n; }
         }
-        if (count) { tint[id * 4] = .5 * own[id * 4] + .5 * r / count; tint[id * 4 + 1] = .5 * own[id * 4 + 1] + .5 * g / count; tint[id * 4 + 2] = .5 * own[id * 4 + 2] + .5 * b / count; }
       }
       // Water regions borrow their dry neighbors' mean so interpolated shores do not darken.
-      for (let id = 0; id < normals.biome.length; id++) {
-        if (normals.biome[id] !== 0) continue;
-        let r = 0, g = 0, b = 0, count = 0;
+      for (let id = 0; id < count; id++) {
+        if (!wet(id)) continue;
+        let r = 0, g = 0, b = 0, n = 0;
         for (let k = surface.neighborOffsets[id]; k < surface.neighborOffsets[id + 1]; k++) {
           const j = surface.neighbors[k];
-          if (normals.biome[j] === 0) continue;
-          r += tint[j * 4]; g += tint[j * 4 + 1]; b += tint[j * 4 + 2]; count++;
+          if (wet(j)) continue;
+          r += tint[j * 4]; g += tint[j * 4 + 1]; b += tint[j * 4 + 2]; n++;
         }
-        if (count) { tint[id * 4] = r / count; tint[id * 4 + 1] = g / count; tint[id * 4 + 2] = b / count; }
+        if (n) { tint[id * 4] = r / n; tint[id * 4 + 1] = g / n; tint[id * 4 + 2] = b / n; }
       }
       const { offsets, regions } = this.corners;
       for (let k = 0; k + 1 < offsets.length; k++) {
-        let r = 0, g = 0, b = 0, count = 0;
+        let r = 0, g = 0, b = 0, n = 0;
         for (const dryOnly of [true, false]) {
           for (let j = offsets[k]; j < offsets[k + 1]; j++) {
             const id = regions[j];
-            if (dryOnly && normals.biome[id] === 0) continue;
-            r += tint[id * 4]; g += tint[id * 4 + 1]; b += tint[id * 4 + 2]; count++;
+            if (dryOnly && wet(id)) continue;
+            r += tint[id * 4]; g += tint[id * 4 + 1]; b += tint[id * 4 + 2]; n++;
           }
-          if (count) break;
+          if (n) break;
         }
-        out[k * 4] = r / count; out[k * 4 + 1] = g / count; out[k * 4 + 2] = b / count;
+        out[k * 4] = r / n; out[k * 4 + 1] = g / n; out[k * 4 + 2] = b / n;
       }
       this.tintTexture.needsUpdate = true; this.cornerTintTexture.needsUpdate = true;
     }
-    this.material.uniforms.biomeMode.value = this.layer === 'biome' && normals ? 1 : 0;
     this.refreshField();
   }
   setWindNormals(normals: WindNormals | null): void {
@@ -590,7 +627,6 @@ export class SurfaceMap {
     this.canvas.dataset.activeLayer = layer;
     this.notifyNavigation();
     this.material.uniforms.surfaceMode.value = surfaceLike(layer) ? 1 : 0;
-    this.material.uniforms.biomeMode.value = layer === 'biome' && this.climateNormals ? 1 : 0;
     this.material.uniforms.precipitationMode.value = layer === 'annualPrecipitation' ? 1 : 0;
     this.material.uniforms.temperatureMode.value = layer === 'temperature' ? 1 : 0;
     this.material.uniforms.windMode.value = layer === 'windSpeed' ? 1 : 0;
@@ -605,7 +641,7 @@ export class SurfaceMap {
       view.children[3].visible = surfaceLike(layer);
       view.children[4].visible = surfaceLike(layer) && this.boundaries;
     }
-    this.refreshField();
+    this.applyTint();
   }
   refreshField(): void {
     if (!this.world || !this.texture) return;

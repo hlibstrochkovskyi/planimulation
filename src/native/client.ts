@@ -12,6 +12,8 @@ import { DEFAULT_TEMPERATURE_SETTINGS, TEMPERATURE_DAYS_PER_YEAR, TEMPERATURE_MO
 import type { TemperatureNormals } from '../core/seasonal-temperature';
 import { BIOMES, CLIMATE_MODEL_VERSION } from '../core/climate-normals';
 import type { ClimateNormals } from '../core/climate-normals';
+import { DEFAULT_VEGETATION_SETTINGS, VEGETATION_MAX_YEARS, VEGETATION_MAX_YEARS_PER_REQUEST, VEGETATION_MODEL_VERSION } from '../core/vegetation';
+import type { VegetationFrame, VegetationRegionYear, VegetationSeries } from '../core/vegetation';
 import { DEFAULT_WIND_SETTINGS, WIND_MODEL_VERSION } from '../core/seasonal-wind';
 import type { WindNormals } from '../core/seasonal-wind';
 import { decodeSeasonalMoisture } from './seasonal-moisture';
@@ -66,7 +68,7 @@ export class FrameReader {
         if (!h || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0
           || h.byteLength > (checkpoint ? MAX_SEASONAL_CHECKPOINT_BYTES : MAX_BYTES)
           || (seasonal ? h.protocol !== seasonal.protocol : (h.protocol !== 9 && h.protocol !== 10)
-            || !['world', 'frame', 'water', 'temperature', 'wind', 'climate', 'checkpoint', 'error'].includes(h.kind))) throw new Error('Invalid native protocol header.');
+            || !['world', 'frame', 'water', 'temperature', 'wind', 'climate', 'vegetation', 'vegetationSeries', 'checkpoint', 'error'].includes(h.kind))) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
       if (this.length < this.header.byteLength) return;
@@ -294,6 +296,61 @@ export function decodeClimateNormals(packet: Packet, count: number, epoch: numbe
     annualPrecipitationMm, driestMonthMm, zonalPrecipitationMm, moistureSupply, lift, biome };
 }
 
+function sameSettings(value: unknown, expected: Record<string, number>): boolean {
+  if (typeof value !== 'object' || value === null) return false;
+  const entries = Object.entries(value as Record<string, unknown>);
+  return entries.length === Object.keys(expected).length && entries.every(([key, v]) => expected[key] === v);
+}
+
+export function decodeVegetation(packet: Packet, count: number, epoch: number): VegetationFrame {
+  const { header, bytes } = packet;
+  const year = header.year as number;
+  if (header.kind !== 'vegetation' || header.protocol !== 9 || header.vegetationModelVersion !== VEGETATION_MODEL_VERSION
+    || header.climateModelVersion !== CLIMATE_MODEL_VERSION || header.regionCount !== count || !Number.isSafeInteger(count) || count < 1
+    || !Number.isSafeInteger(year) || year < 0 || year > VEGETATION_MAX_YEARS || bytes.length !== count * 60 + year * 40
+    || !sameSettings(header.settings, DEFAULT_VEGETATION_SETTINGS)) {
+    throw new Error('Invalid native vegetation metadata.');
+  }
+  let offset = 0;
+  const next = (length: number): Float64Array => { const field = floats(bytes.subarray(offset, offset + length * 8)); offset += length * 8; return field; };
+  const woody = next(count), herb = next(count), precipitationFactor = next(count), rootMoisture = next(count),
+    establishedCover = next(count), woodyCapacity = next(count), coverCapacity = next(count);
+  const label = new Uint32Array(count);
+  for (let i = 0; i < count; i++) label[i] = bytes.readUInt32LE(offset + i * 4);
+  offset += count * 4;
+  const fraction = (v: number): boolean => v >= 0 && v <= 1 + 1e-12;
+  for (let i = 0; i < count; i++) {
+    if (!fraction(woody[i]) || !fraction(herb[i]) || woody[i] + herb[i] > 1 + 1e-9 || !fraction(establishedCover[i])
+      || !fraction(woodyCapacity[i]) || !fraction(coverCapacity[i]) || !(precipitationFactor[i] > 0) || !(rootMoisture[i] > 0)
+      || label[i] >= BIOMES.length) throw new Error('Invalid native vegetation values.');
+  }
+  const summary = next(year * 5), summaries = [];
+  for (let y = 0; y < year; y++) {
+    const [factor, woodyCover, totalCover, forestShare, labelChanges] = summary.subarray(y * 5, y * 5 + 5);
+    if (!(factor > 0) || !fraction(woodyCover) || !fraction(totalCover) || !fraction(forestShare)
+      || !Number.isSafeInteger(labelChanges) || labelChanges < 0 || labelChanges > count) throw new Error('Invalid native vegetation summary.');
+    summaries.push({ precipitationFactor: factor, woodyCover, totalCover, forestShare, labelChanges });
+  }
+  return { epoch, modelVersion: VEGETATION_MODEL_VERSION, year, woody, herb, precipitationFactor, rootMoisture,
+    establishedCover, woodyCapacity, coverCapacity, label, summaries };
+}
+
+export function decodeVegetationSeries(packet: Packet, region: number, year: number, epoch: number): VegetationSeries {
+  const { header, bytes } = packet;
+  if (header.kind !== 'vegetationSeries' || header.protocol !== 9 || header.vegetationModelVersion !== VEGETATION_MODEL_VERSION
+    || header.region !== region || header.year !== year || bytes.length !== (year + 1) * 64) {
+    throw new Error('Invalid native vegetation series.');
+  }
+  const values = floats(bytes), years: VegetationRegionYear[] = [];
+  for (let y = 0; y <= year; y++) {
+    const [precipitationFactor, rootMoisture, establishedCover, woody, herb, woodyCapacity, coverCapacity, label] = values.subarray(y * 8, y * 8 + 8);
+    if (!(precipitationFactor > 0) || !(rootMoisture > 0) || woody < 0 || herb < 0 || woody + herb > 1 + 1e-9
+      || !Number.isInteger(label) || label < 0 || label >= BIOMES.length) throw new Error('Invalid native vegetation series values.');
+    years.push({ precipitationFactor, rootMoisture, establishedCover, woody, herb, woodyCapacity, coverCapacity, label });
+  }
+  return { epoch, region, years };
+}
+
 export function decodeSeasonalTemperature(packet: Packet, count: number, epoch: number): TemperatureNormals {
   const { header, bytes } = packet;
   const settings = header.settings;
@@ -378,6 +435,7 @@ export class NativeController {
   private epoch = 0;
   private count = 0;
   private tick = 0;
+  private vegetationYear = 0;
   private waterStep = 0;
   private moistureSeconds = 0;
   private moistureInitialized = false;
@@ -495,7 +553,7 @@ export class NativeController {
     this.revision++;
     this.active?.close(); this.active = this.candidate; this.candidate = null;
     this.activeWorld = this.preparedWorld; this.preparedWorld = null;
-    this.epoch = epoch; this.count = this.prepared.count; this.tick = 0;
+    this.epoch = epoch; this.count = this.prepared.count; this.tick = 0; this.vegetationYear = 0;
     this.waterStep = this.prepared.waterStep;
     const moisture = this.prepared.moistureFrame; this.soilFrame = this.prepared.soilMoistureFrame; this.prepared = null;
     this.moistureSeconds = this.soilFrame?.elapsedSeconds ?? moisture?.elapsedSeconds ?? 0;
@@ -539,6 +597,35 @@ export class NativeController {
     const packet = await session.request({ command: 'climateNormals' });
     if (this.active !== session || this.epoch !== epoch) throw new Error('Stale climate-normal response.');
     try { return decodeClimateNormals(packet, this.count, epoch); }
+    catch (error) { session.close(); throw error; }
+  }
+  async initializeVegetation(epoch: number): Promise<VegetationFrame> {
+    return this.requestVegetation(epoch, { command: 'initializeVegetation' });
+  }
+  async advanceVegetation(epoch: number, years: number): Promise<VegetationFrame> {
+    if (!Number.isInteger(years) || years < 1 || years > VEGETATION_MAX_YEARS_PER_REQUEST) {
+      throw new Error(`Vegetation accepts 1–${VEGETATION_MAX_YEARS_PER_REQUEST} years per request.`);
+    }
+    return this.requestVegetation(epoch, { command: 'advanceVegetation', years });
+  }
+  private async requestVegetation(epoch: number, command: Record<string, unknown>): Promise<VegetationFrame> {
+    if (!this.active || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    const session = this.active;
+    const packet = await session.request(command);
+    if (this.active !== session || this.epoch !== epoch) throw new Error('Stale vegetation response.');
+    try {
+      const frame = decodeVegetation(packet, this.count, epoch);
+      this.vegetationYear = frame.year;
+      return frame;
+    } catch (error) { session.close(); throw error; }
+  }
+  async vegetationSeries(epoch: number, region: number): Promise<VegetationSeries> {
+    if (!this.active || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    if (!Number.isInteger(region) || region < 0 || region >= this.count) throw new Error('Vegetation region is outside the world.');
+    const session = this.active, year = this.vegetationYear;
+    const packet = await session.request({ command: 'vegetationSeries', region });
+    if (this.active !== session || this.epoch !== epoch) throw new Error('Stale vegetation series.');
+    try { return decodeVegetationSeries(packet, region, year, epoch); }
     catch (error) { session.close(); throw error; }
   }
   async seasonalWind(epoch: number): Promise<WindNormals> {

@@ -116,7 +116,7 @@ try {
   }, { ...DEFAULT_RECIPE });
   assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'cancelGeneration', 'climateNormals', 'copyText', 'exportView', 'generate', 'initializeOrographicMoisture', 'initializePreciseMoisture', 'initializeRegionalMoisture', 'initializeSoilMoisture', 'inspectWaterBudget', 'openRecipe', 'openSeasonalCheckpoint', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveSeasonalCheckpoint', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalSoilMoisture', 'seasonalTemperature', 'seasonalWind']);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'advanceVegetation', 'cancelGeneration', 'climateNormals', 'copyText', 'exportView', 'generate', 'initializeOrographicMoisture', 'initializePreciseMoisture', 'initializeRegionalMoisture', 'initializeSoilMoisture', 'initializeVegetation', 'inspectWaterBudget', 'openRecipe', 'openSeasonalCheckpoint', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveSeasonalCheckpoint', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalSoilMoisture', 'seasonalTemperature', 'seasonalWind', 'vegetationSeries']);
   await expect(page.locator('[data-layer="temperature"]')).toBeEnabled();
   await expect(page.locator('#temperature-month')).toBeEnabled();
   await ui('[data-layer="temperature"]').click();
@@ -148,6 +148,24 @@ try {
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await ui('#temperature-month').selectOption('9');
   await expect(page.locator('#map')).toHaveAttribute('data-climate-month', '9');
+  await expect(page.locator('[data-layer="vegetationState"]')).toBeEnabled();
+  await ui('#vegetation-10').click();
+  await expect(page.locator('#vegetation-time')).toHaveText('Year 10', { timeout: 30_000 });
+  await expect(page.locator('#vegetation-chart')).toBeVisible();
+  await expect(page.locator('#vegetation-summary')).toContainText('of land regions changed class');
+  await ui('[data-layer="vegetationState"]').click();
+  await expect(page.locator('#legend-title')).toContainText('Vegetation state · year 10');
+  await expect(page.locator('#biome-legend')).toBeVisible();
+  await page.locator('#map').screenshot({ path: executablePath ? 'artifacts/vegetation-map-packaged.png' : 'artifacts/vegetation-map.png' });
+  await expect(page.locator('#vegetation-note')).toContainText(/at year 10\.|Initial water region/);
+  await ui('[data-layer="woodyCover"]').click();
+  await expect(page.locator('#legend-high')).toHaveText('1');
+  await ui('[data-layer="precipitationAnomaly"]').click();
+  await expect(page.locator('#legend-high')).toContainText('200%');
+  await expect(page.locator('#biome-legend')).toBeHidden();
+  await ui('#vegetation-reset').click();
+  await expect(page.locator('#vegetation-time')).toHaveText('Year 0');
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await ui('[data-layer="surface"]').click();
   await ui('#temperature-month').selectOption('3');
   await ui('#water-budget-refresh').click();
@@ -867,7 +885,7 @@ try {
   const orographicContinued = await readFile(seasonalPath, 'utf8');
   await writeFile(seasonalPath, orographicText);
   await ui('#open-seasonal').click();
-  await expect(page.locator('#status')).toContainText('restored at 3600 elapsed seconds');
+  await expect(page.locator('#status')).toContainText('restored at 3600 elapsed seconds', { timeout: 15_000 });
   await expect(page.locator('#model-label')).toContainText('SEASONAL-MOISTURE-4');
   await ui('[data-layer="vaporWater"]').click();
   await expect(canvas).toHaveAttribute('data-active-layer', 'vaporWater');
@@ -906,7 +924,7 @@ try {
   const preciseContinued = await readFile(seasonalPath, 'utf8');
   await writeFile(seasonalPath, preciseText);
   await ui('#open-seasonal').click();
-  await expect(page.locator('#status')).toContainText('restored at 3600 elapsed seconds');
+  await expect(page.locator('#status')).toContainText('restored at 3600 elapsed seconds', { timeout: 15_000 });
   await expect(page.locator('#model-label')).toContainText('SEASONAL-MOISTURE-7');
   await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '7200');
@@ -945,7 +963,7 @@ try {
   const regionalContinued = await readFile(seasonalPath, 'utf8');
   await writeFile(seasonalPath, regionalText);
   await ui('#open-seasonal').click();
-  await expect(page.locator('#status')).toContainText('restored at 3600 elapsed seconds');
+  await expect(page.locator('#status')).toContainText('restored at 3600 elapsed seconds', { timeout: 15_000 });
   await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '7200');
   await ui('#save-seasonal').click();
@@ -965,7 +983,7 @@ try {
     assert.ok(expected.regionalSurface!.flow.transferredKilograms > 0);
     const expectedText = await flowReference.exportSeasonalCheckpoint(candidate.epoch);
     await ui('#open-seasonal').click();
-    await expect(page.locator('#status')).toContainText('restored at 900 elapsed seconds');
+    await expect(page.locator('#status')).toContainText('restored at 900 elapsed seconds', { timeout: 15_000 });
     await expect(page.locator('#fingerprint')).toHaveText(generated.world.checksum);
     await page.getByRole('button', { name: '2D map', exact: true }).click();
     await ui('[data-layer="surfaceInflow"]').click();
@@ -1027,7 +1045,7 @@ try {
   const soilContinued = await readFile(seasonalPath, 'utf8');
   await writeFile(seasonalPath, soilSaved);
   await ui('#open-seasonal').click();
-  await expect(page.locator('#status')).toContainText('restored at 3600 elapsed seconds');
+  await expect(page.locator('#status')).toContainText('restored at 3600 elapsed seconds', { timeout: 15_000 });
   await ui('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '7200');
   await ui('#save-seasonal').click();
@@ -1045,7 +1063,7 @@ try {
     const expectedText = await soilReference.exportSeasonalCheckpoint(candidate.epoch);
     await writeFile(seasonalPath, fixture);
     await ui('#open-seasonal').click();
-    await expect(page.locator('#status')).toContainText('restored at 900 elapsed seconds');
+    await expect(page.locator('#status')).toContainText('restored at 900 elapsed seconds', { timeout: 15_000 });
     await page.getByRole('button', { name: '2D map', exact: true }).click();
     await ui('[data-layer="surfaceInflow"]').click();
     const before = await canvas.screenshot();

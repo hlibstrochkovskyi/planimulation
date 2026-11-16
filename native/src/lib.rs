@@ -532,5 +532,6 @@ pub mod terrain_patch_facets;
 pub mod terrain_patch_geometry;
 pub mod terrain_patch_landscape;
 pub mod terrain_preparation;
+pub mod vegetation;
 pub mod water;
 pub mod wire;

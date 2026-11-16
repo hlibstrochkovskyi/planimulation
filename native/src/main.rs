@@ -1,5 +1,6 @@
 use planimulation_core::{
     Recipe, World,
+    climate_normals::Normals as ClimateNormals,
     exact_initial_accounting::exact_units,
     prescribed_water_inventory::{Checkpoint, PrescribedWaterInventory},
     seasonal_moisture::{
@@ -7,6 +8,7 @@ use planimulation_core::{
     },
     seasonal_temperature::{Normals, Settings},
     seasonal_wind::{Normals as WindNormals, Settings as WindSettings},
+    vegetation::{Model as VegetationModel, State as VegetationState},
     wire,
 };
 use serde::Deserialize;
@@ -35,6 +37,13 @@ enum Command {
     SeasonalTemperature,
     SeasonalWind,
     ClimateNormals,
+    InitializeVegetation,
+    AdvanceVegetation {
+        years: u32,
+    },
+    VegetationSeries {
+        region: usize,
+    },
     SeasonalMoisture {
         seconds: u32,
     },
@@ -86,6 +95,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut world: Option<World> = None;
     let mut water_state: Option<PrescribedWaterInventory> = None;
     let mut moisture_state: Option<SeasonalSession> = None;
+    let mut vegetation: Option<(VegetationModel, VegetationState)> = None;
+    // Climate normals of the current world, shared by the biome layers and vegetation.
+    let mut climate: Option<ClimateNormals> = None;
     loop {
         let mut line = Vec::new();
         let count = input
@@ -115,10 +127,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     world = Some(next);
                     water_state = None;
                     moisture_state = None;
+                    vegetation = None;
+                    climate = None;
                 }
                 Command::Advance { steps } => {
                     let w = world.as_mut().ok_or("Generate a world first.")?;
                     w.advance(steps)?;
+                    climate = None;
                     wire::frame(&mut output, w).map_err(|e| e.to_string())?;
                 }
                 Command::SeasonalTemperature => {
@@ -128,8 +143,42 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 Command::ClimateNormals => {
                     let w = world.as_ref().ok_or("Generate a world first.")?;
-                    let normals = planimulation_core::climate_normals::Normals::from_world(w)?;
-                    wire::climate_normals(&mut output, &normals).map_err(|e| e.to_string())?;
+                    if climate.is_none() {
+                        climate = Some(ClimateNormals::from_world(w)?);
+                    }
+                    let normals = climate
+                        .as_ref()
+                        .expect("climate normals were just computed");
+                    wire::climate_normals(&mut output, normals).map_err(|e| e.to_string())?;
+                }
+                Command::InitializeVegetation => {
+                    let w = world.as_ref().ok_or("Generate a world first.")?;
+                    if climate.is_none() {
+                        climate = Some(ClimateNormals::from_world(w)?);
+                    }
+                    let normals = climate
+                        .as_ref()
+                        .expect("climate normals were just computed");
+                    let (model, state) = VegetationModel::new(w, normals, Default::default())?;
+                    wire::vegetation(&mut output, &model, &state).map_err(|e| e.to_string())?;
+                    vegetation = Some((model, state));
+                }
+                Command::AdvanceVegetation { years } => {
+                    let (model, state) = vegetation
+                        .as_mut()
+                        .ok_or("Initialize vegetation before advancing it.")?;
+                    let mut next = state.clone();
+                    model.advance(&mut next, years)?;
+                    *state = next;
+                    wire::vegetation(&mut output, model, state).map_err(|e| e.to_string())?;
+                }
+                Command::VegetationSeries { region } => {
+                    let (model, state) = vegetation
+                        .as_ref()
+                        .ok_or("Initialize vegetation before inspecting it.")?;
+                    let series = model.region_series(state, region)?;
+                    wire::vegetation_series(&mut output, region, &series)
+                        .map_err(|e| e.to_string())?;
                 }
                 Command::SeasonalWind => {
                     let w = world.as_ref().ok_or("Generate a world first.")?;
