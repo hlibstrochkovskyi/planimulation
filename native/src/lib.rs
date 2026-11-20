@@ -511,6 +511,7 @@ pub mod prescribed_water_inventory;
 pub mod relief_spectrum;
 pub mod reservoir;
 pub mod reservoir_pair;
+pub mod rivers;
 pub mod runoff_transport;
 pub mod seasonal_moisture;
 pub mod seasonal_temperature;

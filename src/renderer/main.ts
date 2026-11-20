@@ -23,6 +23,8 @@ import { MOISTURE_LAYERS, isMoistureLayer, supportsMoistureLayer, moistureLayerT
 import { soilWaterInspection } from './soil-water-inspector';
 import { BIOMES, aridityThreshold } from '../core/climate-normals';
 import type { ClimateNormals } from '../core/climate-normals';
+import { RIVER_CLASSES } from '../core/rivers';
+import type { Rivers } from '../core/rivers';
 import { CHANGE_YEARS, COVER_ARIDITY, DEFAULT_VEGETATION_SETTINGS, FOREST_COVER, MINIMUM_REFERENCE_COVER, OPEN_COVER, VARIABILITY_PRECIPITATION_MM, WOODY_ARIDITY, miami } from '../core/vegetation';
 import type { VegetationFrame, VegetationSeries } from '../core/vegetation';
 
@@ -71,6 +73,7 @@ element('biome-legend').replaceChildren(...BIOMES.slice(1).map(({ name, color })
   const item = document.createElement('span'), swatch = document.createElement('i');
   swatch.style.background = `rgb(${color.join(',')})`; item.append(swatch, name); return item;
 }));
+const riverLayerButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-layer="annualRunoff"], [data-layer="riverDischarge"]')];
 const vegetationLayerButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-layer="vegetationState"], [data-layer="woodyCover"], [data-layer="woodyChange"], [data-layer="productivity"], [data-layer="precipitationAnomaly"]')];
 const vegetationButtons = ([[1, 'vegetation-1'], [10, 'vegetation-10'], [100, 'vegetation-100']] as const).map(([years, id]) => ({ years, button: element<HTMLButtonElement>(id) }));
 const vegetationReset = element<HTMLButtonElement>('vegetation-reset');
@@ -93,6 +96,7 @@ let waterBudget: WaterBudget | null = null;
 let temperatureNormals: TemperatureNormals | null = null;
 let windNormals: WindNormals | null = null;
 let climateNormals: ClimateNormals | null = null;
+let rivers: Rivers | null = null;
 let vegetation: VegetationFrame | null = null;
 let vegetationSeries: VegetationSeries | null = null;
 let vegetationBusy = false;
@@ -405,6 +409,37 @@ async function refreshWaterBudget(): Promise<void> {
   }
 }
 
+function riverRows(frame: Rivers, id: number, bodyId: number, staticOutlet: number): [string, string][] {
+  const monthly = frame.monthlyDischarge.subarray(id * frame.monthDays.length, (id + 1) * frame.monthDays.length);
+  const low = Math.min(...monthly), high = Math.max(...monthly);
+  const flow = (value: number): string => `${value.toLocaleString('en', { maximumFractionDigits: 2 })} m³/s`;
+  const mm = (value: number): string => `${number.format(value)} mm/year`;
+  const rows: [string, string][] = [['Potential evapotranspiration (PET)', mm(frame.pet[id])]];
+  if (!bodyId) rows.push(
+    ['Actual evapotranspiration (AET)', mm(frame.aet[id])],
+    ['Land runoff', mm(frame.runoff[id])],
+  );
+  const lake = frame.lakes.get(staticOutlet);
+  rows.push(
+    ['Mean river discharge', flow(frame.meanDischarge[id])],
+    ['Minimum monthly discharge', `${flow(low)} · month ${monthly.indexOf(low) + 1}`],
+    ['Maximum monthly discharge', `${flow(high)} · month ${monthly.indexOf(high) + 1}`],
+    ['River class', RIVER_CLASSES[frame.class[id]]],
+    ['Downstream terminal', frame.terminal[id] === frame.oceanTerminal ? 'Ocean' : `Endorheic basin at region ${number.format(frame.terminal[id])}`],
+  );
+  if (lake && (id === staticOutlet || bodyId !== 0)) {
+    const km3 = (value: number): string => `${(value / 1e9).toLocaleString('en', { maximumFractionDigits: 3 })} km³/year`;
+    rows.push(
+      ['Terminal lake area', `${number.format(lake.area / 1e6)} km² · ${bodyId ? 'initial water body' : 'effective evaporation area'}`],
+      ['Terminal lake inflow', `${km3(lake.inflow)} · direct precipitation ${km3(lake.precipitation)}`],
+      ['Terminal lake evaporation', `${km3(lake.evaporation)} · capacity ${km3(lake.potentialEvaporation)}`],
+      ['Terminal lake spill', lake.spill > 0 ? `${km3(lake.spill)} · outlet ${lake.outlet!.join(' → ')} at ${number.format(lake.sillElevation)} m` : 'Closed'],
+    );
+    if (lake.storage > 0) rows.push(['Terminal lake accumulation', km3(lake.storage)]);
+  }
+  return rows;
+}
+
 function inspect(id: number, preserveBasin = false): void {
   if (!world) return;
   selected = id;
@@ -445,6 +480,7 @@ function inspect(id: number, preserveBasin = false): void {
       ['Moisture supply', `${(climateNormals.moistureSupply[id] * 100).toFixed(0)}% of zonal potential`],
       ['Windward lift', `×${climateNormals.lift[id].toFixed(2)}`],
     ] : []),
+    ...(rivers ? riverRows(rivers, id, world.water.bodyIds[id], world.drainage.outlets[id]) : []),
     ...(vegetation ? [
       ['Vegetation state', `${BIOMES[vegetation.label[id]].name} · year ${vegetation.year}`],
       ['Woody / herb cover', `${vegetation.woody[id].toFixed(2)} / ${vegetation.herb[id].toFixed(2)}`],
@@ -601,6 +637,8 @@ function updateLegend(): void {
       `${number.format(temperatureRange.minimum)} °C`, `${number.format(temperatureRange.maximum)} °C`],
     biome: ['Biomes · climate classes from prescribed normals, not simulated vegetation', '', ''],
     annualPrecipitation: ['Annual precipitation · prescribed estimate, not the seasonal-water budget · logarithmic', '0 mm', '≥4,000 mm'],
+    annualRunoff: ['Runoff generated locally from climate normals · annual depth', '0 mm/year', '≥1,000 mm/year'],
+    riverDischarge: ['Mean river discharge · log scale · thinner lines show seasonal rivers', '0 m³/s', '≥100,000 m³/s'],
     vegetationState: [`Vegetation state · year ${vegetation?.year ?? 0} · accumulated cover with hysteresis; same class colors as Biomes`, '', ''],
     woodyCover: [`Woody cover · year ${vegetation?.year ?? 0} · fraction of the region under woody plants`, '0', '1'],
     woodyChange: [`Woody change · years ${Math.max(0, (vegetation?.year ?? 0) - CHANGE_YEARS)}–${vegetation?.year ?? 0} · drought losses and regrowth`, '−0.3', '+0.3'],
@@ -623,6 +661,8 @@ function updateLegend(): void {
   element('legend-gradient').classList.toggle('anomaly-gradient', currentLayer === 'precipitationAnomaly');
   element('legend-gradient').classList.toggle('change-gradient', currentLayer === 'woodyChange');
   element('legend-gradient').classList.toggle('productivity-gradient', currentLayer === 'productivity');
+  element('legend-gradient').classList.toggle('runoff-gradient', currentLayer === 'annualRunoff');
+  element('legend-gradient').classList.toggle('discharge-gradient', currentLayer === 'riverDischarge');
   element('legend-gradient').classList.toggle('precipitation-gradient', currentLayer === 'annualPrecipitation');
   element('boundary-legend').hidden = !plateLayer;
   element('legend-gradient').classList.toggle('water-gradient', currentLayer === 'depth');
@@ -895,6 +935,9 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
     moistureFrame = restoredMoisture;
     map.setMoistureFrame(moistureFrame); renderMoisture();
     temperatureNormals = null; windNormals = null; climateNormals = null;
+    rivers = null;
+    element('rivers-summary').textContent = 'Rivers: waiting for climate normals.';
+    for (const button of riverLayerButtons) button.disabled = true;
     vegetation = null; vegetationSeries = null; vegetationBusy = false; map.setVegetation(null);
     for (const button of [...climateLayerButtons, ...vegetationLayerButtons]) button.disabled = true;
     renderVegetation();
@@ -1014,7 +1057,29 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
       climateError = error instanceof Error ? error.message : String(error);
       element('climate-note').textContent = `Climate normals or vegetation unavailable: ${climateError}`;
     }
+    if (climateNormals) {
+      showStatus('Routing climate-normal runoff in the native core…');
+      try {
+        const analysis = await api.rivers(epoch);
+        if (request !== generationId || analysis.epoch !== epoch) return;
+        map.setRivers(analysis); rivers = analysis;
+        for (const button of riverLayerButtons) button.disabled = false;
+        const { landRunoff, landRunoffToOcean, landRunoffToEndorheic, landRunoffEvaporatedInSpillingLakes, endorheicArea, landArea } = analysis.totals;
+        const percent = (fraction: number): string => `${(fraction * 100).toFixed(1)}%`;
+        const fate = landRunoff > 0
+          ? `${percent(landRunoffToOcean / landRunoff)} of land runoff reaches the ocean · ${percent(landRunoffToEndorheic / landRunoff)} ends in closed basins · ${percent(landRunoffEvaporatedInSpillingLakes / landRunoff)} evaporates in overflowing lakes`
+          : 'no land runoff';
+        element('rivers-summary').textContent = `Rivers: ${fate} · ${percent(landArea > 0 ? endorheicArea / landArea : 0)} of dry land drains to closed basins.`;
+        if (selected !== null) inspect(selected, true);
+      } catch (error) {
+        if (request !== generationId) return;
+        element('rivers-summary').textContent = `Rivers unavailable: ${error instanceof Error ? error.message : String(error)}`;
+      }
+    } else {
+      element('rivers-summary').textContent = 'Rivers unavailable without climate normals.';
+    }
     if ((currentLayer === 'temperature' && !temperatureNormals) || (currentLayer === 'windSpeed' && !windNormals)
+      || ((currentLayer === 'annualRunoff' || currentLayer === 'riverDischarge') && !rivers)
       || ((currentLayer === 'biome' || currentLayer === 'annualPrecipitation') && !climateNormals)
       || (['vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly'].includes(currentLayer) && !vegetation)
       || (isMoistureLayer(currentLayer) && !supportsMoistureLayer(moistureFrame, currentLayer))) {
@@ -1038,6 +1103,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
       temperatureLayerButton.disabled = temperatureNormals === null;
       windLayerButton.disabled = windNormals === null;
       for (const button of climateLayerButtons) button.disabled = climateNormals === null;
+      for (const button of riverLayerButtons) button.disabled = rivers === null;
       for (const button of vegetationLayerButtons) button.disabled = vegetation === null;
       temperatureMonthInput.disabled = temperatureNormals === null && windNormals === null;
       waterBudgetButton.disabled = world === null || budgetBusyEpoch === epoch;

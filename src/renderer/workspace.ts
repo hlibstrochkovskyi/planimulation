@@ -296,6 +296,8 @@ export class Workspace {
       windSpeed: ['wind speed normal', 'wind component', 'Elevation (reference datum)'],
       biome: ['Biome (climate class)', 'Climate annual mean', 'Climate warmest / coldest month', 'Annual precipitation'],
       annualPrecipitation: ['Annual precipitation', 'Zonal precipitation potential', 'Moisture supply', 'Windward lift'],
+      annualRunoff: ['Land runoff', 'evapotranspiration (', 'River class', 'Downstream terminal', 'Terminal lake'],
+      riverDischarge: ['river discharge', 'monthly discharge', 'River class', 'Downstream terminal', 'Terminal lake'],
       vegetationState: ['Vegetation state', 'Biome (climate class)', 'Woody / herb cover', 'Established cover'],
       woodyCover: ['Woody / herb cover', 'Woody capacity', 'Root-zone moisture', 'Vegetation state'],
       woodyChange: ['Woody change, 10 years', 'Woody / herb cover', 'This year\'s precipitation', 'Vegetation state'],

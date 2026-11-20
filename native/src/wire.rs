@@ -282,6 +282,60 @@ pub fn climate_normals(
     )
 }
 
+/// Climate-normal runoff and discharge, including sparse analytical spill records.
+pub fn rivers(out: &mut impl Write, frame: &crate::rivers::Rivers) -> io::Result<()> {
+    let count = frame.runoff_mm.len();
+    let mut bytes =
+        Vec::with_capacity(count * 240 + frame.lakes.len() * 76 + frame.spill_segments.len() * 20);
+    for field in [
+        &frame.pet_mm,
+        &frame.aet_mm,
+        &frame.runoff_mm,
+        &frame.storage_mm,
+        &frame.mean_discharge,
+    ] {
+        f64s(&mut bytes, field.iter().copied());
+    }
+    for field in [&frame.monthly_runoff_mm, &frame.monthly_discharge] {
+        f64s(&mut bytes, field.iter().flatten().copied());
+    }
+    u32s(&mut bytes, &frame.class);
+    u32s(&mut bytes, &frame.terminal);
+    for lake in &frame.lakes {
+        let [from, to] = lake.outlet.unwrap_or([count as u32; 2]);
+        u32s(&mut bytes, &[lake.region, from, to]);
+        f64s(
+            &mut bytes,
+            [
+                lake.sill_elevation,
+                lake.area,
+                lake.inflow,
+                lake.precipitation,
+                lake.potential_evaporation,
+                lake.evaporation,
+                lake.spill,
+                lake.storage,
+            ]
+            .into_iter(),
+        );
+    }
+    for segment in &frame.spill_segments {
+        u32s(&mut bytes, &[segment.from, segment.to, segment.class]);
+        f64s(&mut bytes, std::iter::once(segment.mean_discharge));
+    }
+    send(
+        out,
+        json!({
+            "kind": "rivers", "riverModelVersion": crate::rivers::MODEL_VERSION,
+            "climateModelVersion": crate::climate_normals::MODEL_VERSION,
+            "settings": frame.settings, "monthDays": frame.month_days, "regionCount": count,
+            "oceanTerminal": frame.ocean_terminal, "lakeCount": frame.lakes.len(),
+            "spillSegmentCount": frame.spill_segments.len(), "totals": frame.totals,
+        }),
+        &bytes,
+    )
+}
+
 /// Vegetation display frame: seven per-region f64 fields, labels and the yearly
 /// global summaries.
 pub fn vegetation(

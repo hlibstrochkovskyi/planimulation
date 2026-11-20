@@ -12,6 +12,7 @@ const api: DesktopAPI = {
   advance: (epoch, steps) => ipcRenderer.invoke('world:advance', epoch, steps),
   seasonalTemperature: (epoch) => ipcRenderer.invoke('world:seasonalTemperature', epoch),
   climateNormals: (epoch) => ipcRenderer.invoke('world:climateNormals', epoch),
+  rivers: (epoch) => ipcRenderer.invoke('world:rivers', epoch),
   initializeVegetation: (epoch) => ipcRenderer.invoke('world:initializeVegetation', epoch),
   advanceVegetation: (epoch, years) => ipcRenderer.invoke('world:advanceVegetation', epoch, years),
   vegetationSeries: (epoch, region) => ipcRenderer.invoke('world:vegetationSeries', epoch, region),

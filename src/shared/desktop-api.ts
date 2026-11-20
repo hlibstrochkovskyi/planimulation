@@ -3,6 +3,7 @@ import type { World } from '../core/world';
 import type { CaptureRect } from './capture';
 import type { TemperatureNormals } from '../core/seasonal-temperature';
 import type { ClimateNormals } from '../core/climate-normals';
+import type { Rivers } from '../core/rivers';
 import type { VegetationFrame, VegetationSeries } from '../core/vegetation';
 import type { WindNormals } from '../core/seasonal-wind';
 import type { MoistureFrame } from './seasonal-moisture';
@@ -29,6 +30,7 @@ export interface DesktopAPI {
   advance(epoch: number, steps: number): Promise<DiagnosticFrame>;
   seasonalTemperature(epoch: number): Promise<TemperatureNormals>;
   climateNormals(epoch: number): Promise<ClimateNormals>;
+  rivers(epoch: number): Promise<Rivers>;
   initializeVegetation(epoch: number): Promise<VegetationFrame>;
   advanceVegetation(epoch: number, years: number): Promise<VegetationFrame>;
   vegetationSeries(epoch: number, region: number): Promise<VegetationSeries>;
