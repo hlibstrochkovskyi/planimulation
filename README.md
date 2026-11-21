@@ -32,6 +32,7 @@ The separate [unified regional soil cycle](docs/regional-soil-cycle.md) applies 
 | [Wild food for foragers](docs/wild-food.md) | `wild-food-1`: seasonal plant food, a recovering game stock, year-round forager capacity, lean-season limits and a foraging experiment |
 | [Climate-normal rivers](docs/rivers.md) | `rivers-1`: monthly runoff with snow and soil partition, river discharge along drainage, inland terminal balances and spill, runoff and discharge layers |
 | [Foot traversal](docs/traversal.md) | `traversal-1`: seasonal foot travel costs, least-time travel fields with isochrones, routes on map and globe |
+| [Natural-world ensemble](docs/natural-ensemble.md) | 27 worlds and 15 stress cases over 1,000 years: law checks, distributions, problematic seeds |
 | [Coastal lowlands](docs/coastal-lowlands.md) | Default for new desktop worlds, `multiscale-geography-4`: crust-baseline height compressed toward coasts, unchanged shorelines, hypsometry measurements |
 | [Initial crust](docs/crust.md) | Spherical continentality, area fitting, approximate material properties, and validation |
 | [Explainable elevation](docs/terrain.md) | Elevation contributions, physical-distance propagation, globe relief, and display-only exaggeration |

@@ -275,6 +275,8 @@ The fourth increment, [climate-normal rivers](rivers.md) (`rivers-1`), derives m
 
 The fifth increment, [foot traversal](traversal.md) (`traversal-1`), gives deterministic foot travel costs, least-time fields and routes on the region graph for local summer and winter, from Tobler slope speeds, neighborhood relief, vegetation, snow, static water barriers and a contributing-area proxy for river crossings (`rivers-1` discharge is available to replace it). Summer crossings of the largest landmass average 24.8–27.2 km/day on the three reference worlds, and a least-time field takes under 4 ms at 40,962 regions. Crossing hazards, a calendar for long journeys and group provisions remain open.
 
+The [natural-world ensemble](natural-ensemble.md) runs 27 default worlds and 15 one-factor vegetation stress cases for 1,000 years with climate normals, vegetation and wild food, and records climate-normal runoff. All 294 law checks passed, including 42 independent-rerun hash matches; standard worlds sustain mean forest shares of 21.8–33.0% of land and 12.5–20.7 million year-round foragers, and five seeds are retained as witnesses of local woody recovery longer than a century. The vegetation core now runs in parallel and matches the earlier serial `vegetation-2` reference bit for bit (1,000 years 5.3× faster, region histories 24× faster). The ensemble covers one recipe family; ensembles over other planetary parameters remain open.
+
 Preserve differences between worlds. Checks detect broken laws rather than requiring every planet to have the same forest area.
 
 ## 8. Adding 3D
