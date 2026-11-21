@@ -304,7 +304,8 @@ label span { float: right; color: var(--muted); font-weight: 400; }
 .menu button { display: flex; width: 100%; justify-content: flex-start; background: transparent; border: 0; font-size: 12px; padding: 7px 9px; }
 .display-menu { position: fixed; inset: 87px auto auto auto; margin: 0; width: 310px; padding: 16px; border-radius: 6px; }
 .display-menu h3 { margin-bottom: 14px; }
-.relief-controls label { margin-bottom: 8px; }
+.relief-controls label { margin-bottom: 6px; }
+.relief-controls select + label { margin-top: 12px; }
 .relief-controls .muted, .relief-controls > span { display: block; margin-top: 10px; color: var(--muted); font-size: 11px; }
 @media (forced-colors: active) {
   ::selection { background: Highlight; color: HighlightText; }

@@ -22,7 +22,7 @@ export interface ViewGeometry { positions: Float32Array; regions: Float32Array; 
   waterCornerPairs: Float32Array; waterWeights: Float32Array;
   waterLines: Float32Array; waterLineOffsets: Float32Array }
 /** Shared dual corners and their incident regions, in compressed-row form. */
-export interface ViewCorners { offsets: Uint32Array; regions: Uint32Array }
+export interface ViewCorners { offsets: Uint32Array; regions: Uint32Array; boundaryCorners?: Uint32Array }
 export interface ViewPair { flat: ViewGeometry; globe: ViewGeometry; corners: ViewCorners }
 
 type Weights = readonly [number, number, number];
@@ -129,7 +129,7 @@ export function buildViewGeometry(surface: Surface, tectonics?: Tectonics, eleva
   }
   const cornerOffsets = new Uint32Array(incident.length + 1);
   for (let k = 0; k < incident.length; k++) cornerOffsets[k + 1] = cornerOffsets[k] + incident[k].length;
-  const corners: ViewCorners = { offsets: cornerOffsets, regions: Uint32Array.from(incident.flat()) };
+  const corners: ViewCorners = { offsets: cornerOffsets, regions: Uint32Array.from(incident.flat()), boundaryCorners };
   const radialOffsets: number[] = [], lineOffsets: number[] = [], tectonicOffsets: number[] = [];
   const flat = { positions: [] as number[], regions: [] as number[], lines: [] as number[], cornerPairs: [] as number[], weights: [] as number[], tectonicLines: [] as number[], tectonicColors: [] as number[] };
   const globe = { positions: [] as number[], regions: [] as number[], lines: [] as number[], cornerPairs: [] as number[], weights: [] as number[], tectonicLines: [] as number[], tectonicColors: [] as number[] };
