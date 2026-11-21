@@ -119,8 +119,10 @@ pub struct Terrain {
     pub lowland: Vec<f64>,
     /// Version-5 ocean-floor contribution; zero for other model versions.
     pub seafloor: Vec<f64>,
-    /// Version-5 erosion (negative) and deposition (positive); zero for other model versions.
+    /// Signed version-5 fluvial relief adjustment; zero for other model versions.
     pub erosion: Vec<f64>,
+    /// Version-5 routed sediment thickness; empty for other model versions.
+    pub sediment: Vec<f64>,
     pub elevation: Vec<f64>,
     pub transported_cubic_meters: f64,
     pub applied_passes: u32,
@@ -166,6 +168,7 @@ impl Terrain {
             lowland: vec![0.; n],
             seafloor: vec![0.; n],
             erosion: vec![0.; n],
+            sediment: Vec::new(),
             elevation: Vec::with_capacity(n),
             transported_cubic_meters: 0.,
             applied_passes: 0,

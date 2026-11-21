@@ -563,7 +563,8 @@ function inspect(id: number, preserveBasin = false): void {
     [belts ? 'Dry preparation + filled plains' : 'Dry preparation', world.terrain.preparation[id]],
     ...(world.terrain.lowland ? [['Coastal lowland', world.terrain.lowland[id]] as const] : []),
     ...(world.terrain.seafloor ? [['Ocean floor', world.terrain.seafloor[id]] as const] : []),
-    ...(world.terrain.erosion ? [['Erosion and deposition', world.terrain.erosion[id]] as const] : []), ['Total elevation', world.terrain.elevation[id]]] as const) {
+    ...(world.terrain.erosion ? [['Fluvial relief adjustment', world.terrain.erosion[id]] as const] : []),
+    ...(world.terrain.sediment ? [['Routed sediment', world.terrain.sediment[id]] as const] : []), ['Total elevation', world.terrain.elevation[id]]] as const) {
     const row = document.createElement('li'); row.textContent = `${label}: ${value.toFixed(2)} m`; elevationDetails.append(row);
   }
   element('crust-note').textContent = multiscaleGeography
@@ -577,7 +578,7 @@ function inspect(id: number, preserveBasin = false): void {
     const extra = world.crust.thicknessMeters[id] - (7000 + 28000 * world.crust.continentality[id]);
     element('crust-note').textContent = `Version-1 smooth 3D geographic fields and fixed subdivision-5 reference sphere are retained. Continental potential excess ${interior.toFixed(6)} supplies ${(extra / 1000).toFixed(3)} km of additional initial crust thickness through 15 km × continentality × excess / (excess + 0.25). Density is unchanged. Thickness is bounded by 7–50 km; the common color palette saturates above 35 km. This is an initial continental-interior heuristic, not coast distance, crust age or simulated tectonic thickening.`;
     element('elevation-note').textContent = eroded
-      ? 'Version 4 plus two explicit contributions. Erosion and deposition replace dry land by a steady-state stream-power landscape (uplift balanced by river incision) whose regional mean follows the version-4 bed, so the drainage network carves its own valleys; fluvial relief is damped on low ground. Shorelines do not move. The ocean floor (bathymetry-1) sets depth by seafloor age (GDH1), trenches with outer rises on subducting sides, and wider shelves on passive than on active margins. This is an initial-condition synthesis, not a simulated geological history. Display exaggeration changes no physical field.'
+      ? 'Fluvial relief follows a steady-state stream-power landscape with muted relief on low ground. Routed sediment from incised terrain accumulates on gentle river reaches, at mountain fronts, in closed basins and on submerged delta fronts and shelves. The ocean floor follows seafloor age, subduction trenches and continental margins.'
       : lowlands
       ? `Version-3 crust, mountain belts and filled plains, plus coastal lowlands: dry height above the initial water level that is not belt uplift is scaled by a kept fraction rising smoothly from ${COASTAL_LOWLAND.coast} at the shore to ${COASTAL_LOWLAND.interior} beyond ${COASTAL_LOWLAND.rampKm} km of graph distance from water, a proxy for passive-margin subsidence and coastal-plain sediment. Every dry region stays above the water level, so shorelines do not move. These are procedural initial conditions, not plate history, river erosion or isostasy. Display exaggeration changes no physical field.`
       : belts

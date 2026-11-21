@@ -64,6 +64,7 @@ pub fn arrays(w: &World) -> Vec<u8> {
     if eroded {
         f64s(&mut out, t.seafloor.iter().copied());
         f64s(&mut out, t.erosion.iter().copied());
+        f64s(&mut out, t.sediment.iter().copied());
     }
     f64s(&mut out, t.elevation.iter().copied());
     f64s(
@@ -196,7 +197,12 @@ pub fn snapshot(out: &mut impl Write, w: &World) -> io::Result<()> {
         header["terrainPreparation"] = json!({"appliedPasses":w.terrain.applied_passes,
             "transportedCubicMeters":w.terrain.transported_cubic_meters});
     }
-    send_versioned(out, header, &bytes, if prepared { 10 } else { 9 })
+    if w.sediment_budget.is_some() {
+        header["sedimentModelVersion"] = json!(crate::sediment::MODEL_VERSION);
+        send_versioned(out, header, &bytes, 11)
+    } else {
+        send_versioned(out, header, &bytes, if prepared { 10 } else { 9 })
+    }
 }
 pub fn frame(out: &mut impl Write, w: &World) -> io::Result<()> {
     let mut bytes = Vec::with_capacity(w.field.len() * 8);
