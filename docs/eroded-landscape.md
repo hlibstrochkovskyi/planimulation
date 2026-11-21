@@ -197,7 +197,8 @@ spacing.
 ## Natural ensemble on version 5
 
 `NATURAL_MODEL=multiscale-geography-5 cargo run --release --example natural_ensemble -- --threads 4`
-(subdivision 6, with `bathymetry-1` and the version-5 lowland factors) passed all
+(subdivision 6, commit `82e04e5`: `bathymetry-1` and lowland factors 0.5/0.95, before
+`sediment-1`) passed all
 seven laws in all 27 standard and 15 extreme runs (294 of 294 checks), in 7 min
 16 s. Downstream calibrations hold:
 
