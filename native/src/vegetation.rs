@@ -18,11 +18,12 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
-use std::sync::atomic::{AtomicU32, AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use std::sync::{Condvar, Mutex};
 use std::thread;
 
 pub const MODEL_VERSION: &str = "vegetation-2";
-/// Region histories are replayed over the whole surface, so runs stay short.
+/// The desktop experiment bounds history and checkpoint size.
 pub const MAXIMUM_YEARS: u32 = 2_000;
 pub const MAXIMUM_YEARS_PER_REQUEST: u32 = 1_000;
 /// Aridity ratio (annual precipitation / Köppen threshold) where woody capacity rises
@@ -192,101 +193,155 @@ pub struct RegionYear {
     pub label: u8,
 }
 
-#[derive(Clone, Copy)]
-struct LandMeta {
-    index: usize,
-    area: f64,
+struct Climate {
     precipitation_mm: f64,
     threshold_mm: f64,
-    mean: f64,
     warmest: f64,
-    coldest: f64,
-    driest_mm: f64,
     variability: f64,
-    half_var_sq: f64,
-    miami_temp: f64,
+    half_variance: f64,
+    miami_temperature: f64,
     reference_cover: f64,
-    neighbor_deg: f64,
+    forest: u8,
+    open: u8,
+    desert: u8,
+}
+
+impl Climate {
+    fn aridity(&self, factor: f64) -> f64 {
+        if self.threshold_mm <= 0. {
+            f64::INFINITY
+        } else {
+            self.precipitation_mm * factor / self.threshold_mm
+        }
+    }
+
+    fn woody_capacity(&self, root_moisture: f64) -> f64 {
+        if self.warmest < 10. {
+            0.
+        } else {
+            smoothstep(WOODY_ARIDITY, self.aridity(root_moisture))
+        }
+    }
+
+    fn capacity(&self, factor: f64, root_moisture: f64) -> (f64, f64) {
+        if self.warmest < 0. {
+            return (0., 0.);
+        }
+        let cover = smoothstep(COVER_ARIDITY, self.aridity(factor));
+        if self.warmest < 10. {
+            (0., cover * self.warmest / 10.)
+        } else {
+            (self.woody_capacity(root_moisture), cover)
+        }
+    }
+
+    fn productivity(&self, factor: f64, cover: f64) -> f64 {
+        let mm = self.precipitation_mm * factor;
+        if cover == 0. && mm >= 0. {
+            return cover;
+        }
+        let precipitation = miami_precipitation(mm);
+        self.miami_temperature.min(precipitation) * (cover / self.reference_cover).min(1.)
+    }
+
+    fn label(&self, woody: f64, established: f64, previous: u8) -> u8 {
+        if self.warmest < 10. {
+            return if self.warmest < 0. {
+                Biome::Ice
+            } else {
+                Biome::Tundra
+            } as u8;
+        }
+        let was_forest = is_forest(previous);
+        let forest_limit = if was_forest {
+            FOREST_COVER.1
+        } else {
+            FOREST_COVER.0
+        };
+        let open_limit = if was_forest || is_open(previous) {
+            OPEN_COVER.1
+        } else {
+            OPEN_COVER.0
+        };
+        if woody >= forest_limit {
+            self.forest
+        } else if established >= open_limit {
+            self.open
+        } else {
+            self.desert
+        }
+    }
+}
+
+struct Land {
+    index: usize,
+    area: f64,
+    climate: Climate,
 }
 
 #[derive(Clone, Copy)]
-struct LandDyn {
+struct Cover {
+    woody: f64,
     herb: f64,
     root_moisture: f64,
-    established_cover: f64,
-    woody_change: f64,
-    precipitation_factor: f64,
-    woody_history: [f64; CHANGE_YEARS],
+    established: f64,
     label: u8,
 }
 
-/// Sense-reversing spin barrier with yield fallback to avoid kernel futex latency
-/// on sub-millisecond yearly steps.
-struct SpinBarrier {
-    total: usize,
-    arrived: AtomicUsize,
-    phase: AtomicUsize,
+impl Cover {
+    fn read(state: &State, i: usize) -> Self {
+        Self {
+            woody: state.woody[i],
+            herb: state.herb[i],
+            root_moisture: state.root_moisture[i],
+            established: state.established_cover[i],
+            label: state.label[i],
+        }
+    }
+
+    fn write(self, state: &mut State, i: usize, factor: f64) {
+        state.woody[i] = self.woody;
+        state.herb[i] = self.herb;
+        state.root_moisture[i] = self.root_moisture;
+        state.established_cover[i] = self.established;
+        state.label[i] = self.label;
+        state.precipitation_factor[i] = factor;
+    }
 }
 
-impl SpinBarrier {
-    fn new(total: usize) -> Self {
-        Self {
-            total,
-            arrived: AtomicUsize::new(0),
-            phase: AtomicUsize::new(0),
-        }
-    }
+struct LandState {
+    cover: Cover,
+    factor: f64,
+    woody_change: f64,
+    woody_history: [f64; CHANGE_YEARS],
+}
 
-    #[inline]
-    fn wait(&self) {
-        let phase = self.phase.load(Ordering::Acquire);
-        if self.arrived.fetch_add(1, Ordering::AcqRel) + 1 == self.total {
-            self.arrived.store(0, Ordering::Relaxed);
-            self.phase.store(phase.wrapping_add(1), Ordering::Release);
-        } else {
-            let mut spins = 0u32;
-            while self.phase.load(Ordering::Acquire) == phase {
-                spins += 1;
-                if spins < 2048 {
-                    std::hint::spin_loop();
-                } else {
-                    thread::yield_now();
-                    spins = 0;
-                }
-            }
-        }
-    }
+struct WeightRows {
+    lengths: Vec<u32>,
+    centers: Vec<u16>,
+    weights: Vec<f64>,
+}
+
+struct ReplayChunk<'a> {
+    roots: &'a mut [(usize, f64)],
+    target_series: Option<&'a mut Vec<RegionYear>>,
 }
 
 pub struct Model {
     recipe: Recipe,
     settings: Settings,
     threads: usize,
-    land: Vec<bool>,
-    land_slot: Vec<u32>,
+    // Land entries are in surface order so reductions match the original serial sum.
+    land: Vec<Land>,
+    // Land slots come first, followed by water slots. Public state stays surface-ordered.
+    region_slots: Vec<usize>,
     land_area: f64,
-    land_meta: Vec<LandMeta>,
-    land_weight_offsets: Vec<u32>,
-    land_centers: Vec<u16>,
-    land_weights: Vec<f64>,
-    land_neighbor_offsets: Vec<u32>,
-    land_neighbors: Vec<u32>,
+    water_climate: Vec<Climate>,
     neighbor_offsets: Vec<u32>,
     neighbors: Vec<u32>,
-    precipitation_mm: Vec<f64>,
-    threshold_mm: Vec<f64>,
-    mean: Vec<f64>,
-    warmest: Vec<f64>,
-    coldest: Vec<f64>,
-    driest_mm: Vec<f64>,
-    /// Log-standard deviation of the yearly precipitation factor per region.
-    variability: Vec<f64>,
-    /// Precomputed Miami temperature limit per region.
-    miami_temp: Vec<f64>,
-    /// Total cover capacity under normal precipitation.
-    normal_cover: Vec<f64>,
-    /// Precomputed normal_cover.max(MINIMUM_REFERENCE_COVER).
-    reference_cover: Vec<f64>,
+    weight_offsets: Vec<u32>,
+    centers: Vec<u16>,
+    weights: Vec<f64>,
     /// State at year 0, after the spin-up; region histories replay from it.
     initial: State,
 }
@@ -295,10 +350,116 @@ fn default_threads(regions: usize) -> usize {
     if regions < 4_096 {
         return 1;
     }
-    thread::available_parallelism()
-        .map(std::num::NonZeroUsize::get)
-        .unwrap_or(1)
-        .min(4)
+    thread::available_parallelism().map_or(1, |threads| threads.get().min(6))
+}
+
+#[derive(Default)]
+struct YearPhase {
+    year: usize,
+    arrived: usize,
+    cancelled: bool,
+}
+
+struct YearBarrier {
+    workers: usize,
+    phase: Mutex<YearPhase>,
+    changed: Condvar,
+}
+
+impl YearBarrier {
+    fn wait(&self) -> bool {
+        let mut phase = self.phase.lock().unwrap();
+        if phase.cancelled {
+            return false;
+        }
+        let year = phase.year;
+        phase.arrived += 1;
+        if phase.arrived == self.workers {
+            phase.arrived = 0;
+            phase.year += 1;
+            self.changed.notify_all();
+        } else {
+            phase = self
+                .changed
+                .wait_while(phase, |p| p.year == year && !p.cancelled)
+                .unwrap();
+        }
+        !phase.cancelled
+    }
+}
+
+/// Release the other workers if setup, a worker, or the ordered reduction panics.
+struct CancelYearOnPanic<'a>(&'a YearBarrier);
+
+impl Drop for CancelYearOnPanic<'_> {
+    fn drop(&mut self) {
+        if thread::panicking() {
+            self.0.phase.lock().unwrap().cancelled = true;
+            self.0.changed.notify_all();
+        }
+    }
+}
+
+/// Workers enter the next year while the calling thread reduces the completed one.
+/// Alternating buffers keep both sets of per-region contributions separate.
+fn run_years<T: Send>(
+    chunks: impl IntoIterator<Item = T>,
+    years: usize,
+    step: impl Fn(usize, usize, &mut T) -> u32 + Sync,
+    mut completed: impl FnMut(usize, u32),
+) {
+    let chunks: Vec<_> = chunks.into_iter().collect();
+    let barrier = YearBarrier {
+        workers: chunks.len(),
+        phase: Mutex::default(),
+        changed: Condvar::new(),
+    };
+    let changes: Vec<_> = (0..chunks.len())
+        .map(|_| [AtomicU32::new(0), AtomicU32::new(0)])
+        .collect();
+    let (barrier, changes, step) = (&barrier, &changes, &step);
+    thread::scope(|scope| {
+        let _cancel = CancelYearOnPanic(barrier);
+        let mut chunks = chunks.into_iter().enumerate();
+        let (_, mut first) = chunks.next().expect("at least one vegetation chunk");
+        for (i, mut chunk) in chunks {
+            scope.spawn(move || {
+                let _cancel = CancelYearOnPanic(barrier);
+                for year in 0..years {
+                    changes[i][year % 2].store(step(i, year, &mut chunk), Ordering::Relaxed);
+                    if !barrier.wait() {
+                        return;
+                    }
+                }
+            });
+        }
+        for year in 0..years {
+            let local_changes = step(0, year, &mut first);
+            if !barrier.wait() {
+                break;
+            }
+            let changes = local_changes
+                + changes[1..]
+                    .iter()
+                    .map(|counts| counts[year % 2].load(Ordering::Relaxed))
+                    .sum::<u32>();
+            completed(year, changes);
+        }
+    });
+}
+
+fn add_terms(sums: &mut [f64; 5], terms: [f64; 5]) {
+    for (sum, term) in sums.iter_mut().zip(terms) {
+        *sum += term;
+    }
+}
+
+fn woody_buffers(woody: &[f64]) -> [Vec<AtomicU64>; 2] {
+    std::array::from_fn(|_| woody.iter().map(|w| AtomicU64::new(w.to_bits())).collect())
+}
+
+fn load_woody(buffer: &[AtomicU64], index: usize) -> f64 {
+    f64::from_bits(buffer[index].load(Ordering::Relaxed))
 }
 
 fn smoothstep((low, high): (f64, f64), x: f64) -> f64 {
@@ -341,12 +502,19 @@ fn relax(value: f64, capacity: f64, growth: f64, dieback: f64, establishment: f6
 /// the smaller of the temperature and precipitation limits.
 pub fn miami(annual_mean_celsius: f64, precipitation_mm: f64) -> (f64, f64) {
     (
-        3000. / (1. + (1.315 - 0.119 * annual_mean_celsius).exp()),
-        3000. * (1. - (-0.000664 * precipitation_mm).exp()),
+        miami_temperature(annual_mean_celsius),
+        miami_precipitation(precipitation_mm),
     )
 }
 
-/// Advance an AR(1) amplitude vector one year.
+fn miami_temperature(celsius: f64) -> f64 {
+    3000. / (1. + (1.315 - 0.119 * celsius).exp())
+}
+
+fn miami_precipitation(mm: f64) -> f64 {
+    3000. * (1. - (-0.000664 * mm).exp())
+}
+
 fn next_amplitudes(amplitudes: &mut [f64], persistence: f64, random: &mut Random) {
     let innovation = (1. - persistence * persistence).sqrt();
     for a in amplitudes {
@@ -373,7 +541,7 @@ impl Model {
         )
     }
 
-    pub fn new_with_threads(
+    fn new_with_threads(
         world: &World,
         normals: &Normals,
         settings: Settings,
@@ -397,67 +565,70 @@ impl Model {
             })
             .collect();
         let land: Vec<bool> = world.water.body_ids.iter().map(|&b| b == 0).collect();
-        let mut land_slot = vec![u32::MAX; n];
+        let mut region_slots = vec![usize::MAX; n];
         let mut land_indices = Vec::new();
         for (i, &is_land) in land.iter().enumerate() {
             if is_land {
-                land_slot[i] = land_indices.len() as u32;
+                region_slots[i] = land_indices.len();
                 land_indices.push(i);
             }
         }
         let land_count = land_indices.len();
         let length = settings.anomaly_length_meters / world.recipe.radius_meters;
         let cutoff = 3. * length;
+        // Reject distant centers cheaply. The margin sends borderline candidates
+        // through the original acos comparison and weight calculation.
         let cos_cutoff = if cutoff < std::f64::consts::PI {
             cutoff.cos() - 1e-12
         } else {
             -2.
         };
-        let build_chunk =
-            |indices: std::ops::Range<usize>| -> Result<(Vec<u32>, Vec<u16>, Vec<f64>), String> {
-                let mut lens = Vec::new();
-                let mut local_centers = Vec::new();
-                let mut local_weights = Vec::new();
-                for i in indices {
-                    let c = s.centers[i];
-                    if !land[i] {
-                        let covered = points.iter().any(|p| {
-                            let dot = c[0] * p[0] + c[1] * p[1] + c[2] * p[2];
-                            dot >= cos_cutoff && dot.clamp(-1., 1.).acos() < cutoff
-                        });
-                        if !covered {
-                            return Err(
-                                "Vegetation anomaly centers do not cover the surface.".into(),
-                            );
-                        }
-                        continue;
-                    }
-                    let start = local_weights.len();
-                    for (k, p) in points.iter().enumerate() {
+        let build_chunk = |indices: std::ops::Range<usize>| -> Result<WeightRows, String> {
+            let mut lens = Vec::new();
+            let mut local_centers = Vec::new();
+            let mut local_weights = Vec::new();
+            for i in indices {
+                let c = s.centers[i];
+                if !land[i] {
+                    let covered = points.iter().any(|p| {
                         let dot = c[0] * p[0] + c[1] * p[1] + c[2] * p[2];
-                        if dot >= cos_cutoff {
-                            let angle = dot.clamp(-1., 1.).acos();
-                            if angle < cutoff {
-                                local_centers.push(k as u16);
-                                local_weights.push((-0.5 * (angle / length).powi(2)).exp());
-                            }
-                        }
-                    }
-                    let scale = local_weights[start..]
-                        .iter()
-                        .map(|w| w * w)
-                        .sum::<f64>()
-                        .sqrt();
-                    if scale <= 0. {
+                        dot >= cos_cutoff && dot.clamp(-1., 1.).acos() < cutoff
+                    });
+                    if !covered {
                         return Err("Vegetation anomaly centers do not cover the surface.".into());
                     }
-                    for w in &mut local_weights[start..] {
-                        *w /= scale;
-                    }
-                    lens.push((local_weights.len() - start) as u32);
+                    continue;
                 }
-                Ok((lens, local_centers, local_weights))
-            };
+                let start = local_weights.len();
+                for (k, p) in points.iter().enumerate() {
+                    let dot = c[0] * p[0] + c[1] * p[1] + c[2] * p[2];
+                    if dot >= cos_cutoff {
+                        let angle = dot.clamp(-1., 1.).acos();
+                        if angle < cutoff {
+                            local_centers.push(k as u16);
+                            local_weights.push((-0.5 * (angle / length).powi(2)).exp());
+                        }
+                    }
+                }
+                let scale = local_weights[start..]
+                    .iter()
+                    .map(|w| w * w)
+                    .sum::<f64>()
+                    .sqrt();
+                if scale <= 0. {
+                    return Err("Vegetation anomaly centers do not cover the surface.".into());
+                }
+                for w in &mut local_weights[start..] {
+                    *w /= scale;
+                }
+                lens.push((local_weights.len() - start) as u32);
+            }
+            Ok(WeightRows {
+                lengths: lens,
+                centers: local_centers,
+                weights: local_weights,
+            })
+        };
         let chunk_size = n.div_ceil(threads).max(1);
         let parts: Vec<_> = if threads <= 1 || n <= chunk_size {
             vec![build_chunk(0..n)?]
@@ -482,106 +653,90 @@ impl Model {
             });
             results.into_iter().collect::<Result<Vec<_>, _>>()?
         };
-        let total_weights: usize = parts.iter().map(|(_, _, w)| w.len()).sum();
+        let total_weights: usize = parts.iter().map(|part| part.weights.len()).sum();
         let mut land_weight_offsets = Vec::with_capacity(land_count + 1);
         land_weight_offsets.push(0);
         let mut land_centers = Vec::with_capacity(total_weights);
         let mut land_weights = Vec::with_capacity(total_weights);
-        for (lens, c_part, w_part) in parts {
-            land_centers.extend_from_slice(&c_part);
-            land_weights.extend_from_slice(&w_part);
-            for len in lens {
+        for part in parts {
+            land_centers.extend(part.centers);
+            land_weights.extend(part.weights);
+            for len in part.lengths {
                 land_weight_offsets.push(*land_weight_offsets.last().unwrap() + len);
             }
         }
-        let (wet, dry) = VARIABILITY_PRECIPITATION_MM;
-        let variability: Vec<f64> = normals
-            .annual_precipitation_mm
-            .iter()
-            .map(|&p| {
-                let t =
-                    ((wet / p.max(f64::MIN_POSITIVE)).log10() / (wet / dry).log10()).clamp(0., 1.);
-                settings.humid_variability
-                    + t * (settings.arid_variability - settings.humid_variability)
-            })
-            .collect();
-        let miami_temp: Vec<f64> = normals
-            .annual_mean_celsius
-            .iter()
-            .map(|&t| 3000. / (1. + (1.315 - 0.119 * t).exp()))
-            .collect();
-        let threshold_mm: Vec<f64> = normals
-            .annual_mean_celsius
-            .iter()
-            .map(|&t| aridity_threshold(t))
-            .collect();
-        let land_area: f64 = land_indices.iter().map(|&i| s.areas[i]).sum();
-        let mut land_neighbor_offsets = Vec::with_capacity(land_count + 1);
-        land_neighbor_offsets.push(0);
-        let mut land_neighbors = Vec::with_capacity(land_count * 6);
-        let mut land_meta = Vec::with_capacity(land_count);
-        for &i in &land_indices {
-            let (a, b) = (s.offsets[i] as usize, s.offsets[i + 1] as usize);
-            for &j in &s.neighbors[a..b] {
-                let slot = land_slot[j as usize];
-                if slot != u32::MAX {
-                    land_neighbors.push(slot);
+        let make_climate = |i: usize| {
+            let precipitation_mm = normals.annual_precipitation_mm[i];
+            let mean = normals.annual_mean_celsius[i];
+            let warmest = normals.warmest_month_celsius[i];
+            let coldest = normals.coldest_month_celsius[i];
+            let (wet, dry) = VARIABILITY_PRECIPITATION_MM;
+            let t = ((wet / precipitation_mm.max(f64::MIN_POSITIVE)).log10() / (wet / dry).log10())
+                .clamp(0., 1.);
+            let variability = settings.humid_variability
+                + t * (settings.arid_variability - settings.humid_variability);
+            let forest = if coldest >= 18. {
+                if normals.driest_month_mm[i] >= 60. {
+                    Biome::TropicalRainforest
+                } else {
+                    Biome::TropicalSeasonalForest
                 }
-            }
-            land_neighbor_offsets.push(land_neighbors.len() as u32);
-            let var = variability[i];
-            land_meta.push(LandMeta {
+            } else if coldest > -3. || warmest >= 22. {
+                Biome::TemperateForest
+            } else {
+                Biome::BorealForest
+            };
+            let (open, desert) = if mean >= 18. {
+                (Biome::Savanna, Biome::HotDesert)
+            } else {
+                (Biome::TemperateGrassland, Biome::ColdDesert)
+            };
+            let mut climate = Climate {
+                precipitation_mm,
+                threshold_mm: aridity_threshold(mean),
+                warmest,
+                variability,
+                half_variance: 0.5 * variability * variability,
+                miami_temperature: miami_temperature(mean),
+                reference_cover: 0.,
+                forest: forest as u8,
+                open: open as u8,
+                desert: desert as u8,
+            };
+            climate.reference_cover = climate.capacity(1., 1.).1.max(MINIMUM_REFERENCE_COVER);
+            climate
+        };
+        let land_area = land_indices.iter().map(|&i| s.areas[i]).sum::<f64>();
+        let model_land = land_indices
+            .into_iter()
+            .map(|i| Land {
                 index: i,
                 area: s.areas[i],
-                precipitation_mm: normals.annual_precipitation_mm[i],
-                threshold_mm: threshold_mm[i],
-                mean: normals.annual_mean_celsius[i],
-                warmest: normals.warmest_month_celsius[i],
-                coldest: normals.coldest_month_celsius[i],
-                driest_mm: normals.driest_month_mm[i],
-                variability: var,
-                half_var_sq: 0.5 * var * var,
-                miami_temp: miami_temp[i],
-                reference_cover: MINIMUM_REFERENCE_COVER,
-                neighbor_deg: (b - a).max(1) as f64,
-            });
+                climate: make_climate(i),
+            })
+            .collect();
+        let mut water_climate = Vec::with_capacity(n - land_count);
+        for (i, &is_land) in land.iter().enumerate() {
+            if !is_land {
+                region_slots[i] = land_count + water_climate.len();
+                water_climate.push(make_climate(i));
+            }
         }
         let mut model = Self {
             recipe: world.recipe.clone(),
             settings,
             threads,
-            land,
-            land_slot,
+            land: model_land,
+            region_slots,
             land_area,
-            land_meta,
-            land_weight_offsets,
-            land_centers,
-            land_weights,
-            land_neighbor_offsets,
-            land_neighbors,
+            water_climate,
             neighbor_offsets: s.offsets.clone(),
             neighbors: s.neighbors.clone(),
-            precipitation_mm: normals.annual_precipitation_mm.clone(),
-            threshold_mm,
-            mean: normals.annual_mean_celsius.clone(),
-            warmest: normals.warmest_month_celsius.clone(),
-            coldest: normals.coldest_month_celsius.clone(),
-            driest_mm: normals.driest_month_mm.clone(),
-            variability,
-            miami_temp,
-            normal_cover: Vec::new(),
-            reference_cover: Vec::new(),
+            weight_offsets: land_weight_offsets,
+            centers: land_centers,
+            weights: land_weights,
             initial: State::default(),
         };
-        model.normal_cover = (0..n).map(|i| model.capacity(i, 1., 1.).1).collect();
-        model.reference_cover = model
-            .normal_cover
-            .iter()
-            .map(|&c| c.max(MINIMUM_REFERENCE_COVER))
-            .collect();
-        for m in &mut model.land_meta {
-            m.reference_cover = model.reference_cover[m.index];
-        }
         // Start from the capacity of normal precipitation, then spin up on a separate
         // stream so year 0 is a typical state and the run's stream is unaffected.
         let initial: Vec<RegionYear> = (0..n).map(|i| model.initial_region(i)).collect();
@@ -605,16 +760,17 @@ impl Model {
             next_amplitudes(&mut amplitudes, settings.anomaly_persistence, &mut spin);
             spin_history.extend_from_slice(&amplitudes);
         }
-        model.step_years(&mut state, &spin_history, 1 - i64::from(settings.spin_up_years), false);
+        model.step_years(
+            &mut state,
+            &spin_history,
+            1 - i64::from(settings.spin_up_years),
+            false,
+        );
         let mut random = Random::stream(&world.recipe.seed, MODEL_VERSION);
         state.amplitudes = (0..count).map(|_| normal(&mut random)).collect();
         state.random = random.0;
         model.initial = state.clone();
         Ok((model, state))
-    }
-
-    pub fn threads(&self) -> usize {
-        self.threads
     }
 
     pub fn settings(&self) -> Settings {
@@ -687,63 +843,56 @@ impl Model {
         Ok((model, state))
     }
 
+    fn climate(&self, i: usize) -> &Climate {
+        let slot = self.region_slots[i];
+        if let Some(land) = self.land.get(slot) {
+            &land.climate
+        } else {
+            &self.water_climate[slot - self.land.len()]
+        }
+    }
+
     /// Aridity ratio (precipitation / Köppen threshold) for a precipitation factor.
     pub fn aridity_ratio(&self, i: usize, factor: f64) -> f64 {
-        if self.threshold_mm[i] <= 0. {
-            f64::INFINITY
-        } else {
-            self.precipitation_mm[i] * factor / self.threshold_mm[i]
-        }
+        self.climate(i).aridity(factor)
     }
 
     /// Log-standard deviation of the region's yearly precipitation factor.
     pub fn variability(&self, i: usize) -> f64 {
-        self.variability[i]
+        self.climate(i).variability
     }
 
     /// Woody capacity from the root-zone factor and total cover capacity from the
     /// current year's factor.
     pub fn capacity(&self, i: usize, factor: f64, root_moisture: f64) -> (f64, f64) {
-        if !self.land[i] || self.warmest[i] < 0. {
-            return (0., 0.);
-        }
-        let cover = smoothstep(COVER_ARIDITY, self.aridity_ratio(i, factor));
-        if self.warmest[i] < 10. {
-            (0., cover * self.warmest[i] / 10.)
-        } else {
-            (
-                smoothstep(WOODY_ARIDITY, self.aridity_ratio(i, root_moisture)),
-                cover,
-            )
-        }
+        self.land
+            .get(self.region_slots[i])
+            .map_or((0., 0.), |land| {
+                land.climate.capacity(factor, root_moisture)
+            })
     }
 
     /// Miami productivity of the year's climate, scaled by the realized share of the
     /// cover that normal precipitation supports.
     pub fn productivity(&self, i: usize, factor: f64, cover: f64) -> f64 {
-        if !self.land[i] {
-            return 0.;
-        }
-        self.productivity_land(i, factor, cover)
+        self.land
+            .get(self.region_slots[i])
+            .map_or(0., |land| land.climate.productivity(factor, cover))
     }
 
-    #[inline]
-    fn productivity_land(&self, i: usize, factor: f64, cover: f64) -> f64 {
-        let precipitation = 3000. * (1. - (-0.000664 * (self.precipitation_mm[i] * factor)).exp());
-        self.miami_temp[i].min(precipitation) * (cover / self.reference_cover[i]).min(1.)
+    fn neighbors(&self, i: usize) -> &[u32] {
+        &self.neighbors[self.neighbor_offsets[i] as usize..self.neighbor_offsets[i + 1] as usize]
     }
 
     /// Woody seed term from the mean woody cover of the neighbors last year.
     pub fn woody_establishment(&self, i: usize, woody: &[f64]) -> f64 {
-        let (a, b) = (
-            self.neighbor_offsets[i] as usize,
-            self.neighbor_offsets[i + 1] as usize,
-        );
-        let mean = self.neighbors[a..b]
-            .iter()
-            .map(|&j| woody[j as usize])
-            .sum::<f64>()
-            / (b - a).max(1) as f64;
+        self.seed_establishment(i, |j| woody[j])
+    }
+
+    fn seed_establishment(&self, i: usize, woody: impl Fn(usize) -> f64) -> f64 {
+        let neighbors = self.neighbors(i);
+        let sum = neighbors.iter().map(|&j| woody(j as usize)).sum::<f64>();
+        let mean = sum / neighbors.len().max(1) as f64;
         self.settings.background_establishment + self.settings.seed_establishment * mean
     }
 
@@ -763,229 +912,68 @@ impl Model {
         }
     }
 
-    /// Structural class from woody cover and established total cover (forest, open or
-    /// barren) with the thermal subtypes of climate-normals-1. `previous` enables
-    /// hysteresis.
+    /// Structural class from woody and established cover with climate-normal
+    /// thermal subtypes. `previous` enables hysteresis.
     pub fn label(&self, i: usize, woody: f64, established: f64, previous: Option<u8>) -> u8 {
-        if !self.land[i] {
-            return Biome::Water as u8;
-        }
-        let (mean, warmest, coldest) = (self.mean[i], self.warmest[i], self.coldest[i]);
-        if warmest < 0. {
-            return Biome::Ice as u8;
-        }
-        if warmest < 10. {
-            return Biome::Tundra as u8;
-        }
-        let was_forest = previous.is_some_and(is_forest);
-        let was_vegetated = was_forest || previous.is_some_and(is_open);
-        let forest = woody
-            >= if was_forest {
-                FOREST_COVER.1
-            } else {
-                FOREST_COVER.0
-            };
-        let open = established
-            >= if was_vegetated {
-                OPEN_COVER.1
-            } else {
-                OPEN_COVER.0
-            };
-        (if forest {
-            if coldest >= 18. {
-                if self.driest_mm[i] >= 60. {
-                    Biome::TropicalRainforest
-                } else {
-                    Biome::TropicalSeasonalForest
-                }
-            } else if coldest > -3. || warmest >= 22. {
-                Biome::TemperateForest
-            } else {
-                Biome::BorealForest
+        self.land
+            .get(self.region_slots[i])
+            .map_or(Biome::Water as u8, |land| {
+                land.climate
+                    .label(woody, established, previous.unwrap_or(0))
+            })
+    }
+
+    #[inline]
+    fn factor(&self, slot: usize, climate: &Climate, amplitudes: &[f64]) -> f64 {
+        let range = self.weight_offsets[slot] as usize..self.weight_offsets[slot + 1] as usize;
+        let z: f64 = self.weights[range.clone()]
+            .iter()
+            .zip(&self.centers[range])
+            .map(|(&weight, &center)| weight * amplitudes[center as usize])
+            .sum();
+        (climate.variability * z - climate.half_variance).exp()
+    }
+
+    /// Evaluate four independent years together so the weight loads are shared.
+    /// Each lane adds centers in their original order.
+    fn factor_block(&self, slot: usize, climate: &Climate, amplitudes: &[[f64; 4]]) -> [f64; 4] {
+        let range = self.weight_offsets[slot] as usize..self.weight_offsets[slot + 1] as usize;
+        let mut z = [0.; 4];
+        for (&weight, &center) in self.weights[range.clone()].iter().zip(&self.centers[range]) {
+            let amplitude = amplitudes[center as usize];
+            for (total, amplitude) in z.iter_mut().zip(amplitude) {
+                *total += weight * amplitude;
             }
-        } else if open {
-            if mean >= 18. {
-                Biome::Savanna
-            } else {
-                Biome::TemperateGrassland
-            }
-        } else if mean >= 18. {
-            Biome::HotDesert
-        } else {
-            Biome::ColdDesert
-        }) as u8
-    }
-
-    #[inline]
-    fn factor_land(&self, p: usize, m: &LandMeta, amplitudes: &[f64]) -> f64 {
-        let (a, b) = (
-            self.land_weight_offsets[p] as usize,
-            self.land_weight_offsets[p + 1] as usize,
-        );
-        let mut z = 0.;
-        for (&w, &c) in self.land_weights[a..b].iter().zip(&self.land_centers[a..b]) {
-            z += w * amplitudes[c as usize];
         }
-        (m.variability * z - m.half_var_sq).exp()
+        z.map(|z| (climate.variability * z - climate.half_variance).exp())
     }
 
-    #[inline]
-    fn woody_establishment_land(&self, p: usize, m: &LandMeta, woody: &[f64]) -> f64 {
-        let (a, b) = (
-            self.land_neighbor_offsets[p] as usize,
-            self.land_neighbor_offsets[p + 1] as usize,
-        );
-        let mut sum = 0.;
-        for &nb in &self.land_neighbors[a..b] {
-            sum += woody[nb as usize];
-        }
-        let mean = sum / m.neighbor_deg;
-        self.settings.background_establishment + self.settings.seed_establishment * mean
+    fn root_moisture(&self, previous: f64, factor: f64) -> f64 {
+        previous + (factor - previous) / self.settings.root_memory_years
     }
 
-    #[inline]
-    fn woody_establishment_land_atomic(&self, p: usize, m: &LandMeta, woody: &[AtomicU64]) -> f64 {
-        let (a, b) = (
-            self.land_neighbor_offsets[p] as usize,
-            self.land_neighbor_offsets[p + 1] as usize,
-        );
-        let mut sum = 0.;
-        for &nb in &self.land_neighbors[a..b] {
-            sum += f64::from_bits(woody[nb as usize].load(Ordering::Relaxed));
-        }
-        let mean = sum / m.neighbor_deg;
-        self.settings.background_establishment + self.settings.seed_establishment * mean
-    }
-
-    #[inline]
-    fn step_land_meta(
-        &self,
-        m: &LandMeta,
-        prev_woody: f64,
-        dyn_state: &mut LandDyn,
-        factor: f64,
-        woody_establishment: f64,
-        slot: usize,
-    ) -> (f64, bool) {
-        let s = &self.settings;
-        let root_moisture =
-            dyn_state.root_moisture + (factor - dyn_state.root_moisture) / s.root_memory_years;
-        let (woody_capacity, cover_capacity) = if m.warmest < 0. {
-            (0., 0.)
-        } else {
-            let ratio_f = if m.threshold_mm <= 0. {
-                f64::INFINITY
-            } else {
-                m.precipitation_mm * factor / m.threshold_mm
-            };
-            let cover = smoothstep(COVER_ARIDITY, ratio_f);
-            if m.warmest < 10. {
-                (0., cover * m.warmest / 10.)
-            } else {
-                let ratio_rm = if m.threshold_mm <= 0. {
-                    f64::INFINITY
-                } else {
-                    m.precipitation_mm * root_moisture / m.threshold_mm
-                };
-                (smoothstep(WOODY_ARIDITY, ratio_rm), cover)
-            }
-        };
-        let woody = relax(
-            prev_woody,
-            woody_capacity,
-            s.woody_growth_per_year,
-            s.woody_dieback_per_year,
-            woody_establishment,
-        );
-        // Canopy displaces herbs immediately; herbs fill the remaining cover capacity.
-        let herb = relax(
-            dyn_state.herb,
-            (cover_capacity - woody).max(0.),
-            s.herb_growth_per_year,
-            s.herb_dieback_per_year,
-            s.herb_establishment,
+    fn next_woody(&self, previous: f64, capacity: f64, seed: impl FnOnce() -> f64) -> f64 {
+        let establishment = if previous < capacity { seed() } else { 0. };
+        relax(
+            previous,
+            capacity,
+            self.settings.woody_growth_per_year,
+            self.settings.woody_dieback_per_year,
+            establishment,
         )
-        .min(1. - woody);
-        let established_cover = dyn_state.established_cover
-            + (woody + herb - dyn_state.established_cover) / s.label_memory_years;
-        let prev_label = dyn_state.label;
-        let next_label = if m.warmest < 0. {
-            Biome::Ice as u8
-        } else if m.warmest < 10. {
-            Biome::Tundra as u8
-        } else {
-            let was_forest = is_forest(prev_label);
-            let was_vegetated = was_forest || is_open(prev_label);
-            let forest = woody
-                >= if was_forest {
-                    FOREST_COVER.1
-                } else {
-                    FOREST_COVER.0
-                };
-            let open = established_cover
-                >= if was_vegetated {
-                    OPEN_COVER.1
-                } else {
-                    OPEN_COVER.0
-                };
-            (if forest {
-                if m.coldest >= 18. {
-                    if m.driest_mm >= 60. {
-                        Biome::TropicalRainforest
-                    } else {
-                        Biome::TropicalSeasonalForest
-                    }
-                } else if m.coldest > -3. || m.warmest >= 22. {
-                    Biome::TemperateForest
-                } else {
-                    Biome::BorealForest
-                }
-            } else if open {
-                if m.mean >= 18. {
-                    Biome::Savanna
-                } else {
-                    Biome::TemperateGrassland
-                }
-            } else if m.mean >= 18. {
-                Biome::HotDesert
-            } else {
-                Biome::ColdDesert
-            }) as u8
-        };
-        dyn_state.woody_change = woody - dyn_state.woody_history[slot];
-        dyn_state.woody_history[slot] = woody;
-        dyn_state.herb = herb;
-        dyn_state.label = next_label;
-        dyn_state.precipitation_factor = factor;
-        dyn_state.root_moisture = root_moisture;
-        dyn_state.established_cover = established_cover;
-        (woody, next_label != prev_label)
     }
 
-    #[inline]
-    fn productivity_meta(m: &LandMeta, factor: f64, cover: f64) -> f64 {
-        let precipitation = 3000. * (1. - (-0.000664 * (m.precipitation_mm * factor)).exp());
-        m.miami_temp.min(precipitation) * (cover / m.reference_cover).min(1.)
-    }
-
-    fn step_region(
+    fn grow(
         &self,
-        i: usize,
-        previous: &RegionYear,
+        climate: &Climate,
+        previous: Cover,
         factor: f64,
-        woody_establishment: f64,
-    ) -> RegionYear {
+        seed: impl FnOnce() -> f64,
+    ) -> (Cover, (f64, f64)) {
         let s = &self.settings;
-        let root_moisture =
-            previous.root_moisture + (factor - previous.root_moisture) / s.root_memory_years;
-        let (woody_capacity, cover_capacity) = self.capacity(i, factor, root_moisture);
-        let woody = relax(
-            previous.woody,
-            woody_capacity,
-            s.woody_growth_per_year,
-            s.woody_dieback_per_year,
-            woody_establishment,
-        );
+        let root_moisture = self.root_moisture(previous.root_moisture, factor);
+        let (woody_capacity, cover_capacity) = climate.capacity(factor, root_moisture);
+        let woody = self.next_woody(previous.woody, woody_capacity, seed);
         // Canopy displaces herbs immediately; herbs fill the remaining cover capacity.
         let herb = relax(
             previous.herb,
@@ -995,18 +983,41 @@ impl Model {
             s.herb_establishment,
         )
         .min(1. - woody);
-        let established_cover = previous.established_cover
-            + (woody + herb - previous.established_cover) / s.label_memory_years;
+        let established =
+            previous.established + (woody + herb - previous.established) / s.label_memory_years;
+        let label = climate.label(woody, established, previous.label);
+        (
+            Cover {
+                woody,
+                herb,
+                root_moisture,
+                established,
+                label,
+            },
+            (woody_capacity, cover_capacity),
+        )
+    }
+
+    fn step_region(&self, i: usize, previous: &RegionYear, factor: f64, seed: f64) -> RegionYear {
+        let climate = &self.land[self.region_slots[i]].climate;
+        let cover = Cover {
+            woody: previous.woody,
+            herb: previous.herb,
+            root_moisture: previous.root_moisture,
+            established: previous.established_cover,
+            label: previous.label,
+        };
+        let (next, (woody_capacity, cover_capacity)) = self.grow(climate, cover, factor, || seed);
         RegionYear {
             precipitation_factor: factor,
-            root_moisture,
-            established_cover,
-            woody,
-            herb,
+            root_moisture: next.root_moisture,
+            established_cover: next.established,
+            woody: next.woody,
+            herb: next.herb,
             woody_capacity,
             cover_capacity,
-            productivity: self.productivity(i, factor, woody + herb),
-            label: self.label(i, woody, established_cover, Some(previous.label)),
+            productivity: climate.productivity(factor, next.woody + next.herb),
+            label: next.label,
         }
     }
 
@@ -1026,296 +1037,177 @@ impl Model {
         }
     }
 
-    #[cfg(test)]
+    fn terms(land: &Land, next: Cover, factor: f64) -> [f64; 5] {
+        let area = land.area;
+        let cover = next.woody + next.herb;
+        [
+            area * factor,
+            area * next.woody,
+            area * cover,
+            if is_forest(next.label) { area } else { 0. },
+            area * land.climate.productivity(factor, cover),
+        ]
+    }
+
+    fn summary(
+        &self,
+        [factor, woody, cover, forest, productivity]: [f64; 5],
+        changes: u32,
+    ) -> YearSummary {
+        let area = self.land_area.max(f64::MIN_POSITIVE);
+        YearSummary {
+            precipitation_factor: factor / area,
+            woody_cover: woody / area,
+            total_cover: cover / area,
+            forest_share: forest / area,
+            label_changes: changes,
+            productivity_petagrams: productivity / 1e15,
+        }
+    }
+
+    /// Inline one-year requests, which are also used by coupled annual consumers.
     fn step_year(&self, state: &mut State, amplitudes: &[f64], year: i64) -> YearSummary {
-        let before = state.summaries.len();
-        self.step_years(state, amplitudes, year, true);
-        state.summaries.drain(before..).next().unwrap()
+        self.step_one::<true>(state, amplitudes, year)
     }
 
-    fn pack_land_dyn(&self, state: &State) -> Vec<LandDyn> {
-        let n = self.land.len();
-        self.land_meta
-            .iter()
-            .map(|m| {
-                let i = m.index;
-                let mut woody_history = [0.; CHANGE_YEARS];
-                for (slot, dst) in woody_history.iter_mut().enumerate() {
-                    *dst = state.woody_history[slot * n + i];
-                }
-                LandDyn {
-                    herb: state.herb[i],
-                    root_moisture: state.root_moisture[i],
-                    established_cover: state.established_cover[i],
-                    woody_change: state.woody_change[i],
-                    precipitation_factor: state.precipitation_factor[i],
-                    woody_history,
-                    label: state.label[i],
-                }
-            })
-            .collect()
-    }
-
-    fn unpack_land_dyn(&self, state: &mut State, dyn_states: &[LandDyn]) {
-        let n = self.land.len();
-        for (m, d) in self.land_meta.iter().zip(dyn_states) {
-            let i = m.index;
-            state.herb[i] = d.herb;
-            state.root_moisture[i] = d.root_moisture;
-            state.established_cover[i] = d.established_cover;
-            state.woody_change[i] = d.woody_change;
-            state.precipitation_factor[i] = d.precipitation_factor;
-            state.label[i] = d.label;
-            for (slot, &val) in d.woody_history.iter().enumerate() {
-                state.woody_history[slot * n + i] = val;
-            }
-        }
-    }
-
-    fn step_years(
+    fn step_one<const SUMMARIZE: bool>(
         &self,
         state: &mut State,
         amplitudes: &[f64],
-        start_year: i64,
-        record_summaries: bool,
-    ) {
+        year: i64,
+    ) -> YearSummary {
+        let n = self.region_slots.len();
+        let history = year.rem_euclid(CHANGE_YEARS as i64) as usize * n;
+        let woody = state.woody.clone();
+        let mut sums = [0.; 5];
+        let mut changes = 0;
+        for (slot, land) in self.land.iter().enumerate() {
+            let i = land.index;
+            let previous = Cover::read(state, i);
+            let factor = self.factor(slot, &land.climate, amplitudes);
+            let seed = || self.woody_establishment(i, &woody);
+            let (next, _) = self.grow(&land.climate, previous, factor, seed);
+            if SUMMARIZE {
+                changes += u32::from(previous.label != next.label);
+                add_terms(&mut sums, Self::terms(land, next, factor));
+            }
+            state.woody_change[i] = next.woody - state.woody_history[history + i];
+            state.woody_history[history + i] = next.woody;
+            next.write(state, i, factor);
+        }
+        self.summary(sums, changes)
+    }
+
+    fn step_years(&self, state: &mut State, amplitudes: &[f64], start_year: i64, summarize: bool) {
         let k = self.settings.anomaly_centers as usize;
         let years = amplitudes.len() / k;
-        if years == 0 {
-            return;
-        }
-        let land_count = self.land_meta.len();
-        if land_count == 0 {
-            if record_summaries {
-                state.summaries.extend((0..years).map(|_| YearSummary {
-                    precipitation_factor: 0.,
-                    woody_cover: 0.,
-                    total_cover: 0.,
-                    forest_share: 0.,
-                    label_changes: 0,
-                    productivity_petagrams: 0.,
-                }));
-            }
-            return;
-        }
-        let chunk_land = land_count.div_ceil(self.threads.max(1)).max(1);
-        let t_count = land_count.div_ceil(chunk_land);
-        if t_count <= 1 {
-            self.step_years_serial(state, amplitudes, start_year, record_summaries);
-        } else {
-            self.step_years_parallel(
-                state,
-                amplitudes,
-                start_year,
-                record_summaries,
-                chunk_land,
-                t_count,
-            );
-        }
-    }
-
-    fn step_years_serial(
-        &self,
-        state: &mut State,
-        amplitudes: &[f64],
-        start_year: i64,
-        record_summaries: bool,
-    ) {
-        let k = self.settings.anomaly_centers as usize;
-        let mut dyn_states = self.pack_land_dyn(state);
-        let mut woody_prev: Vec<f64> = self.land_meta.iter().map(|m| state.woody[m.index]).collect();
-        let mut woody_next = vec![0.; woody_prev.len()];
-        let land = self.land_area.max(f64::MIN_POSITIVE);
-        for (y, amps) in amplitudes.chunks_exact(k).enumerate() {
-            let slot = (start_year + y as i64).rem_euclid(CHANGE_YEARS as i64) as usize;
-            let mut sums = [0.; 5];
-            let mut changes = 0u32;
-            for p in 0..self.land_meta.len() {
-                let m = &self.land_meta[p];
-                let factor = self.factor_land(p, m, amps);
-                let seed = self.woody_establishment_land(p, m, &woody_prev);
-                let d = &mut dyn_states[p];
-                let (next_woody, changed) =
-                    self.step_land_meta(m, woody_prev[p], d, factor, seed, slot);
-                woody_next[p] = next_woody;
-                if record_summaries {
-                    let prod = Self::productivity_meta(m, factor, next_woody + d.herb);
-                    changes += u32::from(changed);
-                    let area = m.area;
-                    sums[0] += area * factor;
-                    sums[1] += area * next_woody;
-                    sums[2] += area * (next_woody + d.herb);
-                    sums[3] += if is_forest(d.label) { area } else { 0. };
-                    sums[4] += area * prod;
-                }
-            }
-            std::mem::swap(&mut woody_prev, &mut woody_next);
-            if record_summaries {
-                state.summaries.push(YearSummary {
-                    precipitation_factor: sums[0] / land,
-                    woody_cover: sums[1] / land,
-                    total_cover: sums[2] / land,
-                    forest_share: sums[3] / land,
-                    label_changes: changes,
-                    productivity_petagrams: sums[4] / 1e15,
-                });
-            }
-        }
-        for (m, &w) in self.land_meta.iter().zip(&woody_prev) {
-            state.woody[m.index] = w;
-        }
-        self.unpack_land_dyn(state, &dyn_states);
-    }
-
-    fn step_years_parallel(
-        &self,
-        state: &mut State,
-        amplitudes: &[f64],
-        start_year: i64,
-        record_summaries: bool,
-        chunk_land: usize,
-        t_count: usize,
-    ) {
-        let k = self.settings.anomaly_centers as usize;
-        let years = amplitudes.len() / k;
-        let land_count = self.land_meta.len();
-        let land_area = self.land_area.max(f64::MIN_POSITIVE);
-        let mut dyn_states = self.pack_land_dyn(state);
-        let woody_bufs: [Vec<AtomicU64>; 2] = [
-            self.land_meta
-                .iter()
-                .map(|m| AtomicU64::new(state.woody[m.index].to_bits()))
-                .collect(),
-            (0..land_count).map(|_| AtomicU64::new(0)).collect(),
-        ];
-        let contrib_bufs: [Vec<[AtomicU64; 5]>; 2] = if record_summaries {
-            std::array::from_fn(|_| {
-                (0..land_count)
-                    .map(|_| std::array::from_fn(|_| AtomicU64::new(0)))
-                    .collect()
-            })
-        } else {
-            [Vec::new(), Vec::new()]
-        };
-        let changes_bufs: [Vec<AtomicU32>; 2] = if record_summaries {
-            std::array::from_fn(|_| (0..t_count).map(|_| AtomicU32::new(0)).collect())
-        } else {
-            [Vec::new(), Vec::new()]
-        };
-        let reduce = |buf: usize| -> YearSummary {
-            let mut sums = [0.; 5];
-            for entry in &contrib_bufs[buf] {
-                sums[0] += f64::from_bits(entry[0].load(Ordering::Relaxed));
-                sums[1] += f64::from_bits(entry[1].load(Ordering::Relaxed));
-                sums[2] += f64::from_bits(entry[2].load(Ordering::Relaxed));
-                sums[3] += f64::from_bits(entry[3].load(Ordering::Relaxed));
-                sums[4] += f64::from_bits(entry[4].load(Ordering::Relaxed));
-            }
-            let changes: u32 = changes_bufs[buf]
-                .iter()
-                .map(|c| c.load(Ordering::Relaxed))
-                .sum();
-            YearSummary {
-                precipitation_factor: sums[0] / land_area,
-                woody_cover: sums[1] / land_area,
-                total_cover: sums[2] / land_area,
-                forest_share: sums[3] / land_area,
-                label_changes: changes,
-                productivity_petagrams: sums[4] / 1e15,
-            }
-        };
-
-        let barrier = SpinBarrier::new(t_count);
-        let mut summaries = Vec::with_capacity(if record_summaries { years } else { 0 });
-        let woody_ref = &woody_bufs;
-        let contrib_ref = &contrib_bufs;
-        let changes_ref = &changes_bufs;
-        let barrier_ref = &barrier;
-        let reduce_ref = &reduce;
-        thread::scope(|scope| {
-            let mut chunks = dyn_states.chunks_mut(chunk_land).enumerate();
-            let first = chunks.next().unwrap();
-            let run_worker = |c: usize,
-                              dyn_chunk: &mut [LandDyn],
-                              mut out: Option<&mut Vec<YearSummary>>| {
-                let land_start = c * chunk_land;
-                let meta_chunk = &self.land_meta[land_start..land_start + dyn_chunk.len()];
-                for y in 0..years {
-                    if let Some(ref mut list) = out
-                        && y > 0
-                    {
-                        list.push(reduce_ref((y - 1) & 1));
-                    }
-                    let amps = &amplitudes[y * k..(y + 1) * k];
-                    let read_buf = &woody_ref[y & 1];
-                    let write_buf = &woody_ref[(y + 1) & 1];
-                    let slot = (start_year + y as i64).rem_euclid(CHANGE_YEARS as i64) as usize;
-                    let mut local_changes = 0u32;
-                    let cb = if record_summaries {
-                        Some(&contrib_ref[y & 1][land_start..land_start + dyn_chunk.len()])
-                    } else {
-                        None
-                    };
-                    for (offset, (m, d)) in meta_chunk.iter().zip(dyn_chunk.iter_mut()).enumerate()
-                    {
-                        let p = land_start + offset;
-                        let factor = self.factor_land(p, m, amps);
-                        let seed = self.woody_establishment_land_atomic(p, m, read_buf);
-                        let prev_woody = f64::from_bits(read_buf[p].load(Ordering::Relaxed));
-                        let (next_woody, changed) =
-                            self.step_land_meta(m, prev_woody, d, factor, seed, slot);
-                        write_buf[p].store(next_woody.to_bits(), Ordering::Relaxed);
-                        if let Some(contrib) = cb {
-                            let prod = Self::productivity_meta(m, factor, next_woody + d.herb);
-                            let area = m.area;
-                            let entry = &contrib[offset];
-                            entry[0].store((area * factor).to_bits(), Ordering::Relaxed);
-                            entry[1].store((area * next_woody).to_bits(), Ordering::Relaxed);
-                            entry[2].store(
-                                (area * (next_woody + d.herb)).to_bits(),
-                                Ordering::Relaxed,
-                            );
-                            entry[3].store(
-                                (if is_forest(d.label) { area } else { 0. }).to_bits(),
-                                Ordering::Relaxed,
-                            );
-                            entry[4].store((area * prod).to_bits(), Ordering::Relaxed);
-                            local_changes += u32::from(changed);
-                        }
-                    }
-                    if record_summaries {
-                        changes_ref[y & 1][c].store(local_changes, Ordering::Relaxed);
-                    }
-                    barrier_ref.wait();
-                }
-                if let Some(list) = out {
-                    list.push(reduce_ref((years - 1) & 1));
-                }
-            };
-            let run_ref = &run_worker;
-            let handles: Vec<_> = chunks
-                .map(|(c, dyn_chunk)| scope.spawn(move || run_ref(c, dyn_chunk, None)))
-                .collect();
-            run_worker(
-                first.0,
-                first.1,
-                if record_summaries {
-                    Some(&mut summaries)
+        let threads = self.threads.min(self.land.len());
+        if threads < 2 || years == 1 {
+            for (y, amps) in amplitudes.chunks_exact(k).enumerate() {
+                let year = start_year + y as i64;
+                if summarize {
+                    let summary = self.step_year(state, amps, year);
+                    state.summaries.push(summary);
                 } else {
-                    None
-                },
-            );
-            for handle in handles {
-                handle.join().unwrap();
+                    self.step_one::<false>(state, amps, year);
+                }
+            }
+            return;
+        }
+
+        let n = self.region_slots.len();
+        let mut dynamic: Vec<_> = self
+            .land
+            .iter()
+            .map(|land| {
+                let i = land.index;
+                LandState {
+                    cover: Cover::read(state, i),
+                    factor: state.precipitation_factor[i],
+                    woody_change: state.woody_change[i],
+                    woody_history: std::array::from_fn(|y| state.woody_history[y * n + i]),
+                }
+            })
+            .collect();
+        let woody = woody_buffers(&state.woody);
+        let chunk_size = dynamic.len().div_ceil(threads);
+        let transposed: Vec<[f64; 4]> = amplitudes
+            .chunks(4 * k)
+            .flat_map(|block| {
+                (0..k).map(move |center| {
+                    std::array::from_fn(|lane| block.get(lane * k + center).copied().unwrap_or(0.))
+                })
+            })
+            .collect();
+        let terms: [Vec<_>; 2] = std::array::from_fn(|_| {
+            if summarize {
+                dynamic
+                    .chunks(chunk_size)
+                    .map(|chunk| Mutex::new(vec![[0.; 5]; chunk.len()]))
+                    .collect()
+            } else {
+                Vec::new()
             }
         });
-        let final_buf = &woody_bufs[years & 1];
-        for (p, m) in self.land_meta.iter().enumerate() {
-            state.woody[m.index] = f64::from_bits(final_buf[p].load(Ordering::Relaxed));
-        }
-        self.unpack_land_dyn(state, &dyn_states);
-        if record_summaries {
-            state.summaries.extend(summaries);
+        let chunks = dynamic.chunks_mut(chunk_size).map(|cells| {
+            let factors = vec![[0.; 4]; cells.len()];
+            (cells, factors)
+        });
+        run_years(
+            chunks,
+            years,
+            |chunk, year, (cells, factors)| {
+                let read = &woody[year % 2];
+                let write = &woody[(year + 1) % 2];
+                let lane = year % 4;
+                let start = chunk * chunk_size;
+                let land = &self.land[start..start + cells.len()];
+                if lane == 0 {
+                    let block = year / 4;
+                    let amps = &transposed[block * k..(block + 1) * k];
+                    for (offset, (land, value)) in land.iter().zip(factors.iter_mut()).enumerate() {
+                        *value = self.factor_block(start + offset, &land.climate, amps);
+                    }
+                }
+                let history = (start_year + year as i64).rem_euclid(CHANGE_YEARS as i64) as usize;
+                let mut contributions = summarize.then(|| terms[year % 2][chunk].lock().unwrap());
+                let mut changes = 0;
+                for (offset, (cell, land)) in cells.iter_mut().zip(land).enumerate() {
+                    let i = land.index;
+                    let factor = factors[offset][lane];
+                    let seed = || self.seed_establishment(i, |j| load_woody(read, j));
+                    let (next, _) = self.grow(&land.climate, cell.cover, factor, seed);
+                    if let Some(terms) = &mut contributions {
+                        terms[offset] = Self::terms(land, next, factor);
+                        changes += u32::from(cell.cover.label != next.label);
+                    }
+                    write[i].store(next.woody.to_bits(), Ordering::Relaxed);
+                    cell.woody_change = next.woody - cell.woody_history[history];
+                    cell.woody_history[history] = next.woody;
+                    cell.cover = next;
+                    cell.factor = factor;
+                }
+                changes
+            },
+            |year, changes| {
+                if summarize {
+                    let mut sums = [0.; 5];
+                    for chunk in &terms[year % 2] {
+                        for &term in chunk.lock().unwrap().iter() {
+                            add_terms(&mut sums, term);
+                        }
+                    }
+                    state.summaries.push(self.summary(sums, changes));
+                }
+            },
+        );
+        for (land, cell) in self.land.iter().zip(dynamic) {
+            let i = land.index;
+            cell.cover.write(state, i, cell.factor);
+            state.woody_change[i] = cell.woody_change;
+            for (y, value) in cell.woody_history.into_iter().enumerate() {
+                state.woody_history[y * n + i] = value;
+            }
         }
     }
 
@@ -1350,14 +1242,14 @@ impl Model {
 
     /// Capacities of the most recent year for every region.
     pub fn capacities(&self, state: &State) -> (Vec<f64>, Vec<f64>) {
-        (0..self.land.len())
+        (0..self.region_slots.len())
             .map(|i| self.capacity(i, state.precipitation_factor[i], state.root_moisture[i]))
             .unzip()
     }
 
     /// Productivity of the most recent year for every region.
     pub fn productivities(&self, state: &State) -> Vec<f64> {
-        (0..self.land.len())
+        (0..self.region_slots.len())
             .map(|i| {
                 self.productivity(
                     i,
@@ -1368,179 +1260,102 @@ impl Model {
             .collect()
     }
 
-    /// One region from year 0 to the current year. Seed dispersal couples neighbors,
-    /// so the coupled woody component is replayed from the recorded amplitudes.
+    /// One region from year 0 to the current year. Replay the woody component
+    /// that can reach this region, then derive its full history from that component.
     pub fn region_series(&self, state: &State, i: usize) -> Result<Vec<RegionYear>, String> {
-        if i >= self.land.len() {
+        if i >= self.region_slots.len() {
             return Err("Vegetation region is outside the generated world.".into());
         }
         let k = self.settings.anomaly_centers as usize;
-        let years = state.amplitude_history.chunks_exact(k).len();
-        let initial_target = self.region(&self.initial, i);
+        let years = state.amplitude_history.len() / k;
+        let initial = self.region(&self.initial, i);
         let mut series = Vec::with_capacity(years + 1);
-        series.push(initial_target);
+        series.push(initial);
+        let target = self.region_slots[i];
         if years == 0 {
             return Ok(series);
         }
-        let target_p = self.land_slot[i] as usize;
-        if !self.land[i] {
-            series.resize(years + 1, initial_target);
+        if target >= self.land.len() {
+            series.resize(years + 1, initial);
             return Ok(series);
         }
-        if self.warmest[i] < 10. || self.settings.seed_establishment == 0. {
-            let mut current = initial_target;
-            let seed = self.settings.background_establishment;
-            let m = &self.land_meta[target_p];
-            for amplitudes in state.amplitude_history.chunks_exact(k) {
-                let factor = self.factor_land(target_p, m, amplitudes);
-                current = self.step_region(i, &current, factor, seed);
-                series.push(current);
-            }
-            return Ok(series);
-        }
-        // Only land regions with warmest >= 10 °C can hold nonzero woody cover and
-        // transmit woody seed changes; regions at graph distance >= years cannot reach i.
-        let land_count = self.land_meta.len();
-        let max_dist = years - 1;
-        let mut visited = vec![false; land_count];
-        let mut queue = VecDeque::new();
-        visited[target_p] = true;
-        queue.push_back((target_p, 0usize));
-        let mut others = Vec::new();
-        while let Some((u, dist)) = queue.pop_front() {
-            if u != target_p {
-                others.push(u);
-            }
-            if dist == max_dist {
-                continue;
-            }
-            let (a, b) = (
-                self.land_neighbor_offsets[u] as usize,
-                self.land_neighbor_offsets[u + 1] as usize,
-            );
-            for &v_u32 in &self.land_neighbors[a..b] {
-                let v = v_u32 as usize;
-                if !visited[v] && self.land_meta[v].warmest >= 10. {
-                    visited[v] = true;
-                    queue.push_back((v, dist + 1));
+
+        // Water and cold land start without woody cover and can never acquire it.
+        // A change travels at most one edge per year. The unchanged buffers already
+        // hold year-zero cover for neighbors just outside the replay radius.
+        let mut visited = vec![false; self.land.len()];
+        let mut queue = VecDeque::from([(target, 0)]);
+        let mut roots = Vec::new();
+        visited[target] = true;
+        if self.land[target].climate.warmest >= 10. {
+            while let Some((slot, distance)) = queue.pop_front() {
+                let land = &self.land[slot];
+                if slot != target {
+                    roots.push((slot, self.initial.root_moisture[land.index]));
+                }
+                if distance + 1 == years {
+                    continue;
+                }
+                for &neighbor in self.neighbors(land.index) {
+                    let slot = self.region_slots[neighbor as usize];
+                    if slot < self.land.len()
+                        && !visited[slot]
+                        && self.land[slot].climate.warmest >= 10.
+                    {
+                        visited[slot] = true;
+                        queue.push_back((slot, distance + 1));
+                    }
                 }
             }
         }
-        others.sort_unstable();
-        let s = &self.settings;
-        let woody_bufs: [Vec<AtomicU64>; 2] = [
-            self.land_meta
-                .iter()
-                .map(|m| AtomicU64::new(self.initial.woody[m.index].to_bits()))
-                .collect(),
-            self.land_meta
-                .iter()
-                .map(|m| AtomicU64::new(self.initial.woody[m.index].to_bits()))
-                .collect(),
-        ];
-        let mut root_moisture_others: Vec<f64> = others
-            .iter()
-            .map(|&p| self.initial.root_moisture[self.land_meta[p].index])
-            .collect();
-        let t_count = if self.threads <= 1 || others.len() < 256 {
-            1
+        roots.sort_unstable_by_key(|&(slot, _)| slot);
+        let woody = woody_buffers(&self.initial.woody);
+        let target_climate = &self.land[target].climate;
+        let step = |_: usize, year: usize, chunk: &mut ReplayChunk<'_>| {
+            let read = &woody[year % 2];
+            let write = &woody[(year + 1) % 2];
+            let amps = &state.amplitude_history[year * k..(year + 1) * k];
+            for (slot, root) in chunk.roots.iter_mut() {
+                let land = &self.land[*slot];
+                let j = land.index;
+                let factor = self.factor(*slot, &land.climate, amps);
+                *root = self.root_moisture(*root, factor);
+                let capacity = land.climate.woody_capacity(*root);
+                let seed = || self.seed_establishment(j, |p| load_woody(read, p));
+                let next = self.next_woody(load_woody(read, j), capacity, seed);
+                write[j].store(next.to_bits(), Ordering::Relaxed);
+            }
+            if let Some(series) = &mut chunk.target_series {
+                let factor = self.factor(target, target_climate, amps);
+                let seed = self.seed_establishment(i, |j| load_woody(read, j));
+                let next = self.step_region(i, series.last().unwrap(), factor, seed);
+                write[i].store(next.woody.to_bits(), Ordering::Relaxed);
+                series.push(next);
+            }
+            0
+        };
+        let threads = self.threads.min(roots.len().div_ceil(768));
+        if threads < 2 {
+            let mut chunk = ReplayChunk {
+                roots: &mut roots,
+                target_series: Some(&mut series),
+            };
+            for year in 0..years {
+                step(0, year, &mut chunk);
+            }
         } else {
-            let chunk = others.len().div_ceil(self.threads).max(1);
-            others.len().div_ceil(chunk)
-        };
-        let target_meta = &self.land_meta[target_p];
-        let mut current = initial_target;
-        let step_others = |indices: &[usize],
-                           rm_chunk: &mut [f64],
-                           amplitudes: &[f64],
-                           read_buf: &[AtomicU64],
-                           write_buf: &[AtomicU64]| {
-            for (&p, rm) in indices.iter().zip(rm_chunk.iter_mut()) {
-                let m = &self.land_meta[p];
-                let factor = self.factor_land(p, m, amplitudes);
-                let next_rm = *rm + (factor - *rm) / s.root_memory_years;
-                *rm = next_rm;
-                let ratio = if m.threshold_mm <= 0. {
-                    f64::INFINITY
-                } else {
-                    m.precipitation_mm * next_rm / m.threshold_mm
-                };
-                let cap = smoothstep(WOODY_ARIDITY, ratio);
-                let seed = self.woody_establishment_land_atomic(p, m, read_buf);
-                let prev_woody = f64::from_bits(read_buf[p].load(Ordering::Relaxed));
-                let next_woody = relax(
-                    prev_woody,
-                    cap,
-                    s.woody_growth_per_year,
-                    s.woody_dieback_per_year,
-                    seed,
-                );
-                write_buf[p].store(next_woody.to_bits(), Ordering::Relaxed);
-            }
-        };
-        if t_count <= 1 {
-            for (y, amplitudes) in state.amplitude_history.chunks_exact(k).enumerate() {
-                let read_buf = &woody_bufs[y & 1];
-                let write_buf = &woody_bufs[(y + 1) & 1];
-                let target_factor = self.factor_land(target_p, target_meta, amplitudes);
-                let target_seed = self.woody_establishment_land_atomic(target_p, target_meta, read_buf);
-                current = self.step_region(i, &current, target_factor, target_seed);
-                write_buf[target_p].store(current.woody.to_bits(), Ordering::Relaxed);
-                series.push(current);
-                step_others(&others, &mut root_moisture_others, amplitudes, read_buf, write_buf);
-            }
-            return Ok(series);
+            let size = roots.len().div_ceil(threads);
+            let target_series =
+                std::iter::once(Some(&mut series)).chain(std::iter::repeat_with(|| None));
+            let chunks = roots
+                .chunks_mut(size)
+                .zip(target_series)
+                .map(|(roots, target_series)| ReplayChunk {
+                    roots,
+                    target_series,
+                });
+            run_years(chunks, years, step, |_, _| {});
         }
-        let chunk_size = others.len().div_ceil(t_count);
-        let barrier = SpinBarrier::new(t_count);
-        let amps_all = &state.amplitude_history[..years * k];
-        let mut rm_rest = root_moisture_others.as_mut_slice();
-        let mut chunks = Vec::with_capacity(t_count);
-        for c in 0..t_count {
-            let start = c * chunk_size;
-            let end = ((c + 1) * chunk_size).min(others.len());
-            let (rm_chunk, tail) = rm_rest.split_at_mut(end - start);
-            rm_rest = tail;
-            chunks.push((&others[start..end], rm_chunk));
-        }
-        let woody_ref = &woody_bufs;
-        let barrier_ref = &barrier;
-        let step_ref = &step_others;
-        thread::scope(|scope| {
-            let mut iter = chunks.into_iter();
-            let first = iter.next().unwrap();
-            let handles: Vec<_> = iter
-                .map(|(indices, rm_chunk)| {
-                    scope.spawn(move || {
-                        for (y, amplitudes) in amps_all.chunks_exact(k).enumerate() {
-                            step_ref(
-                                indices,
-                                rm_chunk,
-                                amplitudes,
-                                &woody_ref[y & 1],
-                                &woody_ref[(y + 1) & 1],
-                            );
-                            barrier_ref.wait();
-                        }
-                    })
-                })
-                .collect();
-            let (first_indices, first_rm) = first;
-            for (y, amplitudes) in amps_all.chunks_exact(k).enumerate() {
-                let read_buf = &woody_bufs[y & 1];
-                let write_buf = &woody_bufs[(y + 1) & 1];
-                let target_factor = self.factor_land(target_p, target_meta, amplitudes);
-                let target_seed = self.woody_establishment_land_atomic(target_p, target_meta, read_buf);
-                current = self.step_region(i, &current, target_factor, target_seed);
-                write_buf[target_p].store(current.woody.to_bits(), Ordering::Relaxed);
-                series.push(current);
-                step_others(first_indices, first_rm, amplitudes, read_buf, write_buf);
-                barrier.wait();
-            }
-            for handle in handles {
-                handle.join().unwrap();
-            }
-        });
         Ok(series)
     }
 }
@@ -1550,13 +1365,16 @@ mod tests {
     use super::*;
 
     fn test_world(seed: &str) -> World {
-        let recipe: Recipe = serde_json::from_value(serde_json::json!({"schemaVersion":1,
+        World::generate(test_recipe(seed)).unwrap()
+    }
+
+    fn test_recipe(seed: &str) -> Recipe {
+        serde_json::from_value(serde_json::json!({"schemaVersion":1,
             "modelVersion":"multiscale-geography-4","randomVersion":"fnv1a-utf8-mulberry32-1","seed":seed,
             "subdivision":4,"radiusMeters":6371000.,"plateCount":12,"maxPlateSpeedCmPerYear":8.,
             "continentalFraction":0.38,"continentalScale":1.,"reliefScale":1.,"boundaryWidthKm":300.,
             "detailAmplitudeMeters":300.,"terrainPreparationPasses":4,"water":{"mode":"coverage","fraction":0.71}}))
-            .unwrap();
-        World::generate(recipe).unwrap()
+            .unwrap()
     }
 
     fn steady() -> Settings {
@@ -1767,29 +1585,147 @@ mod tests {
         assert!(years >= 5, "recovery took {years} years");
     }
 
+    fn fnv_update(h: &mut u64, bytes: &[u8]) {
+        for &b in bytes {
+            *h ^= u64::from(b);
+            *h = h.wrapping_mul(0x100000001b3);
+        }
+    }
+
+    fn hash_f64_slice(h: &mut u64, s: &[f64]) {
+        for &x in s {
+            fnv_update(h, &x.to_bits().to_le_bytes());
+        }
+    }
+
+    fn hash_state(state: &State) -> u64 {
+        let mut h = 0xcbf29ce484222325u64;
+        fnv_update(&mut h, &state.year.to_le_bytes());
+        fnv_update(&mut h, &state.random.to_le_bytes());
+        hash_f64_slice(&mut h, &state.amplitudes);
+        hash_f64_slice(&mut h, &state.amplitude_history);
+        hash_f64_slice(&mut h, &state.woody);
+        hash_f64_slice(&mut h, &state.herb);
+        fnv_update(&mut h, &state.label);
+        hash_f64_slice(&mut h, &state.precipitation_factor);
+        hash_f64_slice(&mut h, &state.root_moisture);
+        hash_f64_slice(&mut h, &state.established_cover);
+        hash_f64_slice(&mut h, &state.woody_history);
+        hash_f64_slice(&mut h, &state.woody_change);
+        for s in &state.summaries {
+            fnv_update(&mut h, &s.precipitation_factor.to_bits().to_le_bytes());
+            fnv_update(&mut h, &s.woody_cover.to_bits().to_le_bytes());
+            fnv_update(&mut h, &s.total_cover.to_bits().to_le_bytes());
+            fnv_update(&mut h, &s.forest_share.to_bits().to_le_bytes());
+            fnv_update(&mut h, &s.label_changes.to_le_bytes());
+            fnv_update(&mut h, &s.productivity_petagrams.to_bits().to_le_bytes());
+        }
+        h
+    }
+
+    fn hash_series(series: &[RegionYear]) -> u64 {
+        let mut h = 0xcbf29ce484222325u64;
+        for r in series {
+            fnv_update(&mut h, &r.precipitation_factor.to_bits().to_le_bytes());
+            fnv_update(&mut h, &r.root_moisture.to_bits().to_le_bytes());
+            fnv_update(&mut h, &r.established_cover.to_bits().to_le_bytes());
+            fnv_update(&mut h, &r.woody.to_bits().to_le_bytes());
+            fnv_update(&mut h, &r.herb.to_bits().to_le_bytes());
+            fnv_update(&mut h, &r.woody_capacity.to_bits().to_le_bytes());
+            fnv_update(&mut h, &r.cover_capacity.to_bits().to_le_bytes());
+            fnv_update(&mut h, &r.productivity.to_bits().to_le_bytes());
+            fnv_update(&mut h, &[r.label]);
+        }
+        h
+    }
+
+    #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+    #[test]
+    fn state_and_replay_match_serial_vegetation_2() {
+        // Captured by running these hash functions against unmodified a655880, using
+        // first-light, the default geography recipe at subdivision 4 and default
+        // vegetation settings. Integers and f64 bit patterns are fed little-endian.
+        let world = test_world("first-light");
+        let normals = Normals::from_world(&world).unwrap();
+        let (model, mut state) =
+            Model::new_with_threads(&world, &normals, Settings::default(), 4).unwrap();
+        assert_eq!(hash_state(&state), 0x625bbd214b17de76);
+        model.advance(&mut state, 300).unwrap();
+        assert_eq!(hash_state(&state), 0xbd25e437844301ca);
+        for (region, expected) in [
+            (1, 0x9b22fb069a6bceef),  // Water
+            (36, 0x94cb06ad7b82e690), // Ice
+            (44, 0x68035a2689a38030), // Tundra
+            (0, 0x94c69ed7fc664c24),  // Boreal
+            (117, 0x1263dc8b4bfcea78),
+            (5, 0x188ee27239db3e74),
+            (4, 0x90db9f5618dc7861),
+            (321, 0x09d28fa80a107564),
+            (13, 0x9aafd303bbd343e4),
+            (89, 0xe19d4cadee2a55c6),
+            (325, 0x3e19f9afebedcd14),
+        ] {
+            let series = model.region_series(&state, region).unwrap();
+            assert_eq!(hash_series(&series), expected, "region {region}");
+            assert_eq!(series[300], model.region(&state, region));
+        }
+    }
+
     #[test]
     fn multithreaded_run_is_bitwise_identical_to_single_threaded() {
-        let world = test_world("vegetation");
+        let mut recipe = test_recipe("first-light");
+        recipe.subdivision = 6;
+        let world = World::generate(recipe).unwrap();
         let normals = Normals::from_world(&world).unwrap();
-        let (m1, mut s1) = Model::new_with_threads(&world, &normals, Settings::default(), 1).unwrap();
-        let (m4, mut s4) = Model::new_with_threads(&world, &normals, Settings::default(), 4).unwrap();
-        assert_eq!(s1, s4, "spin-up state differs between 1 and 4 threads");
-        m1.advance(&mut s1, 50).unwrap();
-        m4.advance(&mut s4, 50).unwrap();
-        assert_eq!(s1, s4, "advanced state differs between 1 and 4 threads");
-        // Check region_series across water, tundra/ice, and temperate/tropical land regions.
-        let mut samples = Vec::new();
-        for kind in [0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] {
-            if let Some(idx) = normals.biome.iter().position(|&b| b == kind) {
-                samples.push(idx);
-            }
+        let (m1, mut s1) =
+            Model::new_with_threads(&world, &normals, Settings::default(), 1).unwrap();
+        let (m4, mut s4) =
+            Model::new_with_threads(&world, &normals, Settings::default(), 4).unwrap();
+        assert_eq!(hash_state(&s1), hash_state(&s4), "spin-up");
+        m4.advance(&mut s4, 301).unwrap();
+        for _ in 0..301 {
+            m1.advance(&mut s1, 1).unwrap();
         }
-        assert!(samples.len() >= 5);
-        for idx in samples {
-            let r1 = m1.region_series(&s1, idx).unwrap();
-            let r4 = m4.region_series(&s4, idx).unwrap();
-            assert_eq!(r1, r4, "region_series differs for region {idx}");
-            assert_eq!(r4[50], m4.region(&s4, idx), "region_series end differs for region {idx}");
+        assert_eq!(
+            hash_state(&s1),
+            hash_state(&s4),
+            "301-year state and summaries"
+        );
+
+        // Region 4 is in the largest warm component (3,105 land regions on this
+        // recipe), so its replay exercises parallel chunks as well as reduction-free work.
+        let climate_samples =
+            [Biome::Water, Biome::Tundra, Biome::TropicalRainforest].map(|class| {
+                normals
+                    .biome
+                    .iter()
+                    .position(|&label| label == class as u8)
+                    .unwrap()
+            });
+        for i in climate_samples.into_iter().chain([4]) {
+            let serial = m1.region_series(&s1, i).unwrap();
+            let parallel = m4.region_series(&s4, i).unwrap();
+            assert_eq!(hash_series(&serial), hash_series(&parallel), "region {i}");
+            assert_eq!(parallel[301], m4.region(&s4, i));
         }
+
+        // Existing checkpoints allow nonzero values in water cells. Neighbor seed
+        // supply reads the public state in surface order, including those values.
+        let coast = m1
+            .land
+            .iter()
+            .flat_map(|land| m1.neighbors(land.index))
+            .map(|&i| i as usize)
+            .find(|&i| world.water.body_ids[i] != 0)
+            .unwrap();
+        s1.woody[coast] = 0.25;
+        s4.woody[coast] = 0.25;
+        m1.advance(&mut s1, 7).unwrap();
+        m4.advance(&mut s4, 7).unwrap();
+        assert_eq!(
+            hash_state(&s1),
+            hash_state(&s4),
+            "public state with a water neighbor"
+        );
     }
 }

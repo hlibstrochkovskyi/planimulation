@@ -113,9 +113,9 @@ short rows for woody and herb capacities, seed supply from neighbors, the
 region's precipitation variability, productivity limits, woody change and the
 history. The chart shows the region's woody and herb cover and precipitation since
 year 0, with its driest year, the loss that followed and how long recovery took.
-Because neighbors interact, the core replays the whole surface from year 0 for a
-region history (about 1.8 s at 1,000 years and 40,962 regions); the result is
-identical to the run.
+Region histories replay the woody cover that can reach the selected region from
+year 0. Herbs, labels and productivity are calculated for the selected region.
+The history is identical to the run.
 
 `node --import tsx scripts/vegetation-review.ts OUTPUT_DIR [seed] [years]` captures
 the layers and an inspected region's history for visual review.
@@ -147,7 +147,32 @@ Default new-world recipe (`multiscale-geography-4`, 40,962 regions), 1,000 years
   probably larger than Earth's, where global land precipitation varies by a few
   percent. Shorter anomaly lengths reduce it but make the field lumpy with this
   number of centers. With 1,500 km it was 0.073–0.090.
-- Setup with the spin-up takes about 0.6 s; 1,000 years take about 1.8 s.
+- The [natural-world ensemble](natural-ensemble.md) extends these measurements
+  to 27 default seeds and 15 stress cases.
+
+### Core timings
+
+Release build with Rust 1.100.0 on a shared Ryzen 5 PRO 4650U. Medians of five
+repeats with `first-light` at subdivision 6. Setup includes the vegetation
+spin-up. The benchmark generates geography and climate outside the timed
+interval and replays region 4, in the largest connected component with a
+warmest month of at least 10 °C (3,105 land regions).
+
+| Core | Threads (setup / advance / replay) | Setup | 1,000-year advance | 1,000-year replay |
+| --- | --- | ---: | ---: | ---: |
+| Serial at `a655880` | 1 / 1 / 1 | 0.685 s | 2.457 s | 2.376 s |
+| Optimized, one CPU via affinity | 1 / 1 / 1 | 0.231 s | 1.186 s | 0.143 s |
+| Optimized, default | 6 / 6 / 5 | 0.084 s | 0.464 s | 0.098 s |
+
+The default core measured 5.3× faster for bulk advance and 24.3× faster for
+that history replay on this host.
+
+Run `cargo run --release --locked --manifest-path native/Cargo.toml --example vegetation_timing`.
+Bulk advances compute fixed land chunks in parallel and reduce per-region terms
+in the original order. Single-year calls run inline so coupled models can
+parallelize across seeds. Replay time depends on the connected component and the
+history length. These timings cover vegetation only. The coupled desktop path
+advances vegetation and wild food one year at a time.
 
 Calibration notes: without the root-zone and established-cover memories about
 4.3% of land changed class every year, mostly grassland and desert flipping.
@@ -170,6 +195,14 @@ Native tests in `native/src/vegetation.rs`:
   as the same region without neighbor seeds;
 - a checkpoint continued to year 30 matches an uninterrupted run, and region
   replays match the stored state;
+- one- and four-thread runs at subdivision 6 have identical state and summary
+  bits after 301 years, and their region replays agree;
+- the x86-64 GNU/Linux reference uses `first-light` at subdivision 4 and default
+  settings. An example containing the test's hash routines was compiled in
+  a clean archive of `a655880`. FNV-1a 64-bit over little-endian state fields
+  (each float's raw bits, including every summary) gave `625bbd214b17de76`
+  at year 0 and `bd25e437844301ca` at year 300. The fixture also retains
+  histories for one region in each of the 11 climate classes;
 - in a forest region, three years at 60% of normal precipitation cut woody cover
   by more than 0.2 and lower productivity, and recovery to within 0.05 takes at
   least five years.
