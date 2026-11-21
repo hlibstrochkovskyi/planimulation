@@ -402,6 +402,7 @@ impl World {
                 &terrain.elevation,
                 &water.body_ids,
                 water.level_meters,
+                &recipe.seed,
             )?;
             for (region, delta) in change.into_iter().enumerate() {
                 terrain.erosion[region] = delta;

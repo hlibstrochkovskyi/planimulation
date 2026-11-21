@@ -577,7 +577,7 @@ function inspect(id: number, preserveBasin = false): void {
     const extra = world.crust.thicknessMeters[id] - (7000 + 28000 * world.crust.continentality[id]);
     element('crust-note').textContent = `Version-1 smooth 3D geographic fields and fixed subdivision-5 reference sphere are retained. Continental potential excess ${interior.toFixed(6)} supplies ${(extra / 1000).toFixed(3)} km of additional initial crust thickness through 15 km × continentality × excess / (excess + 0.25). Density is unchanged. Thickness is bounded by 7–50 km; the common color palette saturates above 35 km. This is an initial continental-interior heuristic, not coast distance, crust age or simulated tectonic thickening.`;
     element('elevation-note').textContent = eroded
-      ? 'Version 4 plus two explicit contributions: the ocean floor (bathymetry-1) and erosion and deposition. In this build both are placeholders and still zero, so version 5 equals version 4. Display exaggeration changes no physical field.'
+      ? 'Version 4 plus two explicit contributions. Erosion and deposition replace dry land by a steady-state stream-power landscape (uplift balanced by river incision) whose regional mean follows the version-4 bed, so the drainage network carves its own valleys; fluvial relief is damped on low ground. Shorelines do not move. The ocean floor (bathymetry-1) is still zero in this build. This is an initial-condition synthesis, not a simulated geological history. Display exaggeration changes no physical field.'
       : lowlands
       ? `Version-3 crust, mountain belts and filled plains, plus coastal lowlands: dry height above the initial water level that is not belt uplift is scaled by a kept fraction rising smoothly from ${COASTAL_LOWLAND.coast} at the shore to ${COASTAL_LOWLAND.interior} beyond ${COASTAL_LOWLAND.rampKm} km of graph distance from water, a proxy for passive-margin subsidence and coastal-plain sediment. Every dry region stays above the water level, so shorelines do not move. These are procedural initial conditions, not plate history, river erosion or isostasy. Display exaggeration changes no physical field.`
       : belts
@@ -1254,7 +1254,7 @@ function updateGeneratorInputs(): void {
   for (const option of resolutionInput.options) option.disabled = Number(option.value) > finest;
   if (Number(resolutionInput.value) > finest) resolutionInput.value = String(finest);
   element('generator-note').textContent = generatorFamilyInput.value === MULTISCALE_ERODED_MODEL_VERSION
-    ? 'Experimental. Version 4 with places for an ocean floor and river erosion, and up to 163,842 regions. Both processes are not implemented yet, so the terrain still equals version 4. Changing the model creates a different world.'
+    ? 'Experimental. Version 4 with river-carved valleys and ridges from a steady-state stream-power landscape, and up to 163,842 regions. The ocean floor model is not implemented yet. Changing the model creates a different world.'
     : generatorFamilyInput.value === MULTISCALE_LOWLANDS_MODEL_VERSION
     ? 'Default for new worlds. Version 3 with coastal lowlands. Non-belt land height rises gradually with distance from water, so coastal plains are wider and interiors lower. Shorelines match version 3. Changing the model creates a different world.'
     : generatorFamilyInput.value === MULTISCALE_BELTS_MODEL_VERSION
