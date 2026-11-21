@@ -1,6 +1,6 @@
 //! Version-5 initial-condition synthesis: `multiscale-geography-5`. Reuses
-//! version 4 and adds two explicit elevation contributions: the ocean floor
-//! (`bathymetry::seafloor`) and fluvial landscape relief (`erosion`).
+//! version 4 and adds the ocean floor, fluvial landscape relief and routed
+//! sediment as explicit elevation contributions.
 //!
 //! Erosion replaces dry land by a steady-state stream-power landscape (uplift
 //! balanced by detachment-limited incision, `n = 1`), whose regional mean height
@@ -16,7 +16,8 @@ pub const MODEL_VERSION: &str = "multiscale-geography-5";
 pub const MAX_SUBDIVISION: u32 = 7;
 /// Coastal-lowland kept fractions at the shore and inland. Version 5 compresses
 /// less than version 4 because `bathymetry-1` raises the fitted water level.
-pub const LOWLAND_FACTORS: [f64; 2] = [0.5, 0.95];
+/// The pre-sediment envelope also leaves room for alluvial aggradation.
+pub const LOWLAND_FACTORS: [f64; 2] = [0.48, 0.935];
 /// Drainage-area exponent `m` of the stream-power law (concavity with `n = 1`).
 pub const AREA_EXPONENT: f64 = 0.5;
 /// Receiver/height updates; the network settles well before this on review seeds.
@@ -42,8 +43,8 @@ pub struct Landscape {
     pub iterations: usize,
 }
 
-/// Per-region erosion (negative) and deposition (positive) in meters, applied
-/// to the prepared bed after the initial water fit. Wet regions are unchanged.
+/// Signed fluvial adjustment in meters after the initial water fit. Negative
+/// changes supply the sediment stage. Positive changes fit the regional relief.
 pub fn erosion(
     surface: &Surface,
     elevation: &[f64],
@@ -223,7 +224,7 @@ fn link_factor(salt: u32, i: usize, j: usize) -> f64 {
 }
 
 /// Regions ordered from water upstream (each after its receiver).
-fn stack_order(receivers: &[u32], wet: &[u32], order: &mut Vec<usize>) {
+pub(crate) fn stack_order(receivers: &[u32], wet: &[u32], order: &mut Vec<usize>) {
     let n = receivers.len();
     let mut offsets = vec![0u32; n + 1];
     for (i, &r) in receivers.iter().enumerate() {
@@ -310,12 +311,14 @@ mod tests {
                 + t.preparation[i]
                 + t.lowland[i]
                 + t.seafloor[i]
-                + t.erosion[i];
+                + t.erosion[i]
+                + t.sediment[i];
             assert!((t.elevation[i] - sum).abs() < 1e-8);
         }
         let v4 = World::generate(recipe(coastal_lowlands::MODEL_VERSION, 4)).unwrap();
         assert!(v4.terrain.seafloor.iter().all(|&v| v == 0.));
         assert!(v4.terrain.erosion.iter().all(|&v| v == 0.));
+        assert!(v4.terrain.sediment.is_empty());
     }
 
     #[test]

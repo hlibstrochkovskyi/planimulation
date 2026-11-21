@@ -1,7 +1,7 @@
-//! Version-5 landscape diagnostics for one world: contribution ranges, land
-//! hypsometry, receiver directions and main-stem geometry of the largest rivers.
+//! Version-5 landscape diagnostics: sediment budget, land hypsometry, relief,
+//! dry basins, and main-stem geometry of the largest rivers.
 //! Usage: eroded_landscape_report [SEED] [SUBDIVISION] [MODEL_VERSION]
-use planimulation_core::{Recipe, World};
+use planimulation_core::{Recipe, World, water::Water};
 
 fn main() {
     let mut args = std::env::args().skip(1);
@@ -28,9 +28,102 @@ fn main() {
         ("lowland", &t.lowland),
         ("seafloor", &t.seafloor),
         ("erosion", &t.erosion),
+        ("sediment", &t.sediment),
     ] {
+        if v.is_empty() {
+            continue;
+        }
         let (a, b) = range(v);
         println!("  {name:12} {a:10.1} .. {b:10.1} m");
+    }
+    if let Some(b) = &w.sediment_budget {
+        let deposited = b.deposited();
+        let share = |v: f64| {
+            if deposited > 0. {
+                100. * v / deposited
+            } else {
+                0.
+            }
+        };
+        println!(
+            "  sediment (km³): supplied {:.0}, deposited {:.0}, marine bypass {:.0}, basin remainder {:.0}; closing error {:.3e} m³ ({:.3e} relative)",
+            b.supplied / 1e9,
+            deposited / 1e9,
+            b.marine_unplaced / 1e9,
+            b.basin_unplaced / 1e9,
+            b.closing_error(),
+            b.closing_error() / b.supplied.max(1.)
+        );
+        println!(
+            "  deposited shares: plains {:.2}%, fans {:.2}%, delta fronts {:.2}%, shelf wedges {:.2}%, basins {:.2}%; dry basins filled to spill {}",
+            share(b.plains),
+            share(b.fans),
+            share(b.deltas),
+            share(b.shelf),
+            share(b.basins),
+            b.dry_basins_filled
+        );
+        println!(
+            "  mapped deposits: {} deltas ({:.0} km²), alluvial plains {:.0} km², fans {:.0} km²",
+            b.delta_count,
+            b.delta_area / 1e6,
+            b.plain_area / 1e6,
+            b.fan_area / 1e6
+        );
+        for (name, site) in [("delta mouth", b.largest_delta), ("fan", b.largest_fan)] {
+            if let Some((volume, i)) = site {
+                let [x, y, z] = s.centers[i];
+                println!(
+                    "  largest {name}: region {i}, lat {:.3}°, lon {:.3}°, {:.0} km³",
+                    y.asin().to_degrees(),
+                    z.atan2(x).to_degrees(),
+                    volume / 1e9
+                );
+            }
+        }
+        let pre_sediment: Vec<_> = t
+            .elevation
+            .iter()
+            .zip(&t.sediment)
+            .map(|(h, d)| h - d)
+            .collect();
+        let prior = Water::generate(s, &pre_sediment, &w.recipe.water).unwrap();
+        let coverage = |water: &Water| -> f64 {
+            water
+                .body_ids
+                .iter()
+                .zip(&s.areas)
+                .filter(|(id, _)| **id != 0)
+                .map(|(_, &a)| a)
+                .sum::<f64>()
+                / s.areas.iter().sum::<f64>()
+                * 100.
+        };
+        let shelf_area = |water: &Water| -> f64 {
+            water
+                .depth_meters
+                .iter()
+                .zip(&water.body_ids)
+                .zip(&s.areas)
+                .filter(|&((&depth, &id), _)| {
+                    id == water.main_ocean_id && depth > 0. && depth <= 200.
+                })
+                .map(|(_, &area)| area)
+                .sum::<f64>()
+                / 1e6
+        };
+        let changed = wet
+            .iter()
+            .zip(&prior.body_ids)
+            .filter(|&(a, b)| (*a == 0) != (*b == 0))
+            .count();
+        println!(
+            "  water coverage {:.5}% -> {:.5}%, shoreline switches {changed}, marine 0–200 m area {:.0} -> {:.0} km²",
+            coverage(&prior),
+            coverage(&w.water),
+            shelf_area(&prior),
+            shelf_area(&w.water)
+        );
     }
     let mut heights: Vec<f64> = (0..n)
         .filter(|&i| wet[i] == 0)

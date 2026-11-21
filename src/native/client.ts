@@ -7,6 +7,8 @@ import type { World } from '../core/world';
 import { validateWater } from '../core/water';
 import { validateDrainage } from '../core/drainage';
 import { BASIN_ANALYSIS_VERSION, validateBasins } from '../core/basins';
+import { MAX_SEDIMENT_METERS, SEDIMENT_MODEL_VERSION } from '../core/terrain';
+import type { Terrain } from '../core/terrain';
 import type { DiagnosticFrame, PreparedMoistureWorld, PreparedSoilWorld, PreparedWaterWorld, PrescribedWaterMode, WaterBudget, WaterFrame } from '../shared/desktop-api';
 import { DEFAULT_TEMPERATURE_SETTINGS, TEMPERATURE_DAYS_PER_YEAR, TEMPERATURE_MODEL_VERSION, TEMPERATURE_MONTHS_PER_YEAR } from '../core/seasonal-temperature';
 import type { TemperatureNormals } from '../core/seasonal-temperature';
@@ -76,7 +78,7 @@ export class FrameReader {
         const checkpoint = seasonal !== undefined && seasonal.checkpointKind === h?.kind;
         if (!h || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0
           || h.byteLength > (checkpoint ? MAX_SEASONAL_CHECKPOINT_BYTES : MAX_BYTES)
-          || (seasonal ? h.protocol !== seasonal.protocol : (h.protocol !== 9 && h.protocol !== 10)
+          || (seasonal ? h.protocol !== seasonal.protocol : (h.protocol !== 9 && h.protocol !== 10 && !(h.protocol === 11 && h.kind === 'world'))
             || !['world', 'frame', 'water', 'temperature', 'wind', 'climate', 'rivers', 'vegetation', 'vegetationSeries', 'wildFood', 'wildFoodSeries', 'forage', 'traversalCosts', 'traversalField', 'checkpoint', 'error'].includes(h.kind))) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
@@ -107,14 +109,17 @@ export function decodeWorld(packet: Packet): World {
   const belts = recipe.modelVersion === MULTISCALE_BELTS_MODEL_VERSION || lowlands;
   const continentalUplands = recipe.modelVersion === MULTISCALE_UPLANDS_MODEL_VERSION || belts;
   const prepared = recipe.modelVersion !== 'basins-1';
-  if (h.protocol !== (prepared ? 10 : 9)) throw new Error('Native protocol does not match the terrain model.');
+  if (h.protocol !== (eroded ? 11 : prepared ? 10 : 9)
+    || h.sedimentModelVersion !== (eroded ? SEDIMENT_MODEL_VERSION : undefined)) {
+    throw new Error('Native protocol does not match the terrain model.');
+  }
   const neighbors = 6 * n - 12, faces = 60 * 4 ** recipe.subdivision;
   const b = h.boundarySegmentCount;
   if (typeof b !== 'number' || !Number.isInteger(b) || b < 2 || b > neighbors || b % 2) throw new Error('Invalid native boundary count.');
   const k = h.basinNodeCount;
   if (typeof k !== 'number' || !Number.isInteger(k) || k < 1 || k > 2 * n - 1 || h.basinAnalysisVersion !== BASIN_ANALYSIS_VERSION) throw new Error('Invalid native basin metadata.');
   const expectedBytes = n * 24 + faces * 4 + (n + 1) * 8 + neighbors * 12 + n * 16 + neighbors * 48
-    + n * 4 + recipe.plateCount * 28 + b * 76 + 8 + n * ((prepared ? 80 : 72) + (lowlands ? 8 : 0) + (eroded ? 16 : 0)) + 20 + n * 32 + n * 4 + k * 44;
+    + n * 4 + recipe.plateCount * 28 + b * 76 + 8 + n * ((prepared ? 80 : 72) + (lowlands ? 8 : 0) + (eroded ? 24 : 0)) + 20 + n * 32 + n * 4 + k * 44;
   if (bytes.length !== expectedBytes) throw new Error('Invalid native world array lengths.');
   let cursor = 0;
   const f64 = (length: number): Float64Array => {
@@ -136,6 +141,7 @@ export function decodeWorld(packet: Packet): World {
   const preparation = prepared ? f64(n) : new Float64Array(n);
   const lowland = lowlands ? f64(n) : undefined;
   const seafloor = eroded ? f64(n) : undefined, erosion = eroded ? f64(n) : undefined;
+  const sediment = eroded ? f64(n) : undefined;
   const elevation = f64(n);
   const metadata = h.terrainPreparation as { appliedPasses?: unknown; transportedCubicMeters?: unknown } | undefined;
   if ((prepared && (!metadata || !Number.isSafeInteger(metadata.appliedPasses)
@@ -144,7 +150,8 @@ export function decodeWorld(packet: Packet): World {
     || metadata.transportedCubicMeters < 0)) || (!prepared && h.terrainPreparation !== undefined)) {
     throw new Error('Invalid native terrain-preparation metadata.');
   }
-  const terrain = { baseline, convergence, divergence, detail, preparation, ...(lowland ? { lowland } : {}), ...(seafloor && erosion ? { seafloor, erosion } : {}), elevation,
+  const terrain: Terrain = { baseline, convergence, divergence, detail, preparation, ...(lowland ? { lowland } : {}),
+    ...(seafloor && erosion && sediment ? { seafloor, erosion, sediment, sedimentModelVersion: SEDIMENT_MODEL_VERSION } : {}), elevation,
     appliedPasses: prepared ? metadata!.appliedPasses as number : 0,
     transportedCubicMeters: prepared ? metadata!.transportedCubicMeters as number : 0 };
   const water = { levelMeters: f64(1)[0], resolvedVolumeCubicMeters: f64(1)[0], depthMeters: f64(n), bodyIds: u32(n), mainOceanId: u32(1)[0] };
@@ -159,8 +166,10 @@ export function decodeWorld(packet: Packet): World {
       || Math.abs(terrain.preparation[i]) > (recipe.terrainPreparationPasses ?? 0) * 100 + (belts ? BELTS_MAX_FILL_METERS : 0) + 1e-8
       || (lowland && !(lowland[i] <= 0 && lowland[i] >= -12000))
       || (seafloor && !(Math.abs(seafloor[i]) <= 12000)) || (erosion && !(Math.abs(erosion[i]) <= 12000))
+      || (sediment && !(sediment[i] >= 0 && sediment[i] <= MAX_SEDIMENT_METERS))
       || Math.abs(terrain.elevation[i] - (terrain.baseline[i] + terrain.convergence[i] + terrain.divergence[i]
-        + terrain.detail[i] + terrain.preparation[i] + (lowland ? lowland[i] : 0) + (seafloor ? seafloor[i] : 0) + (erosion ? erosion[i] : 0))) > 1e-8) {
+        + terrain.detail[i] + terrain.preparation[i] + (lowland?.[i] ?? 0) + (seafloor?.[i] ?? 0)
+        + (erosion?.[i] ?? 0) + (sediment?.[i] ?? 0))) > 1e-8) {
       throw new Error('Invalid native elevation contributions.');
     }
     if (continentalUplands && (Math.abs(crust.thicknessMeters[i] - continentalUplandsThickness(

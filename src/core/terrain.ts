@@ -1,5 +1,8 @@
 import type { Surface } from './surface';
 
+export const SEDIMENT_MODEL_VERSION = 'sediment-1';
+export const MAX_SEDIMENT_METERS = 12_000;
+
 /** All fields are meters relative to a reference sphere, not sea level. */
 export interface Terrain {
   baseline: Float64Array;
@@ -11,8 +14,11 @@ export interface Terrain {
   lowland?: Float64Array;
   /** Ocean-floor contribution; present only for multiscale-geography-5. */
   seafloor?: Float64Array;
-  /** Erosion (negative) and deposition (positive); present only for multiscale-geography-5. */
+  /** Signed fluvial relief adjustment; present only for multiscale-geography-5. */
   erosion?: Float64Array;
+  /** Routed sediment thickness; present only for multiscale-geography-5. */
+  sediment?: Float64Array;
+  sedimentModelVersion?: typeof SEDIMENT_MODEL_VERSION;
   elevation: Float64Array;
   transportedCubicMeters: number;
   appliedPasses: number;

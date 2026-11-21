@@ -282,6 +282,7 @@ pub struct World {
     pub tectonics: tectonics::Tectonics,
     pub crust: crust::Crust,
     pub terrain: terrain::Terrain,
+    pub sediment_budget: Option<sediment::Budget>,
     pub water: water::Water,
     pub drainage: drainage::Drainage,
     pub basins: basins::Basins,
@@ -431,6 +432,41 @@ impl World {
             }
             water = water::Water::generate(&surface, &terrain.elevation, &recipe.water)?;
         }
+        let sediment_budget = if eroded {
+            let wet_storage = match recipe.water {
+                water::WaterSettings::Coverage { .. } => f64::INFINITY,
+                water::WaterSettings::Volume { .. } => {
+                    let mut wet_area = 0.;
+                    let mut lowest_land = f64::INFINITY;
+                    for (i, &body) in water.body_ids.iter().enumerate() {
+                        if body == 0 {
+                            lowest_land = lowest_land.min(terrain.elevation[i]);
+                        } else {
+                            wet_area += surface.areas[i];
+                        }
+                    }
+                    // Bound the water-level rise from displaced water before refitting.
+                    (lowest_land - water.level_meters).max(0.) * 0.5 * wet_area
+                }
+            };
+            let (added, budget) = sediment::deposit(
+                &surface,
+                &terrain.elevation,
+                &terrain.erosion,
+                &water,
+                wet_storage,
+            );
+            for (i, &height) in added.iter().enumerate() {
+                terrain.elevation[i] += height;
+            }
+            terrain.sediment = added;
+            if budget.deposited() > 0. {
+                water = water::Water::generate(&surface, &terrain.elevation, &recipe.water)?;
+            }
+            Some(budget)
+        } else {
+            None
+        };
         let drainage = drainage::Drainage::build(&surface, &terrain.elevation, &water.body_ids);
         let basins = basins::Basins::build(&surface, &terrain.elevation)?;
         let mut rng = Random::stream(&recipe.seed, "diagnostic-field");
@@ -470,6 +506,7 @@ impl World {
             tectonics,
             crust,
             terrain,
+            sediment_budget,
             water,
             drainage,
             basins,
@@ -554,6 +591,7 @@ pub mod runoff_transport;
 pub mod seasonal_moisture;
 pub mod seasonal_temperature;
 pub mod seasonal_wind;
+pub mod sediment;
 pub mod sediment_delivery;
 pub mod sediment_deposition;
 pub mod sedimentary_landscape;
