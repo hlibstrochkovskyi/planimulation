@@ -20,6 +20,7 @@ test('version-5 worlds carry ocean-floor and erosion contributions and allow sub
     assert.deepEqual(decodeWorld(await session.request({ command: 'generate', recipe })), world);
     const { seafloor, erosion, lowland } = world.terrain;
     assert.ok(seafloor && erosion && lowland);
+    assert.ok(seafloor.some(value => Math.abs(value) > 100), 'The native ocean floor changes the version-5 bed.');
     const exported = resolvedWorldRecord(world) as { terrain: { seafloor: Float64Array; erosion: Float64Array } };
     assert.deepEqual(exported.terrain.seafloor, seafloor);
     assert.deepEqual(exported.terrain.erosion, erosion);
