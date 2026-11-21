@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import type { ChildProcessWithoutNullStreams } from 'node:child_process';
-import { BELTS_MAX_FILL_METERS, MULTISCALE_BELTS_MODEL_VERSION, MULTISCALE_LOWLANDS_MODEL_VERSION, MULTISCALE_UPLANDS_MODEL_VERSION, parseRecipe } from '../core/recipe';
+import { BELTS_MAX_FILL_METERS, MULTISCALE_BELTS_MODEL_VERSION, MULTISCALE_ERODED_MODEL_VERSION, MULTISCALE_LOWLANDS_MODEL_VERSION, MULTISCALE_UPLANDS_MODEL_VERSION, parseRecipe } from '../core/recipe';
 import { continentalUplandsThickness, columnBuoyancyBaseline } from '../core/continental-uplands';
 import type { Recipe } from '../core/recipe';
 import type { World } from '../core/world';
@@ -32,7 +32,8 @@ import { SOIL_MOISTURE_CONTRACT } from '../shared/soil-moisture';
 import type { SoilMoistureFrame } from '../shared/soil-moisture';
 import { decodeSoilMoisture } from './soil-moisture';
 
-const MAX_BYTES = 32 * 2 ** 20;
+// A subdivision-7 world packet is about 100 MiB; keep headroom without allowing unbounded allocations.
+const MAX_BYTES = 160 * 2 ** 20;
 const MAX_COMMAND_BYTES = 8 * 2 ** 20;
 type Header = { protocol: number; byteLength: number; kind: string; [key: string]: unknown };
 export interface Packet { header: Header; bytes: Buffer }
@@ -58,7 +59,7 @@ export class FrameReader {
     return out;
   }
   push(chunk: Buffer): void {
-    if (this.length + chunk.length > MAX_SEASONAL_CHECKPOINT_BYTES + 32772) throw new Error('Native frame exceeds memory budget.');
+    if (this.length + chunk.length > Math.max(MAX_SEASONAL_CHECKPOINT_BYTES, MAX_BYTES) + 32772) throw new Error('Native frame exceeds memory budget.');
     if (chunk.length) { this.chunks.push(chunk); this.length += chunk.length; }
     for (;;) {
       if (this.headerLength === null) {
@@ -101,7 +102,8 @@ export function decodeWorld(packet: Packet): World {
   const { header: h, bytes } = packet;
   if (h.kind !== 'world') throw new Error('Expected native world.');
   const recipe = parseRecipe(h.recipe), n = 10 * 4 ** recipe.subdivision + 2;
-  const lowlands = recipe.modelVersion === MULTISCALE_LOWLANDS_MODEL_VERSION;
+  const eroded = recipe.modelVersion === MULTISCALE_ERODED_MODEL_VERSION;
+  const lowlands = recipe.modelVersion === MULTISCALE_LOWLANDS_MODEL_VERSION || eroded;
   const belts = recipe.modelVersion === MULTISCALE_BELTS_MODEL_VERSION || lowlands;
   const continentalUplands = recipe.modelVersion === MULTISCALE_UPLANDS_MODEL_VERSION || belts;
   const prepared = recipe.modelVersion !== 'basins-1';
@@ -112,7 +114,7 @@ export function decodeWorld(packet: Packet): World {
   const k = h.basinNodeCount;
   if (typeof k !== 'number' || !Number.isInteger(k) || k < 1 || k > 2 * n - 1 || h.basinAnalysisVersion !== BASIN_ANALYSIS_VERSION) throw new Error('Invalid native basin metadata.');
   const expectedBytes = n * 24 + faces * 4 + (n + 1) * 8 + neighbors * 12 + n * 16 + neighbors * 48
-    + n * 4 + recipe.plateCount * 28 + b * 76 + 8 + n * ((prepared ? 80 : 72) + (lowlands ? 8 : 0)) + 20 + n * 32 + n * 4 + k * 44;
+    + n * 4 + recipe.plateCount * 28 + b * 76 + 8 + n * ((prepared ? 80 : 72) + (lowlands ? 8 : 0) + (eroded ? 16 : 0)) + 20 + n * 32 + n * 4 + k * 44;
   if (bytes.length !== expectedBytes) throw new Error('Invalid native world array lengths.');
   let cursor = 0;
   const f64 = (length: number): Float64Array => {
@@ -133,6 +135,7 @@ export function decodeWorld(packet: Packet): World {
   const baseline = f64(n), convergence = f64(n), divergence = f64(n), detail = f64(n);
   const preparation = prepared ? f64(n) : new Float64Array(n);
   const lowland = lowlands ? f64(n) : undefined;
+  const seafloor = eroded ? f64(n) : undefined, erosion = eroded ? f64(n) : undefined;
   const elevation = f64(n);
   const metadata = h.terrainPreparation as { appliedPasses?: unknown; transportedCubicMeters?: unknown } | undefined;
   if ((prepared && (!metadata || !Number.isSafeInteger(metadata.appliedPasses)
@@ -141,7 +144,7 @@ export function decodeWorld(packet: Packet): World {
     || metadata.transportedCubicMeters < 0)) || (!prepared && h.terrainPreparation !== undefined)) {
     throw new Error('Invalid native terrain-preparation metadata.');
   }
-  const terrain = { baseline, convergence, divergence, detail, preparation, ...(lowland ? { lowland } : {}), elevation,
+  const terrain = { baseline, convergence, divergence, detail, preparation, ...(lowland ? { lowland } : {}), ...(seafloor && erosion ? { seafloor, erosion } : {}), elevation,
     appliedPasses: prepared ? metadata!.appliedPasses as number : 0,
     transportedCubicMeters: prepared ? metadata!.transportedCubicMeters as number : 0 };
   const water = { levelMeters: f64(1)[0], resolvedVolumeCubicMeters: f64(1)[0], depthMeters: f64(n), bodyIds: u32(n), mainOceanId: u32(1)[0] };
@@ -155,8 +158,9 @@ export function decodeWorld(packet: Packet): World {
       || Math.abs(terrain.detail[i]) > recipe.detailAmplitudeMeters + 1e-9
       || Math.abs(terrain.preparation[i]) > (recipe.terrainPreparationPasses ?? 0) * 100 + (belts ? BELTS_MAX_FILL_METERS : 0) + 1e-8
       || (lowland && !(lowland[i] <= 0 && lowland[i] >= -12000))
+      || (seafloor && !(Math.abs(seafloor[i]) <= 12000)) || (erosion && !(Math.abs(erosion[i]) <= 12000))
       || Math.abs(terrain.elevation[i] - (terrain.baseline[i] + terrain.convergence[i] + terrain.divergence[i]
-        + terrain.detail[i] + terrain.preparation[i] + (lowland ? lowland[i] : 0))) > 1e-8) {
+        + terrain.detail[i] + terrain.preparation[i] + (lowland ? lowland[i] : 0) + (seafloor ? seafloor[i] : 0) + (erosion ? erosion[i] : 0))) > 1e-8) {
       throw new Error('Invalid native elevation contributions.');
     }
     if (continentalUplands && (Math.abs(crust.thicknessMeters[i] - continentalUplandsThickness(

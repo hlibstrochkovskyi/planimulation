@@ -1,7 +1,7 @@
 import './style.css';
 import { Workspace } from './workspace';
 import { MapNavigation } from './map-navigation';
-import { DEFAULT_RECIPE, LEGACY_MODEL_VERSION, MULTISCALE_GEOGRAPHY_MODEL_VERSION, BELTS_MAX_FILL_METERS, COASTAL_LOWLAND, MULTISCALE_BELTS_MODEL_VERSION, MULTISCALE_LOWLANDS_MODEL_VERSION, MULTISCALE_UPLANDS_MODEL_VERSION, NEW_WORLD_RECIPE, parseRecipe } from '../core/recipe';
+import { DEFAULT_RECIPE, LEGACY_MODEL_VERSION, MULTISCALE_GEOGRAPHY_MODEL_VERSION, BELTS_MAX_FILL_METERS, COASTAL_LOWLAND, MULTISCALE_BELTS_MODEL_VERSION, MULTISCALE_ERODED_MODEL_VERSION, MULTISCALE_LOWLANDS_MODEL_VERSION, MULTISCALE_UPLANDS_MODEL_VERSION, NEW_WORLD_RECIPE, maxSubdivision, parseRecipe } from '../core/recipe';
 import type { Recipe } from '../core/recipe';
 import type { World } from '../core/world';
 import type { DesktopAPI, PreparedMoistureWorld, PreparedSoilWorld, PreparedWaterWorld, PrescribedWaterMode, WaterBudget, WaterFrame } from '../shared/desktop-api';
@@ -553,14 +553,17 @@ function inspect(id: number, preserveBasin = false): void {
   }
   const boundaryDetails = element('boundary-details');
   const elevationDetails = element('elevation-details'); elevationDetails.replaceChildren();
-  const lowlands = world.recipe.modelVersion === MULTISCALE_LOWLANDS_MODEL_VERSION;
+  const eroded = world.recipe.modelVersion === MULTISCALE_ERODED_MODEL_VERSION;
+  const lowlands = world.recipe.modelVersion === MULTISCALE_LOWLANDS_MODEL_VERSION || eroded;
   const belts = world.recipe.modelVersion === MULTISCALE_BELTS_MODEL_VERSION || lowlands;
   const continentalUplands = world.recipe.modelVersion === MULTISCALE_UPLANDS_MODEL_VERSION || belts;
   const multiscaleGeography = world.recipe.modelVersion === MULTISCALE_GEOGRAPHY_MODEL_VERSION || continentalUplands;
   for (const [label, value] of [['Crust baseline', world.terrain.baseline[id]], [belts ? 'Mountain-belt uplift' : 'Convergence uplift', world.terrain.convergence[id]],
     ['Divergence (ridge − rift)', world.terrain.divergence[id]], [multiscaleGeography ? 'Conditioned multiscale detail' : 'Bounded detail', world.terrain.detail[id]],
     [belts ? 'Dry preparation + filled plains' : 'Dry preparation', world.terrain.preparation[id]],
-    ...(world.terrain.lowland ? [['Coastal lowland', world.terrain.lowland[id]] as const] : []), ['Total elevation', world.terrain.elevation[id]]] as const) {
+    ...(world.terrain.lowland ? [['Coastal lowland', world.terrain.lowland[id]] as const] : []),
+    ...(world.terrain.seafloor ? [['Ocean floor', world.terrain.seafloor[id]] as const] : []),
+    ...(world.terrain.erosion ? [['Erosion and deposition', world.terrain.erosion[id]] as const] : []), ['Total elevation', world.terrain.elevation[id]]] as const) {
     const row = document.createElement('li'); row.textContent = `${label}: ${value.toFixed(2)} m`; elevationDetails.append(row);
   }
   element('crust-note').textContent = multiscaleGeography
@@ -573,7 +576,9 @@ function inspect(id: number, preserveBasin = false): void {
     const interior = Math.max(world.crust.potential[id] - world.crust.threshold, 0);
     const extra = world.crust.thicknessMeters[id] - (7000 + 28000 * world.crust.continentality[id]);
     element('crust-note').textContent = `Version-1 smooth 3D geographic fields and fixed subdivision-5 reference sphere are retained. Continental potential excess ${interior.toFixed(6)} supplies ${(extra / 1000).toFixed(3)} km of additional initial crust thickness through 15 km × continentality × excess / (excess + 0.25). Density is unchanged. Thickness is bounded by 7–50 km; the common color palette saturates above 35 km. This is an initial continental-interior heuristic, not coast distance, crust age or simulated tectonic thickening.`;
-    element('elevation-note').textContent = lowlands
+    element('elevation-note').textContent = eroded
+      ? 'Version 4 plus two explicit contributions: the ocean floor (bathymetry-1) and erosion and deposition. In this build both are placeholders and still zero, so version 5 equals version 4. Display exaggeration changes no physical field.'
+      : lowlands
       ? `Version-3 crust, mountain belts and filled plains, plus coastal lowlands: dry height above the initial water level that is not belt uplift is scaled by a kept fraction rising smoothly from ${COASTAL_LOWLAND.coast} at the shore to ${COASTAL_LOWLAND.interior} beyond ${COASTAL_LOWLAND.rampKm} km of graph distance from water, a proxy for passive-margin subsidence and coastal-plain sediment. Every dry region stays above the water level, so shorelines do not move. These are procedural initial conditions, not plate history, river erosion or isostasy. Display exaggeration changes no physical field.`
       : belts
       ? `Variable initial continental columns set the crust-buoyancy baseline. Convergent belts use graph distance to closing plate boundaries, looked up at a noise-warped direction, with noise-varied width and along-belt strength and ridged ranges; the continental side receives most uplift. After bounded dry preparation, closed dry depressions shallower than ${BELTS_MAX_FILL_METERS} m are filled to their spill level as sediment plains; deeper ones remain closed basins. These are procedural initial conditions, not plate history, river erosion or isostasy. Display exaggeration changes no physical field.`
@@ -1245,7 +1250,12 @@ function setInputs(recipe: Recipe): void {
 function updateGeneratorInputs(): void {
   const legacy = generatorFamilyInput.value === LEGACY_MODEL_VERSION;
   terrainPreparationInput.disabled = legacy;
-  element('generator-note').textContent = generatorFamilyInput.value === MULTISCALE_LOWLANDS_MODEL_VERSION
+  const finest = maxSubdivision(generatorFamilyInput.value);
+  for (const option of resolutionInput.options) option.disabled = Number(option.value) > finest;
+  if (Number(resolutionInput.value) > finest) resolutionInput.value = String(finest);
+  element('generator-note').textContent = generatorFamilyInput.value === MULTISCALE_ERODED_MODEL_VERSION
+    ? 'Experimental. Version 4 with places for an ocean floor and river erosion, and up to 163,842 regions. Both processes are not implemented yet, so the terrain still equals version 4. Changing the model creates a different world.'
+    : generatorFamilyInput.value === MULTISCALE_LOWLANDS_MODEL_VERSION
     ? 'Default for new worlds. Version 3 with coastal lowlands. Non-belt land height rises gradually with distance from water, so coastal plains are wider and interiors lower. Shorelines match version 3. Changing the model creates a different world.'
     : generatorFamilyInput.value === MULTISCALE_BELTS_MODEL_VERSION
     ? 'Continental uplands with meandering, varied mountain belts and sediment-filled shallow depressions for connected drainage. Changing the model creates a different world.'

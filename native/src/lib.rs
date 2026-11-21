@@ -36,7 +36,8 @@ impl Recipe {
                 | geography::MODEL_VERSION
                 | continental_uplands::MODEL_VERSION
                 | mountain_belts::MODEL_VERSION
-                | coastal_lowlands::MODEL_VERSION,
+                | coastal_lowlands::MODEL_VERSION
+                | eroded_landscape::MODEL_VERSION,
                 Some(passes),
             ) if passes <= terrain_preparation::MAX_PASSES => {}
             _ => return Err("Unsupported terrain model or preparation pass count.".into()),
@@ -44,7 +45,12 @@ impl Recipe {
         if self.seed.trim().is_empty() || self.seed.encode_utf16().count() > 128 {
             return Err("Seed must contain 1–128 UTF-16 code units and cannot be blank.".into());
         }
-        if self.subdivision > 6
+        let max_subdivision = if self.model_version == eroded_landscape::MODEL_VERSION {
+            eroded_landscape::MAX_SUBDIVISION
+        } else {
+            6
+        };
+        if self.subdivision > max_subdivision
             || !self.radius_meters.is_finite()
             || !(100_000.0..=20_000_000.0).contains(&self.radius_meters)
         {
@@ -143,7 +149,7 @@ pub struct Surface {
 
 impl Surface {
     pub fn build(level: u32, radius: f64) -> Self {
-        assert!(level <= 6 && radius.is_finite() && radius > 0.0);
+        assert!(level <= eroded_landscape::MAX_SUBDIVISION && radius.is_finite() && radius > 0.0);
         Self::build_geometry(level, radius)
     }
 
@@ -284,7 +290,8 @@ impl World {
     pub fn generate(recipe: Recipe) -> Result<Self, String> {
         recipe.validate()?;
         let surface = Surface::build(recipe.subdivision, recipe.radius_meters);
-        let lowlands = recipe.model_version == coastal_lowlands::MODEL_VERSION;
+        let eroded = recipe.model_version == eroded_landscape::MODEL_VERSION;
+        let lowlands = recipe.model_version == coastal_lowlands::MODEL_VERSION || eroded;
         let belts = recipe.model_version == mountain_belts::MODEL_VERSION || lowlands;
         let crust = if recipe.model_version == continental_uplands::MODEL_VERSION || belts {
             continental_uplands::build_crust(
@@ -356,6 +363,14 @@ impl World {
                     + terrain.detail[i];
             }
         }
+        if eroded {
+            let floor =
+                bathymetry::seafloor(&surface, &crust, &tectonics, &recipe, &terrain.elevation)?;
+            for (region, depth) in floor.into_iter().enumerate() {
+                terrain.seafloor[region] = depth;
+                terrain.elevation[region] += depth;
+            }
+        }
         if let Some(passes) = recipe.terrain_preparation_passes {
             let prepared = terrain_preparation::prepare(&surface, &terrain.elevation, passes)?;
             for region in 0..terrain.elevation.len() {
@@ -379,6 +394,18 @@ impl World {
             for (region, lowered) in lowering.into_iter().enumerate() {
                 terrain.lowland[region] = lowered;
                 terrain.elevation[region] += lowered;
+            }
+        }
+        if eroded {
+            let change = eroded_landscape::erosion(
+                &surface,
+                &terrain.elevation,
+                &water.body_ids,
+                water.level_meters,
+            )?;
+            for (region, delta) in change.into_iter().enumerate() {
+                terrain.erosion[region] = delta;
+                terrain.elevation[region] += delta;
             }
         }
         if belts {
@@ -480,6 +507,7 @@ impl World {
 }
 
 pub mod basins;
+pub mod bathymetry;
 pub mod climate_normals;
 pub mod coastal_lowlands;
 pub mod continental_uplands;
@@ -487,6 +515,7 @@ pub mod crust;
 pub mod depression_analysis;
 pub mod drainage;
 pub mod drainage_landforms;
+pub mod eroded_landscape;
 pub mod exact_initial_accounting;
 pub mod facet_incision;
 pub mod fixed_geological_field;

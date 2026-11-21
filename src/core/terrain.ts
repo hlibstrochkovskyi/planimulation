@@ -9,6 +9,10 @@ export interface Terrain {
   preparation: Float64Array;
   /** Coastal-lowland compression (zero or negative); present only for multiscale-geography-4. */
   lowland?: Float64Array;
+  /** Ocean-floor contribution; present only for multiscale-geography-5. */
+  seafloor?: Float64Array;
+  /** Erosion (negative) and deposition (positive); present only for multiscale-geography-5. */
+  erosion?: Float64Array;
   elevation: Float64Array;
   transportedCubicMeters: number;
   appliedPasses: number;

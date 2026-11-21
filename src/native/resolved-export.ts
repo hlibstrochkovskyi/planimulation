@@ -26,7 +26,7 @@ export function resolvedWorldRecord(world: World): object {
     crust: { threshold: c.threshold, potential: c.potential, continentality: c.continentality,
       thicknessMeters: c.thicknessMeters, densityKgPerCubicMeter: c.densityKgPerCubicMeter },
     terrain: { baseline: h.baseline, convergence: h.convergence, divergence: h.divergence,
-      detail: h.detail, preparation: h.preparation, ...(h.lowland ? { lowland: h.lowland } : {}), elevation: h.elevation,
+      detail: h.detail, preparation: h.preparation, ...(h.lowland ? { lowland: h.lowland } : {}), ...(h.seafloor && h.erosion ? { seafloor: h.seafloor, erosion: h.erosion } : {}), elevation: h.elevation,
       transportedCubicMeters: h.transportedCubicMeters, appliedPasses: h.appliedPasses },
     water: { levelMeters: w.levelMeters, resolvedVolumeCubicMeters: w.resolvedVolumeCubicMeters,
       depthMeters: w.depthMeters, bodyIds: w.bodyIds, mainOceanId: w.mainOceanId },

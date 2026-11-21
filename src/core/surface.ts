@@ -14,7 +14,7 @@ export interface Surface {
 }
 
 export function buildSurface(subdivision: number, radiusMeters: number): Surface {
-  if (!Number.isInteger(subdivision) || subdivision < 0 || subdivision > 6) {
+  if (!Number.isInteger(subdivision) || subdivision < 0 || subdivision > 7) {
     throw new Error('Unsupported subdivision.');
   }
   if (!Number.isFinite(radiusMeters) || radiusMeters <= 0) throw new Error('Radius must be positive.');

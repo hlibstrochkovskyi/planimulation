@@ -4,6 +4,9 @@ export const MULTISCALE_GEOGRAPHY_MODEL_VERSION = 'multiscale-geography-1';
 export const MULTISCALE_UPLANDS_MODEL_VERSION = 'multiscale-geography-2';
 export const MULTISCALE_BELTS_MODEL_VERSION = 'multiscale-geography-3';
 export const MULTISCALE_LOWLANDS_MODEL_VERSION = 'multiscale-geography-4';
+export const MULTISCALE_ERODED_MODEL_VERSION = 'multiscale-geography-5';
+/** Finest subdivision per generator family; only version 5 supports 163,842 regions. */
+export const maxSubdivision = (modelVersion: string): number => modelVersion === MULTISCALE_ERODED_MODEL_VERSION ? 7 : 6;
 /** Upper bound of version-3 sediment-filled depression thickness, in meters. */
 export const BELTS_MAX_FILL_METERS = 200;
 /** Display copy of the native multiscale-geography-4 coastal-lowland constants. */
@@ -15,7 +18,7 @@ export type WaterSettings = { mode: 'coverage'; fraction: number } | { mode: 'vo
 
 export interface Recipe {
   schemaVersion: 1;
-  modelVersion: typeof MODEL_VERSION | typeof CONTINUOUS_PLATES_MODEL_VERSION | typeof MULTISCALE_GEOGRAPHY_MODEL_VERSION | typeof MULTISCALE_UPLANDS_MODEL_VERSION | typeof MULTISCALE_BELTS_MODEL_VERSION | typeof MULTISCALE_LOWLANDS_MODEL_VERSION | typeof LEGACY_MODEL_VERSION;
+  modelVersion: typeof MODEL_VERSION | typeof CONTINUOUS_PLATES_MODEL_VERSION | typeof MULTISCALE_GEOGRAPHY_MODEL_VERSION | typeof MULTISCALE_UPLANDS_MODEL_VERSION | typeof MULTISCALE_BELTS_MODEL_VERSION | typeof MULTISCALE_LOWLANDS_MODEL_VERSION | typeof MULTISCALE_ERODED_MODEL_VERSION | typeof LEGACY_MODEL_VERSION;
   randomVersion: typeof RANDOM_VERSION;
   seed: string;
   subdivision: number;
@@ -73,7 +76,8 @@ export function parseRecipe(value: unknown): Recipe {
   }
   if (input.schemaVersion !== 1 || (input.modelVersion !== MODEL_VERSION && input.modelVersion !== CONTINUOUS_PLATES_MODEL_VERSION
     && input.modelVersion !== MULTISCALE_GEOGRAPHY_MODEL_VERSION && input.modelVersion !== MULTISCALE_UPLANDS_MODEL_VERSION
-    && input.modelVersion !== MULTISCALE_BELTS_MODEL_VERSION && input.modelVersion !== MULTISCALE_LOWLANDS_MODEL_VERSION && !legacy) || input.randomVersion !== RANDOM_VERSION) {
+    && input.modelVersion !== MULTISCALE_BELTS_MODEL_VERSION && input.modelVersion !== MULTISCALE_LOWLANDS_MODEL_VERSION
+    && input.modelVersion !== MULTISCALE_ERODED_MODEL_VERSION && !legacy) || input.randomVersion !== RANDOM_VERSION) {
     throw new Error('Unsupported recipe or random version.');
   }
   for (const key of keys) {
@@ -82,8 +86,9 @@ export function parseRecipe(value: unknown): Recipe {
   if (typeof input.seed !== 'string' || input.seed.trim().length === 0 || input.seed.length > 128) {
     throw new Error('Seed must contain 1–128 characters and cannot be blank.');
   }
-  if (!Number.isInteger(input.subdivision) || Number(input.subdivision) < 0 || Number(input.subdivision) > 6) {
-    throw new Error('Subdivision must be an integer from 0 to 6.');
+  const finest = maxSubdivision(String(input.modelVersion));
+  if (!Number.isInteger(input.subdivision) || Number(input.subdivision) < 0 || Number(input.subdivision) > finest) {
+    throw new Error(`Subdivision must be an integer from 0 to ${finest}.`);
   }
   if (typeof input.radiusMeters !== 'number' || !Number.isFinite(input.radiusMeters)
     || input.radiusMeters < 100_000 || input.radiusMeters > 20_000_000) {
