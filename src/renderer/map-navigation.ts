@@ -73,7 +73,18 @@ export class MapNavigation {
     tilt.title = view.tilt > 1 ? 'Return to top-down view (U)' : 'Tilt the globe (O)';
     tilt.setAttribute('aria-pressed', String(view.tilt > 1));
     element('reset-view').title = globe ? 'Reset globe view (R)' : 'Fit map (R)';
-    element('projection-label').textContent = globe ? 'Globe · computed relief' : 'Equirectangular projection';
+    const mapDataset = element('map').dataset;
+    const onSurface = !mapDataset.activeLayer || mapDataset.activeLayer === 'surface';
+    const isNatural = mapDataset.surfaceStyle !== 'hypsometric';
+    const hasDetail = mapDataset.displayDetail !== 'false' && mapDataset.smoothShading !== 'false';
+    const surfaceTag = onSurface
+      ? isNatural
+        ? (hasDetail ? ' · Natural color · display detail' : ' · Natural color')
+        : ' · Relief tint'
+      : '';
+    element('projection-label').textContent = globe
+      ? (onSurface ? `Globe${surfaceTag}` : 'Globe · computed relief')
+      : (onSurface ? `Equirectangular${surfaceTag}` : 'Equirectangular projection');
     element('map-gesture-hint').textContent = globe ? 'Drag to move · Shift + drag to tilt · Scroll to zoom' : 'Drag to pan · Scroll to zoom · Click to inspect';
     element('camera-position').hidden = !globe;
     element('camera-position').textContent = `${Math.abs(view.latitude).toFixed(1)}° ${view.latitude >= 0 ? 'N' : 'S'} · ${Math.abs(view.longitude).toFixed(1)}° ${view.longitude >= 0 ? 'E' : 'W'}`;

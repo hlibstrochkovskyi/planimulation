@@ -664,7 +664,12 @@ const navigation = new MapNavigation(map);
 function updateLegend(): void {
   const thickenedColumns = !!world && [MULTISCALE_UPLANDS_MODEL_VERSION, MULTISCALE_BELTS_MODEL_VERSION, MULTISCALE_LOWLANDS_MODEL_VERSION].includes(world.recipe.modelVersion as never);
   const legends: Record<Exclude<Layer, keyof typeof MOISTURE_LAYERS>, [string, string, string]> = {
-    surface: [`Land and water surface${hasRegionalSurface(moistureFrame) ? ' · regional seasonal liquid; initial reference heads prescribed' : waterFrame ? ' · prescribed-water display' : ''} · hypsometric tint by elevation, not biomes · interpolated shoreline is a display approximation`, '', ''],
+    surface: [
+      `Land and water surface${hasRegionalSurface(moistureFrame) ? ' · regional seasonal liquid; initial reference heads prescribed' : waterFrame ? ' · prescribed-water display' : ''}${map.getSurfaceStyle() === 'natural'
+        ? ` · natural color from vegetation, climate & relief${map.getDisplayDetail() ? ' · display-only detail & smooth shoreline' : ' · smoothed shoreline'}`
+        : ' · hypsometric tint by elevation, not biomes · interpolated shoreline is a display approximation'}`,
+      '', '',
+    ],
     signal: ['Seed field · dimensionless diagnostic', '−1', '+1'],
     area: ['Region area · true spherical area', world ? `${number.format(world.stats.minimumAreaSquareMeters / 1e6)} km²` : 'min', world ? `${number.format(world.stats.maximumAreaSquareMeters / 1e6)} km²` : 'max'],
     latitude: ['Latitude · distance from the equator', '90°', '0°'],
@@ -1276,11 +1281,30 @@ function updateWaterInputs(): void {
 }
 waterModeInput.addEventListener('change', updateWaterInputs);
 function updateExaggeration(): void {
-  const requested = Number(element<HTMLSelectElement>('exaggeration').value);
+  const raw = element<HTMLSelectElement>('exaggeration').value;
+  if (raw === 'auto') {
+    const applied = map.setExaggeration('auto');
+    element('exaggeration-note').textContent = `Globe relief and water: ${number.format(applied)}× adaptive (3.5×–6.5× by zoom) · display only; flat map stays flat`;
+    return;
+  }
+  const requested = Number(raw);
   const applied = map.setExaggeration(requested);
   element('exaggeration-note').textContent = `Globe relief and water: ${number.format(applied)}× applied${applied < requested ? ` (${requested}× requested; 20% radius display limit)` : ''} · display only; flat map stays flat`;
 }
 element('exaggeration').addEventListener('change', updateExaggeration);
+element<HTMLSelectElement>('surface-style').addEventListener('change', (event) => {
+  const style = (event.target as HTMLSelectElement).value === 'hypsometric' ? 'hypsometric' : 'natural';
+  map.setSurfaceStyle(style);
+  element<HTMLInputElement>('seasonal-snow').disabled = style !== 'natural' || temperatureNormals === null;
+  updateLegend();
+});
+element<HTMLInputElement>('display-detail').addEventListener('change', (event) => {
+  map.setDisplayDetail((event.target as HTMLInputElement).checked);
+  updateLegend();
+});
+element<HTMLInputElement>('seasonal-snow').addEventListener('change', (event) => {
+  map.setSeasonalSnow((event.target as HTMLInputElement).checked);
+});
 resolutionInput.addEventListener('change', () => { plateCountInput.max = String(Math.min(32, 10 * 4 ** Number(resolutionInput.value) + 2)); });
 
 async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | PreparedMoistureWorld | PreparedSoilWorld): Promise<void> {
@@ -1402,6 +1426,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
         maximum: normals.annualMaximumCelsius.reduce((high, value) => Math.max(high, value), -Infinity),
       };
       temperatureLayerButton.disabled = false; temperatureMonthInput.disabled = false;
+      element<HTMLInputElement>('seasonal-snow').disabled = map.getSurfaceStyle() !== 'natural';
       element('temperature-note').textContent = 'Select a region to inspect solar geometry, initial wetness, elevation, and thermal response time.';
       updateLegend();
     } catch (error) {
@@ -1673,7 +1698,6 @@ for (const button of document.querySelectorAll<HTMLButtonElement>('button[data-v
     for (const other of document.querySelectorAll('button[data-view]')) {
       other.classList.toggle('active', other === button); other.setAttribute('aria-pressed', String(other === button));
     }
-    element('projection-label').textContent = mode === 'flat' ? 'Equirectangular projection' : 'Globe · computed relief';
   });
 }
 

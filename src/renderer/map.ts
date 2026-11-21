@@ -1,4 +1,4 @@
-import { BufferAttribute, BufferGeometry, DataTexture, DoubleSide, FloatType, Group, LineBasicMaterial,
+import { BufferAttribute, BufferGeometry, DataTexture, DoubleSide, FloatType, FrontSide, Group, LineBasicMaterial,
   LineSegments, Mesh, MOUSE, NearestFilter, OrthographicCamera, PerspectiveCamera, Raycaster, RGBAFormat,
   Points, Scene, ShaderMaterial, Vector2, Vector3, WebGLRenderer } from 'three';
 import type { Object3D } from 'three';
@@ -12,8 +12,13 @@ import type { WaterFrame } from '../shared/desktop-api';
 import { speedCmPerYear } from '../core/tectonics';
 import type { ViewCorners, ViewGeometry, ViewPair } from './view-geometry';
 import { relaxedMask, reliefGradients } from './shading';
-import { buildDrainageLines, DRAINAGE_LINE_WIDTHS, PERENNIAL_LINE_COLORS, RIVER_LINE_WIDTHS, SEASONAL_LINE_COLORS } from './rivers';
+import { buildDrainageLines, DRAINAGE_LINE_WIDTHS, NATURAL_PERENNIAL_COLORS, NATURAL_RIVER_WIDTHS,
+  NATURAL_SEASONAL_COLORS, PERENNIAL_LINE_COLORS, RIVER_LINE_WIDTHS, SEASONAL_LINE_COLORS } from './rivers';
 import { displaceDirections, effectiveExaggeration } from './relief';
+import { computeNaturalSurface, computeReliefMetrics } from './natural-color';
+import type { ReliefMetrics, SurfaceStyle } from './natural-color';
+import { computeCoastField, REFINEMENT_GLSL, seedOffsetFromString } from './refinement';
+import type { CoastField, LodPatchData } from './refinement';
 import { summarizeTerrain } from '../core/terrain';
 import { buildWaterSurface, pickSurface } from './water-surface';
 import { summarizeBasins } from '../core/basins';
@@ -111,9 +116,12 @@ export function travelCostColor(hoursPer100Km: number): Rgb {
 /** Child order inside each view group. Picking and visibility depend on these indices. */
 const RIVERS = 5;
 const ROUTE = 6;
+const LOD = 7;
+const RIVERS_DETAIL = 8;
 const ROUTE_RENDER_ORDER = 1 + Math.max(DRAINAGE_LINE_WIDTHS.length, 2 * RIVER_LINE_WIDTHS.length);
 // Screen-space strips keep their winding when the globe embedding is reflected.
 const RIVER_MATERIAL = { transparent: true, depthWrite: false, side: DoubleSide, forceSinglePass: true };
+export type { SurfaceStyle };
 export interface NavigationView extends PlanetView { mode: ViewMode; radiusMeters: number }
 
 export class SurfaceMap {
@@ -127,39 +135,63 @@ export class SurfaceMap {
   private readonly resizeObserver: ResizeObserver;
   private readonly raycaster = new Raycaster();
   private readonly worldSun = new Vector3(.25, .28, .927).normalize();
+  private readonly activeSun = new Vector3(-.4, .6, 1).normalize();
   private distantLighting = true;
   private readonly material = new ShaderMaterial({
     side: DoubleSide,
     uniforms: { field: { value: null }, textureWidth: { value: 1 }, textureHeight: { value: 1 },
       cornerField: { value: null }, cornerWidth: { value: 1 }, cornerHeight: { value: 1 },
-      tintField: { value: null }, cornerTintField: { value: null }, biomeMode: { value: 0 }, precipitationMode: { value: 0 },
+      tintField: { value: null }, cornerTintField: { value: null },
+      detailField: { value: null }, cornerDetailField: { value: null },
+      lodMaskField: { value: null }, lodActive: { value: 0 }, lodPass: { value: 0 },
+      lodExaggeration: { value: 0 },
+      biomeMode: { value: 0 }, naturalMode: { value: 1 }, detailEnabled: { value: 1 },
+      seedOffset: { value: new Vector3() }, precipitationMode: { value: 0 },
       smoothMode: { value: 0 }, reliefStrength: { value: 0 },
       selected: { value: -1 }, globe: { value: 0 }, categorical: { value: 0 }, muted: { value: 0 }, waterMode: { value: 0 },
       surfaceMode: { value: 0 }, waterSurface: { value: 0 }, missingMode: { value: 0 },
       basinMode: { value: 0 }, spillFrom: { value: -1 }, spillTo: { value: -1 }, temperatureMode: { value: 0 }, windMode: { value: 0 },
       travelTimeMode: { value: 0 }, movementMode: { value: 0 },
       isochroneLevels: { value: ISOCHRONE_DAYS.map(travelTimeCoordinate) },
-      distantLightMix: { value: 0 }, sunDirection: { value: this.worldSun } },
-    // Field texels hold (value, wet mask, east slope, north slope) for regions and for
-    // shared dual corners. Vertices blend a region center with two corners.
-    vertexShader: `attribute float region; attribute vec2 cornerPair; attribute vec3 weight;
+      distantLightMix: { value: 0 }, sunDirection: { value: this.worldSun }, activeSunDirection: { value: this.activeSun } },
+    // Field texels hold (value, wet mask, east slope, north slope); detail texels hold
+    // (coast phi, strict wet/dry sign, local relief m, lake factor) for regions and dual corners.
+    vertexShader: `attribute float region; attribute vec2 cornerPair; attribute vec3 weight; attribute float radialOffset;
       uniform sampler2D field; uniform float textureWidth; uniform float textureHeight;
       uniform sampler2D cornerField; uniform float cornerWidth; uniform float cornerHeight;
       uniform sampler2D tintField; uniform sampler2D cornerTintField;
-      varying float cell; varying vec4 blended; varying vec4 tint; varying vec3 direction; varying vec3 planetDirection;
+      uniform sampler2D detailField; uniform sampler2D cornerDetailField;
+      uniform sampler2D lodMaskField; uniform float lodActive; uniform float lodPass; uniform float lodExaggeration;
+      uniform float globe;
+      varying float cell; varying vec4 blended; varying vec4 tint; varying vec4 detailVal;
+      varying float centerWeight; varying vec3 modelDir; varying vec2 flatCoord;
+      varying vec3 direction; varying vec3 planetDirection;
       vec4 texel(sampler2D map, float id, float width, float height) {
         return texture2D(map, vec2((mod(id,width)+0.5)/width,(floor(id/width)+0.5)/height));
       }
-      void main() { cell=region;
+      void main() {
+        cell=region;
+        centerWeight=weight.x;
+        if(globe>0.5 && lodActive>0.5 && lodPass<0.5 && texel(lodMaskField,region,textureWidth,textureHeight).r>0.5) {
+          gl_Position=vec4(2.0,2.0,2.0,1.0);
+          return;
+        }
         blended=weight.x*texel(field,region,textureWidth,textureHeight)
           +weight.y*texel(cornerField,cornerPair.x,cornerWidth,cornerHeight)
           +weight.z*texel(cornerField,cornerPair.y,cornerWidth,cornerHeight);
         tint=weight.x*texel(tintField,region,textureWidth,textureHeight)
           +weight.y*texel(cornerTintField,cornerPair.x,cornerWidth,cornerHeight)
           +weight.z*texel(cornerTintField,cornerPair.y,cornerWidth,cornerHeight);
-        direction=normalMatrix*(length(position)>0.0 ? normalize(position) : vec3(0.0,0.0,1.0));
-        planetDirection=(modelMatrix*vec4(position,1.0)).xyz;
-        gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+        detailVal=weight.x*texel(detailField,region,textureWidth,textureHeight)
+          +weight.y*texel(cornerDetailField,cornerPair.x,cornerWidth,cornerHeight)
+          +weight.z*texel(cornerDetailField,cornerPair.y,cornerWidth,cornerHeight);
+        vec3 pos=position;
+        if(lodPass>0.5) pos=position*(1.0+lodExaggeration*radialOffset);
+        flatCoord=position.xy;
+        modelDir=globe>0.5 ? (length(position)>0.0 ? normalize(position) : vec3(1.0,0.0,0.0)) : vec3(1.0,0.0,0.0);
+        direction=normalMatrix*(length(pos)>0.0 ? normalize(pos) : vec3(0.0,0.0,1.0));
+        planetDirection=(modelMatrix*vec4(pos,1.0)).xyz;
+        gl_Position=projectionMatrix*modelViewMatrix*vec4(pos,1.0); }`,
     fragmentShader: `uniform sampler2D field; uniform float textureWidth; uniform float textureHeight;
       uniform float smoothMode; uniform float reliefStrength;
       uniform sampler2D tintField; uniform float travelTimeMode; uniform float movementMode;
@@ -167,9 +199,14 @@ export class SurfaceMap {
       uniform float selected; uniform float globe; uniform float categorical; uniform float muted; uniform float waterMode;
       uniform float surfaceMode; uniform float waterSurface; uniform float missingMode;
       uniform float basinMode; uniform float spillFrom; uniform float spillTo; uniform float temperatureMode; uniform float windMode;
-      uniform float distantLightMix; uniform vec3 sunDirection; uniform float biomeMode; uniform float precipitationMode;
-      varying float cell; varying vec4 blended; varying vec4 tint; varying vec3 direction; varying vec3 planetDirection;
-      // Atlas-style hypsometric and bathymetric tints in meters. They are not biomes.
+      uniform float distantLightMix; uniform vec3 sunDirection; uniform vec3 activeSunDirection;
+      uniform float biomeMode; uniform float naturalMode; uniform float detailEnabled;
+      uniform vec3 seedOffset; uniform float precipitationMode;
+      varying float cell; varying vec4 blended; varying vec4 tint; varying vec4 detailVal;
+      varying float centerWeight; varying vec3 modelDir; varying vec2 flatCoord;
+      varying vec3 direction; varying vec3 planetDirection;
+      ${REFINEMENT_GLSL}
+      // Atlas-style hypsometric and bathymetric tints in meters (selectable Relief tint style).
       vec3 hypsometric(float h) {
         vec3 c=vec3(0.33,0.47,0.29);
         c=mix(c,vec3(0.48,0.58,0.34),smoothstep(0.0,300.0,h));
@@ -179,11 +216,11 @@ export class SurfaceMap {
         return mix(c,vec3(0.88,0.88,0.88),smoothstep(3200.0,5200.0,h));
       }
       vec3 bathymetric(float d) {
-        vec3 c=vec3(0.38,0.68,0.78);
-        c=mix(c,vec3(0.18,0.46,0.64),smoothstep(0.0,250.0,d));
-        c=mix(c,vec3(0.09,0.29,0.51),smoothstep(250.0,1500.0,d));
-        c=mix(c,vec3(0.04,0.15,0.35),smoothstep(1500.0,4500.0,d));
-        return mix(c,vec3(0.02,0.08,0.22),smoothstep(4500.0,8000.0,d));
+        vec3 c=vec3(0.24,0.48,0.63);
+        c=mix(c,vec3(0.14,0.36,0.55),smoothstep(0.0,250.0,d));
+        c=mix(c,vec3(0.08,0.25,0.46),smoothstep(250.0,1500.0,d));
+        c=mix(c,vec3(0.04,0.14,0.33),smoothstep(1500.0,4500.0,d));
+        return mix(c,vec3(0.02,0.08,0.21),smoothstep(4500.0,8000.0,d));
       }
       void main() {
         float id=floor(cell+0.5);
@@ -192,17 +229,85 @@ export class SurfaceMap {
         vec4 sampled=smoothMode>0.5 ? blended : own;
         float v=sampled.r, m=sampled.g;
         bool wet=false;
+        float landMix=1.0;
+        vec3 mDir;
+        if(globe>0.5) {
+          mDir=normalize(modelDir);
+        } else {
+          float lon=flatCoord.x*3.14159265359;
+          float lat=clamp(flatCoord.y*3.14159265359,-1.5707963,1.5707963);
+          float cl=cos(lat);
+          mDir=vec3(cl*cos(lon),sin(lat),cl*sin(lon));
+        }
+        float pixelArc=length(fwidth(mDir));
+        float fineWeight=smoothstep(0.0045,0.0008,pixelArc);
+        float localRelief=max(0.0,detailVal.b);
+        float rugged=smoothstep(80.0,1400.0,localRelief);
+        bool useDetail=smoothMode>0.5 && detailEnabled>0.5;
+        float phiDetail=detailVal.r;
+
         vec3 color=mix(vec3(0.16,0.28,0.33),vec3(0.73,0.80,0.63),clamp(v,0.0,1.0));
         if(categorical>0.5) color=0.51+0.23*cos(6.2831853*(v*0.618033989+vec3(0.0,0.33,0.67)));
         if(waterMode>0.5 && waterMode<1.5) color=m>0.0 ? vec3(0.34,0.36,0.30) : mix(vec3(0.18,0.62,0.75),vec3(0.025,0.10,0.26),clamp(v,0.0,1.0));
         if(waterMode>1.5 && v<0.5) color=vec3(0.34,0.36,0.30);
         if(missingMode>0.5 && v<0.0) color=vec3(0.34,0.36,0.30);
+
+        float detailSignal=0.0;
+        vec2 detailGrad=vec2(0.0);
         if(surfaceMode>0.5) {
-          // Interpolated masks give a display shoreline midway between wet and dry centers.
           bool frozenCap=movementMode>0.5 && waterSurface>0.5 && own.g>0.0;
-          if(waterSurface>0.5 && !frozenCap && (smoothMode>0.5 || movementMode>0.5) && m>0.0) discard;
-          wet=!frozenCap && (waterSurface>0.5 || m<0.0);
-          color=wet ? bathymetric(max(-v,0.0)) : biomeMode>0.5 ? tint.rgb : hypsometric(max(v,0.0));
+          if(smoothMode>0.5 && movementMode<0.5) {
+            // Zero contour of interpolated height relative to water level, with bounded coastal detail.
+            float coastBand=smoothstep(0.02,0.32,1.0-abs(detailVal.g));
+            float centerGuard=1.0-smoothstep(0.72,0.94,centerWeight);
+            float coastMask=coastBand*centerGuard;
+            if(useDetail && coastMask>0.001) {
+              float coastAmp=(0.28+0.18*rugged)*coastMask;
+              phiDetail+=coastAmp*sampleCoastNoise(mDir,seedOffset,fineWeight);
+            }
+            if(waterSurface>0.5 && !frozenCap && phiDetail>0.0) discard;
+            float fw=max(fwidth(phiDetail),0.0012);
+            landMix=waterSurface>0.5 ? 0.0 : smoothstep(-fw*0.85,fw*0.85,phiDetail);
+            wet=!frozenCap && (waterSurface>0.5 || phiDetail<0.0);
+          } else {
+            if(waterSurface>0.5 && !frozenCap && (smoothMode>0.5 || movementMode>0.5) && m>0.0) discard;
+            wet=!frozenCap && (waterSurface>0.5 || m<0.0);
+            landMix=wet ? 0.0 : 1.0;
+          }
+
+          float waterDepth=(smoothMode>0.5 && movementMode<0.5) ? 160.0*sinh(min(max(-phiDetail,0.0),5.5)) : max(-v,0.0);
+          vec3 waterColor=naturalMode>0.5 ? naturalWater(waterDepth,detailVal.a) : bathymetric(waterDepth);
+          vec3 landColor=biomeMode>0.5 ? tint.rgb : hypsometric(max(v,0.0));
+
+          // Single-pass analytical fractal micro-relief normals & alpine rock/snow detail on land.
+          if(useDetail && landMix>0.01 && reliefStrength>0.0) {
+            float coastTaper=smoothstep(0.0,0.25,max(0.0,phiDetail));
+            if(coastTaper>0.005) {
+              float mh=length(mDir.xz);
+              vec3 mEast=mh<1e-6 ? vec3(1.0,0.0,0.0) : vec3(-mDir.z/mh,0.0,mDir.x/mh);
+              vec3 mNorth=cross(mEast,mDir);
+              vec4 dg=sampleDetailGrad(mDir,seedOffset,rugged,fineWeight);
+              detailSignal=dg.x;
+              // Scale micro-relief slopes strongly in mountains, gently on hills, almost zero on flat plains.
+              float ampSlope=(0.0014+0.0165*rugged)*coastTaper;
+              detailGrad=vec2(dot(dg.yzw,mEast),dot(dg.yzw,mNorth))*ampSlope;
+              if(naturalMode>0.5 && biomeMode>0.5) {
+                float microSlope=length(detailGrad);
+                float rockiness=clamp(tint.a,0.0,1.0);
+                // Steep alpine micro-slopes expose bare granite/slate; ridges hold crisp snow accents.
+                float screeMix=smoothstep(0.22,0.95,microSlope)*rugged*(0.24+0.48*rockiness);
+                vec3 rockTint=vec3(0.46,0.445,0.425);
+                landColor=mix(landColor,rockTint,screeMix);
+                float coldPeak=smoothstep(0.38,0.85,rockiness)*smoothstep(0.12,0.52,detailSignal)*smoothstep(2000.0,3600.0,v+detailSignal*420.0);
+                landColor=mix(landColor,vec3(0.88,0.905,0.93),coldPeak*0.48);
+                // Subtle satellite micro-texture breaks up 112-km interpolation softness on forests & deserts.
+                float texStrength=(0.055+0.045*rugged)*(1.0-smoothstep(0.82,0.93,landColor.r));
+                landColor*=(1.0+detailSignal*texStrength);
+              }
+            }
+          }
+          color=mix(waterColor,landColor,landMix);
+
           if(travelTimeMode>0.5) {
             // Isochrones follow interpolated log-time. The owning cell decides
             // reachability, so contour lines never continue onto another landmass.
@@ -220,11 +325,23 @@ export class SurfaceMap {
             }
           }
         }
-        if(reliefStrength>0.0) {
-          vec3 n=normalize(vec3(-blended.b,-blended.a,1.0)), light=normalize(vec3(-0.55,0.65,0.75));
-          float shade=clamp(dot(n,light)/light.z,0.3,1.45);
-          color*=mix(1.0,shade,reliefStrength*(wet ? 0.35 : 1.0));
+
+        // Softly compress relief gradients so alpine ridges sculpt crisply without black walls.
+        vec2 rawGrad=blended.ba+detailGrad;
+        float gMag=length(rawGrad);
+        vec2 gSoft=rawGrad/(1.0+0.48*gMag);
+        float reliefWeight=reliefStrength*mix(0.22,1.0,landMix);
+
+        if(globe<0.5 && reliefWeight>0.0) {
+          vec3 n=normalize(vec3(-gSoft.x,-gSoft.y,1.0));
+          vec3 light=normalize(vec3(-0.56,0.62,0.55));
+          float delta=dot(n,light)-light.z;
+          vec3 shadeTint=delta>=0.0
+            ? mix(vec3(1.0),vec3(1.22,1.19,1.12),clamp(delta*1.55,0.0,1.0))
+            : mix(vec3(1.0),vec3(0.52,0.58,0.68),clamp(-delta*1.35,0.0,1.0));
+          color*=mix(vec3(1.0),shadeTint,reliefWeight);
         }
+
         if(temperatureMode>0.5) {
           vec3 cold=vec3(0.10,0.20,0.48), cool=vec3(0.29,0.68,0.82);
           vec3 mild=vec3(0.89,0.88,0.64), hot=vec3(0.83,0.24,0.13);
@@ -246,33 +363,75 @@ export class SurfaceMap {
         if(basinMode>0.5 && (abs(cell-spillFrom)<0.25 || abs(cell-spillTo)<0.25)) color=vec3(0.15,0.95,0.94);
         if(abs(cell-selected)<0.25) color=vec3(0.96,0.78,0.42);
         if(globe>0.5) {
-          vec3 normal=normalize(direction), light=normalize(vec3(-0.4,0.6,1.0));
-          vec3 survey=color*(0.4+0.6*max(0.0,dot(normal,light)));
-          float solar=dot(normalize(planetDirection),sunDirection);
-          float day=smoothstep(-0.035,0.065,solar);
-          vec3 daylight=mix(vec3(1.0,0.78,0.58),vec3(1.0),smoothstep(0.0,0.25,solar))*(0.16+0.84*max(0.0,solar));
-          vec3 orbital=color*mix(vec3(0.012,0.018,0.03),daylight,day);
+          vec3 worldUp=normalize(planetDirection);
+          float wh=length(worldUp.xz);
+          vec3 wEast=wh<1e-6 ? vec3(1.0,0.0,0.0) : vec3(worldUp.z/wh,0.0,-worldUp.x/wh);
+          vec3 wNorth=cross(worldUp,wEast);
+          vec3 worldNormal=reliefWeight>0.0
+            ? normalize(worldUp-wEast*(gSoft.x*reliefWeight)-wNorth*(gSoft.y*reliefWeight))
+            : worldUp;
+          float macroDot=dot(worldUp,activeSunDirection);
+          float normalDot=dot(worldNormal,activeSunDirection);
+          float hemi=0.46+0.54*smoothstep(-0.26,0.92,macroDot);
+          float slopeDelta=normalDot-macroDot;
+          vec3 reliefTint=slopeDelta>=0.0
+            ? mix(vec3(1.0),vec3(1.22,1.19,1.12),clamp(slopeDelta*1.55,0.0,1.0))
+            : mix(vec3(1.0),vec3(0.54,0.60,0.70),clamp(-slopeDelta*1.40,0.0,1.0));
+          vec3 survey=color*hemi*reliefTint;
+
+          float solar=dot(worldUp,sunDirection);
+          float solarSlope=dot(worldNormal,sunDirection);
+          float day=smoothstep(-0.04,0.075,solar);
+          float litSlope=clamp(0.18+0.88*max(0.0,mix(solar,solarSlope,0.88)),0.0,1.16);
+          vec3 daylight=mix(vec3(1.0,0.76,0.54),vec3(1.0,0.99,0.97),smoothstep(0.0,0.26,solar))*litSlope;
+          vec3 orbital=color*mix(vec3(0.014,0.020,0.034),daylight,day);
           color=mix(survey,orbital,distantLightMix);
         }
         gl_FragColor=vec4(color,1.0);
       }`,
   });
   private readonly waterMaterial = this.material.clone();
+  private readonly lodMaterial = this.material.clone();
   private readonly lineMaterial = new LineBasicMaterial({ color: '#304849', transparent: true, opacity: .45 });
   private readonly tectonicMaterial = new LineBasicMaterial({ vertexColors: true });
   private views: Record<ViewMode, Group> | null = null;
   private texture: DataTexture | null = null;
   private cornerTexture: DataTexture | null = null;
+  private detailTexture: DataTexture | null = null;
+  private cornerDetailTexture: DataTexture | null = null;
+  private lodMaskTexture: DataTexture | null = null;
   private values = new Float32Array(0);
   private cornerValues = new Float32Array(0);
+  private detailValues = new Float32Array(0);
+  private cornerDetailValues = new Float32Array(0);
+  private lodMaskValues = new Float32Array(0);
   private corners: ViewCorners | null = null;
+  private reliefMetrics: ReliefMetrics | null = null;
+  private coastField: CoastField | null = null;
   private smoothShading = true;
   private reliefShading = true;
   private drainageLines = true;
+  private surfaceStyle: SurfaceStyle = 'natural';
+  private seasonalSnow = false;
+  private displayDetail = true;
+  private adaptiveExaggeration = true;
+  private lodRequestId = 0;
+  private lodTimer = 0;
+  private lastLodFocus: [number, number, number] = [0, 0, 0];
+  private lastLodDistance = Infinity;
+  private lastLodSubdivision = 1;
+  private lodTriangles = 0;
+  private baseGlobeTriangles = 0;
+  private baseFlatTriangles = 0;
   private readonly riverMaterials = [
-    ...DRAINAGE_LINE_WIDTHS.map(linewidth => new LineMaterial({ ...RIVER_MATERIAL, color: 0x4d9cc9, linewidth })),
+    ...DRAINAGE_LINE_WIDTHS.map(linewidth => new LineMaterial({ ...RIVER_MATERIAL, color: 0x3b78a4, linewidth })),
     ...RIVER_LINE_WIDTHS.map((linewidth, i) => new LineMaterial({ ...RIVER_MATERIAL, color: PERENNIAL_LINE_COLORS[i], linewidth })),
     ...RIVER_LINE_WIDTHS.map((width, i) => new LineMaterial({ ...RIVER_MATERIAL, color: SEASONAL_LINE_COLORS[i], linewidth: width * .68 })),
+  ];
+  private readonly riverDetailMaterials = [
+    ...DRAINAGE_LINE_WIDTHS.map(linewidth => new LineMaterial({ ...RIVER_MATERIAL, color: 0x3b78a4, linewidth: linewidth * 0.88 })),
+    ...RIVER_LINE_WIDTHS.map((linewidth, i) => new LineMaterial({ ...RIVER_MATERIAL, color: PERENNIAL_LINE_COLORS[i], linewidth: linewidth * 0.88 })),
+    ...RIVER_LINE_WIDTHS.map((width, i) => new LineMaterial({ ...RIVER_MATERIAL, color: SEASONAL_LINE_COLORS[i], linewidth: width * .62 })),
   ];
   private rivers: Rivers | null = null;
   private readonly routeCasingMaterial = new LineMaterial({ color: 0x0b1220, linewidth: 5.5, transparent: true, opacity: 0.85, side: DoubleSide, depthWrite: false });
@@ -312,7 +471,7 @@ export class SurfaceMap {
   private windMaximum = 10;
   private mode: ViewMode = 'flat';
   private layer: Layer = 'surface';
-  private exaggeration = 10;
+  private exaggeration = 3.5;
   private appliedExaggeration = NaN;
   private terrainRange = { minimumMeters: 0, maximumMeters: 1 };
   private maximumDepth = 1;
@@ -367,10 +526,11 @@ export class SurfaceMap {
   };
 
   constructor(private readonly canvas: HTMLCanvasElement, private readonly select: (id: number) => void) {
-    // Share field/selection uniforms, but distinguish the raised water mesh.
-    this.waterMaterial.uniforms = { ...this.material.uniforms, waterSurface: { value: 1 } };
+    // Share field/selection uniforms, distinguishing raised water and refined LOD passes.
+    this.waterMaterial.uniforms = { ...this.material.uniforms, waterSurface: { value: 1 }, lodPass: { value: 0 } };
     this.waterMaterial.polygonOffset = true;
     this.waterMaterial.polygonOffsetFactor = -1; this.waterMaterial.polygonOffsetUnits = -1;
+    this.lodMaterial.uniforms = { ...this.material.uniforms, waterSurface: { value: 0 }, lodPass: { value: 1 } };
     this.renderer = new WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.renderer.setClearColor('#0c1721');
@@ -386,11 +546,19 @@ export class SurfaceMap {
     this.controls.minDistance = 1.3; this.controls.maxDistance = 8;
     this.controls.addEventListener('change', this.handleControlsChange);
     canvas.dataset.sky = 'loading';
+    canvas.dataset.surfaceStyle = this.surfaceStyle;
+    canvas.dataset.displayDetail = String(this.displayDetail);
+    canvas.dataset.seasonalSnow = String(this.seasonalSnow);
     this.space = new SpaceBackdrop(this.renderer.getPixelRatio(), ready => {
       canvas.dataset.sky = ready ? 'ready' : 'fallback'; this.notifyNavigation(); this.draw();
     });
     this.scene.add(this.space);
-    this.planetCamera = new PlanetCamera(this.globeCamera, canvas, () => { this.draw(); this.notifyNavigation(); });
+    this.planetCamera = new PlanetCamera(this.globeCamera, canvas, () => {
+      this.syncAdaptiveExaggeration();
+      this.scheduleLodUpdate();
+      this.draw();
+      this.notifyNavigation();
+    });
     canvas.addEventListener('pointerdown', (e) => {
       if (!e.isPrimary) return;
       this.pointerStart = [e.clientX, e.clientY]; this.pointerMoved = false;
@@ -450,6 +618,7 @@ export class SurfaceMap {
     if (!width || !height) return;
     this.renderer.setSize(width, height, false);
     for (const material of this.riverMaterials) material.resolution.set(width, height);
+    for (const material of this.riverDetailMaterials) material.resolution.set(width, height);
     this.routeCasingMaterial.resolution.set(width, height);
     this.routeLineMaterial.resolution.set(width, height);
     this.originMaterial.uniforms.size.value = 14 * this.renderer.getPixelRatio();
@@ -478,12 +647,22 @@ export class SurfaceMap {
       [water, data.waterOffsets], [waterLines, data.waterLineOffsets]] as const) {
       if (offsets.length) { g.userData.base = (g.getAttribute('position').array as Float32Array).slice(); g.userData.offsets = offsets; }
     }
+    const lodGeometry = new BufferGeometry();
+    lodGeometry.setAttribute('position', new BufferAttribute(new Float32Array(0), 3));
+    lodGeometry.setAttribute('region', new BufferAttribute(new Float32Array(0), 1));
+    lodGeometry.setAttribute('cornerPair', new BufferAttribute(new Float32Array(0), 2));
+    lodGeometry.setAttribute('weight', new BufferAttribute(new Float32Array(0), 3));
+    lodGeometry.setAttribute('radialOffset', new BufferAttribute(new Float32Array(0), 1));
+    const lodMesh = new Mesh(lodGeometry, this.lodMaterial);
+    lodMesh.visible = false;
+    lodMesh.frustumCulled = false;
     const group = new Group();
     group.add(new Mesh(geometry, this.material), new LineSegments(lines, this.lineMaterial), new LineSegments(tectonicLines, this.tectonicMaterial),
-      new Mesh(water, this.waterMaterial), new LineSegments(waterLines, this.lineMaterial), new Group(), new Group());
+      new Mesh(water, this.waterMaterial), new LineSegments(waterLines, this.lineMaterial), new Group(), new Group(), lodMesh, new Group());
     return group;
   }
   cancelPreparation(): void {
+    clearTimeout(this.lodTimer); this.lodTimer = 0; this.lodRequestId++;
     this.worker?.terminate(); this.worker = null; this.abortPreparation?.(); this.abortPreparation = null;
   }
   async setWorld(world: World): Promise<void> {
@@ -493,12 +672,37 @@ export class SurfaceMap {
     const pair = await new Promise<ViewPair>((resolve, reject) => {
       this.abortPreparation = () => reject(new Error('View preparation canceled.'));
       worker.onerror = (e) => reject(new Error(e.message));
-      worker.onmessage = (e: MessageEvent<{ pair: ViewPair; error?: string }>) => {
-        if (e.data.error) reject(new Error(e.data.error)); else resolve(e.data.pair);
+      worker.onmessage = (e: MessageEvent<{ type?: string; pair?: ViewPair; error?: string }>) => {
+        if (e.data.error) reject(new Error(e.data.error));
+        else if (e.data.pair) resolve(e.data.pair);
       };
-      worker.postMessage({ surface: world.surface, tectonics: world.tectonics, elevation: world.terrain.elevation, water: world.water });
-    }).finally(() => { worker.terminate(); if (this.worker === worker) { this.worker = null; this.abortPreparation = null; } });
+      worker.postMessage({ type: 'build', surface: world.surface, tectonics: world.tectonics, elevation: world.terrain.elevation, water: world.water });
+    }).catch((error) => {
+      worker.terminate();
+      if (this.worker === worker) { this.worker = null; this.abortPreparation = null; }
+      throw error;
+    });
+    if (this.worker === worker) this.abortPreparation = null;
+    worker.onmessage = (e: MessageEvent<{ type?: string; requestId?: number; patch?: LodPatchData | null; error?: string }>) => {
+      if (this.worker !== worker || e.data.type !== 'lod') return;
+      if (e.data.requestId !== this.lodRequestId) return;
+      this.applyLodPatch(e.data.patch ?? null);
+    };
     const next = { flat: this.makeView(pair.flat), globe: this.makeView(pair.globe) };
+    this.baseFlatTriangles = pair.flat.regions.length / 3;
+    this.baseGlobeTriangles = (pair.globe.regions.length + pair.globe.waterRegions.length) / 3;
+    this.canvas.dataset.flatTriangles = String(this.baseFlatTriangles);
+    this.canvas.dataset.globeBaseTriangles = String(this.baseGlobeTriangles);
+    this.canvas.dataset.lodTriangles = '0';
+    this.canvas.dataset.lodLevel = '1';
+    this.lodTriangles = 0;
+    this.lastLodDistance = Infinity;
+    this.lastLodSubdivision = 1;
+    this.reliefMetrics = computeReliefMetrics(world.surface, world.terrain.elevation, world.water.bodyIds, world.water.levelMeters);
+    this.coastField = computeCoastField(world.surface, world.terrain.elevation, world.water.bodyIds, world.water.depthMeters,
+      world.water.levelMeters, world.water.bodyIds, world.water.mainOceanId);
+    const seedVec = seedOffsetFromString(world.recipe.seed);
+    this.material.uniforms.seedOffset.value.set(seedVec[0], seedVec[1], seedVec[2]);
     this.rivers = null; this.addDrainageLines(next, world);
     // Model longitude increases toward +Z. Reflect the display embedding so east
     // appears on the right in a north-up globe, matching the flat projection.
@@ -519,7 +723,7 @@ export class SurfaceMap {
     this.maximumContributingArea = world.drainage.contributingArea.reduce((max, a) => Math.max(max, a), 0);
     const basinStats = summarizeBasins(world.basins);
     this.spillRange = { minimum: basinStats.minimumSpillMeters ?? 0, maximum: basinStats.maximumSpillMeters ?? 0 };
-    this.setExaggeration(this.exaggeration);
+    this.setExaggeration(this.adaptiveExaggeration ? 'auto' : this.exaggeration);
     const width = Math.min(1024, this.renderer.capabilities.maxTextureSize);
     const fieldTexture = (data: Float32Array<ArrayBuffer>): DataTexture => {
       const texture = new DataTexture(data, width, data.length / 4 / width, RGBAFormat, FloatType);
@@ -532,12 +736,18 @@ export class SurfaceMap {
     this.texture = fieldTexture(this.values); this.cornerTexture = fieldTexture(this.cornerValues);
     this.tintValues = texels(world.stats.regionCount); this.cornerTintValues = texels(pair.corners.offsets.length - 1);
     this.tintTexture = fieldTexture(this.tintValues); this.cornerTintTexture = fieldTexture(this.cornerTintValues);
+    this.detailValues = texels(world.stats.regionCount); this.cornerDetailValues = texels(pair.corners.offsets.length - 1);
+    this.detailTexture = fieldTexture(this.detailValues); this.cornerDetailTexture = fieldTexture(this.cornerDetailValues);
+    this.lodMaskValues = texels(world.stats.regionCount);
+    this.lodMaskTexture = fieldTexture(this.lodMaskValues);
     const { gradients } = reliefGradients(world.surface, world.terrain.elevation, world.water.bodyIds, world.water.levelMeters);
     for (let id = 0; id < world.stats.regionCount; id++) this.values.set(gradients.subarray(id * 2, id * 2 + 2), id * 4 + 2);
     this.blendCorners(2);
     const uniforms = this.material.uniforms;
     uniforms.field.value = this.texture; uniforms.cornerField.value = this.cornerTexture;
     uniforms.tintField.value = this.tintTexture; uniforms.cornerTintField.value = this.cornerTintTexture;
+    uniforms.detailField.value = this.detailTexture; uniforms.cornerDetailField.value = this.cornerDetailTexture;
+    uniforms.lodMaskField.value = this.lodMaskTexture; uniforms.lodActive.value = 0;
     uniforms.textureWidth.value = this.texture.image.width; uniforms.textureHeight.value = this.texture.image.height;
     uniforms.cornerWidth.value = this.cornerTexture.image.width; uniforms.cornerHeight.value = this.cornerTexture.image.height;
     this.material.uniforms.selected.value = -1;
@@ -582,7 +792,7 @@ export class SurfaceMap {
     oldWater.geometry.dispose(); oldLines.geometry.dispose();
     oldWater.geometry = water; oldLines.geometry = lines;
     this.appliedExaggeration = NaN;
-    this.setExaggeration(this.exaggeration);
+    this.setExaggeration(this.adaptiveExaggeration ? 'auto' : this.exaggeration);
     this.globeWater = frame;
   }
   setTemperatureNormals(normals: TemperatureNormals | null): void {
@@ -596,7 +806,8 @@ export class SurfaceMap {
         maximum: normals.annualMaximumCelsius.reduce((high, value) => Math.max(high, value), -Infinity),
       };
     }
-    this.refreshField();
+    if (this.seasonalSnow && this.layer === 'surface' && this.surfaceStyle === 'natural') this.applyTint();
+    else this.refreshField();
   }
   /** Climate classes for the biome layer. */
   setClimateNormals(normals: ClimateNormals | null): void {
@@ -611,15 +822,21 @@ export class SurfaceMap {
       throw new Error('River normals do not match this world.');
     }
     this.rivers = frame;
+    this.rebuildDrainageLines();
+    this.applyTint();
+  }
+  private rebuildDrainageLines(): void {
+    if (!this.world || !this.views) return;
     for (const view of Object.values(this.views)) {
-      const lines = view.children[RIVERS];
-      for (const line of lines.children) (line as LineSegments2).geometry.dispose();
-      lines.clear();
+      for (const index of [RIVERS, RIVERS_DETAIL]) {
+        const lines = view.children[index];
+        for (const line of lines.children) (line as LineSegments2).geometry.dispose();
+        lines.clear();
+      }
     }
     this.addDrainageLines(this.views, this.world);
     this.appliedExaggeration = NaN;
-    this.setExaggeration(this.exaggeration);
-    this.applyTint();
+    this.setExaggeration(this.adaptiveExaggeration ? 'auto' : this.exaggeration);
   }
   /** Vegetation state for the vegetation layers; display only. */
   setVegetation(frame: VegetationFrame | null): void {
@@ -721,8 +938,10 @@ export class SurfaceMap {
     const climate = this.climateNormals, vegetation = this.vegetation, food = this.wildFood, rivers = this.rivers, costs = this.traversalCosts, field = this.travelField, layer = this.layer;
     const costField = costs ? (this.travelSeason === 'summer' ? costs.hoursPer100KmSummer : costs.hoursPer100KmWinter) : null;
     const timeDays = layer === 'travelTime' ? field?.days : undefined;
+    const naturalSurface = layer === 'surface' && this.surfaceStyle === 'natural';
     this.material.uniforms.travelTimeMode.value = timeDays ? 1 : 0;
     this.material.uniforms.movementMode.value = isMovement(layer) ? 1 : 0;
+    this.material.uniforms.naturalMode.value = naturalSurface ? 1 : 0;
     const color: ((id: number) => Rgb) | null = layer === 'biome' && climate ? (id) => BIOMES[climate.biome[id]].color
       : layer === 'vegetationState' && vegetation ? (id) => BIOMES[vegetation.label[id]].color
       : layer === 'woodyCover' && vegetation ? (id) => woodyColor(vegetation.woody[id])
@@ -736,33 +955,67 @@ export class SurfaceMap {
       : layer === 'riverDischarge' ? () => [194, 187, 165]
       : layer === 'travelCost' && costField ? (id) => travelCostColor(costField[id])
       : timeDays ? (id) => travelTimeColor(timeDays[id]) : null;
-    this.material.uniforms.biomeMode.value = color ? 1 : 0;
-    if (color && this.world && this.corners && this.tintTexture && this.cornerTintTexture) {
+    const hasTint = naturalSurface || color !== null;
+    this.material.uniforms.biomeMode.value = hasTint ? 1 : 0;
+    if (hasTint && this.world && this.corners && this.tintTexture && this.cornerTintTexture) {
       const tint = this.tintValues, out = this.cornerTintValues, surface = this.world.surface;
       const traversalLayer = isMovement(layer) && costs !== null;
-      const wet = (id: number): boolean => traversalLayer ? !isRegionPassable(costs, id, this.travelSeason) : this.world!.water.bodyIds[id] !== 0;
+      const activeBodyIds = traversalLayer ? this.world.water.bodyIds : this.waterFrame?.bodyIds ?? this.world.water.bodyIds;
+      const activeWetMask: ArrayLike<number> = traversalLayer ? this.world.water.bodyIds : this.regionalWater?.wetMask ?? activeBodyIds;
+      const wet = (id: number): boolean => traversalLayer ? !isRegionPassable(costs, id, this.travelSeason) : activeWetMask[id] !== 0;
       const count = this.world.stats.regionCount;
-      for (let id = 0; id < count; id++) {
-        const rgb = color(id);
-        for (let c = 0; c < 3; c++) tint[id * 4 + c] = rgb[c] / 255;
-        const days = timeDays?.[id] ?? -1;
-        tint[id * 4 + 3] = days < 0 ? -1 : travelTimeCoordinate(days);
-      }
-      if (layer === 'biome' || layer === 'vegetationState') {
-        // Display-only softening: each dry region mixes half of its dry neighbors' mean
-        // color so 110 km region edges read as transitions. Classes are unchanged.
-        const own = tint.slice();
+
+      if (naturalSurface) {
+        const relief = this.reliefMetrics ?? computeReliefMetrics(surface, this.world.terrain.elevation, activeWetMask, this.world.water.levelMeters);
+        const natural = computeNaturalSurface(this.world, climate, vegetation, this.temperatureNormals, relief, {
+          month: this.temperatureMonth,
+          seasonalSnow: this.seasonalSnow,
+          wetMask: activeWetMask,
+          bodyIds: activeBodyIds,
+          mainOceanId: this.waterFrame?.mainOceanId ?? this.world.water.mainOceanId,
+        });
+        tint.set(natural.colors.subarray(0, count * 4));
+        // Gentle display softening (28%) blends adjacent regions organically without erasing alpine snow or forest edges.
+        const own = tint.slice(0, count * 4);
         for (let id = 0; id < count; id++) {
           if (wet(id)) continue;
-          let r = 0, g = 0, b = 0, n = 0;
+          let r = 0, g = 0, b = 0, a = 0, n = 0;
           for (let k = surface.neighborOffsets[id]; k < surface.neighborOffsets[id + 1]; k++) {
             const j = surface.neighbors[k];
             if (wet(j)) continue;
-            r += own[j * 4]; g += own[j * 4 + 1]; b += own[j * 4 + 2]; n++;
+            r += own[j * 4]; g += own[j * 4 + 1]; b += own[j * 4 + 2]; a += own[j * 4 + 3]; n++;
           }
-          if (n) { tint[id * 4] = .5 * own[id * 4] + .5 * r / n; tint[id * 4 + 1] = .5 * own[id * 4 + 1] + .5 * g / n; tint[id * 4 + 2] = .5 * own[id * 4 + 2] + .5 * b / n; }
+          if (n) {
+            tint[id * 4] = .72 * own[id * 4] + .28 * r / n;
+            tint[id * 4 + 1] = .72 * own[id * 4 + 1] + .28 * g / n;
+            tint[id * 4 + 2] = .72 * own[id * 4 + 2] + .28 * b / n;
+            tint[id * 4 + 3] = .72 * own[id * 4 + 3] + .28 * a / n;
+          }
+        }
+      } else if (color) {
+        for (let id = 0; id < count; id++) {
+          const rgb = color(id);
+          for (let c = 0; c < 3; c++) tint[id * 4 + c] = rgb[c] / 255;
+          const days = timeDays?.[id] ?? -1;
+          tint[id * 4 + 3] = days < 0 ? -1 : travelTimeCoordinate(days);
+        }
+        if (layer === 'biome' || layer === 'vegetationState') {
+          // Display-only softening: each dry region mixes half of its dry neighbors' mean
+          // color so 110 km region edges read as transitions. Classes are unchanged.
+          const own = tint.slice(0, count * 4);
+          for (let id = 0; id < count; id++) {
+            if (wet(id)) continue;
+            let r = 0, g = 0, b = 0, n = 0;
+            for (let k = surface.neighborOffsets[id]; k < surface.neighborOffsets[id + 1]; k++) {
+              const j = surface.neighbors[k];
+              if (wet(j)) continue;
+              r += own[j * 4]; g += own[j * 4 + 1]; b += own[j * 4 + 2]; n++;
+            }
+            if (n) { tint[id * 4] = .5 * own[id * 4] + .5 * r / n; tint[id * 4 + 1] = .5 * own[id * 4 + 1] + .5 * g / n; tint[id * 4 + 2] = .5 * own[id * 4 + 2] + .5 * b / n; }
+          }
         }
       }
+
       // Water regions borrow their dry neighbors' mean so interpolated shores do not darken.
       for (let id = 0; id < count; id++) {
         if (!wet(id)) continue;
@@ -791,6 +1044,7 @@ export class SurfaceMap {
       }
       this.tintTexture.needsUpdate = true; this.cornerTintTexture.needsUpdate = true;
     }
+    this.syncRiverPalette();
     this.refreshField();
   }
   setWindNormals(normals: WindNormals | null): void {
@@ -836,7 +1090,8 @@ export class SurfaceMap {
   setTemperatureMonth(month: number): void {
     if (!Number.isInteger(month) || month < 0 || month >= 12) throw new Error('Invalid seasonal month.');
     this.temperatureMonth = month; this.canvas.dataset.temperatureMonth = String(month); this.canvas.dataset.climateMonth = String(month);
-    this.refreshField();
+    if (this.seasonalSnow && this.layer === 'surface' && this.surfaceStyle === 'natural') this.applyTint();
+    else this.refreshField();
   }
   setMode(mode: ViewMode): void {
     this.stopCamera();
@@ -844,12 +1099,16 @@ export class SurfaceMap {
     this.mode = mode; this.canvas.dataset.view = mode;
     this.syncWaterSurface();
     this.material.uniforms.globe.value = mode === 'globe' ? 1 : 0;
+    const faceSide = mode === 'globe' ? FrontSide : DoubleSide;
+    this.material.side = faceSide; this.waterMaterial.side = faceSide; this.lodMaterial.side = faceSide;
     this.space.visible = mode === 'globe';
     this.renderer.setClearColor(mode === 'globe' ? '#040507' : '#0c1721');
     if (this.views) { this.views.flat.visible = mode === 'flat'; this.views.globe.visible = mode === 'globe'; }
     this.controls.enabled = mode === 'flat';
     this.controls.mouseButtons.LEFT = MOUSE.PAN;
     this.planetCamera.setEnabled(mode === 'globe');
+    if (mode === 'globe') { this.syncAdaptiveExaggeration(); this.scheduleLodUpdate(true); }
+    else this.clearLodPatch();
     this.notifyNavigation(); this.draw();
   }
   setLayer(layer: Layer): void {
@@ -874,6 +1133,7 @@ export class SurfaceMap {
       view.children[4].visible = surfaceLike(layer) && this.boundaries;
     }
     this.applyTint();
+    this.scheduleLodUpdate(true);
   }
   refreshField(): void {
     if (!this.world || !this.texture) return;
@@ -881,6 +1141,8 @@ export class SurfaceMap {
     const staticWater = isMovement(this.layer);
     const depth = staticWater ? w.water.depthMeters : this.regionalWater?.depthMeters ?? this.waterFrame?.depthMeters ?? w.water.depthMeters;
     const bodyIds = staticWater ? w.water.bodyIds : this.waterFrame?.bodyIds ?? w.water.bodyIds;
+    const mainOceanId = staticWater ? w.water.mainOceanId : this.waterFrame?.mainOceanId ?? w.water.mainOceanId;
+    const surfaceLevels = staticWater ? undefined : this.regionalWater?.surfaceLevelsMeters ?? this.waterFrame?.surfaceLevelsMeters;
     let surfaceMask: ArrayLike<number> = staticWater ? bodyIds : this.regionalWater?.wetMask ?? bodyIds;
     if (isMovement(this.layer) && this.traversalCosts) {
       const passableMask = new Uint8Array(w.stats.regionCount);
@@ -922,6 +1184,49 @@ export class SurfaceMap {
             / Math.max(1, w.stats.maximumAreaSquareMeters - w.stats.minimumAreaSquareMeters);
     }
     if (SMOOTH_LAYERS.has(this.layer) || isMoistureLayer(this.layer)) this.blendCorners(0);
+    if (surfaceLike(this.layer) && this.detailTexture && this.cornerDetailTexture && this.corners) {
+      this.reliefMetrics = computeReliefMetrics(w.surface, w.terrain.elevation, surfaceMask, w.water.levelMeters);
+      this.coastField = computeCoastField(w.surface, w.terrain.elevation, surfaceMask, depth, w.water.levelMeters, bodyIds, mainOceanId, surfaceLevels);
+      const count = w.stats.regionCount;
+      const dVals = this.detailValues, dOut = this.cornerDetailValues;
+      const { phi, strictMask, lakeMask, localWaterLevel } = this.coastField;
+      const rel = this.reliefMetrics.localReliefMeters;
+      for (let id = 0; id < count; id++) {
+        dVals[id * 4] = phi[id];
+        dVals[id * 4 + 1] = strictMask[id];
+        dVals[id * 4 + 2] = rel[id];
+        dVals[id * 4 + 3] = lakeMask[id];
+      }
+      const { offsets, regions } = this.corners;
+      for (let k = 0; k + 1 < offsets.length; k++) {
+        let p = 0, s = 0, r = 0, lk = 0, wetN = 0;
+        const nInc = offsets[k + 1] - offsets[k];
+        for (let j = offsets[k]; j < offsets[k + 1]; j++) {
+          const rid = regions[j];
+          p += phi[rid]; s += strictMask[rid]; r += rel[rid];
+          if (strictMask[rid] < 0) { lk += lakeMask[rid]; wetN++; }
+        }
+        dOut[k * 4] = p / nInc;
+        dOut[k * 4 + 1] = s / nInc;
+        dOut[k * 4 + 2] = r / nInc;
+        dOut[k * 4 + 3] = wetN > 0 ? lk / wetN : 0;
+      }
+      this.detailTexture.needsUpdate = true;
+      this.cornerDetailTexture.needsUpdate = true;
+      if (this.worker && !isMovement(this.layer)) {
+        const wetBytes = new Uint8Array(count);
+        for (let id = 0; id < count; id++) wetBytes[id] = surfaceMask[id] ? 1 : 0;
+        this.worker.postMessage({
+          type: 'lod-fields',
+          waterLevelMeters: w.water.levelMeters,
+          wetMask: wetBytes,
+          phi: phi.slice(),
+          strictMask: strictMask.slice(),
+          localWaterLevel: localWaterLevel.slice(),
+          localReliefMeters: rel.slice(),
+        });
+      }
+    }
     this.texture.needsUpdate = true; this.draw();
   }
   /** Shared corners take the mean of their incident regions for two channels starting at `channel`. */
@@ -939,36 +1244,100 @@ export class SurfaceMap {
   private applyShadingModes(): void {
     const smooth = this.smoothShading && (SMOOTH_LAYERS.has(this.layer) || isMoistureLayer(this.layer));
     this.material.uniforms.smoothMode.value = smooth ? 1 : 0;
+    this.material.uniforms.detailEnabled.value = this.displayDetail ? 1 : 0;
     this.material.uniforms.reliefStrength.value = this.reliefShading ? RELIEF_LAYERS[this.layer] ?? 0 : 0;
     this.canvas.dataset.smoothShading = String(smooth);
+    this.canvas.dataset.displayDetail = String(this.displayDetail);
+    const showRivers = this.drainageLines && this.layer !== 'annualRunoff' && (surfaceLike(this.layer) || this.layer === 'elevation');
     if (this.views) for (const view of Object.values(this.views)) {
-      view.children[RIVERS].visible = this.drainageLines && this.layer !== 'annualRunoff' && (surfaceLike(this.layer) || this.layer === 'elevation');
+      view.children[RIVERS].visible = showRivers;
+      view.children[RIVERS_DETAIL].visible = showRivers;
       view.children[ROUTE].visible = this.layer === 'travelTime';
     }
+    this.syncLodVisibility();
   }
-  setSmoothShading(enabled: boolean): void { this.smoothShading = enabled; this.applyShadingModes(); this.refreshField(); }
+  setSmoothShading(enabled: boolean): void { this.smoothShading = enabled; this.applyShadingModes(); this.refreshField(); this.scheduleLodUpdate(true); }
   setReliefShading(enabled: boolean): void { this.reliefShading = enabled; this.applyShadingModes(); this.draw(); }
   setDrainageLines(visible: boolean): void { this.drainageLines = visible; this.applyShadingModes(); this.draw(); }
+  setSurfaceStyle(style: SurfaceStyle): void {
+    this.surfaceStyle = style;
+    this.canvas.dataset.surfaceStyle = style;
+    this.applyTint();
+    this.notifyNavigation();
+  }
+  getSurfaceStyle(): SurfaceStyle { return this.surfaceStyle; }
+  setSeasonalSnow(enabled: boolean): void {
+    this.seasonalSnow = enabled;
+    this.canvas.dataset.seasonalSnow = String(enabled);
+    if (this.layer === 'surface' && this.surfaceStyle === 'natural') this.applyTint();
+  }
+  setDisplayDetail(enabled: boolean): void {
+    this.displayDetail = enabled;
+    this.canvas.dataset.displayDetail = String(enabled);
+    this.applyShadingModes();
+    this.rebuildDrainageLines();
+    this.scheduleLodUpdate(true);
+    this.notifyNavigation();
+    this.draw();
+  }
+  getDisplayDetail(): boolean { return this.displayDetail; }
+  private syncRiverPalette(): void {
+    const useNatural = this.layer === 'surface' && this.surfaceStyle === 'natural';
+    const baseOffset = DRAINAGE_LINE_WIDTHS.length;
+    const bins = RIVER_LINE_WIDTHS.length;
+    for (let i = 0; i < bins; i++) {
+      const pColor = useNatural ? NATURAL_PERENNIAL_COLORS[i] : PERENNIAL_LINE_COLORS[i];
+      const sColor = useNatural ? NATURAL_SEASONAL_COLORS[i] : SEASONAL_LINE_COLORS[i];
+      const pWidth = useNatural ? NATURAL_RIVER_WIDTHS[i] : RIVER_LINE_WIDTHS[i];
+      const sWidth = pWidth * 0.68;
+      this.riverMaterials[baseOffset + i].color.setHex(pColor);
+      this.riverMaterials[baseOffset + i].linewidth = pWidth;
+      this.riverMaterials[baseOffset + bins + i].color.setHex(sColor);
+      this.riverMaterials[baseOffset + bins + i].linewidth = sWidth;
+      this.riverDetailMaterials[baseOffset + i].color.setHex(pColor);
+      this.riverDetailMaterials[baseOffset + i].linewidth = pWidth * 0.88;
+      this.riverDetailMaterials[baseOffset + bins + i].color.setHex(sColor);
+      this.riverDetailMaterials[baseOffset + bins + i].linewidth = sWidth * 0.88;
+    }
+  }
   private addDrainageLines(views: Record<ViewMode, Group>, world: World): void {
-    const lines = buildDrainageLines(world.surface, world.drainage, world.terrain.elevation, world.water.bodyIds, this.rivers ?? undefined);
+    const lines = buildDrainageLines(world.surface, world.drainage, world.terrain.elevation, world.water.bodyIds, this.rivers ?? undefined, {
+      seed: world.recipe.seed,
+      waterLevelMeters: world.water.levelMeters,
+      coastField: this.coastField ?? undefined,
+      reliefMetrics: this.reliefMetrics ?? undefined,
+      detailEnabled: this.displayDetail,
+    });
     const offset = this.rivers ? DRAINAGE_LINE_WIDTHS.length : 0;
     this.canvas.dataset.riverLineMode = this.rivers ? 'discharge' : 'area';
-    this.canvas.dataset.drainageLineSegments = String(lines.flat.reduce((sum, v) => sum + v.length / 6, 0));
-    lines.flat.forEach((positions, width) => {
-      if (!positions.length) return;
-      const geometry = new LineSegmentsGeometry().setPositions(positions);
-      const line = new LineSegments2(geometry, this.riverMaterials[offset + width]);
-      line.renderOrder = this.riverRenderOrder(width);
-      views.flat.children[RIVERS].add(line);
-    });
-    lines.globe.forEach(({ positions, offsets }, width) => {
-      if (!positions.length) return;
-      const geometry = new LineSegmentsGeometry().setPositions(positions);
-      geometry.userData.riverBase = positions; geometry.userData.riverOffsets = offsets;
-      const line = new LineSegments2(geometry, this.riverMaterials[offset + width]);
-      line.renderOrder = this.riverRenderOrder(width);
-      views.globe.children[RIVERS].add(line);
-    });
+    const primarySegs = lines.flat.reduce((sum, v) => sum + v.length / 6, 0);
+    const detailSegs = lines.flatDetail.reduce((sum, v) => sum + v.length / 6, 0);
+    this.canvas.dataset.drainageLineSegments = String(primarySegs + detailSegs);
+    const attach = (
+      flatArr: Float32Array[],
+      globeArr: { positions: Float32Array; offsets: Float32Array }[],
+      mats: LineMaterial[],
+      childIdx: number,
+    ): void => {
+      flatArr.forEach((positions, width) => {
+        if (!positions.length) return;
+        const geometry = new LineSegmentsGeometry().setPositions(positions);
+        const line = new LineSegments2(geometry, mats[offset + width]);
+        line.renderOrder = this.riverRenderOrder(width);
+        views.flat.children[childIdx].add(line);
+      });
+      globeArr.forEach(({ positions, offsets }, width) => {
+        if (!positions.length) return;
+        const geometry = new LineSegmentsGeometry().setPositions(positions);
+        geometry.userData.riverBase = positions; geometry.userData.riverOffsets = offsets;
+        const line = new LineSegments2(geometry, mats[offset + width]);
+        line.renderOrder = this.riverRenderOrder(width);
+        views.globe.children[childIdx].add(line);
+      });
+    };
+    attach(lines.flat, lines.globe, this.riverMaterials, RIVERS);
+    attach(lines.flatDetail, lines.globeDetail, this.riverDetailMaterials, RIVERS_DETAIL);
+    this.syncRiverPalette();
   }
   private riverRenderOrder(width: number): number {
     const bins = RIVER_LINE_WIDTHS.length;
@@ -986,7 +1355,27 @@ export class SurfaceMap {
     this.canvas.dataset.spillFrom = String(from); this.canvas.dataset.spillTo = String(to);
     this.draw();
   }
-  setExaggeration(requested: number): number {
+  private adaptiveExaggerationForDistance(distance: number): number {
+    // 3.5× at planet overview (calm orbital scale), rising smoothly to 6.5× when zoomed in close.
+    const t = Math.max(0, Math.min(1, (2.0 - distance) / 1.65));
+    const smooth = t * t * (3 - 2 * t);
+    return Math.round((3.5 + 3.0 * smooth) * 4) / 4;
+  }
+  private syncAdaptiveExaggeration(): void {
+    if (!this.adaptiveExaggeration || !this.world || this.mode !== 'globe') return;
+    const target = this.adaptiveExaggerationForDistance(this.planetCamera.view.distance);
+    if (Math.abs(target - this.exaggeration) >= 0.25) this.applyExaggeration(target);
+  }
+  setExaggeration(requested: number | 'auto'): number {
+    if (requested === 'auto') {
+      this.adaptiveExaggeration = true;
+      const dist = this.mode === 'globe' ? this.planetCamera.view.distance : 2.25;
+      return this.applyExaggeration(this.adaptiveExaggerationForDistance(dist));
+    }
+    this.adaptiveExaggeration = false;
+    return this.applyExaggeration(requested);
+  }
+  private applyExaggeration(requested: number): number {
     const liveWater = isMovement(this.layer) ? null : this.regionalWater ?? this.waterFrame;
     const waterExtent = liveWater
       ? liveWater.surfaceLevelsMeters.reduce((maximum, level) => Math.max(maximum, Math.abs(level)), 0)
@@ -994,11 +1383,14 @@ export class SurfaceMap {
     const applied = this.world ? effectiveExaggeration(requested, this.world.recipe.radiusMeters, this.world.terrain.elevation,
       waterExtent) : requested;
     this.exaggeration = requested;
+    this.material.uniforms.lodExaggeration.value = applied;
     if (this.appliedExaggeration === applied) return applied;
     this.appliedExaggeration = applied;
-    if (this.views) for (const river of this.views.globe.children[RIVERS].children as LineSegments2[]) {
-      const { riverBase, riverOffsets } = river.geometry.userData as { riverBase: Float32Array; riverOffsets: Float32Array };
-      river.geometry.setPositions(displaceDirections(riverBase, riverOffsets, applied));
+    if (this.views) for (const idx of [RIVERS, RIVERS_DETAIL]) {
+      for (const river of this.views.globe.children[idx].children as LineSegments2[]) {
+        const { riverBase, riverOffsets } = river.geometry.userData as { riverBase: Float32Array; riverOffsets: Float32Array };
+        river.geometry.setPositions(displaceDirections(riverBase, riverOffsets, applied));
+      }
     }
     if (this.views) for (const object of this.views.globe.children[ROUTE].children) {
       if (object instanceof LineSegments2) {
@@ -1024,6 +1416,89 @@ export class SurfaceMap {
       ? 1 + applied * this.world.water.levelMeters / this.world.recipe.radiusMeters : 1;
     this.planetCamera.setRadius(outerRadius); this.space.setRadius(outerRadius, atmosphericReference);
     this.canvas.dataset.exaggeration = String(applied); this.draw(); return applied;
+  }
+  private scheduleLodUpdate(force = false): void {
+    if (!this.world || !this.views || !this.worker) return;
+    const eligible = this.mode === 'globe' && surfaceLike(this.layer) && this.smoothShading && !isMovement(this.layer);
+    const view = this.planetCamera.view;
+    if (!eligible || view.distance >= 1.65) {
+      this.clearLodPatch();
+      return;
+    }
+    const lat = view.latitude * Math.PI / 180;
+    const lon = view.longitude * Math.PI / 180;
+    const focus: [number, number, number] = [Math.cos(lat) * Math.cos(lon), Math.sin(lat), Math.cos(lat) * Math.sin(lon)];
+    const targetSub = view.distance < 0.48 ? 4 : view.distance < 0.98 ? 3 : 2;
+    const dotFocus = focus[0] * this.lastLodFocus[0] + focus[1] * this.lastLodFocus[1] + focus[2] * this.lastLodFocus[2];
+    const movedAngle = Math.acos(Math.max(-1, Math.min(1, dotFocus)));
+    const distRatio = Number.isFinite(this.lastLodDistance) ? Math.abs(view.distance - this.lastLodDistance) / Math.max(0.05, view.distance) : 1;
+    if (!force && this.lodTriangles > 0 && targetSub === this.lastLodSubdivision && movedAngle < 0.08 && distRatio < 0.22) return;
+
+    clearTimeout(this.lodTimer);
+    this.lodTimer = window.setTimeout(() => {
+      this.lodTimer = 0;
+      if (!this.worker || !this.world || this.mode !== 'globe') return;
+      const reqId = ++this.lodRequestId;
+      this.lastLodFocus = focus;
+      this.lastLodDistance = view.distance;
+      this.lastLodSubdivision = targetSub;
+      const seedVec = seedOffsetFromString(this.world.recipe.seed);
+      this.worker.postMessage({
+        type: 'lod',
+        requestId: reqId,
+        focus,
+        distance: view.distance,
+        seedOffset: seedVec,
+        detailEnabled: this.displayDetail,
+      });
+    }, force ? 0 : 40);
+  }
+  private clearLodPatch(): void {
+    clearTimeout(this.lodTimer); this.lodTimer = 0; this.lodRequestId++;
+    if (this.lodTriangles === 0 && this.material.uniforms.lodActive.value === 0) return;
+    this.lodTriangles = 0;
+    this.lastLodDistance = Infinity;
+    this.lastLodSubdivision = 1;
+    if (this.lodMaskTexture && this.lodMaskValues.length) {
+      this.lodMaskValues.fill(0);
+      this.lodMaskTexture.needsUpdate = true;
+    }
+    this.material.uniforms.lodActive.value = 0;
+    if (this.views) {
+      const lodMesh = this.views.globe.children[LOD] as Mesh<BufferGeometry>;
+      lodMesh.visible = false;
+    }
+    this.canvas.dataset.lodTriangles = '0';
+    this.canvas.dataset.lodLevel = '1';
+    this.draw();
+  }
+  private applyLodPatch(patch: LodPatchData | null): void {
+    if (!this.views || !this.lodMaskTexture) return;
+    if (!patch || patch.triangleCount === 0) { this.clearLodPatch(); return; }
+    const lodMesh = this.views.globe.children[LOD] as Mesh<BufferGeometry>;
+    const nextGeom = new BufferGeometry();
+    nextGeom.setAttribute('position', new BufferAttribute(patch.positions, 3));
+    nextGeom.setAttribute('region', new BufferAttribute(patch.regions, 1));
+    nextGeom.setAttribute('cornerPair', new BufferAttribute(patch.cornerPairs, 2));
+    nextGeom.setAttribute('weight', new BufferAttribute(patch.weights, 3));
+    nextGeom.setAttribute('radialOffset', new BufferAttribute(patch.radialOffsets, 1));
+    lodMesh.geometry.dispose();
+    lodMesh.geometry = nextGeom;
+    this.lodMaskValues.fill(0);
+    for (let i = 0; i < patch.replacedRegions.length; i++) {
+      this.lodMaskValues[patch.replacedRegions[i] * 4] = 1;
+    }
+    this.lodMaskTexture.needsUpdate = true;
+    this.lodTriangles = patch.triangleCount;
+    this.canvas.dataset.lodTriangles = String(patch.triangleCount);
+    this.canvas.dataset.lodLevel = String(patch.subdivision);
+    this.syncLodVisibility();
+    this.draw();
+  }
+  private syncLodVisibility(): void {
+    const show = this.mode === 'globe' && surfaceLike(this.layer) && this.smoothShading && !isMovement(this.layer) && this.lodTriangles > 0;
+    this.material.uniforms.lodActive.value = show ? 1 : 0;
+    if (this.views) (this.views.globe.children[LOD] as Mesh).visible = show;
   }
   reset(): void {
     this.stopCamera();
@@ -1071,26 +1546,48 @@ export class SurfaceMap {
         this.material.uniforms.distantLightMix.value = nightBlend;
         this.canvas.dataset.dayNight = nightBlend.toFixed(3);
         this.lineMaterial.opacity = .45 * (1 - nightBlend * .8);
-        const riverOpacity = this.layer === 'travelTime' ? .28 : 1;
+
+        // Keep globe lighting direction synchronized with SpaceBackdrop atmosphere.
+        if (this.mode === 'globe') {
+          this.activeSun.set(-.4, .6, 1).normalize().transformDirection(this.globeCamera.matrixWorld).lerp(this.worldSun, nightBlend).normalize();
+          this.space.updateView(this.camera, distance, nightBlend, this.worldSun);
+        }
+
+        // Hide tiny coastal stubs at planet scale on Land and water; fade them in smoothly when zoomed in.
+        const detailZoom = this.layer === 'riverDischarge'
+          ? 1
+          : this.mode === 'flat'
+            ? Math.max(0, Math.min(1, (this.flatCamera.zoom - 1.7) / 1.5))
+            : Math.max(0, Math.min(1, (1.42 - distance) / 0.62));
+        const naturalSurface = this.layer === 'surface' && this.surfaceStyle === 'natural';
+        const riverOpacity = this.layer === 'travelTime' ? .28 : naturalSurface ? .84 : 1;
         for (const [i, material] of this.riverMaterials.entries()) {
           const bin = i - DRAINAGE_LINE_WIDTHS.length;
           const seasonal = bin >= RIVER_LINE_WIDTHS.length;
           const strength = bin < 0 ? .7 : Math.min(1, (seasonal ? .33 : .55) + .19 * (bin % RIVER_LINE_WIDTHS.length));
-          material.opacity = strength * riverOpacity * (1 - nightBlend * .75);
+          const op = strength * riverOpacity * (1 - nightBlend * .75);
+          material.opacity = op;
+          this.riverDetailMaterials[i].opacity = op * detailZoom;
         }
-        if (this.mode === 'globe') this.space.updateView(this.camera, distance, nightBlend, this.worldSun);
+        if (this.views) {
+          const showRivers = this.drainageLines && this.layer !== 'annualRunoff' && (surfaceLike(this.layer) || this.layer === 'elevation');
+          this.views[this.mode].children[RIVERS_DETAIL].visible = showRivers && detailZoom > 0.02;
+        }
         this.renderer.render(this.scene, this.camera);
       }
     });
   }
   private releaseViews(): void {
+    clearTimeout(this.lodTimer); this.lodTimer = 0; this.lodRequestId++;
     if (this.views) for (const group of Object.values(this.views)) {
       this.scene.remove(group);
       group.traverse((object: Object3D) => { if ('geometry' in object) (object as Mesh<BufferGeometry>).geometry.dispose(); });
     }
     this.texture?.dispose(); this.texture = null; this.cornerTexture?.dispose(); this.cornerTexture = null;
     this.tintTexture?.dispose(); this.tintTexture = null; this.cornerTintTexture?.dispose(); this.cornerTintTexture = null;
-    this.corners = null; this.views = null;
+    this.detailTexture?.dispose(); this.detailTexture = null; this.cornerDetailTexture?.dispose(); this.cornerDetailTexture = null;
+    this.lodMaskTexture?.dispose(); this.lodMaskTexture = null;
+    this.corners = null; this.views = null; this.lodTriangles = 0;
   }
   dispose(): void {
     this.cancelPreparation(); cancelAnimationFrame(this.frame); this.stopDamping(); this.resizeObserver.disconnect();
@@ -1100,6 +1597,6 @@ export class SurfaceMap {
     window.removeEventListener('pointercancel', this.endMapDrag);
     window.removeEventListener('blur', this.clearMapDrag);
     this.controls.removeEventListener('change', this.handleControlsChange);
-    this.controls.dispose(); this.planetCamera.dispose(); this.space.dispose(); this.releaseViews(); this.material.dispose(); this.waterMaterial.dispose(); this.lineMaterial.dispose(); for (const material of this.riverMaterials) material.dispose(); this.routeCasingMaterial.dispose(); this.routeLineMaterial.dispose(); this.originMaterial.dispose(); this.tectonicMaterial.dispose(); this.renderer.dispose();
+    this.controls.dispose(); this.planetCamera.dispose(); this.space.dispose(); this.releaseViews(); this.material.dispose(); this.waterMaterial.dispose(); this.lodMaterial.dispose(); this.lineMaterial.dispose(); for (const material of this.riverMaterials) material.dispose(); for (const material of this.riverDetailMaterials) material.dispose(); this.routeCasingMaterial.dispose(); this.routeLineMaterial.dispose(); this.originMaterial.dispose(); this.tectonicMaterial.dispose(); this.renderer.dispose();
   }
 }
