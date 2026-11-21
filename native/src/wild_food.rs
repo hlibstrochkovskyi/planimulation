@@ -495,10 +495,13 @@ impl Model {
         v: &VegetationState,
         state: &State,
     ) -> YearSummary {
+        self.summarize(&self.regions(vegetation, v, state))
+    }
+
+    fn summarize(&self, regions: &[RegionFood]) -> YearSummary {
         let mut summary = YearSummary::default();
         let (mut game, mut capacity) = (0., 0.);
-        for (i, food) in self.regions(vegetation, v, state).iter().enumerate() {
-            let a = self.areas[i];
+        for (&a, food) in self.areas.iter().zip(regions) {
             summary.capacity_people += food.capacity * a / KM2;
             summary.plant_kcal += food.plant_kcal * a;
             summary.game_kcal += food.game_kcal * a;
@@ -539,18 +542,51 @@ impl Model {
         v: &VegetationState,
         state: &mut State,
     ) -> Result<(), String> {
-        if v.year != state.year + 1 {
-            return Err("Wild food must advance with vegetation one year at a time.".into());
-        }
+        Self::check_next_year(v, state)?;
         for i in (0..self.land.len()).filter(|&i| self.land[i]) {
-            let herd = (state.game[i], state.game_capacity[i]);
-            (state.game[i], state.game_capacity[i]) =
-                self.next_herd(herd, &vegetation.region(v, i));
+            self.advance_herd(i, &vegetation.region(v, i), state);
         }
         state.year = v.year;
         let summary = self.summary(vegetation, v, state);
         state.summaries.push(summary);
         Ok(())
+    }
+
+    /// Advance one year and return the regional values used for the summary.
+    /// This path runs on the caller's thread so an ensemble can parallelize across seeds.
+    pub fn step_with_regions(
+        &self,
+        vegetation: &VegetationModel,
+        v: &VegetationState,
+        state: &mut State,
+        regions: &mut Vec<RegionFood>,
+    ) -> Result<(), String> {
+        Self::check_next_year(v, state)?;
+        regions.clear();
+        regions.extend(self.land.iter().enumerate().map(|(i, &land)| {
+            if !land {
+                return RegionFood::default();
+            }
+            let year = vegetation.region(v, i);
+            let herd = self.advance_herd(i, &year, state);
+            self.region(&year, herd, i)
+        }));
+        state.year = v.year;
+        state.summaries.push(self.summarize(regions));
+        Ok(())
+    }
+
+    fn check_next_year(v: &VegetationState, state: &State) -> Result<(), String> {
+        if v.year != state.year + 1 {
+            return Err("Wild food must advance with vegetation one year at a time.".into());
+        }
+        Ok(())
+    }
+
+    fn advance_herd(&self, i: usize, year: &RegionYear, state: &mut State) -> (f64, f64) {
+        let herd = self.next_herd((state.game[i], state.game_capacity[i]), year);
+        (state.game[i], state.game_capacity[i]) = herd;
+        herd
     }
 
     /// One region's food from its vegetation history since year 0.
@@ -793,5 +829,27 @@ mod tests {
         assert_eq!(*replay.last().unwrap(), regions[i]);
         let total: f64 = state.summaries.last().unwrap().capacity_people;
         assert!(total > 0. && total.is_finite());
+    }
+
+    #[test]
+    fn regional_step_matches_the_regular_food_step() {
+        let (_, _, vegetation, mut v, food, mut standard) = setup("5c151f46");
+        let mut observed = standard.clone();
+        let mut regions = Vec::new();
+        assert!(
+            food.step_with_regions(&vegetation, &v, &mut observed, &mut regions)
+                .is_err()
+        );
+        for _ in 0..20 {
+            vegetation.advance(&mut v, 1).unwrap();
+            food.step(&vegetation, &v, &mut standard).unwrap();
+            food.step_with_regions(&vegetation, &v, &mut observed, &mut regions)
+                .unwrap();
+        }
+        assert_eq!(
+            serde_json::to_vec(&standard).unwrap(),
+            serde_json::to_vec(&observed).unwrap()
+        );
+        assert_eq!(regions, food.regions(&vegetation, &v, &standard));
     }
 }
