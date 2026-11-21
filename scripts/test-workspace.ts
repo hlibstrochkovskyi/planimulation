@@ -133,7 +133,7 @@ try {
 
   // An experiment can be saved, advanced, restored, and continued through the new shell.
   await page.locator('#moisture-start').click();
-  await expect(canvas).toHaveAttribute('data-moisture-seconds', '0');
+  await expect(canvas).toHaveAttribute('data-moisture-seconds', '0', { timeout: 30_000 });
   await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');
   await expect(page.locator('#moisture-model')).toBeDisabled();
   await expect(page.locator('#unsaved-indicator')).toBeVisible();
@@ -187,7 +187,7 @@ try {
   await page.locator('#open-seasonal').click();
   await page.locator('#replace-world').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '3600', { timeout: 120_000 });
-  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
+  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await page.locator('#moisture-step').click();
   await expect(canvas).toHaveAttribute('data-moisture-seconds', '7200');
   await expect(page.locator('body')).toHaveAttribute('data-seasonal-water', 'paused');

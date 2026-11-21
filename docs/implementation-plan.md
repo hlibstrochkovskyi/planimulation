@@ -271,6 +271,8 @@ The second increment, [vegetation with memory](vegetation.md) (`vegetation-2`), 
 
 The third increment, [wild food for foragers](wild-food.md) (`wild-food-1`), turns vegetation into the first renewable resource. Plant food follows a monthly growing season and spoils while it stands; game is a stock with a forage-set capacity that remembers recent years, logistic recovery and dieback. The year-round forager capacity without storage, its share of the perfect-storage capacity and the game stock are mapped, the inspector names what limits a region, and a single-region foraging experiment shows depletion and recovery. Plant and game shares are calibrated to observed terrestrial forager densities; aquatic food and human storage remain open.
 
+The fourth increment, [climate-normal rivers](rivers.md) (`rivers-1`), derives monthly runoff and discharge from the frozen climate normals with Oudin potential evaporation, degree-day snow and an HBV-type soil partition, routes it along C1 drainage, and balances inland terminals by annual evaporation and spill over the lowest saddle path. The atlas and globe show local runoff and distinguish perennial and seasonal channels by mean discharge. On three review worlds runoff is 22–31% of land precipitation and aridity-band means fall within the Fu curve envelope; ocean inflow stays below Earth's mainly because the inherited land precipitation is lower. Endorheic area remains far below Earth's; lake levels and groundwater are outside this increment.
+
 Preserve differences between worlds. Checks detect broken laws rather than requiring every planet to have the same forest area.
 
 ## 8. Adding 3D
