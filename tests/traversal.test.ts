@@ -12,9 +12,11 @@ import {
 import {
   NativeSession,
   decodeClimateNormals,
+  decodeRivers,
   decodeTraversalCosts,
   decodeTraversalField,
   decodeVegetation,
+  decodeWildFood,
   decodeWorld,
 } from '../src/native/client';
 
@@ -41,6 +43,7 @@ test('traversal protocol computes biome fallback and vegetation-coupled costs, s
     const coupled = decodeTraversalCosts(await session.request({ command: 'traversalCosts' }), n, 1);
     assert.equal(coupled.usesVegetation, true);
     assert.equal(coupled.vegetationYear, veg.year);
+    const food = decodeWildFood(await session.request({ command: 'wildFood' }), n, veg.year, 1);
 
     // Passable land regions have positive finite cost; main ocean is impassable in both seasons.
     let landSample = -1;
@@ -68,6 +71,10 @@ test('traversal protocol computes biome fallback and vegetation-coupled costs, s
     // Deterministic summer & winter least-time Dijkstra and route tracing.
     const summer = decodeTraversalField(
       await session.request({ command: 'travelTime', season: 'summer', sources: [landSample] }), n, 1);
+    const rivers = decodeRivers(await session.request({ command: 'rivers' }), n, 1);
+    assert.equal(rivers.runoff.length, n);
+    assert.deepEqual(decodeWildFood(await session.request({ command: 'wildFood' }), n, veg.year, 1), food);
+    assert.deepEqual(decodeTraversalCosts(await session.request({ command: 'traversalCosts' }), n, 1), coupled);
     const summerAgain = decodeTraversalField(
       await session.request({ command: 'travelTime', season: 'summer', sources: [landSample] }), n, 1);
     assert.deepEqual(summerAgain, summer);

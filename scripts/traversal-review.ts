@@ -116,6 +116,7 @@ try {
     await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 90_000 });
   }
   const map = page.locator('#map');
+  await expect(map).toHaveAttribute('data-river-line-mode', 'discharge');
   const image = (name: string) => path.join(output, `${seed}-${name}.png`);
   const capture = async (name: string) => {
     await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));

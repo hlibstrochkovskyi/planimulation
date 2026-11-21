@@ -102,10 +102,10 @@ model assumptions. [Pandolf et al.](https://pubmed.ncbi.nlm.nih.gov/1009916/)
 - **Inland lakes** (`body_id != 0 && body_id != main_ocean_id`): impassable in
   summer; passable in deep winter when `coldest_month <= -10 °C` and
   `freezing_months >= 3` (flat ice with $m_{\text{cover}} = 0.75 \times m_{\text{snow}}$).
-- **River crossings (proxy):** `rivers-1` discharge is developed separately;
-  `traversal-1` does not depend on it. Instead, `river_crossing_delay_from_area`
-  proxies unfrozen crossing delay from static C1 drainage contributing dry-land
-  area $A_i$:
+- **River crossings (proxy):** The map and globe can display [`rivers-1`
+  discharge](rivers.md). Foot travel still uses static C1 contributing dry-land
+  area $A_i$ in `river_crossing_delay_from_area` to estimate unfrozen crossing
+  delay.
   $$D_{\text{river}}(i) = 8\text{ h} \cdot \max\!\left(0,\; \log_{10}\!\left(\frac{A_i}{A_{\text{thresh}}(i)}\right)\right), \qquad A_{\text{thresh}}(i) = \max\!\left(10^{11}\text{ m}^2,\; 8\,\text{area}_i\right)$$
   At subdivision 6 (~12,450 km² per region), $A_{\text{thresh}} = 100{,}000\text{ km}^2$:
   a $10^6\text{ km}^2$ basin adds 8 hours (1 day) for fording/rafting. Crossing
@@ -227,10 +227,11 @@ explanation, globe/flat view switching and unchanged world fingerprint.
 - **No sub-grid relief field:** `World` stores one scalar elevation per region;
   the neighborhood-relief term (`R_0 = 600 m`) is an uncalibrated coarse-grid
   proxy for unresolved mountain ruggedness, not measured micro-topography.
-- **River crossings use drainage area, not discharge:** arid catchments with
-  large contributing areas receive the same unfrozen crossing penalty as humid
-  basins of equal area until `rivers-1` discharge replaces
-  `river_crossing_delay_from_area`.
+- **River crossing calibration:** arid and humid catchments of equal
+  contributing area receive the same unfrozen crossing penalty. The monthly
+  `rivers-1` discharge field is available for a future replacement of
+  `river_crossing_delay_from_area`. That replacement needs a rule linking
+  discharge and channel geometry to seasonal foot crossing costs.
 - **Local seasons rather than a single planetary date:** "Summer" and "Winter"
   evaluate every region in its own warm or cold season, so trans-equatorial
   journeys do not model opposite-hemisphere calendar phasing (or multi-season

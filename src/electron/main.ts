@@ -71,6 +71,7 @@ void app.whenReady().then(() => {
   ipcMain.handle('world:advance', (event, epoch: number, steps: number) => { senderWindow(event); return core.advance(epoch, steps); });
   ipcMain.handle('world:seasonalTemperature', (event, epoch: number) => { senderWindow(event); return core.seasonalTemperature(epoch); });
   ipcMain.handle('world:climateNormals', (event, epoch: number) => { senderWindow(event); return core.climateNormals(epoch); });
+  ipcMain.handle('world:rivers', (event, epoch: number) => { senderWindow(event); return core.rivers(epoch); });
   ipcMain.handle('world:initializeVegetation', (event, epoch: number) => { senderWindow(event); return core.initializeVegetation(epoch); });
   ipcMain.handle('world:advanceVegetation', (event, epoch: number, years: number) => { senderWindow(event); return core.advanceVegetation(epoch, years); });
   ipcMain.handle('world:vegetationSeries', (event, epoch: number, region: number) => { senderWindow(event); return core.vegetationSeries(epoch, region); });

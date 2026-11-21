@@ -12,6 +12,8 @@ import { DEFAULT_TEMPERATURE_SETTINGS, TEMPERATURE_DAYS_PER_YEAR, TEMPERATURE_MO
 import type { TemperatureNormals } from '../core/seasonal-temperature';
 import { BIOMES, CLIMATE_MODEL_VERSION } from '../core/climate-normals';
 import type { ClimateNormals } from '../core/climate-normals';
+import { DEFAULT_RIVER_SETTINGS, RIVER_MODEL_VERSION, RIVER_TOTAL_KEYS } from '../core/rivers';
+import type { LakeBalance, Rivers, RiverTotals, SpillSegment } from '../core/rivers';
 import { DEFAULT_VEGETATION_SETTINGS, VEGETATION_MAX_YEARS, VEGETATION_MAX_YEARS_PER_REQUEST, VEGETATION_MODEL_VERSION } from '../core/vegetation';
 import type { VegetationFrame, VegetationRegionYear, VegetationSeries } from '../core/vegetation';
 import { DEFAULT_WILD_FOOD_SETTINGS, MONTHS, WILD_FOOD_MODEL_VERSION } from '../core/wild-food';
@@ -74,7 +76,7 @@ export class FrameReader {
         if (!h || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0
           || h.byteLength > (checkpoint ? MAX_SEASONAL_CHECKPOINT_BYTES : MAX_BYTES)
           || (seasonal ? h.protocol !== seasonal.protocol : (h.protocol !== 9 && h.protocol !== 10)
-            || !['world', 'frame', 'water', 'temperature', 'wind', 'climate', 'vegetation', 'vegetationSeries', 'wildFood', 'wildFoodSeries', 'forage', 'traversalCosts', 'traversalField', 'checkpoint', 'error'].includes(h.kind))) throw new Error('Invalid native protocol header.');
+            || !['world', 'frame', 'water', 'temperature', 'wind', 'climate', 'rivers', 'vegetation', 'vegetationSeries', 'wildFood', 'wildFoodSeries', 'forage', 'traversalCosts', 'traversalField', 'checkpoint', 'error'].includes(h.kind))) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
       if (this.length < this.header.byteLength) return;
@@ -306,6 +308,91 @@ function sameSettings(value: unknown, expected: Record<string, number>): boolean
   if (typeof value !== 'object' || value === null) return false;
   const entries = Object.entries(value as Record<string, unknown>);
   return entries.length === Object.keys(expected).length && entries.every(([key, v]) => expected[key] === v);
+}
+
+export function decodeRivers(packet: Packet, count: number, epoch: number): Rivers {
+  const { header, bytes } = packet;
+  const months = TEMPERATURE_MONTHS_PER_YEAR, year = TEMPERATURE_DAYS_PER_YEAR;
+  const { lakeCount, spillSegmentCount, oceanTerminal, monthDays } = header as Header & {
+    lakeCount: number; spillSegmentCount: number; oceanTerminal: number | null; monthDays: number[];
+  };
+  const validId = (id: number): boolean => Number.isSafeInteger(id) && id >= 0 && id < count;
+  const validCount = (n: number): boolean => Number.isSafeInteger(n) && n >= 0 && n <= count;
+  if (header.kind !== 'rivers' || header.protocol !== 9 || header.riverModelVersion !== RIVER_MODEL_VERSION
+    || header.climateModelVersion !== CLIMATE_MODEL_VERSION || header.regionCount !== count || !Number.isSafeInteger(count) || count < 1
+    || !sameSettings(header.settings, DEFAULT_RIVER_SETTINGS) || !validCount(lakeCount) || !validCount(spillSegmentCount)
+    || (oceanTerminal !== null && !validId(oceanTerminal))
+    || !Array.isArray(monthDays) || monthDays.length !== months
+    || Array.from(monthDays).some((days, m) => days !== Math.ceil(year * (m + 1) / months) - Math.ceil(year * m / months))
+    || bytes.length !== count * 240 + lakeCount * 76 + spillSegmentCount * 20) {
+    throw new Error('Invalid native river metadata.');
+  }
+  const totals = header.totals as RiverTotals;
+  if (!totals || Object.keys(totals).length !== RIVER_TOTAL_KEYS.length
+    || RIVER_TOTAL_KEYS.some(key => !Number.isFinite(totals[key]) || totals[key] < (key === 'landStorage' ? -1 : 0))
+    || totals.endorheicArea > totals.landArea * (1 + 1e-12)
+    || totals.landRunoffToOcean > Math.min(totals.landRunoff, totals.oceanDischarge) * (1 + 1e-12)) {
+    throw new Error('Invalid native river totals.');
+  }
+  let offset = 0;
+  const dense = floats(bytes.subarray(0, count * 232));
+  const next = (length = count): Float64Array => {
+    const field = dense.subarray(offset, offset + length);
+    offset += length;
+    return field;
+  };
+  const pet = next(), aet = next(), runoff = next(), storage = next(), meanDischarge = next();
+  const monthlyRunoff = next(count * months), monthlyDischarge = next(count * months);
+  offset *= 8;
+  const id = (): number => { const value = bytes.readUInt32LE(offset); offset += 4; return value; };
+  const classIds = Uint32Array.from({ length: count }, id), terminal = Uint32Array.from({ length: count }, id);
+  const near = (a: number, b: number): boolean => Math.abs(a - b) <= 1e-9 + Math.max(Math.abs(a), Math.abs(b)) * 1e-12;
+  for (let i = 0; i < count; i++) {
+    let annualRunoff = 0, annualFlow = 0, flowingMonths = 0;
+    for (let m = 0; m < months; m++) {
+      const run = monthlyRunoff[i * months + m], flow = monthlyDischarge[i * months + m];
+      if (run < 0 || flow < 0) throw new Error('Invalid native river monthly values.');
+      annualRunoff += run; annualFlow += flow * monthDays[m] / year;
+      if (flow >= DEFAULT_RIVER_SETTINGS.riverThresholdCubicMetersPerSecond) flowingMonths++;
+    }
+    const expectedClass = flowingMonths === months ? 2 : flowingMonths > 0 ? 1 : 0;
+    if (pet[i] < 0 || aet[i] < 0 || (aet[i] > pet[i] && !near(aet[i], pet[i])) || runoff[i] < 0 || meanDischarge[i] < 0
+      || storage[i] < -1e-9 || !validId(terminal[i]) || classIds[i] !== expectedClass
+      || !near(annualRunoff, runoff[i]) || !near(annualFlow, meanDischarge[i])) throw new Error('Invalid native river region.');
+  }
+  const lakes = new Map<number, LakeBalance>();
+  for (let i = 0; i < lakeCount; i++) {
+    const region = id(), from = id(), to = id();
+    const [sillElevation, area, inflow, precipitation, potentialEvaporation, evaporation, spill, storage] = floats(bytes.subarray(offset, offset + 64));
+    offset += 64;
+    const outlet = from === count && to === count ? null : [from, to] as const;
+    if (!validId(region) || region === oceanTerminal || lakes.has(region)
+      || (outlet ? !validId(from) || !validId(to) || from === to : spill > 0)
+      || [area, inflow, precipitation, potentialEvaporation, evaporation, spill, storage].some(v => v < 0)
+      || evaporation > potentialEvaporation || !near(inflow + precipitation, evaporation + spill + storage)) {
+      throw new Error('Invalid native lake balance.');
+    }
+    lakes.set(region, { region, outlet, sillElevation, area, inflow, precipitation, potentialEvaporation, evaporation, spill, storage });
+  }
+  const spillSegments: SpillSegment[] = [];
+  for (let i = 0; i < spillSegmentCount; i++) {
+    const from = id(), to = id(), riverClass = id();
+    const meanDischarge = bytes.readDoubleLE(offset); offset += 8;
+    if (!validId(from) || !validId(to) || from === to || riverClass > 2 || !(meanDischarge > 0) || !Number.isFinite(meanDischarge)) {
+      throw new Error('Invalid native spill segment.');
+    }
+    spillSegments.push({ from, to, class: riverClass, meanDischarge });
+  }
+  if (!near(totals.landRunoff, totals.landRunoffToOcean + totals.landRunoffToEndorheic + totals.landRunoffEvaporatedInSpillingLakes)
+    || !near(totals.landRunoff + totals.lakePrecipitation, totals.oceanDischarge + totals.lakeEvaporation + totals.terminalStorage)
+    || !near(totals.landPrecipitation, totals.landAet + totals.landRunoff + totals.landStorage)) {
+    throw new Error('Native river budgets do not close.');
+  }
+  if (terminal.some(region => region !== oceanTerminal && (!lakes.has(region) || lakes.get(region)!.spill > 0))) {
+    throw new Error('Invalid native river destination.');
+  }
+  return { epoch, modelVersion: RIVER_MODEL_VERSION, settings: DEFAULT_RIVER_SETTINGS, monthDays, oceanTerminal,
+    pet, aet, runoff, storage, meanDischarge, monthlyRunoff, monthlyDischarge, class: classIds, terminal, lakes, spillSegments, totals };
 }
 
 export function decodeVegetation(packet: Packet, count: number, epoch: number): VegetationFrame {
@@ -772,6 +859,14 @@ export class NativeController {
     const packet = await session.request({ command: 'climateNormals' });
     if (this.active !== session || this.epoch !== epoch) throw new Error('Stale climate-normal response.');
     try { return decodeClimateNormals(packet, this.count, epoch); }
+    catch (error) { session.close(); throw error; }
+  }
+  async rivers(epoch: number): Promise<Rivers> {
+    if (!this.active || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    const session = this.active;
+    const packet = await session.request({ command: 'rivers' });
+    if (this.active !== session || this.epoch !== epoch) throw new Error('Stale rivers response.');
+    try { return decodeRivers(packet, this.count, epoch); }
     catch (error) { session.close(); throw error; }
   }
   async initializeVegetation(epoch: number): Promise<VegetationFrame> {
