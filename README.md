@@ -33,7 +33,10 @@ The separate [unified regional soil cycle](docs/regional-soil-cycle.md) applies 
 | [Climate-normal rivers](docs/rivers.md) | `rivers-1`: monthly runoff with snow and soil partition, river discharge along drainage, inland terminal balances and spill, runoff and discharge layers |
 | [Foot traversal](docs/traversal.md) | `traversal-2`: seasonal foot travel costs, river crossings by discharge, least-time travel fields with isochrones, routes on map and globe |
 | [Natural-world ensemble](docs/natural-ensemble.md) | 27 worlds and 15 stress cases over 1,000 years: law checks, distributions, problematic seeds |
-| [Coastal lowlands](docs/coastal-lowlands.md) | Default for new desktop worlds, `multiscale-geography-4`: crust-baseline height compressed toward coasts, unchanged shorelines, hypsometry measurements |
+| [River-carved land](docs/eroded-landscape.md) | Default for new desktop worlds, `multiscale-geography-5` at 163,842 regions: steady-state stream-power valleys and ridges, sediment plains, fans and delta fronts |
+| [Bathymetry](docs/bathymetry.md) | `bathymetry-1`: seafloor age and depth, trenches with outer rises, passive and active continental margins |
+| [Display](docs/display.md) | Natural colors, lighting, adaptive exaggeration, curved rivers, smooth coasts and bounded decorative close-up detail |
+| [Coastal lowlands](docs/coastal-lowlands.md) | `multiscale-geography-4`, default for new worlds until November 21, 2026: crust-baseline height compressed toward coasts, unchanged shorelines, hypsometry measurements |
 | [Initial crust](docs/crust.md) | Spherical continentality, area fitting, approximate material properties, and validation |
 | [Explainable elevation](docs/terrain.md) | Elevation contributions, physical-distance propagation, globe relief, and display-only exaggeration |
 | [Dry terrain preparation](docs/terrain-preparation.md) | Versioned bounded material transfer before initial water filling, limits, and validation |

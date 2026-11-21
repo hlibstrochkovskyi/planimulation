@@ -83,9 +83,9 @@ try {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => { if (message.type() === 'error' && /THREE|WebGL|shader/i.test(message.text())) errors.push(message.text()); });
-  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 60_000 });
+  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 180_000 });
   // A new desktop world uses the promoted family; the remaining checks use the frozen reference recipe.
-  await expect(page.locator('#region-count')).toHaveText('40,962');
+  await expect(page.locator('#region-count')).toHaveText('163,842');
   await expect(page.locator('#generator-family')).toHaveValue(NEW_WORLD_RECIPE.modelVersion);
   const startupReference = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
   try { await expect(page.locator('#fingerprint')).toHaveText((await startupReference.generate(NEW_WORLD_RECIPE)).world.checksum); }

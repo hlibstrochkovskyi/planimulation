@@ -1,8 +1,8 @@
 # River-carved land: `multiscale-geography-5`
 
-November 21, 2026. Experimental generator family, selectable as **Multiscale
-geography V · experimental**. `NEW_WORLD_RECIPE` stays `multiscale-geography-4`
-until version 5 is reviewed. Old recipes and fingerprints are unchanged.
+November 21, 2026. Generator family for new desktop worlds (`NEW_WORLD_RECIPE`,
+subdivision 7) since November 21, 2026, replacing `multiscale-geography-4`.
+`DEFAULT_RECIPE`, headless defaults, old recipes and fingerprints are unchanged.
 
 ## Problem
 

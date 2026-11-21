@@ -1,7 +1,8 @@
 # Coastal lowlands: `multiscale-geography-4`
 
 November 15, 2026. Generator family for new desktop worlds (`NEW_WORLD_RECIPE`)
-since November 16, 2026, replacing `multiscale-geography-3`. `DEFAULT_RECIPE`,
+from November 16 to November 21, 2026, replacing `multiscale-geography-3`;
+replaced in turn by [`multiscale-geography-5`](eroded-landscape.md). `DEFAULT_RECIPE`,
 headless defaults, old recipes and fingerprints are unchanged.
 
 ## Problem

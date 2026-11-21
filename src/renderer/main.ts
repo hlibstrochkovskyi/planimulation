@@ -1260,9 +1260,9 @@ function updateGeneratorInputs(): void {
   for (const option of resolutionInput.options) option.disabled = Number(option.value) > finest;
   if (Number(resolutionInput.value) > finest) resolutionInput.value = String(finest);
   element('generator-note').textContent = generatorFamilyInput.value === MULTISCALE_ERODED_MODEL_VERSION
-    ? 'Experimental. Version 4 with river-carved valleys and ridges from a steady-state stream-power landscape, and up to 163,842 regions. The ocean floor has mid-ocean ridges, trenches and continental shelves. Changing the model creates a different world.'
+    ? 'Default for new worlds. Version 4 with river-carved valleys and ridges from a steady-state stream-power landscape, sediment plains, fans and delta fronts, an ocean floor with mid-ocean ridges, trenches and continental shelves, and up to 163,842 regions. Changing the model creates a different world.'
     : generatorFamilyInput.value === MULTISCALE_LOWLANDS_MODEL_VERSION
-    ? 'Default for new worlds. Version 3 with coastal lowlands. Non-belt land height rises gradually with distance from water, so coastal plains are wider and interiors lower. Shorelines match version 3. Changing the model creates a different world.'
+    ? 'Version 3 with coastal lowlands. Non-belt land height rises gradually with distance from water, so coastal plains are wider and interiors lower. Shorelines match version 3. Changing the model creates a different world.'
     : generatorFamilyInput.value === MULTISCALE_BELTS_MODEL_VERSION
     ? 'Continental uplands with meandering, varied mountain belts and sediment-filled shallow depressions for connected drainage. Changing the model creates a different world.'
     : generatorFamilyInput.value === MULTISCALE_UPLANDS_MODEL_VERSION
