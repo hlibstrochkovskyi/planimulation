@@ -14,6 +14,9 @@ use std::collections::BinaryHeap;
 pub const MODEL_VERSION: &str = "multiscale-geography-5";
 /// Finest subdivision supported by version 5 (163,842 regions).
 pub const MAX_SUBDIVISION: u32 = 7;
+/// Coastal-lowland kept fractions at the shore and inland. Version 5 compresses
+/// less than version 4 because `bathymetry-1` raises the fitted water level.
+pub const LOWLAND_FACTORS: [f64; 2] = [0.5, 0.95];
 /// Drainage-area exponent `m` of the stream-power law (concavity with `n = 1`).
 pub const AREA_EXPONENT: f64 = 0.5;
 /// Receiver/height updates; the network settles well before this on review seeds.

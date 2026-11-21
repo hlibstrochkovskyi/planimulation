@@ -390,6 +390,14 @@ impl World {
                 &terrain.convergence,
                 &water.body_ids,
                 water.level_meters,
+                if eroded {
+                    eroded_landscape::LOWLAND_FACTORS
+                } else {
+                    [
+                        coastal_lowlands::COAST_FACTOR,
+                        coastal_lowlands::INTERIOR_FACTOR,
+                    ]
+                },
             )?;
             for (region, lowered) in lowering.into_iter().enumerate() {
                 terrain.lowland[region] = lowered;

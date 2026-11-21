@@ -30,6 +30,10 @@ fn v4_control(world: &World, raw: &[f64]) -> Result<(Vec<f64>, Water), String> {
         &t.convergence,
         &original.body_ids,
         original.level_meters,
+        [
+            coastal_lowlands::COAST_FACTOR,
+            coastal_lowlands::INTERIOR_FACTOR,
+        ],
     )?;
     for (height, delta) in bed.iter_mut().zip(lowering) {
         *height += delta;

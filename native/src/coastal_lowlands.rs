@@ -17,8 +17,13 @@ pub const RAMP_METERS: f64 = 1_200_000.;
 
 /// Kept fraction of baseline height above sea level at distance `d` meters from water.
 pub fn kept_fraction(d: f64) -> f64 {
+    kept_fraction_between(d, [COAST_FACTOR, INTERIOR_FACTOR])
+}
+
+/// Kept fraction rising from `factors[0]` at the shore to `factors[1]` inland.
+pub fn kept_fraction_between(d: f64, [coast, interior]: [f64; 2]) -> f64 {
     let t = (d / RAMP_METERS).clamp(0., 1.);
-    COAST_FACTOR + (INTERIOR_FACTOR - COAST_FACTOR) * t * t * (3. - 2. * t)
+    coast + (interior - coast) * t * t * (3. - 2. * t)
 }
 
 /// Per-region lowering in meters (zero or negative). The compressible part of a
@@ -32,6 +37,7 @@ pub fn lowering(
     convergence: &[f64],
     wet: &[u32],
     level: f64,
+    factors: [f64; 2],
 ) -> Result<Vec<f64>, String> {
     let n = elevation.len();
     if wet.len() != n
@@ -67,7 +73,7 @@ pub fn lowering(
             if wet[i] != 0 || compressible <= 0. || !distance[i].is_finite() {
                 0.
             } else {
-                -(1. - kept_fraction(distance[i])) * compressible
+                -(1. - kept_fraction_between(distance[i], factors)) * compressible
             }
         })
         .collect())
@@ -141,7 +147,8 @@ mod tests {
                 &vec![0.; n],
                 &vec![0.; n],
                 &vec![0; n - 1],
-                0.
+                0.,
+                [COAST_FACTOR, INTERIOR_FACTOR]
             )
             .is_err()
         );
@@ -152,7 +159,8 @@ mod tests {
                 &vec![0.; n],
                 &vec![0.; n],
                 &vec![0; n],
-                f64::NAN
+                f64::NAN,
+                [COAST_FACTOR, INTERIOR_FACTOR]
             )
             .is_err()
         );
