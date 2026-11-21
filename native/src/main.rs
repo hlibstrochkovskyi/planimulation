@@ -8,6 +8,7 @@ use planimulation_core::{
     },
     seasonal_temperature::{Normals, Settings},
     seasonal_wind::{Normals as WindNormals, Settings as WindSettings},
+    traversal::{Model as TraversalModel, Season as TraversalSeason},
     vegetation::{Model as VegetationModel, State as VegetationState},
     wire,
 };
@@ -43,6 +44,11 @@ enum Command {
     },
     VegetationSeries {
         region: usize,
+    },
+    TraversalCosts,
+    TravelTime {
+        season: TraversalSeason,
+        sources: Vec<usize>,
     },
     SeasonalMoisture {
         seconds: u32,
@@ -96,8 +102,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut water_state: Option<PrescribedWaterInventory> = None;
     let mut moisture_state: Option<SeasonalSession> = None;
     let mut vegetation: Option<(VegetationModel, VegetationState)> = None;
-    // Climate normals of the current world, shared by the biome layers and vegetation.
+    // Climate normals of the current world, shared by the biome layers, vegetation and traversal.
     let mut climate: Option<ClimateNormals> = None;
+    let mut traversal: Option<TraversalModel> = None;
     loop {
         let mut line = Vec::new();
         let count = input
@@ -129,11 +136,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     moisture_state = None;
                     vegetation = None;
                     climate = None;
+                    traversal = None;
                 }
                 Command::Advance { steps } => {
                     let w = world.as_mut().ok_or("Generate a world first.")?;
                     w.advance(steps)?;
                     climate = None;
+                    traversal = None;
                     wire::frame(&mut output, w).map_err(|e| e.to_string())?;
                 }
                 Command::SeasonalTemperature => {
@@ -162,6 +171,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let (model, state) = VegetationModel::new(w, normals, Default::default())?;
                     wire::vegetation(&mut output, &model, &state).map_err(|e| e.to_string())?;
                     vegetation = Some((model, state));
+                    traversal = None;
                 }
                 Command::AdvanceVegetation { years } => {
                     let (model, state) = vegetation
@@ -170,6 +180,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let mut next = state.clone();
                     model.advance(&mut next, years)?;
                     *state = next;
+                    traversal = None;
                     wire::vegetation(&mut output, model, state).map_err(|e| e.to_string())?;
                 }
                 Command::VegetationSeries { region } => {
@@ -179,6 +190,49 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let series = model.region_series(state, region)?;
                     wire::vegetation_series(&mut output, region, &series)
                         .map_err(|e| e.to_string())?;
+                }
+                Command::TraversalCosts => {
+                    let w = world.as_ref().ok_or("Generate a world first.")?;
+                    if climate.is_none() {
+                        climate = Some(ClimateNormals::from_world(w)?);
+                    }
+                    if traversal.is_none() {
+                        let normals = climate
+                            .as_ref()
+                            .expect("climate normals were just computed");
+                        traversal = Some(TraversalModel::new(
+                            w,
+                            normals,
+                            vegetation.as_ref().map(|(_, s)| s),
+                            Default::default(),
+                        )?);
+                    }
+                    let model = traversal
+                        .as_ref()
+                        .expect("traversal model was just computed");
+                    wire::traversal_costs(&mut output, model).map_err(|e| e.to_string())?;
+                }
+                Command::TravelTime { season, sources } => {
+                    let w = world.as_ref().ok_or("Generate a world first.")?;
+                    if climate.is_none() {
+                        climate = Some(ClimateNormals::from_world(w)?);
+                    }
+                    if traversal.is_none() {
+                        let normals = climate
+                            .as_ref()
+                            .expect("climate normals were just computed");
+                        traversal = Some(TraversalModel::new(
+                            w,
+                            normals,
+                            vegetation.as_ref().map(|(_, s)| s),
+                            Default::default(),
+                        )?);
+                    }
+                    let model = traversal
+                        .as_ref()
+                        .expect("traversal model was just computed");
+                    let field = model.travel_time_multi(season, &sources)?;
+                    wire::traversal_field(&mut output, model, &field).map_err(|e| e.to_string())?;
                 }
                 Command::SeasonalWind => {
                     let w = world.as_ref().ok_or("Generate a world first.")?;

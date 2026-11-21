@@ -199,6 +199,7 @@ export class Workspace {
     if (active && previous && previous.layer !== state.layer) active.closest<HTMLDetailsElement>('details')!.open = true;
     node('active-layer-title').textContent = active ? [...active.childNodes].filter(child => child.nodeType === Node.TEXT_NODE).map(child => child.textContent).join('').trim() : state.layer;
     node('climate-context').hidden = state.layer !== 'temperature' && state.layer !== 'windSpeed';
+    node('traversal-context').hidden = state.layer !== 'travelCost' && state.layer !== 'travelTime';
     this.model.disabled = state.busy || state.seasonalModel !== null || state.manualStep > 0 || state.diagnosticRunning;
     if (state.seasonalModel) {
       this.model.value = state.seasonalModel;
@@ -213,8 +214,11 @@ export class Workspace {
     for (const layer of document.querySelectorAll<HTMLButtonElement>('[data-layer]')) {
       layer.setAttribute('aria-disabled', String(layer.disabled));
       if (layer.disabled && !layer.title) layer.title = layer.dataset.layer === 'temperature' || layer.dataset.layer === 'windSpeed'
-        ? 'Climate normals are being prepared or are unavailable. See status details.' : 'Initialize a compatible seasonal water model to inspect this layer.';
-      if (!layer.disabled && layer.title.startsWith('Climate normals')) layer.removeAttribute('title');
+        ? 'Climate normals are being prepared or are unavailable. See status details.'
+        : layer.dataset.layer === 'travelCost' || layer.dataset.layer === 'travelTime'
+          ? 'Movement costs are being prepared or are unavailable. See status details.'
+          : 'Initialize a compatible seasonal water model to inspect this layer.';
+      if (!layer.disabled && (layer.title.startsWith('Climate normals') || layer.title.startsWith('Movement costs'))) layer.removeAttribute('title');
     }
   }
 
@@ -276,6 +280,7 @@ export class Workspace {
     const relevant: Record<string, string[]> = {
       'climate-note': ['biome', 'annualPrecipitation'],
       'vegetation-note': ['vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly'],
+      'traversal-note': ['travelCost', 'travelTime'],
       'crust-note': ['crust', 'thickness', 'plates', 'surface'],
       'water-note': ['surface', 'depth', 'waterBodies'],
       'drainage-note': ['catchments', 'contributingArea', 'runoffFlow', 'runoffWater', 'basins', 'spill'],
@@ -301,6 +306,8 @@ export class Workspace {
       woodyChange: ['Woody change, 10 years', 'Woody / herb cover', 'This year\'s precipitation', 'Vegetation state'],
       productivity: ['Net primary productivity', 'Woody / herb cover', 'This year\'s precipitation', 'Annual mean temperature normal'],
       precipitationAnomaly: ['This year\'s precipitation', 'Root-zone moisture', 'Annual precipitation', 'Vegetation state'],
+      travelCost: ['Travel cost', 'Walking pace', 'Slope & ruggedness', 'Land cover factor', 'Snow factor', 'River crossing proxy'],
+      travelTime: ['Travel time from origin', 'Least-time route length', 'Average route pace', 'Travel cost', 'Land cover factor'],
       catchments: ['Drainage receiver', 'Catchment outlet', 'Contributing', 'Elevation (reference datum)'],
       contributingArea: ['Contributing', 'Drainage receiver', 'Catchment outlet'],
       plates: ['Tectonic plate', 'Plate area', 'Speed (model frame)', 'Continentality'],

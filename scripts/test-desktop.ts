@@ -116,7 +116,7 @@ try {
   }, { ...DEFAULT_RECIPE });
   assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'advanceVegetation', 'cancelGeneration', 'climateNormals', 'copyText', 'exportView', 'generate', 'initializeOrographicMoisture', 'initializePreciseMoisture', 'initializeRegionalMoisture', 'initializeSoilMoisture', 'initializeVegetation', 'inspectWaterBudget', 'openRecipe', 'openSeasonalCheckpoint', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveSeasonalCheckpoint', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalSoilMoisture', 'seasonalTemperature', 'seasonalWind', 'vegetationSeries']);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'advanceVegetation', 'cancelGeneration', 'climateNormals', 'copyText', 'exportView', 'generate', 'initializeOrographicMoisture', 'initializePreciseMoisture', 'initializeRegionalMoisture', 'initializeSoilMoisture', 'initializeVegetation', 'inspectWaterBudget', 'openRecipe', 'openSeasonalCheckpoint', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveSeasonalCheckpoint', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalSoilMoisture', 'seasonalTemperature', 'seasonalWind', 'travelTime', 'traversalCosts', 'vegetationSeries']);
   await expect(page.locator('[data-layer="temperature"]')).toBeEnabled();
   await expect(page.locator('#temperature-month')).toBeEnabled();
   await ui('[data-layer="temperature"]').click();
@@ -170,6 +170,37 @@ try {
   await expect(page.locator('#biome-legend')).toBeHidden();
   await ui('#vegetation-reset').click();
   await expect(page.locator('#vegetation-time')).toHaveText('Year 0');
+  // traversal-1 desktop UI checks: Travel cost, Travel time, season toggle, route polyline, flat/globe consistency.
+  await expect(page.locator('[data-layer="travelCost"]')).toBeEnabled();
+  await expect(page.locator('[data-layer="travelTime"]')).toBeEnabled();
+  await ui('[data-layer="travelCost"]').click();
+  await expect(page.locator('#traversal-context')).toBeVisible();
+  await expect(page.locator('#legend-title')).toContainText('Foot travel cost (summer)');
+  await expect(page.locator('#legend-high')).toContainText('h/100 km');
+  await page.locator('#traversal-winter').click();
+  await expect(page.locator('#map')).toHaveAttribute('data-travel-season', 'winter');
+  await expect(page.locator('#legend-title')).toContainText('Foot travel cost (winter)');
+  await page.locator('#traversal-summer').click();
+  await expect(page.locator('#map')).toHaveAttribute('data-travel-season', 'summer');
+  // Select a passable dry region and compute travel time from it.
+  const travelBox = (await page.locator('#map').boundingBox())!;
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const x = travelBox.x + travelBox.width * (0.18 + 0.64 * ((attempt * 0.618) % 1));
+    const y = travelBox.y + travelBox.height * (0.25 + 0.50 * ((attempt * 0.382) % 1));
+    await page.mouse.click(x, y);
+    if (await page.locator('#travel-from-here').isEnabled()) break;
+  }
+  await ui('#travel-from-here').click();
+  await expect(page.locator('#map')).toHaveAttribute('data-active-layer', 'travelTime');
+  await expect(page.locator('#map')).toHaveAttribute('data-travel-origin', /^\d+$/);
+  await expect(page.locator('#isochrone-legend')).toBeVisible();
+  await expect(page.locator('#isochrone-legend')).toContainText('30–60 d');
+  await ui('#tab-factors').click();
+  await expect(page.locator('#traversal-note')).toContainText(/foot cost|Impassable|ocean|lake/i);
+  await page.locator('[data-view="globe"]').click();
+  await expect(page.locator('#map')).toHaveAttribute('data-view', 'globe');
+  await page.locator('[data-view="flat"]').click();
+  await page.locator('#traversal-clear-source').click();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await ui('[data-layer="surface"]').click();
   await ui('#temperature-month').selectOption('3');

@@ -74,6 +74,13 @@ void app.whenReady().then(() => {
   ipcMain.handle('world:initializeVegetation', (event, epoch: number) => { senderWindow(event); return core.initializeVegetation(epoch); });
   ipcMain.handle('world:advanceVegetation', (event, epoch: number, years: number) => { senderWindow(event); return core.advanceVegetation(epoch, years); });
   ipcMain.handle('world:vegetationSeries', (event, epoch: number, region: number) => { senderWindow(event); return core.vegetationSeries(epoch, region); });
+  ipcMain.handle('world:traversalCosts', (event, epoch: number) => { senderWindow(event); return core.traversalCosts(epoch); });
+  ipcMain.handle('world:travelTime', (event, epoch: number, season: unknown, sources: unknown) => {
+    senderWindow(event);
+    if (season !== 'summer' && season !== 'winter') throw new Error('Invalid travel season.');
+    if (!Array.isArray(sources) || !sources.every((s): s is number => typeof s === 'number')) throw new Error('Invalid travel origin regions.');
+    return core.travelTime(epoch, season, sources);
+  });
   ipcMain.handle('world:seasonalWind', (event, epoch: number) => { senderWindow(event); return core.seasonalWind(epoch); });
   ipcMain.handle('world:seasonalMoisture', (event, epoch: number, seconds: number) => {
     senderWindow(event); return core.seasonalMoisture(epoch, seconds);

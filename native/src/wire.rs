@@ -369,6 +369,122 @@ pub fn vegetation_series(
     )
 }
 
+/// Foot-traversal costs and factor breakdown for summer and winter (protocol 9).
+/// Impassable regions encode `-1.0` so every wire float remains finite.
+pub fn traversal_costs(out: &mut impl Write, model: &crate::traversal::Model) -> io::Result<()> {
+    let count = model.region_count();
+    let mut bytes = Vec::with_capacity(count * 84);
+    f64s(
+        &mut bytes,
+        model
+            .hours_per_100km_summer
+            .iter()
+            .map(|&v| if v.is_finite() { v } else { -1.0 }),
+    );
+    f64s(
+        &mut bytes,
+        model
+            .hours_per_100km_winter
+            .iter()
+            .map(|&v| if v.is_finite() { v } else { -1.0 }),
+    );
+    f64s(
+        &mut bytes,
+        model
+            .slope_factor_summer
+            .iter()
+            .zip(&model.passable_summer)
+            .map(|(&v, &p)| if p { v } else { -1.0 }),
+    );
+    f64s(
+        &mut bytes,
+        model
+            .slope_factor_winter
+            .iter()
+            .zip(&model.passable_winter)
+            .map(|(&v, &p)| if p { v } else { -1.0 }),
+    );
+    f64s(
+        &mut bytes,
+        model
+            .cover_factor_summer
+            .iter()
+            .zip(&model.passable_summer)
+            .map(|(&v, &p)| if p { v } else { -1.0 }),
+    );
+    f64s(
+        &mut bytes,
+        model
+            .cover_factor_winter
+            .iter()
+            .zip(&model.passable_winter)
+            .map(|(&v, &p)| if p { v } else { -1.0 }),
+    );
+    f64s(&mut bytes, model.snow_factor_winter.iter().copied());
+    f64s(&mut bytes, model.river_delay_summer_hours.iter().copied());
+    f64s(&mut bytes, model.river_delay_winter_hours.iter().copied());
+    f64s(&mut bytes, model.local_relief_meters.iter().copied());
+    u32s(&mut bytes, &model.flags);
+    send(
+        out,
+        json!({
+            "kind": "traversalCosts",
+            "traversalModelVersion": crate::traversal::MODEL_VERSION,
+            "climateModelVersion": crate::climate_normals::MODEL_VERSION,
+            "usesVegetation": model.uses_vegetation(),
+            "vegetationYear": model.vegetation_year(),
+            "settings": model.settings(),
+            "regionCount": count
+        }),
+        &bytes,
+    )
+}
+
+/// Deterministic least-time travel field from one or more origins (protocol 9).
+/// Unreachable regions encode `-1.0` for days/distance and `regionCount` for predecessor.
+pub fn traversal_field(
+    out: &mut impl Write,
+    model: &crate::traversal::Model,
+    field: &crate::traversal::TravelField,
+) -> io::Result<()> {
+    let count = field.days.len();
+    let mut bytes = Vec::with_capacity(count * 20);
+    f64s(
+        &mut bytes,
+        field
+            .days
+            .iter()
+            .map(|&v| if v.is_finite() { v } else { -1.0 }),
+    );
+    f64s(
+        &mut bytes,
+        field
+            .distance_meters
+            .iter()
+            .map(|&v| if v.is_finite() { v } else { -1.0 }),
+    );
+    let sentinel = count as u32;
+    let preds: Vec<u32> = field
+        .predecessor
+        .iter()
+        .map(|&p| if p < sentinel { p } else { sentinel })
+        .collect();
+    u32s(&mut bytes, &preds);
+    send(
+        out,
+        json!({
+            "kind": "traversalField",
+            "traversalModelVersion": crate::traversal::MODEL_VERSION,
+            "season": field.season,
+            "sources": field.sources,
+            "usesVegetation": model.uses_vegetation(),
+            "vegetationYear": model.vegetation_year(),
+            "regionCount": count
+        }),
+        &bytes,
+    )
+}
+
 pub fn water_frame(
     out: &mut impl Write,
     display: &WaterDisplay,
