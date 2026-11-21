@@ -18,9 +18,11 @@ a world.
 Version 5 reuses version 4 and adds two explicit elevation contributions, both
 shown in the inspector:
 
-- **Ocean floor** (`Terrain::seafloor`, `bathymetry-1`), added before dry
-  preparation and the initial water fit. Zero in this build; a separate
-  increment implements it.
+- **Ocean floor** (`Terrain::seafloor`, `bathymetry-1`, see
+  [bathymetry](bathymetry.md)), added before dry preparation and the initial
+  water fit. It raises the fitted water level by roughly 250 m, so version 5
+  keeps more coastal height in the lowland step: kept fractions 0.5 at the
+  shore and 0.95 inland (version 4: 0.25 and 0.85).
 - **Erosion and deposition** (`Terrain::erosion`), applied after the coastal
   lowlands and the first water fit, before shallow-depression filling and the
   water refit.
@@ -68,6 +70,10 @@ volume is not yet delivered to deltas or shelves.
 
 ## Measurements
 
+The table below predates `bathymetry-1` and the version-5 lowland factors. With
+both, land below 200 m is 21.9%, 21.1% and 27.9% and the median land height
+408, 451 and 363 m on the three seeds at subdivision 6.
+
 `cargo run --release --example eroded_landscape_report -- SEED SUBDIVISION MODEL`,
 default recipe parameters. Heights are above the initial water level. Local
 relief is the largest height difference to a dry neighbor.
@@ -96,6 +102,19 @@ relief is the largest height difference to a dry neighbor.
 The whole subdivision-7 chain runs on the 12-thread test machine: generation
 2.3 s, rivers 7.0 s, vegetation spin-up 0.5 s, and 100 years of vegetation with
 wild food 3.0 s. At subdivision 6 these take 0.7 s, 2.7 s, 0.1 s and 0.9 s.
+
+## Natural ensemble on version 5
+
+`NATURAL_MODEL=multiscale-geography-5 cargo run --release --example natural_ensemble -- --threads 4`
+(subdivision 6, with `bathymetry-1` and the version-5 lowland factors) passed all
+seven laws in all 27 standard and 15 extreme runs (294 of 294 checks), in 7 min
+16 s. Downstream calibrations hold:
+
+| Seed | Forest year 0, v4 → v5 | Mean NPP, v4 → v5 (Pg/yr) | Mean forager capacity, v4 → v5 (M) |
+| --- | --- | --- | --- |
+| first-light | 22.5% → 22.9% | 114.3 → 116.6 | 14.18 → 14.47 |
+| 5c151f46 | 34.2% → 35.6% | 120.4 → 122.9 | 13.12 → 13.42 |
+| 4836187e | 23.6% → 25.7% | 143.9 → 149.9 | 19.71 → 20.14 |
 
 ## Acceptance checks
 
