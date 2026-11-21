@@ -1,5 +1,6 @@
 import type { Surface } from '../core/surface';
 import type { Drainage } from '../core/drainage';
+import type { Rivers } from '../core/rivers';
 import { midpoint, normalize, readVector } from '../core/vector';
 import type { Vec3 } from '../core/vector';
 import { projectArc } from './projection';
@@ -20,10 +21,10 @@ function catmullRom(p0: Vec3, p1: Vec3, p2: Vec3, p3: Vec3, t: number): Vec3 {
 
 /** Line widths in CSS pixels for increasing contributing-area classes. */
 export const DRAINAGE_LINE_WIDTHS = [1, 1.7, 2.6] as const;
+export const RIVER_LINE_WIDTHS = [0.85, 1.35, 2.1, 3] as const;
+export const RIVER_LINE_THRESHOLDS = [300, 1_000, 3_000, 10_000] as const;
 
 export interface DrainageLines {
-  /** Minimum contributing area of each width class, in m². */
-  thresholdsSquareMeters: number[];
   /** Flat map segment endpoints (x, y, z pairs) per width class. */
   flat: Float32Array[];
   /** Globe unit-direction segment endpoints and their radial height offsets per width class. */
@@ -31,43 +32,50 @@ export interface DrainageLines {
 }
 
 /**
- * Display-only drainage lines along static bed receivers. Width follows the
- * contributing dry area, not discharge: no runoff, climate or channel hydraulics
- * are implied. Lines entering water end at the shared region boundary.
+ * Display-only lines for static receivers and analytical spill paths.
+ * Width follows annual discharge when available, with dry contributing area
+ * as the fallback. Lines entering water end at the approximate shoreline.
  */
-export function buildDrainageLines(surface: Surface, drainage: Drainage, elevation: Float64Array, wet: ArrayLike<number>): DrainageLines {
+export function buildDrainageLines(surface: Surface, drainage: Drainage, elevation: Float64Array, wet: ArrayLike<number>, rivers?: Rivers): DrainageLines {
   const n = elevation.length;
   if (surface.areasSquareMeters.length !== n || drainage.receivers.length !== n || wet.length !== n) throw new Error('Invalid drainage display input.');
   const meanArea = surface.areasSquareMeters.reduce((sum, area) => sum + area, 0) / n;
   // Show basins of at least ~100,000 km² (or ten regions on coarse meshes).
   const minimum = Math.max(10 * meanArea, 1e11);
-  const thresholds = [minimum, minimum * 5, minimum * 25];
-  const flat: number[][] = thresholds.map(() => []), globe = thresholds.map(() => ({ positions: [] as number[], offsets: [] as number[] }));
+  const thresholds = rivers ? RIVER_LINE_THRESHOLDS : [minimum, minimum * 5, minimum * 25];
+  const sizes = rivers ? 2 * thresholds.length : thresholds.length;
+  const flat: number[][] = Array.from({ length: sizes }, () => []);
+  const globe = flat.map(() => ({ positions: [] as number[], offsets: [] as number[] }));
+  const weight = rivers?.meanDischarge ?? drainage.contributingArea;
+  const widthFor = (flow: number, riverClass: number): number => {
+    const width = thresholds.findLastIndex(threshold => flow >= threshold);
+    if (width < 0 || riverClass === 0) return -1;
+    return rivers && riverClass === 1 ? width + thresholds.length : width;
+  };
   const radius = surface.radiusMeters;
   // The largest upstream donor continues a river's main stem through each node.
   const mainDonor = new Int32Array(n).fill(-1);
   for (let i = 0; i < n; i++) {
     const r = drainage.receivers[i];
-    if (r === i || wet[i] || drainage.contributingArea[i] < minimum) continue;
+    if (r === i || wet[i] || weight[i] < thresholds[0]) continue;
     const current = mainDonor[r];
-    if (current < 0 || drainage.contributingArea[i] > drainage.contributingArea[current]) mainDonor[r] = i;
+    if (current < 0 || weight[i] > weight[current]) mainDonor[r] = i;
   }
   const center = (i: number): Vec3 => readVector(surface.centers, i);
-  for (let i = 0; i < n; i++) {
-    const r = drainage.receivers[i], area = drainage.contributingArea[i];
-    if (wet[i] || r === i || area < minimum) continue;
-    const width = area >= thresholds[2] ? 2 : area >= thresholds[1] ? 1 : 0;
-    const a = center(i), receiver = center(r);
-    const b: Vec3 = wet[r] ? midpoint(a, receiver) : receiver;
-    const hb = wet[r] ? (elevation[i] + elevation[r]) / 2 : elevation[r];
-    // Catmull-Rom through neighboring nodes keeps joined segments continuous.
-    const before = mainDonor[i] >= 0 ? center(mainDonor[i]) : extrapolate(a, b);
+  const addPath = (i: number, r: number, width: number, smooth: boolean): void => {
+    const origin = center(i), receiver = center(r);
+    const shore = wet[i] || wet[r] ? midpoint(origin, receiver) : origin;
+    const shoreHeight = (elevation[i] + elevation[r]) / 2;
+    const a = wet[i] ? shore : origin, b = wet[r] ? shore : receiver;
+    const ha = wet[i] ? shoreHeight : elevation[i], hb = wet[r] ? shoreHeight : elevation[r];
+    // Catmull-Rom through neighboring nodes keeps joined static lines continuous.
+    const before = smooth && mainDonor[i] >= 0 ? center(mainDonor[i]) : extrapolate(a, b);
     const rr = drainage.receivers[r];
-    const after = wet[r] || rr === r ? extrapolate(b, a) : center(rr);
+    const after = !smooth || wet[r] || rr === r ? extrapolate(b, a) : center(rr);
     const points: Vec3[] = [], heights: number[] = [];
     for (let step = 0; step <= CURVE_STEPS; step++) {
       const t = step / CURVE_STEPS;
-      points.push(catmullRom(before, a, b, after, t)); heights.push(elevation[i] + (hb - elevation[i]) * t);
+      points.push(catmullRom(before, a, b, after, t)); heights.push(ha + (hb - ha) * t);
     }
     const target = globe[width], lift = 1.0003;
     for (let k = 0; k < CURVE_STEPS; k++) {
@@ -76,7 +84,15 @@ export function buildDrainageLines(surface: Surface, drainage: Drainage, elevati
       target.positions.push(...p.map(v => v * lift), ...q.map(v => v * lift));
       target.offsets.push(heights[k] / radius, heights[k + 1] / radius);
     }
+  };
+  for (let i = 0; i < n; i++) {
+    const r = drainage.receivers[i], width = widthFor(weight[i], rivers?.class[i] ?? 2);
+    if (!wet[i] && r !== i && width >= 0) addPath(i, r, width, true);
   }
-  return { thresholdsSquareMeters: thresholds, flat: flat.map(v => Float32Array.from(v)),
+  for (const { from, to, class: riverClass, meanDischarge } of rivers?.spillSegments ?? []) {
+    const width = widthFor(meanDischarge, riverClass);
+    if (width >= 0) addPath(from, to, width, false);
+  }
+  return { flat: flat.map(v => Float32Array.from(v)),
     globe: globe.map(g => ({ positions: Float32Array.from(g.positions), offsets: Float32Array.from(g.offsets) })) };
 }
