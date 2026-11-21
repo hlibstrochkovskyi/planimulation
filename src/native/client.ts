@@ -542,7 +542,7 @@ export function decodeTraversalCosts(packet: Packet, count: number, epoch: numbe
     const lake = (flag & TRAVERSAL_FLAG_FROZEN_LAKE_WINTER) !== 0;
     const river = (flag & TRAVERSAL_FLAG_FROZEN_RIVER_WINTER) !== 0;
     if ((flag >>> TRAVERSAL_FLAG_FREEZING_MONTHS_SHIFT) > 12 || winter !== (summer || lake) || (lake && summer)
-      || river !== (riverDelayWinterHours[i] < riverDelaySummerHours[i]) || (river && !summer)
+      || (river && (riverDelayWinterHours[i] !== 0 || !summer))
       || !valid(summer, hoursPer100KmSummer[i], slopeFactorSummer[i], coverFactorSummer[i])
       || !valid(winter, hoursPer100KmWinter[i], slopeFactorWinter[i], coverFactorWinter[i])
       || !(snowFactorWinter[i] > 0 && snowFactorWinter[i] <= 1)

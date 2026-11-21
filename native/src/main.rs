@@ -303,10 +303,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             Some(normals) => normals,
                             None => climate.insert(ClimateNormals::from_world(w)?),
                         };
+                        if rivers.is_none() {
+                            rivers = Some(Rivers::from_world(w, normals)?);
+                        }
                         traversal = Some(TraversalModel::new(
                             w,
                             normals,
                             vegetation.as_ref().map(|(_, state)| state),
+                            rivers.as_ref().expect("rivers were just computed"),
                             Default::default(),
                         )?);
                     }

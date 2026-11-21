@@ -1,10 +1,13 @@
-# Foot traversal cost and travel time: `traversal-1`
+# Foot traversal cost and travel time: `traversal-2`
 
-November 21, 2026. First movement increment, preparing the natural world for
+November 21, 2026. `traversal-2` replaces `traversal-1` (same day, never saved in any
+file format): river crossings now follow the seasonal discharge of
+[`rivers-1`](rivers.md) instead of a contributing-area proxy. First movement increment, preparing the natural world for
 population groups ("Movement takes time and food", [DESIGN.md](../DESIGN.md)).
-`traversal-1` is a read-only analytical model computed on demand in the native
-core. At 40,962 regions, building both seasonal graphs took 15–24 ms and a
-Dijkstra query took 1–2 ms in the three-seed release benchmark. World recipes and
+`traversal-2` is a read-only analytical model computed on demand in the native
+core. At 40,962 regions, building both seasonal graphs took 17–19 ms (after
+`rivers-1`, cached per world) and a Dijkstra query took about 1 ms in the
+three-seed release benchmark. World recipes and
 fingerprints exclude the analysis. Terrain, water, climate and vegetation are
 read-only inputs.
 
@@ -12,7 +15,7 @@ read-only inputs.
 
 Before population groups can migrate, forage across regions or establish trade
 routes, the environment needs a reproducible, explainable movement cost over
-the region graph. `traversal-1` assigns directed edge travel times in days for
+the region graph. `traversal-2` assigns directed edge travel times in days for
 local summer and local winter, and solves deterministic least-time travel fields
 and routes from one or more origin regions.
 
@@ -20,7 +23,7 @@ and routes from one or more origin regions.
 
 Protocol 9 sends the resolved `traversal::Settings` with the cost frame.
 The TypeScript client validates them against `src/core/traversal.ts`. The
-remaining coefficients are fixed by `traversal-1` and recorded below. The
+remaining coefficients are fixed by `traversal-2` and recorded below. The
 analysis has no random stream.
 
 **Edge speed from slope.** Each directed neighbor edge $u \to v$ of spherical
@@ -102,19 +105,18 @@ model assumptions. [Pandolf et al.](https://pubmed.ncbi.nlm.nih.gov/1009916/)
 - **Inland lakes** (`body_id != 0 && body_id != main_ocean_id`): impassable in
   summer; passable in deep winter when `coldest_month <= -10 °C` and
   `freezing_months >= 3` (flat ice with $m_{\text{cover}} = 0.75 \times m_{\text{snow}}$).
-- **River crossings (proxy):** The map and globe can display [`rivers-1`
-  discharge](rivers.md). Foot travel still uses static C1 contributing dry-land
-  area $A_i$ in `river_crossing_delay_from_area` to estimate unfrozen crossing
-  delay.
-  $$D_{\text{river}}(i) = 8\text{ h} \cdot \max\!\left(0,\; \log_{10}\!\left(\frac{A_i}{A_{\text{thresh}}(i)}\right)\right), \qquad A_{\text{thresh}}(i) = \max\!\left(10^{11}\text{ m}^2,\; 8\,\text{area}_i\right)$$
-  At subdivision 6 (~12,450 km² per region), $A_{\text{thresh}} = 100{,}000\text{ km}^2$:
-  a $10^6\text{ km}^2$ basin adds 8 hours (1 day) for fording/rafting. Crossing
-  an edge $u \to v$ pays $\frac{1}{2}(D_u + D_v)$, scaled by $0.25$ when
-  walking along the drainage link (`receivers[u] == v || receivers[v] == u`).
-  A cell satisfying the deep-winter temperature rule contributes zero delay.
-  The function is
-  isolated so a hydraulic discharge field ($\text{m}^3/\text{s}$) can replace it
-  without changing the edge integrator or Dijkstra solver.
+- **River crossings:** each land region's seasonal discharge $Q_i$ is the mean
+  `rivers-1` monthly discharge of its three warmest (summer) or three coldest
+  (winter) months, so snowmelt floods make summer crossings harder and low
+  winter flow makes them easier. `river_crossing_delay` adds
+  $$D_{\text{river}}(i) = 8\text{ h} \cdot \max\!\left(0,\; \log_{10}\frac{Q_i}{100\text{ m}^3/\text{s}}\right)$$
+  hours for finding a ford or building a raft: rivers below 100 m³/s are waded,
+  1,000 m³/s costs a day, 10,000 m³/s two days. Crossing an edge $u \to v$ pays
+  $\frac{1}{2}(D_u + D_v)$, scaled by $0.25$ when walking along the drainage
+  link (`receivers[u] == v || receivers[v] == u`). A region satisfying the
+  deep-winter temperature rule crosses its frozen river at no delay. The
+  threshold and hours are order-of-magnitude choices; channel width, depth and
+  velocity are not modeled.
 
 **Edge time and walking day.** Walking half of $d_{uv}$ through region $u$ and
 half through region $v$ takes
@@ -167,31 +169,39 @@ Default new-world recipe (`multiscale-geography-4`, 40,962 regions, year-0
 
 | Seed | Largest landmass | Great-circle span | Summer time / route / pace | Winter time / route / pace | Frozen lake cells / river cells | Setup / Dijkstra |
 | --- | --- | ---: | --- | --- | :---: | --- |
-| `first-light` | 3,881 regions (48.74 M km²) | 10,160 km | 422.6 d · 11,061 km (**26.2 km/d**) | 715.6 d · 11,074 km (**15.5 km/d**) | 5 / 597 | 23.9 ms / 1.7–1.7 ms |
-| `5c151f46` | 8,198 regions (101.58 M km²) | 18,111 km | 923.2 d · 22,873 km (**24.8 km/d**) | 1,491.4 d · 22,816 km (**15.3 km/d**) | 44 / 644 | 19.6 ms / 1.8–1.8 ms |
-| `4836187e` | 7,291 regions (90.63 M km²) | 19,623 km | 973.5 d · 26,443 km (**27.2 km/d**) | 1,445.7 d · 27,302 km (**18.9 km/d**) | 25 / 99 | 15.3 ms / 1.0–1.1 ms |
+| `first-light` | 3,881 regions (48.74 M km²) | 10,160 km | 439.4 d · 11,049 km (**25.1 km/d**) | 718.9 d · 11,063 km (**15.4 km/d**) | 5 / 2 | 17.9 ms / 0.9–1.1 ms |
+| `5c151f46` | 8,198 regions (101.58 M km²) | 18,111 km | 950.6 d · 22,861 km (**24.0 km/d**) | 1,497.5 d · 22,804 km (**15.2 km/d**) | 44 / 10 | 16.9 ms / 1.0–1.2 ms |
+| `4836187e` | 7,291 regions (90.63 M km²) | 19,623 km | 1,014.9 d · 26,992 km (**26.6 km/d**) | 1,460.7 d · 26,928 km (**18.4 km/d**) | 25 / 14 | 18.5 ms / 0.9–1.0 ms |
 
-The modeled summer routes average **24.8–27.2 km/day**, within the
+Few rivers count as frozen crossings because winter discharge in cold regions is
+usually below the wading threshold: snow holds the water until spring. Under
+`traversal-1`'s area proxy the crossings took 3–4% less time in summer.
+
+The modeled summer routes average **24.0–26.6 km/day**, within the
 **20–30 km/day** historical comparison band. For example, the ORBIS project
 uses 20 km/day for porters and 30 km/day for people traveling on foot.
-Winter routes average **15.3–18.9 km/day** in the model. The days denote
+Winter routes average **15.2–18.4 km/day** in the model. The days denote
 walking days under perpetual local-season conditions. [ORBIS methodology](https://orbis.stanford.edu/orbis2012/ORBIS_v1paper_20120501.pdf)
 
 ### Median travel cost and daily pace by terrain class (summer / winter)
 
 | Terrain class | `first-light` | `5c151f46` | `4836187e` |
 | --- | --- | --- | --- |
-| Temperate grassland | 23.4 / 24.3 h (34.3 / 32.9 km/d) | 23.1 / 25.8 h (34.7 / 31.1 km/d) | 23.3 / 23.5 h (34.3 / 34.1 km/d) |
-| Savanna | 24.8 / 24.8 h (32.3 km/d) | 24.6 / 24.6 h (32.5 km/d) | 24.6 / 24.6 h (32.5 km/d) |
-| Cold desert | 27.7 / 28.5 h (28.8 / 28.0 km/d) | 27.3 / 27.7 h (29.3 / 28.9 km/d) | 27.6 / 27.6 h (29.0 km/d) |
-| Temperate forest | 34.8 / 42.4 h (23.0 / 18.9 km/d) | 34.3 / 40.0 h (23.3 / 20.0 km/d) | 32.9 / 37.5 h (24.3 / 21.3 km/d) |
-| Tropical seasonal forest | 32.4 / 32.4 h (24.7 km/d) | 33.2 / 33.2 h (24.1 km/d) | 32.8 / 32.8 h (24.4 km/d) |
-| Hot desert | 35.8 / 35.8 h (22.3 km/d) | 34.6 / 34.6 h (23.1 km/d) | 35.8 / 35.8 h (22.4 km/d) |
-| Boreal forest | 37.2 / 79.6 h (21.5 / 10.1 km/d) | 37.9 / 81.8 h (21.1 / 9.8 km/d) | 38.1 / 84.4 h (21.0 / 9.5 km/d) |
-| Tundra | 40.4 / 94.7 h (19.8 / 8.5 km/d) | 40.0 / 90.0 h (20.0 / 8.9 km/d) | 39.8 / 95.6 h (20.1 / 8.4 km/d) |
-| Tropical rainforest | 46.8 / 46.8 h (17.1 km/d) | 45.5 / 45.5 h (17.6 km/d) | 45.4 / 45.4 h (17.6 km/d) |
-| Ice sheet | 73.0 / 156.6 h (11.0 / 5.1 km/d) | 73.2 / 147.2 h (10.9 / 5.4 km/d) | 70.8 / 167.7 h (11.3 / 4.8 km/d) |
-| Relief: flat (<100 m) vs mountains (>600 m), summer | 29.6 vs 62.2 h (27.1 vs 12.9 km/d) | 35.7 vs 56.0 h (22.4 vs 14.3 km/d) | 26.8 vs 51.1 h (29.8 vs 15.6 km/d) |
+| Temperate grassland | 23.4 / 27.0 h (34.2 / 29.7 km/d) | 22.9 / 27.8 h (34.9 / 28.8 km/d) | 23.2 / 26.0 h (34.5 / 30.7 km/d) |
+| Savanna | 25.6 / 25.0 h (31.3 / 32.0 km/d) | 25.5 / 24.9 h (31.3 / 32.2 km/d) | 25.7 / 24.7 h (31.2 / 32.3 km/d) |
+| Cold desert | 27.5 / 28.9 h (29.1 / 27.6 km/d) | 27.2 / 28.1 h (29.4 / 28.4 km/d) | 27.4 / 27.8 h (29.2 / 28.8 km/d) |
+| Temperate forest | 35.4 / 43.2 h (22.6 / 18.5 km/d) | 34.7 / 41.0 h (23.1 / 19.5 km/d) | 33.0 / 39.3 h (24.2 / 20.3 km/d) |
+| Tropical seasonal forest | 35.0 / 32.6 h (22.8 / 24.5 km/d) | 35.6 / 33.5 h (22.5 / 23.9 km/d) | 35.4 / 32.9 h (22.6 / 24.3 km/d) |
+| Hot desert | 35.8 / 35.4 h (22.3 / 22.6 km/d) | 34.7 / 34.8 h (23.0 km/d) | 35.9 / 35.7 h (22.3 / 22.4 km/d) |
+| Boreal forest | 38.3 / 79.4 h (20.9 / 10.1 km/d) | 39.2 / 81.5 h (20.4 / 9.8 km/d) | 39.6 / 84.5 h (20.2 / 9.5 km/d) |
+| Tundra | 44.8 / 94.7 h (17.8 / 8.5 km/d) | 44.1 / 90.0 h (18.2 / 8.9 km/d) | 44.3 / 95.6 h (18.0 / 8.4 km/d) |
+| Tropical rainforest | 49.8 / 47.9 h (16.1 / 16.7 km/d) | 48.1 / 46.7 h (16.6 / 17.1 km/d) | 48.2 / 46.5 h (16.6 / 17.2 km/d) |
+| Ice sheet | 72.9 / 156.6 h (11.0 / 5.1 km/d) | 73.4 / 147.2 h (10.9 / 5.4 km/d) | 71.0 / 167.7 h (11.3 / 4.8 km/d) |
+| Relief: flat (<100 m) vs mountains (>600 m), summer | 30.5 vs 63.4 h (26.3 vs 12.6 km/d) | 36.3 vs 57.5 h (22.0 vs 13.9 km/d) | 27.3 vs 51.7 h (29.3 vs 15.5 km/d) |
+
+Medians include river-crossing delays, so wet-season floods in tropical seasonal
+forest and summer snowmelt in tundra make those classes slower in summer than in
+winter or than under the area proxy.
 
 Units in the table are median hours per 100 km (`h`) and implied km/day at
 8 h/day (`km/d`).
@@ -211,7 +221,8 @@ Native unit tests in `native/src/traversal.rs`:
   an adjacent dry cell;
 - strict monotonic slowdown with woody cover (pure factor and full-world
   sparse vs dense comparison) and winter snowpack;
-- deep-winter freeze thresholds, river-area proxy thresholds and multi-source
+- deep-winter freeze thresholds, the discharge crossing rule, seasonal discharge
+  from the warmest and coldest months, and multi-source
   Dijkstra equaling the elementwise minimum of single-source fields;
 - bit-identical determinism and route-sum agreement with Dijkstra distances.
 
@@ -227,11 +238,10 @@ explanation, globe/flat view switching and unchanged world fingerprint.
 - **No sub-grid relief field:** `World` stores one scalar elevation per region;
   the neighborhood-relief term (`R_0 = 600 m`) is an uncalibrated coarse-grid
   proxy for unresolved mountain ruggedness, not measured micro-topography.
-- **River crossing calibration:** arid and humid catchments of equal
-  contributing area receive the same unfrozen crossing penalty. The monthly
-  `rivers-1` discharge field is available for a future replacement of
-  `river_crossing_delay_from_area`. That replacement needs a rule linking
-  discharge and channel geometry to seasonal foot crossing costs.
+- **River crossing calibration:** the 100 m³/s wading threshold and 8 hours per
+  tenfold discharge are order-of-magnitude choices; channel width, depth,
+  velocity, floods within a season and boats are not modeled. Discharge comes
+  from `rivers-1` and inherits its limitations.
 - **Local seasons rather than a single planetary date:** "Summer" and "Winter"
   evaluate every region in its own warm or cold season, so trans-equatorial
   journeys do not model opposite-hemisphere calendar phasing (or multi-season

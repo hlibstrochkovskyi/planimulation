@@ -1024,7 +1024,10 @@ function coverCapacityAtNormal(id: number): number {
   return warm < 10 ? cover * warm / 10 : cover;
 }
 
-/* --- traversal-1 --- */
+/* --- traversal --- */
+/** Seasonal discharge (m³/s) implied by a river-crossing delay; the native rule inverted. */
+const crossingDischarge = (c: TraversalCosts, hours: number): number =>
+  c.settings.riverThresholdCubicMetersPerSecond * 10 ** (hours / c.settings.riverCrossingHoursPerDecade);
 function updateTravelButtons(id: number | null): void {
   const ready = traversalCosts !== null && id !== null;
   travelFromHereButton.hidden = !ready;
@@ -1056,7 +1059,7 @@ function traversalRegionRows(id: number): Array<[string, string]> {
     ['Slope & ruggedness', passable ? `×${slope.toFixed(2)} · local relief ${number.format(c.localReliefMeters[id])} m` : '—'],
     ['Land cover factor', passable ? `×${cover.toFixed(2)} · ${isFrozenLakeWinter(c, id) && !summer ? 'frozen inland lake' : c.usesVegetation ? `vegetation year ${c.vegetationYear}` : 'climate biome'}` : '—'],
     ['Snow factor', summer ? '×1.00 · summer (snow-free)' : `×${snow.toFixed(2)} · ${freezingMonths(c, id)} months < 0 °C`],
-    ['River crossing proxy', isFrozenRiverWinter(c, id) && !summer ? '0 h · frozen river' : river > 0 ? `+${river.toFixed(1)} h · area proxy` : '0 h · below threshold'],
+    ['River crossing', isFrozenRiverWinter(c, id) && !summer ? '0 h · frozen river' : river > 0 ? `+${river.toFixed(1)} h · about ${number.format(Math.round(crossingDischarge(c, river)))} m³/s` : '0 h · wadeable'],
   ];
   if (travelField && travelOrigin !== null) {
     const days = travelField.days[id], distKm = travelField.distanceMeters[id] / 1000;
@@ -1097,7 +1100,6 @@ function renderTraversalNote(id: number): void {
   const snow = summer ? 1 : c.snowFactorWinter[id];
   const river = summer ? c.riverDelaySummerHours[id] : c.riverDelayWinterHours[id];
   const kmPerDay = (100 * c.settings.hoursPerDay) / hours;
-  const riverThreshold = Math.max(c.settings.riverThresholdSquareMeters, c.settings.riverThresholdRegionAreas * world.surface.areasSquareMeters[id]);
   element('traversal-note').textContent = `${summer ? 'Summer' : 'Winter'} foot cost ${hours.toFixed(1)} h / 100 km (${kmPerDay.toFixed(1)} km/day at ${c.settings.hoursPerDay} h/day, ${(100 / hours).toFixed(2)} km/h).`;
   const rows: string[] = [
     `Slope & ruggedness ×${slope.toFixed(2)}: Tobler hiking function over edge elevation gradients plus neighborhood relief ${number.format(c.localReliefMeters[id])} m (scale ${c.settings.reliefScaleMeters} m; no sub-grid roughness field is stored).`,
@@ -1108,10 +1110,10 @@ function renderTraversalNote(id: number): void {
       ? `Seasonal snow ×1.00: local summer (seasonal snow melted; ${freezingMonths(c, id)} months below 0 °C in winter).`
       : `Seasonal snow ×${snow.toFixed(2)}: ${freezingMonths(c, id)} months below 0 °C in climate normals.`,
     isFrozenRiverWinter(c, id) && !summer
-      ? `Water / river crossing: 0 h delay (deep-winter frozen river; contributing area ${number.format(world.drainage.contributingArea[id] / 1e6)} km²).`
+      ? 'River crossing: 0 h delay — the river freezes solid in deep winter.'
       : river > 0
-        ? `Water / river crossing: +${river.toFixed(1)} h proxy delay from contributing dry-land area ${number.format(world.drainage.contributingArea[id] / 1e6)} km² (not hydraulic discharge; ${number.format(c.settings.alongRiverFactor * 100)}% along the drainage link).`
-        : `Water / river crossing: 0 h delay (contributing area ${number.format(world.drainage.contributingArea[id] / 1e6)} km² is below the ${number.format(riverThreshold / 1e6)} km² proxy threshold).`,
+        ? `River crossing: +${river.toFixed(1)} h for a ${travelSeason} discharge of about ${number.format(Math.round(crossingDischarge(c, river)))} m³/s (mean of the three ${summer ? 'warmest' : 'coldest'} months from rivers-1; ${c.settings.riverCrossingHoursPerDecade} h per tenfold above ${c.settings.riverThresholdCubicMetersPerSecond} m³/s; ${number.format(c.settings.alongRiverFactor * 100)}% when walking along the river).`
+        : `River crossing: 0 h delay — ${travelSeason} discharge here is below the ${c.settings.riverThresholdCubicMetersPerSecond} m³/s wading threshold${rivers ? ` (mean annual ${number.format(Math.round(rivers.meanDischarge[id]))} m³/s)` : ''}.`,
   ];
   if (travelField && travelOrigin !== null) {
     const days = travelField.days[id], distKm = travelField.distanceMeters[id] / 1000;
@@ -1218,7 +1220,7 @@ travelFrameButton.addEventListener('click', () => {
 for (const button of travelSeasonButtons) {
   button.addEventListener('click', () => setTravelSeason(button.dataset.travelSeason as TravelSeason));
 }
-/* --- end traversal-1 --- */
+/* --- end traversal --- */
 
 function setInputs(recipe: Recipe): void {
   generatorFamilyInput.value = recipe.modelVersion;

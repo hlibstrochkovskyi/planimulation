@@ -1,9 +1,10 @@
-//! Measurements report for traversal-1 on the default new-world recipe
+//! Measurements report for traversal-2 on the default new-world recipe
 //! (`multiscale-geography-4`, subdivision 6, 40,962 regions): speeds by terrain class,
 //! widest-landmass continental crossing times (summer and winter), frozen lake/river
 //! counts, and Dijkstra timings.
 //! Usage: cargo run --release --example traversal_report -- [SEED...]
 use planimulation_core::climate_normals::{Biome, Normals};
+use planimulation_core::rivers::Rivers;
 use planimulation_core::traversal::{
     FLAG_FROZEN_LAKE_WINTER, FLAG_FROZEN_RIVER_WINTER, Model, Season, Settings,
 };
@@ -32,7 +33,7 @@ fn main() {
     }
     let settings = Settings::default();
     println!(
-        "traversal-1 settings: {}",
+        "traversal-2 settings: {}",
         serde_json::to_string(&settings).unwrap()
     );
     for seed in seeds {
@@ -44,9 +45,10 @@ fn main() {
         let w = World::generate(recipe).unwrap();
         let normals = Normals::from_world(&w).unwrap();
         let (_, veg_state) = VegetationModel::new(&w, &normals, Default::default()).unwrap();
+        let rivers = Rivers::from_world(&w, &normals).unwrap();
 
         let t0 = Instant::now();
-        let model = Model::new(&w, &normals, Some(&veg_state), settings).unwrap();
+        let model = Model::new(&w, &normals, Some(&veg_state), &rivers, settings).unwrap();
         let setup_ms = t0.elapsed().as_secs_f64() * 1000.0;
 
         let n = model.region_count();

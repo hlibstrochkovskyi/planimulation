@@ -1,12 +1,11 @@
-//! Read-only foot traversal cost and least-time travel field (`traversal-1`).
+//! Read-only foot traversal cost and least-time travel field (`traversal-2`).
 //!
 //! Computes directed edge travel times (in days) across the region graph for local
 //! summer and local winter from Tobler's hiking function, a coarse-grid neighborhood
 //! ruggedness proxy, land-cover multipliers (using active `vegetation-2` woody cover
 //! when present, otherwise `climate-normals-1` biome classes), winter snowpack from
 //! monthly temperature and precipitation normals, deep-winter lake/river freezing,
-//! and a drainage-area river-crossing proxy designed to be replaced by hydraulic
-//! discharge later.
+//! and river crossings that grow with the seasonal discharge of `rivers-1`.
 //!
 //! Not part of the world recipe or fingerprint; never alters terrain, water, climate
 //! or vegetation state.
@@ -14,13 +13,16 @@ use crate::{
     World,
     climate_normals::{Biome, Normals, aridity_threshold},
     mountain_belts::Key,
+    rivers::Rivers,
     vegetation::State as VegetationState,
 };
 use serde::{Deserialize, Serialize};
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 
-pub const MODEL_VERSION: &str = "traversal-1";
+pub const MODEL_VERSION: &str = "traversal-2";
+/// Months averaged for the local summer and winter river discharge.
+pub const SEASON_MONTHS: usize = 3;
 pub const MAX_SOURCES: usize = 64;
 /// Floor on Tobler hiking speed (km/h) to keep extreme synthetic slopes finite.
 pub const MIN_TOBLER_KM_PER_HOUR: f64 = 0.05;
@@ -57,11 +59,10 @@ pub struct Settings {
     /// Mean neighbor elevation difference (m) at which the sub-grid ruggedness factor
     /// halves speed: `1 / (1 + local_relief / relief_scale_meters)`.
     pub relief_scale_meters: f64,
-    /// Contributing dry-land area (m²) above which river crossings add delay.
-    pub river_threshold_square_meters: f64,
-    /// Minimum river threshold in multiples of the local region area.
-    pub river_threshold_region_areas: f64,
-    /// Extra crossing hours per order-of-magnitude (log10) above the area threshold.
+    /// Seasonal mean discharge (m³/s) above which a river cannot be waded and its
+    /// crossing adds delay.
+    pub river_threshold_cubic_meters_per_second: f64,
+    /// Extra crossing hours per order of magnitude (log10) of discharge above the threshold.
     pub river_crossing_hours_per_decade: f64,
     /// Fraction of river-crossing delay paid when walking along a drainage edge.
     pub along_river_factor: f64,
@@ -84,8 +85,7 @@ impl Default for Settings {
         Self {
             hours_per_day: 8.0,
             relief_scale_meters: 600.0,
-            river_threshold_square_meters: 1e11,
-            river_threshold_region_areas: 8.0,
+            river_threshold_cubic_meters_per_second: 100.0,
             river_crossing_hours_per_decade: 8.0,
             along_river_factor: 0.25,
             snow_slowdown_max: 1.5,
@@ -103,8 +103,7 @@ impl Settings {
         let positive = |v: f64, high: f64| v.is_finite() && v > 0.0 && v <= high;
         if !positive(self.hours_per_day, 24.0)
             || !positive(self.relief_scale_meters, 20_000.0)
-            || !positive(self.river_threshold_square_meters, 1e15)
-            || !positive(self.river_threshold_region_areas, 100.0)
+            || !positive(self.river_threshold_cubic_meters_per_second, 1e6)
             || !(self.river_crossing_hours_per_decade.is_finite()
                 && (0.0..=100.0).contains(&self.river_crossing_hours_per_decade))
             || !(self.along_river_factor.is_finite()
@@ -223,24 +222,26 @@ pub fn is_deep_winter_frozen(
         && u32::from(freezing_months) >= settings.freeze_min_months
 }
 
-/// Unfrozen river-crossing delay (hours) proxied from static drainage contributing area.
-/// Uses `max(river_threshold_square_meters, 8 * region_area)` so headwater cells on
-/// coarse meshes do not trigger spurious river penalties, while subdivision 6 (~12,450 km²
-/// per region) uses the physical 100,000 km² threshold directly.
-/// Kept as a standalone function so a future discharge field (m³/s) can replace it directly.
-pub fn river_crossing_delay_from_area(
-    contributing_area_m2: f64,
-    region_area_m2: f64,
-    is_wet: bool,
-    settings: &Settings,
-) -> f64 {
-    let threshold = settings
-        .river_threshold_square_meters
-        .max(settings.river_threshold_region_areas * region_area_m2.max(0.0));
-    if is_wet || contributing_area_m2 <= threshold {
+/// Unfrozen river-crossing delay (hours) for a seasonal mean discharge (m³/s): zero for
+/// wadeable rivers, then a fixed number of hours (finding a ford, building a raft) per
+/// order of magnitude above the threshold.
+pub fn river_crossing_delay(discharge: f64, is_wet: bool, settings: &Settings) -> f64 {
+    let threshold = settings.river_threshold_cubic_meters_per_second;
+    if is_wet || discharge.is_nan() || discharge <= threshold {
         return 0.0;
     }
-    settings.river_crossing_hours_per_decade * (contributing_area_m2 / threshold).log10()
+    settings.river_crossing_hours_per_decade * (discharge / threshold).log10()
+}
+
+/// Mean discharge (m³/s) of a region's warmest and coldest `SEASON_MONTHS` months.
+pub fn seasonal_discharge(temperature: [f64; 12], discharge: [f64; 12]) -> (f64, f64) {
+    let mut months: [usize; 12] = std::array::from_fn(|m| m);
+    months.sort_by(|&a, &b| temperature[b].total_cmp(&temperature[a]).then(a.cmp(&b)));
+    let mean = |set: &[usize]| set.iter().map(|&m| discharge[m]).sum::<f64>() / set.len() as f64;
+    (
+        mean(&months[..SEASON_MONTHS]),
+        mean(&months[12 - SEASON_MONTHS..]),
+    )
 }
 
 /// Result of deterministic least-time Dijkstra over the region graph for one season.
@@ -340,13 +341,15 @@ pub struct Model {
 impl Model {
     pub fn from_world(world: &World, settings: Settings) -> Result<Self, String> {
         let normals = Normals::from_world(world)?;
-        Self::new(world, &normals, None, settings)
+        let rivers = Rivers::from_world(world, &normals)?;
+        Self::new(world, &normals, None, &rivers, settings)
     }
 
     pub fn new(
         world: &World,
         normals: &Normals,
         vegetation: Option<&VegetationState>,
+        rivers: &Rivers,
         settings: Settings,
     ) -> Result<Self, String> {
         settings.validate()?;
@@ -368,7 +371,7 @@ impl Model {
             .any(|field| field.len() != n)
             || world.terrain.elevation.len() != n
             || world.water.body_ids.len() != n
-            || world.drainage.contributing_area.len() != n
+            || rivers.monthly_discharge.len() != n
             || world.drainage.receivers.len() != n
             || vegetation.is_some_and(|v| v.woody.len() != n)
         {
@@ -459,15 +462,15 @@ impl Model {
                 cover_factor_winter[i] = settings.frozen_lake_cover_factor;
             }
 
-            let river_summer = river_crossing_delay_from_area(
-                world.drainage.contributing_area[i],
-                s.areas[i],
-                is_wet,
-                &settings,
+            let (summer_flow, winter_flow) = seasonal_discharge(
+                std::array::from_fn(|m| normals.monthly_temperature_celsius[m][i]),
+                rivers.monthly_discharge[i],
             );
-            let frozen_river = river_summer > 0.0 && deep_freeze;
+            let river_summer = river_crossing_delay(summer_flow, is_wet, &settings);
+            let river_winter = river_crossing_delay(winter_flow, is_wet, &settings);
+            let frozen_river = river_winter > 0.0 && deep_freeze;
             river_delay_summer_hours[i] = river_summer;
-            river_delay_winter_hours[i] = if frozen_river { 0.0 } else { river_summer };
+            river_delay_winter_hours[i] = if frozen_river { 0.0 } else { river_winter };
 
             let mut f = u32::from(cold_months) << FLAG_FREEZING_MONTHS_SHIFT;
             if passable_summer[i] {
@@ -860,7 +863,14 @@ mod tests {
     fn triangle_inequality_holds_on_generated_world() {
         let world = test_world("first-light", 3);
         let normals = Normals::from_world(&world).unwrap();
-        let model = Model::new(&world, &normals, None, Settings::default()).unwrap();
+        let model = Model::new(
+            &world,
+            &normals,
+            None,
+            &Rivers::from_world(&world, &normals).unwrap(),
+            Settings::default(),
+        )
+        .unwrap();
         let land: Vec<usize> = (0..model.region_count())
             .filter(|&i| model.passable_summer[i])
             .take(20)
@@ -900,7 +910,14 @@ mod tests {
     fn impassable_water_blocks_travel_between_disconnected_landmasses() {
         let world = test_world("first-light", 4);
         let normals = Normals::from_world(&world).unwrap();
-        let model = Model::new(&world, &normals, None, Settings::default()).unwrap();
+        let model = Model::new(
+            &world,
+            &normals,
+            None,
+            &Rivers::from_world(&world, &normals).unwrap(),
+            Settings::default(),
+        )
+        .unwrap();
         let n = model.region_count();
 
         // Find connected components of dry land in summer.
@@ -998,8 +1015,22 @@ mod tests {
                 dense.woody[i] = 1.0;
             }
         }
-        let m_sparse = Model::new(&world, &normals, Some(&sparse), s).unwrap();
-        let m_dense = Model::new(&world, &normals, Some(&dense), s).unwrap();
+        let m_sparse = Model::new(
+            &world,
+            &normals,
+            Some(&sparse),
+            &Rivers::from_world(&world, &normals).unwrap(),
+            s,
+        )
+        .unwrap();
+        let m_dense = Model::new(
+            &world,
+            &normals,
+            Some(&dense),
+            &Rivers::from_world(&world, &normals).unwrap(),
+            s,
+        )
+        .unwrap();
         let mut checked = 0;
         for i in 0..world.surface.centers.len() {
             if m_sparse.passable_summer[i] && normals.warmest_month_celsius[i] >= 10.0 {
@@ -1013,16 +1044,26 @@ mod tests {
             }
         }
         assert!(checked > 20);
-        // Winter snow slows every land region with freezing months and no frozen river offset.
+        // Winter snow slows every land region with freezing months. Coarse test cells carry
+        // large rivers almost everywhere, so river crossings are switched off here.
+        let dry = Settings {
+            river_threshold_cubic_meters_per_second: 1e6,
+            ..s
+        };
+        let m_sparse = Model::new(
+            &world,
+            &normals,
+            Some(&sparse),
+            &Rivers::from_world(&world, &normals).unwrap(),
+            dry,
+        )
+        .unwrap();
         let mut snow_checked = 0;
         for i in 0..world.surface.centers.len() {
             if m_sparse.passable_summer[i]
                 && m_sparse.freezing_months[i] > 0
-                && m_sparse.river_delay_summer_hours[i] == 0.0
-                && (world.surface.offsets[i]..world.surface.offsets[i + 1]).all(|k| {
-                    let j = world.surface.neighbors[k as usize] as usize;
-                    m_sparse.passable_summer[j] && m_sparse.river_delay_summer_hours[j] == 0.0
-                })
+                && (world.surface.offsets[i]..world.surface.offsets[i + 1])
+                    .all(|k| m_sparse.passable_summer[world.surface.neighbors[k as usize] as usize])
             {
                 assert!(
                     m_sparse.hours_per_100km_winter[i] > m_sparse.hours_per_100km_summer[i],
@@ -1040,8 +1081,22 @@ mod tests {
     fn deterministic_costs_fields_and_routes() {
         let world = test_world("5c151f46", 3);
         let normals = Normals::from_world(&world).unwrap();
-        let a = Model::new(&world, &normals, None, Settings::default()).unwrap();
-        let b = Model::new(&world, &normals, None, Settings::default()).unwrap();
+        let a = Model::new(
+            &world,
+            &normals,
+            None,
+            &Rivers::from_world(&world, &normals).unwrap(),
+            Settings::default(),
+        )
+        .unwrap();
+        let b = Model::new(
+            &world,
+            &normals,
+            None,
+            &Rivers::from_world(&world, &normals).unwrap(),
+            Settings::default(),
+        )
+        .unwrap();
         assert_eq!(a.hours_per_100km_summer, b.hours_per_100km_summer);
         assert_eq!(a.hours_per_100km_winter, b.hours_per_100km_winter);
         assert_eq!(a.edge_days_summer, b.edge_days_summer);
@@ -1104,14 +1159,32 @@ mod tests {
         assert!(is_deep_winter_frozen(-15.0, 4, &s));
         assert!(!is_deep_winter_frozen(-5.0, 4, &s));
         assert!(!is_deep_winter_frozen(-15.0, 2, &s));
-        assert_eq!(river_crossing_delay_from_area(5e10, 0.0, false, &s), 0.0);
-        assert!((river_crossing_delay_from_area(1e12, 0.0, false, &s) - 8.0).abs() < 1e-12);
-        assert_eq!(river_crossing_delay_from_area(1e12, 0.0, true, &s), 0.0);
+        assert_eq!(river_crossing_delay(50.0, false, &s), 0.0);
+        assert!((river_crossing_delay(1_000.0, false, &s) - 8.0).abs() < 1e-12);
+        assert!(
+            river_crossing_delay(10_000.0, false, &s) > river_crossing_delay(1_000.0, false, &s)
+        );
+        assert_eq!(river_crossing_delay(1e4, true, &s), 0.0);
+        // Northern-hemisphere seasons: snowmelt peaks in early summer, rivers run low in winter.
+        let temperature = [-12., -10., -4., 3., 10., 15., 18., 16., 10., 3., -5., -10.];
+        let flow = [
+            20., 20., 30., 200., 900., 600., 300., 200., 150., 80., 40., 25.,
+        ];
+        let (summer, winter) = seasonal_discharge(temperature, flow);
+        assert!((summer - (600. + 300. + 200.) / 3.).abs() < 1e-12);
+        assert!((winter - (20. + 20. + 25.) / 3.).abs() < 1e-12);
 
         // Multi-source Dijkstra equals elementwise minimum of single-source runs.
         let world = test_world("first-light", 3);
         let normals = Normals::from_world(&world).unwrap();
-        let model = Model::new(&world, &normals, None, s).unwrap();
+        let model = Model::new(
+            &world,
+            &normals,
+            None,
+            &Rivers::from_world(&world, &normals).unwrap(),
+            s,
+        )
+        .unwrap();
         let land: Vec<usize> = (0..model.region_count())
             .filter(|&i| model.passable_summer[i])
             .collect();

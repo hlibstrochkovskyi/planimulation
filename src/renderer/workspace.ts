@@ -312,7 +312,7 @@ export class Workspace {
       foragerCapacity: ['Forager capacity', 'With perfect storage', 'Plant food / game offtake', 'Vegetation state'],
       leanSeason: ['With perfect storage', 'Forager capacity', 'Climate warmest / coldest month', 'Vegetation state'],
       gameStock: ['Game stock', 'Plant food / game offtake', 'Woody / herb cover', 'This year\'s precipitation'],
-      travelCost: ['Travel cost', 'Walking pace', 'Slope & ruggedness', 'Land cover factor', 'Snow factor', 'River crossing proxy'],
+      travelCost: ['Travel cost', 'Walking pace', 'Slope & ruggedness', 'Land cover factor', 'Snow factor', 'River crossing'],
       travelTime: ['Travel time from origin', 'Least-time route length', 'Average route pace', 'Travel cost', 'Land cover factor'],
       catchments: ['Drainage receiver', 'Catchment outlet', 'Contributing', 'Elevation (reference datum)'],
       contributingArea: ['Contributing', 'Drainage receiver', 'Catchment outlet'],

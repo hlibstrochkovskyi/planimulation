@@ -1,14 +1,13 @@
-export const TRAVERSAL_MODEL_VERSION = 'traversal-1';
+export const TRAVERSAL_MODEL_VERSION = 'traversal-2';
 export const TRAVERSAL_MAX_SOURCES = 64;
 
 export type TravelSeason = 'summer' | 'winter';
 
-/** Native traversal-1 defaults; the core rejects any other desktop settings. */
+/** Native traversal-2 defaults; the core rejects any other desktop settings. */
 export const DEFAULT_TRAVERSAL_SETTINGS = {
   hoursPerDay: 8,
   reliefScaleMeters: 600,
-  riverThresholdSquareMeters: 1e11,
-  riverThresholdRegionAreas: 8,
+  riverThresholdCubicMetersPerSecond: 100,
   riverCrossingHoursPerDecade: 8,
   alongRiverFactor: 0.25,
   snowSlowdownMax: 1.5,

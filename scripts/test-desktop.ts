@@ -209,7 +209,7 @@ try {
   await expect(page.locator('#vegetation-time')).toHaveText('Year 0');
   await ui('[data-layer="foragerCapacity"]').click();
   await expect(page.locator('#legend-title')).toContainText('Forager capacity · year 0');
-  // traversal-1 desktop UI checks: Travel cost, Travel time, season toggle, route polyline, flat/globe consistency.
+  // traversal desktop UI checks: Travel cost, Travel time, season toggle, route polyline, flat/globe consistency.
   await expect(page.locator('[data-layer="travelCost"]')).toBeEnabled();
   await expect(page.locator('[data-layer="travelTime"]')).toBeEnabled();
   await ui('[data-layer="travelCost"]').click();
