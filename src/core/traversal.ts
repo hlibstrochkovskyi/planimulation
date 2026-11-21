@@ -8,6 +8,7 @@ export const DEFAULT_TRAVERSAL_SETTINGS = {
   hoursPerDay: 8,
   reliefScaleMeters: 600,
   riverThresholdSquareMeters: 1e11,
+  riverThresholdRegionAreas: 8,
   riverCrossingHoursPerDecade: 8,
   alongRiverFactor: 0.25,
   snowSlowdownMax: 1.5,
@@ -24,19 +25,6 @@ export const TRAVERSAL_FLAG_PASSABLE_WINTER = 1 << 1;
 export const TRAVERSAL_FLAG_FROZEN_LAKE_WINTER = 1 << 2;
 export const TRAVERSAL_FLAG_FROZEN_RIVER_WINTER = 1 << 3;
 export const TRAVERSAL_FLAG_FREEZING_MONTHS_SHIFT = 4;
-
-/** Stepped isochrone bands for the travel-time layer (days from origin). */
-export const ISOCHRONE_BANDS = [
-  { maxDays: 1, label: '≤ 1 d', color: [250, 238, 150] as const },
-  { maxDays: 3, label: '1–3 d', color: [242, 206, 102] as const },
-  { maxDays: 7, label: '3–7 d', color: [236, 162, 68] as const },
-  { maxDays: 14, label: '7–14 d', color: [222, 114, 62] as const },
-  { maxDays: 30, label: '14–30 d', color: [190, 68, 86] as const },
-  { maxDays: 60, label: '30–60 d', color: [140, 48, 108] as const },
-  { maxDays: 120, label: '60–120 d', color: [88, 44, 122] as const },
-  { maxDays: Infinity, label: '> 120 d', color: [46, 38, 92] as const },
-] as const;
-export const UNREACHABLE_COLOR = [88, 94, 102] as const;
 
 /** Per-region foot-traversal costs and factor breakdown for summer and winter. */
 export interface TraversalCosts {

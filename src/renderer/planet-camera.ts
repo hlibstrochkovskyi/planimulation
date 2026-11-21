@@ -93,10 +93,13 @@ export class PlanetCamera {
   }
 
   reset(animate = true): void {
+    this.frameDirection(new Vector3(1, 0, 0), animate);
+  }
+
+  frameDirection(direction: Vector3, animate = true): void {
     this.stop();
     this.overview = true;
-    const latitude = 0, longitude = 0;
-    this.targetFocus.set(Math.cos(latitude) * Math.cos(longitude), Math.sin(latitude), Math.cos(latitude) * Math.sin(longitude));
+    this.targetFocus.copy(direction).normalize();
     this.targetHeading = 0; this.targetTilt = 0; this.targetDistance = this.overviewDistance();
     if (!animate) this.finish(); else this.schedule();
   }

@@ -27,8 +27,9 @@ import { CHANGE_YEARS, COVER_ARIDITY, DEFAULT_VEGETATION_SETTINGS, FOREST_COVER,
 import type { VegetationFrame, VegetationSeries } from '../core/vegetation';
 import { COLD_NEED_CELSIUS, DEFAULT_WILD_FOOD_SETTINGS } from '../core/wild-food';
 import type { ForageExperiment, WildFoodFrame, WildFoodSeries } from '../core/wild-food';
-import { DEFAULT_TRAVERSAL_SETTINGS, ISOCHRONE_BANDS, UNREACHABLE_COLOR, freezingMonths, isFrozenLakeWinter, isFrozenRiverWinter, isRegionPassable, traceTravelRoute } from '../core/traversal';
+import { DEFAULT_TRAVERSAL_SETTINGS, freezingMonths, isFrozenLakeWinter, isFrozenRiverWinter, isRegionPassable, traceTravelRoute } from '../core/traversal';
 import type { TraversalCosts, TravelField, TravelSeason } from '../core/traversal';
+import { ISOCHRONE_DAYS, UNREACHABLE_COLOR, travelTimeColor } from './travel-scale';
 
 function element<T extends HTMLElement>(id: string): T {
   const result = document.getElementById(id);
@@ -75,10 +76,14 @@ element('biome-legend').replaceChildren(...BIOMES.slice(1).map(({ name, color })
   const item = document.createElement('span'), swatch = document.createElement('i');
   swatch.style.background = `rgb(${color.join(',')})`; item.append(swatch, name); return item;
 }));
-element('isochrone-legend').replaceChildren(...[...ISOCHRONE_BANDS.map(({ label, color }) => ({ label, color })),
-  { label: 'Unreachable', color: UNREACHABLE_COLOR }].map(({ label, color }) => {
+const isochroneKeys = ISOCHRONE_DAYS.map((days) => ({ label: `${days.toLocaleString('en')} d`, color: travelTimeColor(days) }));
+element('isochrone-legend').replaceChildren(...[...isochroneKeys,
+  { label: 'Unreachable on foot (water)', color: UNREACHABLE_COLOR }].map(({ label, color }) => {
   const item = document.createElement('span'), swatch = document.createElement('i');
   swatch.style.background = `rgb(${color.join(',')})`; item.append(swatch, label); return item;
+}), ...[['travel-origin-key', 'Origin'], ['travel-route-key', 'Least-time route']].map(([className, label]) => {
+  const item = document.createElement('span'), swatch = document.createElement('i');
+  swatch.className = className; item.append(swatch, label); return item;
 }));
 const vegetationLayerButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-layer="vegetationState"], [data-layer="woodyCover"], [data-layer="woodyChange"], [data-layer="productivity"], [data-layer="precipitationAnomaly"]')];
 const foodLayerButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-layer="foragerCapacity"], [data-layer="leanSeason"], [data-layer="gameStock"]')];
@@ -92,6 +97,7 @@ const traversalLayerButtons = [...document.querySelectorAll<HTMLButtonElement>('
 const travelSeasonButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-travel-season]')];
 const travelFromHereButton = element<HTMLButtonElement>('travel-from-here');
 const travelClearSourceButton = element<HTMLButtonElement>('traversal-clear-source');
+const travelFrameButton = element<HTMLButtonElement>('traversal-frame');
 const windLayerButton = document.querySelector<HTMLButtonElement>('[data-layer="windSpeed"]')!;
 const moistureStart = element<HTMLButtonElement>('moisture-start');
 const moistureStartOrographic = element<HTMLButtonElement>('moisture-start-orographic');
@@ -557,9 +563,6 @@ function inspect(id: number, preserveBasin = false): void {
   renderTraversalNote(id);
   updateTravelButtons(id);
   renderTraversalRoute();
-  if (currentLayer === 'travelTime' && travelOrigin === null && traversalCosts && isRegionPassable(traversalCosts, id, travelSeason)) {
-    void requestTravelTime(id, false);
-  }
   element('wind-note').textContent = windNormals
     ? `Latitude ${lat.toFixed(2)}° and the selected month determine a prescribed east/north tangent vector. Trades are easterly, midlatitude winds westerly, and polar winds easterly; the convergence belt follows half the subsolar declination. These are smooth, zonally symmetric model choices, not simulated atmospheric circulation. Terrain and water do not redirect wind. Seasonal water uses these normals on its own elapsed-time clock.`
     : 'Seasonal surface-wind normals are being calculated.';
@@ -652,9 +655,10 @@ function updateLegend(): void {
     leanSeason: [`Lean-season limit · year ${wildFood?.year ?? 0} · year-round capacity as a share of perfect-storage capacity`, '0 · storage decides', '1 · no seasonal limit'],
     gameStock: [`Game stock · year ${wildFood?.year ?? 0} · herbivore live weight relative to its forage capacity · gray = no game`, '0 · depleted', '1 · at capacity'],
     travelCost: [`Foot travel cost (${travelSeason}) · logarithmic · ${traversalCosts?.usesVegetation ? `vegetation year ${traversalCosts.vegetationYear ?? 0}` : 'climate biomes'} · ${DEFAULT_TRAVERSAL_SETTINGS.hoursPerDay} h/day`, '≤20 h/100 km', '≥160 h/100 km'],
-    travelTime: [travelOrigin !== null
-      ? `Least-time foot travel (${travelSeason}) from region ${travelOrigin.toLocaleString('en')} · isochrones in days (${DEFAULT_TRAVERSAL_SETTINGS.hoursPerDay} h/day)`
-      : `Least-time foot travel (${travelSeason}) · select a passable region and click "Travel time from here"`, '', ''],
+    travelTime: [travelField
+      ? `Foot travel from region ${number.format(travelField.sources[0])} · ${travelSeason} · contour lines mark days on foot`
+      : travelOrigin !== null ? `Calculating ${travelSeason} travel time…`
+        : `Foot travel (${travelSeason}) · select a region and choose “Travel time from here”`, '', ''],
     windSpeed: [`Month ${Number(temperatureMonthInput.value) + 1} prescribed surface-wind speed · no atmospheric dynamics`,
       '0 m/s', `${number.format(windMaximum)} m/s`],
   };
@@ -668,7 +672,8 @@ function updateLegend(): void {
   const plateLayer = currentLayer === 'plates' || currentLayer === 'boundaries';
   element('legend-scale').hidden = plateLayer || currentLayer === 'waterBodies' || currentLayer === 'surface' || currentLayer === 'catchments' || currentLayer === 'basins' || currentLayer === 'biome' || currentLayer === 'vegetationState' || currentLayer === 'travelTime';
   element('biome-legend').hidden = currentLayer !== 'biome' && currentLayer !== 'vegetationState';
-  element('isochrone-legend').hidden = currentLayer !== 'travelTime';
+  travelFrameButton.hidden = currentLayer !== 'travelTime' || !travelField || map.navigation.mode !== 'globe';
+  element('isochrone-legend').hidden = currentLayer !== 'travelTime' || travelField === null;
   element('legend-gradient').classList.toggle('travel-cost-gradient', currentLayer === 'travelCost');
   element('legend-gradient').classList.toggle('woody-gradient', currentLayer === 'woodyCover');
   element('legend-gradient').classList.toggle('anomaly-gradient', currentLayer === 'precipitationAnomaly');
@@ -772,21 +777,31 @@ async function loadWildFood(activeEpoch: number, request: number): Promise<void>
 async function runVegetation(years: number | 'reset'): Promise<void> {
   if (!world || !vegetation || vegetationBusy || document.body.dataset.state === 'generating') return;
   const activeEpoch = epoch, request = generationId;
-  vegetationBusy = true; updateExperimentControls();
+  vegetationBusy = true; updateTravelButtons(selected); updateExperimentControls();
   const started = performance.now();
   try {
     const frame = years === 'reset' ? await api.initializeVegetation(activeEpoch) : await api.advanceVegetation(activeEpoch, years);
     if (request !== generationId || frame.epoch !== epoch) return;
     applyVegetation(frame);
+    travelRequest++;
+    resetTravelField();
+    traversalCosts = null;
+    map.setTraversalCosts(null);
+    updateLegend();
     await refreshTraversalCosts(activeEpoch, request);
     await loadWildFood(activeEpoch, request);
+    if (request !== generationId) return;
     vegetationBusy = false;
+    updateTravelButtons(selected);
     if (selected !== null) void requestVegetationSeries(selected);
     showStatus(`Vegetation year ${frame.year} · native request + IPC ${number.format(performance.now() - started)} ms.`);
   } catch (error) {
     if (request === generationId) showStatus(error instanceof Error ? error.message : String(error), true);
   } finally {
-    if (epoch === activeEpoch) vegetationBusy = false;
+    if (epoch === activeEpoch) {
+      vegetationBusy = false;
+      updateTravelButtons(selected);
+    }
     updateExperimentControls();
   }
 }
@@ -973,16 +988,16 @@ function coverCapacityAtNormal(id: number): number {
 function updateTravelButtons(id: number | null): void {
   const ready = traversalCosts !== null && id !== null;
   travelFromHereButton.hidden = !ready;
-  travelFromHereButton.disabled = !ready || !isRegionPassable(traversalCosts!, id!, travelSeason);
+  travelFromHereButton.disabled = !ready || vegetationBusy || !isRegionPassable(traversalCosts!, id!, travelSeason);
   travelFromHereButton.textContent = travelOrigin !== null && id === travelOrigin
     ? 'Origin region · recompute' : 'Travel time from here';
   travelClearSourceButton.hidden = travelOrigin === null;
 }
 
 function renderTraversalRoute(): void {
-  if (!travelField || selected === null) { map.setTravelRoute([]); return; }
-  const route = traceTravelRoute(travelField, selected);
-  map.setTravelRoute(route && route.length >= 2 ? route : []);
+  const route = travelField && selected !== null ? traceTravelRoute(travelField, selected) : null;
+  map.setTravelRoute(route ?? []);
+  element('isochrone-legend').classList.toggle('has-route', (route?.length ?? 0) > 1);
 }
 
 function traversalRegionRows(id: number): Array<[string, string]> {
@@ -1012,7 +1027,7 @@ function traversalRegionRows(id: number): Array<[string, string]> {
         ['Average route pace', id === travelOrigin || days <= 0 ? '—' : `${(distKm / days).toFixed(1)} km/day`],
       );
     } else {
-      rows.push(['Travel time from origin', `Unreachable from region ${travelOrigin} (${travelSeason})`]);
+      rows.push(['Travel time from origin', `Unreachable on foot (water) from region ${travelOrigin}`]);
     }
   }
   return rows;
@@ -1042,6 +1057,7 @@ function renderTraversalNote(id: number): void {
   const snow = summer ? 1 : c.snowFactorWinter[id];
   const river = summer ? c.riverDelaySummerHours[id] : c.riverDelayWinterHours[id];
   const kmPerDay = (100 * c.settings.hoursPerDay) / hours;
+  const riverThreshold = Math.max(c.settings.riverThresholdSquareMeters, c.settings.riverThresholdRegionAreas * world.surface.areasSquareMeters[id]);
   element('traversal-note').textContent = `${summer ? 'Summer' : 'Winter'} foot cost ${hours.toFixed(1)} h / 100 km (${kmPerDay.toFixed(1)} km/day at ${c.settings.hoursPerDay} h/day, ${(100 / hours).toFixed(2)} km/h).`;
   const rows: string[] = [
     `Slope & ruggedness ×${slope.toFixed(2)}: Tobler hiking function over edge elevation gradients plus neighborhood relief ${number.format(c.localReliefMeters[id])} m (scale ${c.settings.reliefScaleMeters} m; no sub-grid roughness field is stored).`,
@@ -1054,8 +1070,8 @@ function renderTraversalNote(id: number): void {
     isFrozenRiverWinter(c, id) && !summer
       ? `Water / river crossing: 0 h delay (deep-winter frozen river; contributing area ${number.format(world.drainage.contributingArea[id] / 1e6)} km²).`
       : river > 0
-        ? `Water / river crossing: +${river.toFixed(1)} h proxy delay from contributing dry-land area ${number.format(world.drainage.contributingArea[id] / 1e6)} km² (not hydraulic discharge; 25% when following the river valley).`
-        : `Water / river crossing: 0 h delay (contributing area ${number.format(world.drainage.contributingArea[id] / 1e6)} km² is below the ${number.format(c.settings.riverThresholdSquareMeters / 1e6)} km² proxy threshold).`,
+        ? `Water / river crossing: +${river.toFixed(1)} h proxy delay from contributing dry-land area ${number.format(world.drainage.contributingArea[id] / 1e6)} km² (not hydraulic discharge; ${number.format(c.settings.alongRiverFactor * 100)}% along the drainage link).`
+        : `Water / river crossing: 0 h delay (contributing area ${number.format(world.drainage.contributingArea[id] / 1e6)} km² is below the ${number.format(riverThreshold / 1e6)} km² proxy threshold).`,
   ];
   if (travelField && travelOrigin !== null) {
     const days = travelField.days[id], distKm = travelField.distanceMeters[id] / 1000;
@@ -1064,7 +1080,7 @@ function renderTraversalNote(id: number): void {
       ? id === travelOrigin
         ? `Origin: region ${travelOrigin} (0 days). Click another region to trace the least-time route.`
         : `Route from region ${travelOrigin}: ${days.toFixed(1)} days over ${number.format(distKm)} km (${Math.max(0, (route?.length ?? 1) - 1)} edges, avg ${(distKm / days).toFixed(1)} km/day).`
-      : `Route from region ${travelOrigin}: unreachable on foot in ${travelSeason} (separated by impassable water).`);
+      : `Route from region ${travelOrigin}: unreachable on foot (water).`);
   }
   for (const text of rows) { const row = document.createElement('li'); row.textContent = text; list.append(row); }
 }
@@ -1087,28 +1103,38 @@ async function refreshTraversalCosts(activeEpoch: number, request: number): Prom
 
 async function requestTravelTime(origin: number, switchLayer = true): Promise<void> {
   if (!world || !traversalCosts || document.body.dataset.state === 'generating') return;
-  const activeEpoch = epoch, req = ++travelRequest;
+  if (!isRegionPassable(traversalCosts, origin, travelSeason)) return;
+  const activeEpoch = epoch, generation = generationId, season = travelSeason, req = ++travelRequest;
+  const costs = traversalCosts;
+  travelOrigin = origin;
+  resetTravelField();
+  if (switchLayer && currentLayer !== 'travelTime') selectLayer('travelTime');
+  updateTravelButtons(selected);
+  updateLegend();
+  if (selected !== null) inspect(selected, true);
   const started = performance.now();
   try {
-    const field = await api.travelTime(activeEpoch, travelSeason, [origin]);
-    if (req !== travelRequest || field.epoch !== epoch) return;
-    travelOrigin = origin;
+    const field = await api.travelTime(activeEpoch, season, [origin]);
+    if (req !== travelRequest || generation !== generationId || field.epoch !== epoch || costs !== traversalCosts
+      || field.vegetationYear !== costs.vegetationYear) return;
     travelField = field;
     map.setTravelField(field);
-    if (switchLayer && currentLayer !== 'travelTime') selectLayer('travelTime');
-    renderTraversalRoute();
-    updateTravelButtons(selected);
     updateLegend();
     if (selected !== null) inspect(selected, true);
     const reachable = field.days.reduce((n, d) => n + (d >= 0 ? 1 : 0), 0);
     showStatus(`Travel time (${travelSeason}) from region ${origin}: ${reachable.toLocaleString('en')} reachable regions · ${number.format(performance.now() - started)} ms.`);
   } catch (error) {
-    if (req === travelRequest) showStatus(error instanceof Error ? error.message : String(error), true);
+    if (req === travelRequest && generation === generationId) {
+      clearTravelOrigin();
+      showStatus(error instanceof Error ? error.message : String(error), true);
+    }
   }
 }
 
 function setTravelSeason(season: TravelSeason): void {
+  if (season === travelSeason) return;
   travelSeason = season;
+  resetTravelField();
   for (const button of travelSeasonButtons) {
     const active = button.dataset.travelSeason === season;
     button.classList.toggle('active', active);
@@ -1118,21 +1144,37 @@ function setTravelSeason(season: TravelSeason): void {
   updateTravelButtons(selected);
   updateLegend();
   if (selected !== null) inspect(selected, true);
-  if (travelOrigin !== null) void requestTravelTime(travelOrigin, false);
+  if (travelOrigin === null) return;
+  if (traversalCosts && !isRegionPassable(traversalCosts, travelOrigin, season)) {
+    clearTravelOrigin();
+    showStatus('The previous origin is blocked by water in this season. Select a new origin.');
+  } else {
+    void requestTravelTime(travelOrigin, false);
+  }
+}
+
+function resetTravelField(): void {
+  travelField = null;
+  map.setTravelField(null);
+  renderTraversalRoute();
 }
 
 function clearTravelOrigin(): void {
+  travelRequest++;
   travelOrigin = null;
-  travelField = null;
-  map.setTravelField(null);
-  map.setTravelRoute([]);
+  resetTravelField();
   updateTravelButtons(selected);
   updateLegend();
   if (selected !== null) inspect(selected, true);
 }
 
 travelFromHereButton.addEventListener('click', () => { if (selected !== null) void requestTravelTime(selected, true); });
-travelClearSourceButton.addEventListener('click', () => clearTravelOrigin());
+travelClearSourceButton.addEventListener('click', clearTravelOrigin);
+travelFrameButton.addEventListener('click', () => {
+  if (!travelField || travelOrigin === null) return;
+  const route = selected === null ? null : traceTravelRoute(travelField, selected);
+  map.frameTravelRoute(route ?? [travelOrigin]);
+});
 for (const button of travelSeasonButtons) {
   button.addEventListener('click', () => setTravelSeason(button.dataset.travelSeason as TravelSeason));
 }
@@ -1226,9 +1268,9 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
     temperatureNormals = null; windNormals = null; climateNormals = null;
     vegetation = null; vegetationSeries = null; vegetationBusy = false; map.setVegetation(null);
     wildFood = null; wildFoodSeries = null; forageResult = null; map.setWildFood(null);
-    traversalCosts = null; travelField = null; travelOrigin = null;
-    map.setTraversalCosts(null); map.setTravelField(null); map.setTravelRoute([]);
-    updateTravelButtons(null);
+    traversalCosts = null;
+    map.setTraversalCosts(null);
+    clearTravelOrigin();
     for (const button of [...climateLayerButtons, ...vegetationLayerButtons, ...foodLayerButtons, ...traversalLayerButtons]) button.disabled = true;
     renderVegetation();
     map.setTemperatureNormals(null); map.setWindNormals(null);
@@ -1343,13 +1385,17 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
       if (request !== generationId || frame.epoch !== epoch) return;
       applyVegetation(frame);
       await loadWildFood(epoch, request);
-      showStatus('Calculating foot-traversal costs in the native core…');
-      await refreshTraversalCosts(epoch, request);
     } catch (error) {
       if (request !== generationId) return;
       climateError = error instanceof Error ? error.message : String(error);
       element('climate-note').textContent = `Climate normals or vegetation unavailable: ${climateError}`;
     }
+    if (request !== generationId) return;
+    if (climateNormals) {
+      showStatus('Calculating foot-traversal costs in the native core…');
+      await refreshTraversalCosts(epoch, request);
+    }
+    if (request !== generationId) return;
     if ((currentLayer === 'temperature' && !temperatureNormals) || (currentLayer === 'windSpeed' && !windNormals)
       || ((currentLayer === 'biome' || currentLayer === 'annualPrecipitation') && !climateNormals)
       || (['vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly'].includes(currentLayer) && !vegetation)
@@ -1544,6 +1590,7 @@ for (const button of document.querySelectorAll<HTMLButtonElement>('button[data-v
   button.addEventListener('click', () => {
     const mode = button.dataset.view as ViewMode;
     map.setMode(mode);
+    updateLegend();
     for (const other of document.querySelectorAll('button[data-view]')) {
       other.classList.toggle('active', other === button); other.setAttribute('aria-pressed', String(other === button));
     }
@@ -1637,9 +1684,6 @@ function selectLayer(layer: Layer): void {
     other.setAttribute('aria-pressed', String(active));
   }
   map.setLayer(currentLayer); updateLegend(); updateExperimentControls();
-  if (layer === 'travelTime' && travelOrigin === null && selected !== null && traversalCosts && isRegionPassable(traversalCosts, selected, travelSeason)) {
-    void requestTravelTime(selected, false);
-  }
 }
 for (const button of document.querySelectorAll<HTMLButtonElement>('[data-layer]')) {
   button.addEventListener('click', () => selectLayer(button.dataset.layer as Layer));

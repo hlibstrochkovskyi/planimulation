@@ -31,11 +31,16 @@ fn main() {
         seeds = vec!["first-light".into(), "5c151f46".into(), "4836187e".into()];
     }
     let settings = Settings::default();
+    println!(
+        "traversal-1 settings: {}",
+        serde_json::to_string(&settings).unwrap()
+    );
     for seed in seeds {
-        let recipe: Recipe = serde_json::from_str(&format!(
-            r#"{{"schemaVersion":1,"modelVersion":"multiscale-geography-4","randomVersion":"fnv1a-utf8-mulberry32-1","seed":"{seed}","subdivision":6,"radiusMeters":6371000,"plateCount":12,"maxPlateSpeedCmPerYear":8,"continentalFraction":0.38,"continentalScale":1,"reliefScale":1,"boundaryWidthKm":300,"detailAmplitudeMeters":300,"terrainPreparationPasses":4,"water":{{"mode":"coverage","fraction":0.71}}}}"#
-        ))
+        let mut recipe: Recipe = serde_json::from_str(
+            r#"{"schemaVersion":1,"modelVersion":"multiscale-geography-4","randomVersion":"fnv1a-utf8-mulberry32-1","seed":"first-light","subdivision":6,"radiusMeters":6371000,"plateCount":12,"maxPlateSpeedCmPerYear":8,"continentalFraction":0.38,"continentalScale":1,"reliefScale":1,"boundaryWidthKm":300,"detailAmplitudeMeters":300,"terrainPreparationPasses":4,"water":{"mode":"coverage","fraction":0.71}}"#,
+        )
         .unwrap();
+        recipe.seed.clone_from(&seed);
         let w = World::generate(recipe).unwrap();
         let normals = Normals::from_world(&w).unwrap();
         let (_, veg_state) = VegetationModel::new(&w, &normals, Default::default()).unwrap();
@@ -57,8 +62,9 @@ fn main() {
             comp[start] = start;
             while let Some(u) = stack.pop() {
                 members.push(u);
-                for k in w.surface.offsets[u] as usize..w.surface.offsets[u + 1] as usize {
-                    let v = w.surface.neighbors[k] as usize;
+                let edges = w.surface.offsets[u] as usize..w.surface.offsets[u + 1] as usize;
+                for &v in &w.surface.neighbors[edges] {
+                    let v = v as usize;
                     if model.passable_summer[v] && comp[v] == usize::MAX {
                         comp[v] = start;
                         stack.push(v);
@@ -70,8 +76,7 @@ fn main() {
             }
         }
 
-        // Widest great-circle span of the largest landmass (exact over boundary/coastline
-        // or sampled if huge, plus exact check on all land pairs via 2-sweep + full boundary).
+        // Widest great-circle span among the largest landmass's coastal cells.
         let boundary: Vec<usize> = best_comp
             .iter()
             .copied()

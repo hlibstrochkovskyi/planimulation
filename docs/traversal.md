@@ -3,9 +3,10 @@
 November 21, 2026. First movement increment, preparing the natural world for
 population groups ("Movement takes time and food", [DESIGN.md](../DESIGN.md)).
 `traversal-1` is a read-only analytical model computed on demand in the native
-core (about 13 ms to build both seasonal cost graphs and 1–2 ms per Dijkstra
-query at 40,962 regions). It is not part of the world recipe or fingerprint and
-never alters terrain, water, climate or vegetation fields.
+core. At 40,962 regions, building both seasonal graphs took 15–24 ms and a
+Dijkstra query took 1–2 ms in the three-seed release benchmark. World recipes and
+fingerprints exclude the analysis. Terrain, water, climate and vegetation are
+read-only inputs.
 
 ## Purpose
 
@@ -17,22 +18,23 @@ and routes from one or more origin regions.
 
 ## Model
 
-All resolved parameters live in `traversal::Settings` (mirrored in
-`src/core/traversal.ts` and validated across protocol 9). No randomness is used;
-the model is purely deterministic.
+Protocol 9 sends the resolved `traversal::Settings` with the cost frame.
+The TypeScript client validates them against `src/core/traversal.ts`. The
+remaining coefficients are fixed by `traversal-1` and recorded below. The
+analysis has no random stream.
 
 **Edge speed from slope.** Each directed neighbor edge $u \to v$ of spherical
-center distance $d_{uv}$ (meters) uses Tobler's hiking function (Tobler 1993)
+center distance $d_{uv}$ (meters) uses [Tobler's hiking function](https://escholarship.org/content/qt05r820mz/qt05r820mz.pdf)
 on surface height $h$ (`water.level_meters` on frozen lakes, `terrain.elevation`
 on dry land):
 
 $$v_{\text{tobler}}(s_{uv}) = \max\!\left(0.05,\; 6 \exp\!\bigl(-3.5 \, |s_{uv} + 0.05|\bigr)\right) \text{ km/h}, \qquad s_{uv} = \frac{h(v) - h(u)}{d_{uv}}$$
 
 Flat ground ($s = 0$) yields $5.04\text{ km/h}$; the peak ($6.0\text{ km/h}$)
-occurs at a gentle $5\%$ downhill grade ($s = -0.05$), and uphill travel is
-strictly slower than equal-magnitude downhill travel.
+occurs at a gentle $5\%$ downhill grade ($s = -0.05$). For equal-magnitude
+grades, uphill travel is slower whenever the speed floor does not bind both.
 
-**Sub-grid ruggedness proxy.** `World` stores one scalar bed elevation per
+**Neighborhood ruggedness proxy.** `World` stores one scalar bed elevation per
 region and no sub-grid relief or roughness statistic. At subdivision 6
 (~111 km spacing), direct center-to-center slopes rarely exceed $0.04$, under
 which Tobler's function alone slows mountain belts by less than 15%. To reflect
@@ -43,12 +45,14 @@ coastal cliffs), gives a coarse-grid ruggedness multiplier:
 
 $$m_{\text{rugged}}(i) = \frac{1}{1 + \overline{\Delta h}_i / R_0}, \qquad R_0 = 600\text{ m}$$
 
-Frozen lakes have $\overline{\Delta h}_i = 0$ ($m_{\text{rugged}} = 1$). This
-neighborhood-relief term is a coarse-grid proxy, not measured micro-topography.
+Frozen lakes have $\overline{\Delta h}_i = 0$ ($m_{\text{rugged}} = 1$).
+The 600 m scale leaves a 100 m neighborhood at 86% of its slope-adjusted speed
+and halves it at 600 m. The term is uncalibrated across resolutions. It can also
+penalize a broad, smooth escarpment while missing deep valleys inside a cell.
 
-**Land cover multipliers.** Off-path terrain coefficients follow cross-country
-foot-travel literature (Soule & Goldman 1972; Pandolf et al. 1977; Herzog 2014;
-US Army FM 21-18). Each dry region's cover factor separates climate stress
+**Land cover multipliers.** The values are model assumptions informed by
+cross-country measurements of movement and energy cost under different surfaces.
+Each dry region's cover factor separates climate stress
 (ice, tundra bog, desert heat/sand and tropical warmth) from woody obstruction:
 
 $$m_{\text{cover}}(i) = m_{\text{climate}}(i) \cdot \bigl(1 - k_w(i)\, w_i\bigr)$$
@@ -70,11 +74,12 @@ for grassland, desert, tundra and ice).
 | Hot desert ($w = 0$) | 0.58 | 0.35 | 2.92 | 23.4 | Loose sand ($\eta \approx 1.8\text{--}2.1$), heat-limited hours and water load |
 | Tundra / summer bog ($w = 0$) | 0.55 | 0.00 | 2.77 | 22.2 | Thawed active layer, tussock and muskeg ($\eta \approx 1.8\text{--}2.0$) |
 | Tropical rainforest ($w = 0.95$) | 0.92 | 0.51 | 2.39 | 19.1 | Dense jungle understory, wet soils, heat ($\eta \approx 2.0\text{--}2.4$) |
-| Ice sheet / glacier ($w = 0$) | 0.30 | 0.00 | 1.51 | 12.1 | Crevasses, firn, extreme cold and no forage |
+| Ice sheet / glacier ($w = 0$) | 0.30 | 0.00 | 1.51 | 12.1 | Heuristic for difficult passage on firn, crevassed terrain and in extreme cold |
 | Deep-winter frozen inland lake | — | — | 3.78* | 30.2* | Lake ice ($m_{\text{cover}} = 0.75$) before winter snow factor |
 
 \*Before multiplying by $m_{\text{snow}}$ (typically $0.45\text{--}0.65$, yielding
-13–20 km/day on frozen lakes).
+13–20 km/day on frozen lakes). See [walking terrain experiments](https://doi.org/10.1371/journal.pone.0228682)
+and [velocity-based terrain coefficients](https://intarch.ac.uk/journal/issue45/4/1.html).
 
 **Seasons and snow.** `Summer` represents each region's local warm season (no
 seasonal snowpack); `Winter` represents each region's local cold season. From
@@ -85,8 +90,10 @@ precipitation falling during those months. The winter snow severity index is
 $$S_i = \min\!\left(1,\; \frac{n_{<0}}{6}\right)\left(0.35 + 0.65 \min\!\left(1,\; \frac{P_{<0}}{300\text{ mm}}\right)\right), \qquad m_{\text{snow}}(i, \text{Winter}) = \frac{1}{1 + 1.5\, S_i}$$
 
 Regions with $n_{<0} = 0$ have $m_{\text{snow}} = 1$; deep snowy winters
-($S_i = 1$) slow travel to $0.40\times$ summer pace (matching Pandolf et al.
-1977 snow-depth penalties of roughly 2–2.5×).
+($S_i = 1$) slow travel to $0.40\times$ summer speed. The 0.35 baseline gives
+cold months a penalty even in very dry climates. Snow walking experiments
+motivate the order of magnitude, while the index and conversion to speed are
+model assumptions. [Pandolf et al.](https://pubmed.ncbi.nlm.nih.gov/1009916/)
 
 **Water, frozen lakes and river crossings.**
 
@@ -103,8 +110,9 @@ Regions with $n_{<0} = 0$ have $m_{\text{snow}} = 1$; deep snowy winters
   At subdivision 6 (~12,450 km² per region), $A_{\text{thresh}} = 100{,}000\text{ km}^2$:
   a $10^6\text{ km}^2$ basin adds 8 hours (1 day) for fording/rafting. Crossing
   an edge $u \to v$ pays $\frac{1}{2}(D_u + D_v)$, scaled by $0.25$ when
-  walking along the drainage link (`receivers[u] == v || receivers[v] == u`),
-  and drops to $0$ in deep winter when the river freezes solid. The function is
+  walking along the drainage link (`receivers[u] == v || receivers[v] == u`).
+  A cell satisfying the deep-winter temperature rule contributes zero delay.
+  The function is
   isolated so a hydraulic discharge field ($\text{m}^3/\text{s}$) can replace it
   without changing the edge integrator or Dijkstra solver.
 
@@ -127,51 +135,47 @@ predecessor trees.
 
 ## Desktop
 
-Movement costs compute automatically after vegetation starts and refresh when
-vegetation advances or resets.
+Movement costs load with climate normals and refresh after vegetation advances
+or restarts. The two Movement layers use the initial water geography, with
+winter passability indicated on eligible lake cells.
 
-- **Layers (Movement group):**
-  - **Travel cost**: hours per 100 km on a logarithmic scale (≤20 to ≥160
-    h/100 km) for the selected season, over relief shading and bathymetric water
-    (deep-winter frozen inland lakes appear passable in winter).
-  - **Travel time**: stepped isochrone bands (`≤ 1 d`, `1–3 d`, `3–7 d`,
-    `7–14 d`, `14–30 d`, `30–60 d`, `60–120 d`, `> 120 d`, plus muted slate for
-    unreachable landmasses).
-- **Season toggle:** Summer / Winter bar shown for both Movement layers, with a
-  "Clear origin" button when an origin is active.
-- **Inspector and route overlay:** Clicking any passable region enables
-  **"Travel time from here"**; Overview rows and the Factors **Why this travel
-  cost?** breakdown report slope/ruggedness, cover source (`vegetation-2` vs
-  biome fallback), winter snow, river proxy, and—for any target region—travel
-  time, route length and average pace. The least-time route between origin and
-  inspected region is drawn as a polyline on both the 2D flat map (splitting
-  cleanly across the antimeridian seam) and the 3D globe (following vertical
-  exaggeration). Display changes never modify model data.
+- **Travel cost** shows a fixed logarithmic scale of 20–160 h/100 km over
+  shaded relief.
+- **Travel time** shows continuous log-time color and labeled contour levels
+  from 7 to 1,460 days. Gray land is **Unreachable on foot (water)**. The
+  displayed contours interpolate between region values and the inspector shows
+  the underlying region value.
+- **Summer / Winter** recomputes from the current origin. If thaw closes an origin
+  on a frozen lake, the selection of origin is cleared.
+- Choose **Travel time from here** on a passable region, then select a
+  destination. The map and globe share an origin ring and a light route line
+  with a dark outline. The flat line splits at the antimeridian. On the globe,
+  **Frame route on globe** centers the camera on the route or the origin.
+  The Overview and **Why this travel cost?** inspector show time, route length,
+  walking pace and the slope, cover, snow and river factors.
 
-`node --import tsx scripts/traversal-review.ts [OUTPUT_DIR] [seed]` captures
-the layers, season contrast, inspector breakdown and flat/globe route overlays.
+`node --import tsx scripts/traversal-review.ts [OUTPUT_DIR] [seed]` captures cost
+and travel time in both seasons and projections, plus the Factors inspector.
+The review selects four separated origin types on the largest landmass.
 
 ## Measurements
 
 Default new-world recipe (`multiscale-geography-4`, 40,962 regions, year-0
-`vegetation-2` cover), `cargo run --release --example traversal_report`:
+`vegetation-2` cover), `cargo run --release --locked --manifest-path native/Cargo.toml --example traversal_report`:
 
 ### Widest landmass end-to-end crossings
 
-| Seed | Largest landmass | Great-circle span | Summer time / route / pace | Winter time / route / pace | Frozen winter lakes / river cells | Setup / Dijkstra |
+| Seed | Largest landmass | Great-circle span | Summer time / route / pace | Winter time / route / pace | Frozen lake cells / river cells | Setup / Dijkstra |
 | --- | --- | ---: | --- | --- | :---: | --- |
-| `first-light` | 3,881 regions (48.74 M km²) | 10,160 km | 422.6 d · 11,061 km (**26.2 km/d**) | 715.6 d · 11,074 km (**15.5 km/d**) | 5 / 597 | 13.2 ms / 0.8–1.2 ms |
-| `5c151f46` | 8,198 regions (101.58 M km²) | 18,111 km | 923.2 d · 22,873 km (**24.8 km/d**) | 1,491.4 d · 22,816 km (**15.3 km/d**) | 44 / 644 | 12.0 ms / 1.1 ms |
-| `4836187e` | 7,291 regions (90.63 M km²) | 19,623 km | 973.5 d · 26,443 km (**27.2 km/d**) | 1,445.7 d · 27,302 km (**18.9 km/d**) | 25 / 99 | 12.3 ms / 1.3–1.4 ms |
+| `first-light` | 3,881 regions (48.74 M km²) | 10,160 km | 422.6 d · 11,061 km (**26.2 km/d**) | 715.6 d · 11,074 km (**15.5 km/d**) | 5 / 597 | 23.9 ms / 1.7–1.7 ms |
+| `5c151f46` | 8,198 regions (101.58 M km²) | 18,111 km | 923.2 d · 22,873 km (**24.8 km/d**) | 1,491.4 d · 22,816 km (**15.3 km/d**) | 44 / 644 | 19.6 ms / 1.8–1.8 ms |
+| `4836187e` | 7,291 regions (90.63 M km²) | 19,623 km | 973.5 d · 26,443 km (**27.2 km/d**) | 1,445.7 d · 27,302 km (**18.9 km/d**) | 25 / 99 | 15.3 ms / 1.0–1.1 ms |
 
-Historical comparison: sustained overland foot travel by groups (pre-modern
-armies, trade caravans, foraging bands with camp and rest) typically averages
-**20–30 km/day** in fair seasons and drops toward **10–18 km/day** in winter
-snow. Summer continental crossings across all three seeds average
-**24.8–27.2 km/day**, and winter crossings **15.3–18.9 km/day**. On `5c151f46`,
-the winter route is 57 km shorter than the summer route because deep-winter
-frozen lakes and rivers open northern shortcuts even though snow slows total
-duration by 62%.
+The modeled summer routes average **24.8–27.2 km/day**, within the
+**20–30 km/day** historical comparison band. For example, the ORBIS project
+uses 20 km/day for porters and 30 km/day for people traveling on foot.
+Winter routes average **15.3–18.9 km/day** in the model. The days denote
+walking days under perpetual local-season conditions. [ORBIS methodology](https://orbis.stanford.edu/orbis2012/ORBIS_v1paper_20120501.pdf)
 
 ### Median travel cost and daily pace by terrain class (summer / winter)
 
@@ -203,7 +207,8 @@ Native unit tests in `native/src/traversal.rs`:
 - directed triangle inequality $T(a, c) \le T(a, b) + T(b, c)$ holds across
   sampled land regions in both summer and winter;
 - impassable water separates disconnected landmasses in summer and ocean blocks
-  travel in both seasons;
+  travel in both seasons, while a deep-winter lake cell becomes reachable from
+  an adjacent dry cell;
 - strict monotonic slowdown with woody cover (pure factor and full-world
   sparse vs dense comparison) and winter snowpack;
 - deep-winter freeze thresholds, river-area proxy thresholds and multi-source
@@ -233,6 +238,7 @@ explanation, globe/flat view switching and unchanged world fingerprint.
 - **Foot travel only:** no boats, coastal navigation, pack animals, roads,
   food/water consumption or carrying-capacity exhaustion (those belong to
   population groups and infrastructure).
-- **No sea ice or dynamic snowpack:** main oceans stay impassable in winter,
-  and winter snow severity comes from `climate-normals-1` monthly normals rather
-  than a dynamic snow balance.
+- **Snow and ice heuristics:** the ocean remains impassable. The lake and
+  river rules use monthly air temperature at each region and omit ice thickness,
+  water depth, current and lake-wide thermal inertia. Winter snow severity uses
+  `climate-normals-1` monthly normals.

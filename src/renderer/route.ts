@@ -4,6 +4,7 @@ import type { Vec3 } from '../core/vector';
 import { projectArc } from './projection';
 
 const ARC_STEPS = 4;
+const ROUTE_LIFT = 1.0022;
 
 export interface RouteOverlay {
   /** Flat map segment endpoints (x, y, z pairs). */
@@ -31,7 +32,6 @@ export function buildRouteOverlay(
   const offsets: number[] = [];
   const radius = surface.radiusMeters;
   const height = (id: number): number => (bodyIds[id] !== 0 ? waterLevelMeters : elevation[id]);
-  const lift = 1.0022;
 
   for (let step = 0; step + 1 < path.length; step++) {
     const u = path[step], v = path[step + 1];
@@ -46,7 +46,7 @@ export function buildRouteOverlay(
       for (const [p, q] of projectArc(prev, cur)) {
         flat.push(p[0] * 2 - 1, 0.5 - p[1], 0.0008, q[0] * 2 - 1, 0.5 - q[1], 0.0008);
       }
-      positions.push(prev[0] * lift, prev[1] * lift, prev[2] * lift, cur[0] * lift, cur[1] * lift, cur[2] * lift);
+      positions.push(prev[0] * ROUTE_LIFT, prev[1] * ROUTE_LIFT, prev[2] * ROUTE_LIFT, cur[0] * ROUTE_LIFT, cur[1] * ROUTE_LIFT, cur[2] * ROUTE_LIFT);
       offsets.push(prevH / radius, curH / radius);
       prev = cur;
       prevH = curH;
@@ -55,5 +55,21 @@ export function buildRouteOverlay(
   return {
     flat: Float32Array.from(flat),
     globe: { positions: Float32Array.from(positions), offsets: Float32Array.from(offsets) },
+  };
+}
+
+/** Origin marker in the same coordinates as the two route overlays. */
+export function routeOrigin(
+  surface: Surface,
+  elevation: Float64Array,
+  water: { bodyIds: Uint32Array; levelMeters: number },
+  id: number,
+): { flat: Float32Array; globe: Float32Array; offset: Float32Array } {
+  const [x, y, z] = readVector(surface.centers, id);
+  const height = water.bodyIds[id] ? water.levelMeters : elevation[id];
+  return {
+    flat: Float32Array.of(Math.atan2(z, x) / Math.PI, Math.asin(Math.max(-1, Math.min(1, y))) / Math.PI, 0.001),
+    globe: Float32Array.of(x * ROUTE_LIFT, y * ROUTE_LIFT, z * ROUTE_LIFT),
+    offset: Float32Array.of(height / surface.radiusMeters),
   };
 }

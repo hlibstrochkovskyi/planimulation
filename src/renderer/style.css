@@ -352,6 +352,9 @@ label span { float: right; color: var(--muted); font-weight: 400; }
 #isochrone-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--muted, #9aa); }
 #isochrone-legend span { display: inline-flex; align-items: center; gap: 4px; }
 #isochrone-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+#isochrone-legend .travel-origin-key { width: 9px; height: 9px; border: 1px solid #fff8df; border-radius: 50%; }
+#isochrone-legend .travel-route-key { width: 13px; height: 2px; background: #f8fafc; }
+#isochrone-legend:not(.has-route) span:has(.travel-route-key) { display: none; }
 #traversal-context { padding: 8px 14px; border-top: 1px solid var(--border); }
 .traversal-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; }
 .traversal-controls .control-label { color: var(--muted); }

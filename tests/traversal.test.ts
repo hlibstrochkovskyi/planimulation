@@ -90,6 +90,9 @@ test('traversal protocol computes biome fallback and vegetation-coupled costs, s
       await session.request({ command: 'travelTime', season: 'winter', sources: [landSample] }), n, 1);
     assert.equal(winter.season, 'winter');
     assert.equal(winter.days[oceanSample], -1);
+    const fromWater = decodeTraversalField(
+      await session.request({ command: 'travelTime', season: 'winter', sources: [oceanSample] }), n, 1);
+    assert.ok(fromWater.days.every(days => days === -1));
 
     // Multi-source query returns elementwise minimum over single sources.
     const multi = decodeTraversalField(
@@ -106,10 +109,16 @@ test('traversal protocol computes biome fallback and vegetation-coupled costs, s
     await assert.rejects(session.request({ command: 'travelTime', season: 'summer', sources: [] }), /origin/);
     await assert.rejects(session.request({ command: 'travelTime', season: 'summer', sources: [n] }), /outside/);
     const packet = await session.request({ command: 'traversalCosts' });
+    const flags = Buffer.from(packet.bytes);
+    flags.writeUInt32LE(0, n * 80 + landSample * 4);
+    assert.throws(() => decodeTraversalCosts({ ...packet, bytes: flags }, n, 1), /traversal-cost values/);
     assert.throws(() => decodeTraversalCosts(packet, n + 1, 1), /traversal-cost metadata/);
     assert.throws(() => decodeTraversalCosts({ ...packet, bytes: packet.bytes.subarray(8) }, n, 1), /traversal-cost metadata/);
     const fieldPacket = await session.request({ command: 'travelTime', season: 'summer', sources: [landSample] });
     assert.throws(() => decodeTraversalField(fieldPacket, n + 1, 1), /traversal-field metadata/);
+    const cyclic = Buffer.from(fieldPacket.bytes);
+    cyclic.writeUInt32LE(target, n * 16 + target * 4);
+    assert.throws(() => decodeTraversalField({ ...fieldPacket, bytes: cyclic }, n, 1), /traversal-field values/);
     assert.throws(() => decodeTraversalField({ ...fieldPacket, bytes: fieldPacket.bytes.subarray(8) }, n, 1), /traversal-field metadata/);
   } finally {
     session.close();

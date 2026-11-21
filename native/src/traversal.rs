@@ -59,6 +59,8 @@ pub struct Settings {
     pub relief_scale_meters: f64,
     /// Contributing dry-land area (m²) above which river crossings add delay.
     pub river_threshold_square_meters: f64,
+    /// Minimum river threshold in multiples of the local region area.
+    pub river_threshold_region_areas: f64,
     /// Extra crossing hours per order-of-magnitude (log10) above the area threshold.
     pub river_crossing_hours_per_decade: f64,
     /// Fraction of river-crossing delay paid when walking along a drainage edge.
@@ -83,6 +85,7 @@ impl Default for Settings {
             hours_per_day: 8.0,
             relief_scale_meters: 600.0,
             river_threshold_square_meters: 1e11,
+            river_threshold_region_areas: 8.0,
             river_crossing_hours_per_decade: 8.0,
             along_river_factor: 0.25,
             snow_slowdown_max: 1.5,
@@ -101,6 +104,7 @@ impl Settings {
         if !positive(self.hours_per_day, 24.0)
             || !positive(self.relief_scale_meters, 20_000.0)
             || !positive(self.river_threshold_square_meters, 1e15)
+            || !positive(self.river_threshold_region_areas, 100.0)
             || !(self.river_crossing_hours_per_decade.is_finite()
                 && (0.0..=100.0).contains(&self.river_crossing_hours_per_decade))
             || !(self.along_river_factor.is_finite()
@@ -232,7 +236,7 @@ pub fn river_crossing_delay_from_area(
 ) -> f64 {
     let threshold = settings
         .river_threshold_square_meters
-        .max(8.0 * region_area_m2.max(0.0));
+        .max(settings.river_threshold_region_areas * region_area_m2.max(0.0));
     if is_wet || contributing_area_m2 <= threshold {
         return 0.0;
     }
@@ -253,7 +257,7 @@ pub struct TravelField {
 }
 
 /// Deterministic Dijkstra on a directed weighted CSR graph.
-/// Edge cost ties prefer the smaller predecessor ID; heap pops break ties by smaller region ID.
+/// Equal times prefer shorter routes, then the smaller predecessor ID.
 pub fn dijkstra_graph(
     n: usize,
     offsets: &[u32],
@@ -348,9 +352,20 @@ impl Model {
         settings.validate()?;
         let s = &world.surface;
         let n = s.centers.len();
+        let monthly_matches =
+            |months: &[Vec<f64>]| months.len() == 12 && months.iter().all(|month| month.len() == n);
         if normals.biome.len() != n
-            || normals.monthly_temperature_celsius.len() != 12
-            || normals.monthly_precipitation_mm.len() != 12
+            || !monthly_matches(&normals.monthly_temperature_celsius)
+            || !monthly_matches(&normals.monthly_precipitation_mm)
+            || [
+                &normals.annual_mean_celsius,
+                &normals.warmest_month_celsius,
+                &normals.coldest_month_celsius,
+                &normals.annual_precipitation_mm,
+                &normals.driest_month_mm,
+            ]
+            .iter()
+            .any(|field| field.len() != n)
             || world.terrain.elevation.len() != n
             || world.water.body_ids.len() != n
             || world.drainage.contributing_area.len() != n
@@ -706,7 +721,11 @@ impl Model {
     /// Trace the least-time path from the nearest source to `target`.
     pub fn trace_route(&self, field: &TravelField, target: usize) -> Option<Vec<usize>> {
         let n = self.region_count();
-        if target >= n || !field.days[target].is_finite() || field.predecessor[target] == u32::MAX {
+        if target >= n
+            || field.days.len() != n
+            || field.predecessor.len() != n
+            || !field.days[target].is_finite()
+        {
             return None;
         }
         let mut path = Vec::new();
@@ -717,6 +736,9 @@ impl Model {
             if prev == cur {
                 path.reverse();
                 return Some(path);
+            }
+            if prev >= n {
+                return None;
             }
             cur = prev;
         }
@@ -824,12 +846,11 @@ mod tests {
             assert_eq!(days[src], 0.0);
             assert_eq!(pred[src], src as u32);
             assert!(days[5].is_infinite() && pred[5] == u32::MAX);
-            for dst in 0..5 {
+            for (dst, &actual) in days[..5].iter().enumerate() {
                 let exact = brute(src, dst, 1 << src, 0.0, &edges);
                 assert!(
-                    (days[dst] - exact).abs() < 1e-12,
-                    "src {src} -> dst {dst}: dijkstra {} vs brute {exact}",
-                    days[dst]
+                    (actual - exact).abs() < 1e-12,
+                    "src {src} -> dst {dst}: dijkstra {actual} vs brute {exact}"
                 );
             }
         }
@@ -884,27 +905,25 @@ mod tests {
 
         // Find connected components of dry land in summer.
         let mut comp = vec![usize::MAX; n];
-        let mut sizes = Vec::new();
         let mut reps = Vec::new();
         for start in 0..n {
             if !model.passable_summer[start] || comp[start] != usize::MAX {
                 continue;
             }
-            let id = sizes.len();
+            let id = reps.len();
             let mut stack = vec![start];
             comp[start] = id;
-            let mut count = 0;
             while let Some(u) = stack.pop() {
-                count += 1;
-                for k in world.surface.offsets[u] as usize..world.surface.offsets[u + 1] as usize {
-                    let v = world.surface.neighbors[k] as usize;
+                let edges =
+                    world.surface.offsets[u] as usize..world.surface.offsets[u + 1] as usize;
+                for &v in &world.surface.neighbors[edges] {
+                    let v = v as usize;
                     if model.passable_summer[v] && comp[v] == usize::MAX {
                         comp[v] = id;
                         stack.push(v);
                     }
                 }
             }
-            sizes.push(count);
             reps.push(start);
         }
         assert!(
@@ -1053,6 +1072,30 @@ mod tests {
         }
         assert!((sum_days - fa.days[target]).abs() < 1e-11);
         assert!((sum_dist - fa.distance_meters[target]).abs() < 1e-6);
+    }
+
+    #[test]
+    fn frozen_inland_lake_is_reachable_only_in_winter() {
+        let world = test_world("first-light", 6);
+        let model = Model::from_world(&world, Settings::default()).unwrap();
+        let surface = &world.surface;
+        let (lake, shore) = model
+            .flags
+            .iter()
+            .enumerate()
+            .filter(|&(_, flag)| flag & FLAG_FROZEN_LAKE_WINTER != 0)
+            .find_map(|(lake, _)| {
+                let edges = surface.offsets[lake] as usize..surface.offsets[lake + 1] as usize;
+                surface.neighbors[edges]
+                    .iter()
+                    .map(|&shore| shore as usize)
+                    .find(|&shore| model.passable_summer[shore])
+                    .map(|shore| (lake, shore))
+            })
+            .expect("first-light has a deep-winter lake beside dry land");
+        assert!(model.travel_time(Season::Summer, shore).unwrap().days[lake].is_infinite());
+        let winter = model.travel_time(Season::Winter, shore).unwrap();
+        assert!(winter.days[lake].is_finite() && winter.days[lake] > 0.0);
     }
 
     #[test]

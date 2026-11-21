@@ -1,12 +1,13 @@
 import { BufferAttribute, BufferGeometry, DataTexture, DoubleSide, FloatType, Group, LineBasicMaterial,
   LineSegments, Mesh, MOUSE, NearestFilter, OrthographicCamera, PerspectiveCamera, Raycaster, RGBAFormat,
-  Scene, ShaderMaterial, Vector2, Vector3, WebGLRenderer } from 'three';
+  Points, Scene, ShaderMaterial, Vector2, Vector3, WebGLRenderer } from 'three';
 import type { Object3D } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import type { World } from '../core/world';
+import type { Water } from '../core/water';
 import type { WaterFrame } from '../shared/desktop-api';
 import { speedCmPerYear } from '../core/tectonics';
 import type { ViewCorners, ViewGeometry, ViewPair } from './view-geometry';
@@ -21,9 +22,10 @@ import { BIOMES } from '../core/climate-normals';
 import type { ClimateNormals } from '../core/climate-normals';
 import type { VegetationFrame } from '../core/vegetation';
 import type { WildFoodFrame } from '../core/wild-food';
-import { ISOCHRONE_BANDS, UNREACHABLE_COLOR, isRegionPassable } from '../core/traversal';
+import { isRegionPassable } from '../core/traversal';
+import { ISOCHRONE_DAYS, UNREACHABLE_COLOR, travelTimeColor, travelTimeCoordinate } from './travel-scale';
 import type { TraversalCosts, TravelField, TravelSeason } from '../core/traversal';
-import { buildRouteOverlay } from './route';
+import { buildRouteOverlay, routeOrigin } from './route';
 import type { WindNormals } from '../core/seasonal-wind';
 import type { SeasonalDisplayFrame } from '../shared/seasonal-display';
 import { hasRegionalSurface, isSoilMoistureFrame } from '../shared/seasonal-display';
@@ -40,11 +42,12 @@ export type ViewMode = 'flat' | 'globe';
 /** Continuous layers can be interpolated between regions; categorical and sentinel layers cannot. */
 const SMOOTH_LAYERS = new Set<string>(['surface', 'signal', 'area', 'latitude', 'crust', 'thickness', 'elevation', 'uplift',
   'depth', 'contributingArea', 'temperature', 'windSpeed', 'biome', 'annualPrecipitation', 'vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly', 'foragerCapacity', 'leanSeason', 'gameStock', 'travelCost', 'travelTime']);
-const RELIEF_LAYERS: Partial<Record<string, number>> = { surface: 1, biome: 1, vegetationState: 1, woodyCover: 1, woodyChange: 1, productivity: 1, precipitationAnomaly: 1, foragerCapacity: 1, leanSeason: 1, gameStock: 1, travelCost: .85, travelTime: .75, elevation: .8 };
+const RELIEF_LAYERS: Partial<Record<string, number>> = { surface: 1, biome: 1, vegetationState: 1, woodyCover: 1, woodyChange: 1, productivity: 1, precipitationAnomaly: 1, foragerCapacity: 1, leanSeason: 1, gameStock: 1, travelCost: .85, travelTime: .3, elevation: .8 };
 /** Land layers colored by a per-region tint over relief, with bathymetric water. */
 const TINT_LAYERS = new Set<string>(['biome', 'vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly',
   'foragerCapacity', 'leanSeason', 'gameStock', 'travelCost', 'travelTime']);
 /** Layers drawn as land and water with a shoreline, bathymetry and the globe water surface. */
+const isMovement = (layer: Layer): boolean => layer === 'travelCost' || layer === 'travelTime';
 const surfaceLike = (layer: string): boolean => layer === 'surface' || TINT_LAYERS.has(layer);
 type Rgb = readonly [number, number, number];
 const mixRgb = (a: Rgb, b: Rgb, t: number): Rgb => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
@@ -95,12 +98,6 @@ export function travelCostColor(hoursPer100Km: number): Rgb {
     : t < 2 / 3 ? mixRgb([216, 168, 84], [168, 76, 56], (t - 1 / 3) * 3)
     : mixRgb([168, 76, 56], [76, 36, 78], (t - 2 / 3) * 3);
 }
-/** Stepped isochrone bands for least-time travel fields in days. */
-export function travelTimeColor(days: number): Rgb {
-  if (days < 0) return UNREACHABLE_COLOR;
-  for (const band of ISOCHRONE_BANDS) if (days <= band.maxDays) return band.color;
-  return ISOCHRONE_BANDS[ISOCHRONE_BANDS.length - 1].color;
-}
 /** Child order inside each view group. Picking and visibility depend on these indices. */
 const RIVERS = 5;
 const ROUTE = 6;
@@ -127,6 +124,8 @@ export class SurfaceMap {
       selected: { value: -1 }, globe: { value: 0 }, categorical: { value: 0 }, muted: { value: 0 }, waterMode: { value: 0 },
       surfaceMode: { value: 0 }, waterSurface: { value: 0 }, missingMode: { value: 0 },
       basinMode: { value: 0 }, spillFrom: { value: -1 }, spillTo: { value: -1 }, temperatureMode: { value: 0 }, windMode: { value: 0 },
+      travelTimeMode: { value: 0 }, movementMode: { value: 0 },
+      isochroneLevels: { value: ISOCHRONE_DAYS.map(travelTimeCoordinate) },
       distantLightMix: { value: 0 }, sunDirection: { value: this.worldSun } },
     // Field texels hold (value, wet mask, east slope, north slope) for regions and for
     // shared dual corners. Vertices blend a region center with two corners.
@@ -134,7 +133,7 @@ export class SurfaceMap {
       uniform sampler2D field; uniform float textureWidth; uniform float textureHeight;
       uniform sampler2D cornerField; uniform float cornerWidth; uniform float cornerHeight;
       uniform sampler2D tintField; uniform sampler2D cornerTintField;
-      varying float cell; varying vec4 blended; varying vec3 tint; varying vec3 direction; varying vec3 planetDirection;
+      varying float cell; varying vec4 blended; varying vec4 tint; varying vec3 direction; varying vec3 planetDirection;
       vec4 texel(sampler2D map, float id, float width, float height) {
         return texture2D(map, vec2((mod(id,width)+0.5)/width,(floor(id/width)+0.5)/height));
       }
@@ -142,19 +141,21 @@ export class SurfaceMap {
         blended=weight.x*texel(field,region,textureWidth,textureHeight)
           +weight.y*texel(cornerField,cornerPair.x,cornerWidth,cornerHeight)
           +weight.z*texel(cornerField,cornerPair.y,cornerWidth,cornerHeight);
-        tint=(weight.x*texel(tintField,region,textureWidth,textureHeight)
+        tint=weight.x*texel(tintField,region,textureWidth,textureHeight)
           +weight.y*texel(cornerTintField,cornerPair.x,cornerWidth,cornerHeight)
-          +weight.z*texel(cornerTintField,cornerPair.y,cornerWidth,cornerHeight)).rgb;
+          +weight.z*texel(cornerTintField,cornerPair.y,cornerWidth,cornerHeight);
         direction=normalMatrix*(length(position)>0.0 ? normalize(position) : vec3(0.0,0.0,1.0));
         planetDirection=(modelMatrix*vec4(position,1.0)).xyz;
         gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
     fragmentShader: `uniform sampler2D field; uniform float textureWidth; uniform float textureHeight;
       uniform float smoothMode; uniform float reliefStrength;
+      uniform sampler2D tintField; uniform float travelTimeMode; uniform float movementMode;
+      uniform float isochroneLevels[${ISOCHRONE_DAYS.length}];
       uniform float selected; uniform float globe; uniform float categorical; uniform float muted; uniform float waterMode;
       uniform float surfaceMode; uniform float waterSurface; uniform float missingMode;
       uniform float basinMode; uniform float spillFrom; uniform float spillTo; uniform float temperatureMode; uniform float windMode;
       uniform float distantLightMix; uniform vec3 sunDirection; uniform float biomeMode; uniform float precipitationMode;
-      varying float cell; varying vec4 blended; varying vec3 tint; varying vec3 direction; varying vec3 planetDirection;
+      varying float cell; varying vec4 blended; varying vec4 tint; varying vec3 direction; varying vec3 planetDirection;
       // Atlas-style hypsometric and bathymetric tints in meters. They are not biomes.
       vec3 hypsometric(float h) {
         vec3 c=vec3(0.33,0.47,0.29);
@@ -174,7 +175,8 @@ export class SurfaceMap {
       void main() {
         float id=floor(cell+0.5);
         vec2 uv=vec2((mod(id,textureWidth)+0.5)/textureWidth,(floor(id/textureWidth)+0.5)/textureHeight);
-        vec4 sampled=smoothMode>0.5 ? blended : texture2D(field,uv);
+        vec4 own=texture2D(field,uv);
+        vec4 sampled=smoothMode>0.5 ? blended : own;
         float v=sampled.r, m=sampled.g;
         bool wet=false;
         vec3 color=mix(vec3(0.16,0.28,0.33),vec3(0.73,0.80,0.63),clamp(v,0.0,1.0));
@@ -184,9 +186,26 @@ export class SurfaceMap {
         if(missingMode>0.5 && v<0.0) color=vec3(0.34,0.36,0.30);
         if(surfaceMode>0.5) {
           // Interpolated masks give a display shoreline midway between wet and dry centers.
-          if(waterSurface>0.5 && smoothMode>0.5 && m>0.0) discard;
-          wet=waterSurface>0.5 || m<0.0;
-          color=wet ? bathymetric(max(-v,0.0)) : biomeMode>0.5 ? tint : hypsometric(max(v,0.0));
+          bool frozenCap=movementMode>0.5 && waterSurface>0.5 && own.g>0.0;
+          if(waterSurface>0.5 && !frozenCap && (smoothMode>0.5 || movementMode>0.5) && m>0.0) discard;
+          wet=!frozenCap && (waterSurface>0.5 || m<0.0);
+          color=wet ? bathymetric(max(-v,0.0)) : biomeMode>0.5 ? tint.rgb : hypsometric(max(v,0.0));
+          if(travelTimeMode>0.5) {
+            // Isochrones follow interpolated log-time. The owning cell decides
+            // reachability, so contour lines never continue onto another landmass.
+            float width=clamp(fwidth(tint.a),0.00001,0.09);
+            float distance=100.0;
+            for(int i=0;i<${ISOCHRONE_DAYS.length};i++) distance=min(distance,abs(tint.a-isochroneLevels[i]));
+            float line=1.0-smoothstep(0.15*width,1.35*width,distance);
+            if(!wet) {
+              if(texture2D(tintField,uv).a<0.0 && own.g>0.0) color=vec3(${UNREACHABLE_COLOR.map(c => c / 255).join(',')});
+              else if(tint.a>=0.0) {
+                float lightness=dot(color,vec3(0.21,0.72,0.07));
+                vec3 ink=mix(vec3(0.99,0.91,0.76),vec3(0.28,0.16,0.12),smoothstep(0.57,0.68,lightness));
+                color=mix(color,ink,0.72*line);
+              }
+            }
+          }
         }
         if(reliefStrength>0.0) {
           vec3 n=normalize(vec3(-blended.b,-blended.a,1.0)), light=normalize(vec3(-0.55,0.65,0.75));
@@ -243,7 +262,7 @@ export class SurfaceMap {
   private world: World | null = null;
   private waterFrame: WaterFrame | null = null;
   private regionalWater: RegionalWaterDisplay | null = null;
-  private waterSurfaceDirty = false;
+  private globeWater: Water | WaterFrame | RegionalWaterDisplay | null = null;
   private temperatureNormals: TemperatureNormals | null = null;
   private climateNormals: ClimateNormals | null = null;
   private vegetation: VegetationFrame | null = null;
@@ -251,7 +270,19 @@ export class SurfaceMap {
   private traversalCosts: TraversalCosts | null = null;
   private travelField: TravelField | null = null;
   private travelSeason: TravelSeason = 'summer';
-  private travelRoute: number[] = [];
+  private readonly originMaterial = new ShaderMaterial({
+    uniforms: { size: { value: 14 } },
+    vertexShader: `uniform float size; void main() {
+      gl_PointSize=size; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+    }`,
+    fragmentShader: `void main() {
+      float r=length(gl_PointCoord-0.5);
+      if(r>0.49) discard;
+      gl_FragColor=r>0.37 ? vec4(0.04,0.06,0.09,1.0) :
+        r>0.24 ? vec4(1.0,0.98,0.88,1.0) : vec4(0.08,0.11,0.16,1.0);
+    }`,
+    transparent: true, depthWrite: false,
+  });
   private tintTexture: DataTexture | null = null;
   private cornerTintTexture: DataTexture | null = null;
   private tintValues = new Float32Array(0);
@@ -403,6 +434,7 @@ export class SurfaceMap {
     for (const material of this.riverMaterials) material.resolution.set(width, height);
     this.routeCasingMaterial.resolution.set(width, height);
     this.routeLineMaterial.resolution.set(width, height);
+    this.originMaterial.uniforms.size.value = 14 * this.renderer.getPixelRatio();
     const aspect = width / height, halfHeight = Math.max(.6, 1.1 / aspect);
     Object.assign(this.flatCamera, { left: -halfHeight * aspect, right: halfHeight * aspect, top: halfHeight, bottom: -halfHeight });
     this.flatCamera.updateProjectionMatrix();
@@ -455,8 +487,8 @@ export class SurfaceMap {
     next.globe.scale.z = -1;
     this.releaseViews(); this.views = next;
     this.scene.add(next.flat, next.globe); this.world = world; this.waterFrame = null; this.temperatureNormals = null; this.windNormals = null; this.climateNormals = null; this.vegetation = null; this.wildFood = null;
-    this.traversalCosts = null; this.travelField = null; this.travelRoute = [];
-    this.moistureFrame = null; this.regionalWater = null; this.waterSurfaceDirty = false;
+    this.traversalCosts = null; this.travelField = null;
+    this.moistureFrame = null; this.regionalWater = null; this.globeWater = world.water;
     delete this.canvas.dataset.regionalSurface;
     delete this.canvas.dataset.moistureSeconds;
     delete this.canvas.dataset.seasonalModel;
@@ -501,10 +533,16 @@ export class SurfaceMap {
       throw new Error('Prescribed-water display does not match this world.');
     }
     this.waterFrame = frame;
-    this.updateWaterSurface(frame);
+    this.maximumDepth = frame.depthMeters.reduce((maximum, depth) => Math.max(maximum, depth), 0);
+    this.syncWaterSurface();
     this.refreshField();
   }
-  private updateWaterSurface(frame: WaterFrame | RegionalWaterDisplay): void {
+  private syncWaterSurface(): void {
+    if (!this.world || !this.views || this.mode !== 'globe' || !surfaceLike(this.layer)) return;
+    const frame = isMovement(this.layer) ? this.world.water : this.regionalWater ?? this.waterFrame ?? this.world.water;
+    if (frame !== this.globeWater) this.updateWaterSurface(frame);
+  }
+  private updateWaterSurface(frame: Water | WaterFrame | RegionalWaterDisplay): void {
     if (!this.world || !this.views) throw new Error('Water display requires a prepared world.');
     const globe = this.views.globe;
     const bed = (globe.children[0] as Mesh<BufferGeometry>).geometry;
@@ -525,10 +563,9 @@ export class SurfaceMap {
     const oldLines = globe.children[4] as LineSegments<BufferGeometry>;
     oldWater.geometry.dispose(); oldLines.geometry.dispose();
     oldWater.geometry = water; oldLines.geometry = lines;
-    this.maximumDepth = frame.depthMeters.reduce((maximum, depth) => Math.max(maximum, depth), 0);
     this.appliedExaggeration = NaN;
     this.setExaggeration(this.exaggeration);
-    this.waterSurfaceDirty = false;
+    this.globeWater = frame;
   }
   setTemperatureNormals(normals: TemperatureNormals | null): void {
     if (normals && (!this.world || normals.annualMeanCelsius.length !== this.world.stats.regionCount)) {
@@ -585,6 +622,13 @@ export class SurfaceMap {
     else delete this.canvas.dataset.travelOrigin;
     this.applyTint();
   }
+  frameTravelRoute(route: readonly number[]): void {
+    if (this.mode !== 'globe' || !this.world || !route.length) return;
+    const centers = this.world.surface.centers;
+    const center = new Vector3(), point = new Vector3();
+    for (const id of route) center.add(point.set(centers[id * 3], centers[id * 3 + 1], -centers[id * 3 + 2]));
+    if (center.lengthSq() > 1e-8) this.planetCamera.frameDirection(center);
+  }
   setTravelSeason(season: TravelSeason): void {
     this.travelSeason = season;
     this.canvas.dataset.travelSeason = season;
@@ -592,14 +636,27 @@ export class SurfaceMap {
   }
   /** Draw or clear the least-time route polyline on both flat map and globe; display only. */
   setTravelRoute(path: readonly number[]): void {
-    this.travelRoute = [...path];
     this.canvas.dataset.travelRouteHops = String(Math.max(0, path.length - 1));
     if (!this.views || !this.world) return;
     for (const view of Object.values(this.views)) {
       const group = view.children[ROUTE];
       for (const child of [...group.children]) {
-        if ('geometry' in child) (child as LineSegments2).geometry.dispose();
+        if (child instanceof LineSegments2 || child instanceof Points) child.geometry.dispose();
         group.remove(child);
+      }
+    }
+    const origin = this.travelField?.sources[0];
+    if (origin !== undefined) {
+      const point = routeOrigin(this.world.surface, this.world.terrain.elevation, this.world.water, origin);
+      const applied = Number.isFinite(this.appliedExaggeration) ? this.appliedExaggeration : 0;
+      for (const mode of ['flat', 'globe'] as const) {
+        const geometry = new BufferGeometry();
+        const positions = mode === 'flat' ? point.flat : displaceDirections(point.globe, point.offset, applied);
+        geometry.setAttribute('position', new BufferAttribute(positions, 3));
+        if (mode === 'globe') geometry.userData = { base: point.globe, offsets: point.offset };
+        const marker = new Points(geometry, this.originMaterial);
+        marker.renderOrder = 3;
+        this.views[mode].children[ROUTE].add(marker);
       }
     }
     if (path.length >= 2) {
@@ -630,6 +687,9 @@ export class SurfaceMap {
   private applyTint(): void {
     const climate = this.climateNormals, vegetation = this.vegetation, food = this.wildFood, costs = this.traversalCosts, field = this.travelField, layer = this.layer;
     const costField = costs ? (this.travelSeason === 'summer' ? costs.hoursPer100KmSummer : costs.hoursPer100KmWinter) : null;
+    const timeDays = layer === 'travelTime' ? field?.days : undefined;
+    this.material.uniforms.travelTimeMode.value = timeDays ? 1 : 0;
+    this.material.uniforms.movementMode.value = isMovement(layer) ? 1 : 0;
     const color: ((id: number) => Rgb) | null = layer === 'biome' && climate ? (id) => BIOMES[climate.biome[id]].color
       : layer === 'vegetationState' && vegetation ? (id) => BIOMES[vegetation.label[id]].color
       : layer === 'woodyCover' && vegetation ? (id) => woodyColor(vegetation.woody[id])
@@ -640,16 +700,18 @@ export class SurfaceMap {
       : layer === 'leanSeason' && food ? (id) => food.storedCapacity[id] > 0 ? leanColor(food.capacity[id] / food.storedCapacity[id]) : [206, 202, 192]
       : layer === 'gameStock' && food ? (id) => gameColor(food.game[id], food.gameCapacity[id])
       : layer === 'travelCost' && costField ? (id) => travelCostColor(costField[id])
-      : layer === 'travelTime' && costs ? (id) => (field ? travelTimeColor(field.days[id]) : UNREACHABLE_COLOR) : null;
+      : timeDays ? (id) => travelTimeColor(timeDays[id]) : null;
     this.material.uniforms.biomeMode.value = color ? 1 : 0;
     if (color && this.world && this.corners && this.tintTexture && this.cornerTintTexture) {
       const tint = this.tintValues, out = this.cornerTintValues, surface = this.world.surface;
-      const traversalLayer = (layer === 'travelCost' || layer === 'travelTime') && costs !== null;
-      const wet = (id: number): boolean => traversalLayer ? !isRegionPassable(costs!, id, this.travelSeason) : this.world!.water.bodyIds[id] !== 0;
+      const traversalLayer = isMovement(layer) && costs !== null;
+      const wet = (id: number): boolean => traversalLayer ? !isRegionPassable(costs, id, this.travelSeason) : this.world!.water.bodyIds[id] !== 0;
       const count = this.world.stats.regionCount;
       for (let id = 0; id < count; id++) {
         const rgb = color(id);
         for (let c = 0; c < 3; c++) tint[id * 4 + c] = rgb[c] / 255;
+        const days = timeDays?.[id] ?? -1;
+        tint[id * 4 + 3] = days < 0 ? -1 : travelTimeCoordinate(days);
       }
       if (layer === 'biome' || layer === 'vegetationState') {
         // Display-only softening: each dry region mixes half of its dry neighbors' mean
@@ -669,26 +731,28 @@ export class SurfaceMap {
       // Water regions borrow their dry neighbors' mean so interpolated shores do not darken.
       for (let id = 0; id < count; id++) {
         if (!wet(id)) continue;
-        let r = 0, g = 0, b = 0, n = 0;
+        let r = 0, g = 0, b = 0, time = 0, n = 0;
         for (let k = surface.neighborOffsets[id]; k < surface.neighborOffsets[id + 1]; k++) {
           const j = surface.neighbors[k];
-          if (wet(j)) continue;
-          r += tint[j * 4]; g += tint[j * 4 + 1]; b += tint[j * 4 + 2]; n++;
+          if (wet(j) || (timeDays && timeDays[j] < 0)) continue;
+          r += tint[j * 4]; g += tint[j * 4 + 1]; b += tint[j * 4 + 2]; time += tint[j * 4 + 3]; n++;
         }
-        if (n) { tint[id * 4] = r / n; tint[id * 4 + 1] = g / n; tint[id * 4 + 2] = b / n; }
+        if (n) {
+          tint[id * 4] = r / n; tint[id * 4 + 1] = g / n; tint[id * 4 + 2] = b / n; tint[id * 4 + 3] = time / n;
+        }
       }
       const { offsets, regions } = this.corners;
       for (let k = 0; k + 1 < offsets.length; k++) {
-        let r = 0, g = 0, b = 0, n = 0;
+        let r = 0, g = 0, b = 0, time = 0, n = 0;
         for (const dryOnly of [true, false]) {
           for (let j = offsets[k]; j < offsets[k + 1]; j++) {
             const id = regions[j];
-            if (dryOnly && wet(id)) continue;
-            r += tint[id * 4]; g += tint[id * 4 + 1]; b += tint[id * 4 + 2]; n++;
+            if (dryOnly && (wet(id) || (timeDays && timeDays[id] < 0))) continue;
+            r += tint[id * 4]; g += tint[id * 4 + 1]; b += tint[id * 4 + 2]; time += tint[id * 4 + 3]; n++;
           }
           if (n) break;
         }
-        out[k * 4] = r / n; out[k * 4 + 1] = g / n; out[k * 4 + 2] = b / n;
+        out[k * 4] = r / n; out[k * 4 + 1] = g / n; out[k * 4 + 2] = b / n; out[k * 4 + 3] = time / n;
       }
       this.tintTexture.needsUpdate = true; this.cornerTintTexture.needsUpdate = true;
     }
@@ -720,13 +784,12 @@ export class SurfaceMap {
     if (frame && hasRegionalSurface(frame)) {
       this.regionalWater = regionalWaterDisplay(this.world!, frame);
       this.maximumDepth = this.regionalWater.depthMeters.reduce((maximum, depth) => Math.max(maximum, depth), 0);
-      this.waterSurfaceDirty = true;
       this.canvas.dataset.regionalSurface = 'active';
-      if (surfaceLike(this.layer) && this.mode === 'globe') this.updateWaterSurface(this.regionalWater);
     } else {
       this.regionalWater = null;
       delete this.canvas.dataset.regionalSurface;
     }
+    this.syncWaterSurface();
     if (frame) this.canvas.dataset.moistureSeconds = String(frame.elapsedSeconds);
     else delete this.canvas.dataset.moistureSeconds;
     if (frame) this.canvas.dataset.seasonalModel = frame.modelVersion;
@@ -744,9 +807,7 @@ export class SurfaceMap {
     this.stopCamera();
     this.clearMapDrag();
     this.mode = mode; this.canvas.dataset.view = mode;
-    if (mode === 'globe' && surfaceLike(this.layer) && this.regionalWater && this.waterSurfaceDirty) {
-      this.updateWaterSurface(this.regionalWater);
-    }
+    this.syncWaterSurface();
     this.material.uniforms.globe.value = mode === 'globe' ? 1 : 0;
     this.space.visible = mode === 'globe';
     this.renderer.setClearColor(mode === 'globe' ? '#040507' : '#0c1721');
@@ -759,9 +820,7 @@ export class SurfaceMap {
   setLayer(layer: Layer): void {
     this.layer = layer;
     this.space.setSurfaceMode(surfaceLike(layer));
-    if (surfaceLike(layer) && this.mode === 'globe' && this.regionalWater && this.waterSurfaceDirty) {
-      this.updateWaterSurface(this.regionalWater);
-    }
+    this.syncWaterSurface();
     this.canvas.dataset.activeLayer = layer;
     this.notifyNavigation();
     this.material.uniforms.surfaceMode.value = surfaceLike(layer) ? 1 : 0;
@@ -784,10 +843,11 @@ export class SurfaceMap {
   refreshField(): void {
     if (!this.world || !this.texture) return;
     const w = this.world;
-    const depth = this.regionalWater?.depthMeters ?? this.waterFrame?.depthMeters ?? w.water.depthMeters;
-    const bodyIds = this.waterFrame?.bodyIds ?? w.water.bodyIds;
-    let surfaceMask: ArrayLike<number> = this.regionalWater?.wetMask ?? bodyIds;
-    if ((this.layer === 'travelCost' || this.layer === 'travelTime') && this.traversalCosts) {
+    const staticWater = isMovement(this.layer);
+    const depth = staticWater ? w.water.depthMeters : this.regionalWater?.depthMeters ?? this.waterFrame?.depthMeters ?? w.water.depthMeters;
+    const bodyIds = staticWater ? w.water.bodyIds : this.waterFrame?.bodyIds ?? w.water.bodyIds;
+    let surfaceMask: ArrayLike<number> = staticWater ? bodyIds : this.regionalWater?.wetMask ?? bodyIds;
+    if (isMovement(this.layer) && this.traversalCosts) {
       const passableMask = new Uint8Array(w.stats.regionCount);
       for (let id = 0; id < w.stats.regionCount; id++) passableMask[id] = isRegionPassable(this.traversalCosts, id, this.travelSeason) ? 0 : 1;
       surfaceMask = passableMask;
@@ -848,7 +908,7 @@ export class SurfaceMap {
     this.canvas.dataset.smoothShading = String(smooth);
     if (this.views) for (const view of Object.values(this.views)) {
       view.children[RIVERS].visible = this.drainageLines && (surfaceLike(this.layer) || this.layer === 'elevation');
-      view.children[ROUTE].visible = (this.layer === 'travelTime' || this.layer === 'travelCost') && this.travelRoute.length >= 2;
+      view.children[ROUTE].visible = this.layer === 'travelTime';
     }
   }
   setSmoothShading(enabled: boolean): void { this.smoothShading = enabled; this.applyShadingModes(); this.refreshField(); }
@@ -882,7 +942,7 @@ export class SurfaceMap {
     this.draw();
   }
   setExaggeration(requested: number): number {
-    const liveWater = this.regionalWater ?? this.waterFrame;
+    const liveWater = isMovement(this.layer) ? null : this.regionalWater ?? this.waterFrame;
     const waterExtent = liveWater
       ? liveWater.surfaceLevelsMeters.reduce((maximum, level) => Math.max(maximum, Math.abs(level)), 0)
       : this.world?.water.mainOceanId ? this.world.water.levelMeters : undefined;
@@ -895,9 +955,15 @@ export class SurfaceMap {
       const { riverBase, riverOffsets } = river.geometry.userData as { riverBase: Float32Array; riverOffsets: Float32Array };
       river.geometry.setPositions(displaceDirections(riverBase, riverOffsets, applied));
     }
-    if (this.views) for (const segment of this.views.globe.children[ROUTE].children as LineSegments2[]) {
-      const { routeBase, routeOffsets } = segment.geometry.userData as { routeBase: Float32Array; routeOffsets: Float32Array };
-      segment.geometry.setPositions(displaceDirections(routeBase, routeOffsets, applied));
+    if (this.views) for (const object of this.views.globe.children[ROUTE].children) {
+      if (object instanceof LineSegments2) {
+        const { routeBase, routeOffsets } = object.geometry.userData;
+        object.geometry.setPositions(displaceDirections(routeBase, routeOffsets, applied));
+      } else if (object instanceof Points) {
+        const { base, offsets } = object.geometry.userData;
+        object.geometry.setAttribute('position', new BufferAttribute(displaceDirections(base, offsets, applied), 3));
+        object.geometry.computeBoundingSphere();
+      }
     }
     if (this.views) for (const object of this.views.globe.children) {
       if (!(object instanceof Mesh || object instanceof LineSegments)) continue;
@@ -960,7 +1026,8 @@ export class SurfaceMap {
         this.material.uniforms.distantLightMix.value = nightBlend;
         this.canvas.dataset.dayNight = nightBlend.toFixed(3);
         this.lineMaterial.opacity = .45 * (1 - nightBlend * .8);
-        for (const material of this.riverMaterials) material.opacity = .9 * (1 - nightBlend * .85);
+        const riverOpacity = this.layer === 'travelTime' ? .25 : .9;
+        for (const material of this.riverMaterials) material.opacity = riverOpacity * (1 - nightBlend * .85);
         if (this.mode === 'globe') this.space.updateView(this.camera, distance, nightBlend, this.worldSun);
         this.renderer.render(this.scene, this.camera);
       }
@@ -983,6 +1050,6 @@ export class SurfaceMap {
     window.removeEventListener('pointercancel', this.endMapDrag);
     window.removeEventListener('blur', this.clearMapDrag);
     this.controls.removeEventListener('change', this.handleControlsChange);
-    this.controls.dispose(); this.planetCamera.dispose(); this.space.dispose(); this.releaseViews(); this.material.dispose(); this.waterMaterial.dispose(); this.lineMaterial.dispose(); for (const material of this.riverMaterials) material.dispose(); this.routeCasingMaterial.dispose(); this.routeLineMaterial.dispose(); this.tectonicMaterial.dispose(); this.renderer.dispose();
+    this.controls.dispose(); this.planetCamera.dispose(); this.space.dispose(); this.releaseViews(); this.material.dispose(); this.waterMaterial.dispose(); this.lineMaterial.dispose(); for (const material of this.riverMaterials) material.dispose(); this.routeCasingMaterial.dispose(); this.routeLineMaterial.dispose(); this.originMaterial.dispose(); this.tectonicMaterial.dispose(); this.renderer.dispose();
   }
 }

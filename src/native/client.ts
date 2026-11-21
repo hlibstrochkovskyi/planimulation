@@ -16,7 +16,9 @@ import { DEFAULT_VEGETATION_SETTINGS, VEGETATION_MAX_YEARS, VEGETATION_MAX_YEARS
 import type { VegetationFrame, VegetationRegionYear, VegetationSeries } from '../core/vegetation';
 import { DEFAULT_WILD_FOOD_SETTINGS, MONTHS, WILD_FOOD_MODEL_VERSION } from '../core/wild-food';
 import type { ForageExperiment, WildFoodFrame, WildFoodRegionYear, WildFoodSeries } from '../core/wild-food';
-import { DEFAULT_TRAVERSAL_SETTINGS, TRAVERSAL_MAX_SOURCES, TRAVERSAL_MODEL_VERSION } from '../core/traversal';
+import { DEFAULT_TRAVERSAL_SETTINGS, TRAVERSAL_MAX_SOURCES, TRAVERSAL_MODEL_VERSION,
+  TRAVERSAL_FLAG_FREEZING_MONTHS_SHIFT, TRAVERSAL_FLAG_FROZEN_LAKE_WINTER, TRAVERSAL_FLAG_FROZEN_RIVER_WINTER,
+  TRAVERSAL_FLAG_PASSABLE_SUMMER, TRAVERSAL_FLAG_PASSABLE_WINTER } from '../core/traversal';
 import type { TraversalCosts, TravelField, TravelSeason } from '../core/traversal';
 import { DEFAULT_WIND_SETTINGS, WIND_MODEL_VERSION } from '../core/seasonal-wind';
 import type { WindNormals } from '../core/seasonal-wind';
@@ -443,14 +445,20 @@ export function decodeTraversalCosts(packet: Packet, count: number, epoch: numbe
     snowFactorWinter = next(), riverDelaySummerHours = next(),
     riverDelayWinterHours = next(), localReliefMeters = next();
   const flags = new Uint32Array(count);
-  for (let i = 0; i < count; i++) flags[i] = bytes.readUInt32LE(offset + i * 4);
+  const valid = (passable: boolean, cost: number, slope: number, cover: number): boolean => passable
+    ? cost > 0 && slope > 0 && slope <= 2 && cover > 0 && cover <= 1
+    : cost === -1 && slope === -1 && cover === -1;
   for (let i = 0; i < count; i++) {
-    const okCost = (v: number): boolean => v === -1 || v > 0;
-    const okFactor = (v: number): boolean => v === -1 || (v > 0 && v <= 2);
-    if (!okCost(hoursPer100KmSummer[i]) || !okCost(hoursPer100KmWinter[i])
-      || !okFactor(slopeFactorSummer[i]) || !okFactor(slopeFactorWinter[i])
-      || !okFactor(coverFactorSummer[i]) || !okFactor(coverFactorWinter[i])
-      || !(snowFactorWinter[i] > 0 && snowFactorWinter[i] <= 1 + 1e-12)
+    const flag = flags[i] = bytes.readUInt32LE(offset + i * 4);
+    const summer = (flag & TRAVERSAL_FLAG_PASSABLE_SUMMER) !== 0;
+    const winter = (flag & TRAVERSAL_FLAG_PASSABLE_WINTER) !== 0;
+    const lake = (flag & TRAVERSAL_FLAG_FROZEN_LAKE_WINTER) !== 0;
+    const river = (flag & TRAVERSAL_FLAG_FROZEN_RIVER_WINTER) !== 0;
+    if ((flag >>> TRAVERSAL_FLAG_FREEZING_MONTHS_SHIFT) > 12 || winter !== (summer || lake) || (lake && summer)
+      || river !== (riverDelayWinterHours[i] < riverDelaySummerHours[i]) || (river && !summer)
+      || !valid(summer, hoursPer100KmSummer[i], slopeFactorSummer[i], coverFactorSummer[i])
+      || !valid(winter, hoursPer100KmWinter[i], slopeFactorWinter[i], coverFactorWinter[i])
+      || !(snowFactorWinter[i] > 0 && snowFactorWinter[i] <= 1)
       || riverDelaySummerHours[i] < 0 || riverDelayWinterHours[i] < 0 || localReliefMeters[i] < 0) {
       throw new Error('Invalid native traversal-cost values.');
     }
@@ -494,13 +502,14 @@ export function decodeTraversalField(packet: Packet, count: number, epoch: numbe
   }
   const days = floats(bytes.subarray(0, count * 8));
   const distanceMeters = floats(bytes.subarray(count * 8, count * 16));
-  const predecessor = new Uint32Array(count);
+  const predecessor = new Uint32Array(count), origins = new Set(sources);
   for (let i = 0; i < count; i++) {
-    predecessor[i] = bytes.readUInt32LE(count * 16 + i * 4);
-    const reachable = days[i] >= 0;
-    if ((days[i] < 0 && days[i] !== -1) || (distanceMeters[i] < 0 && distanceMeters[i] !== -1)
-      || (reachable !== (distanceMeters[i] >= 0))
-      || (reachable ? predecessor[i] >= count : predecessor[i] !== count)) {
+    const previous = predecessor[i] = bytes.readUInt32LE(count * 16 + i * 4);
+    const valid = days[i] === -1 ? distanceMeters[i] === -1 && previous === count
+      : days[i] === 0 ? distanceMeters[i] === 0 && previous === i && origins.has(i)
+        : days[i] > 0 && distanceMeters[i] > 0 && previous < count && days[previous] >= 0
+          && days[previous] < days[i] && distanceMeters[previous] < distanceMeters[i];
+    if (!valid) {
       throw new Error('Invalid native traversal-field values.');
     }
   }

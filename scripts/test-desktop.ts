@@ -70,6 +70,16 @@ try {
       },
     };
   }
+  const canvas = page.locator('#map');
+  const clickAtlas = async (sample: { x: number; y: number }) => {
+    const bounds = await canvas.boundingBox();
+    assert.ok(bounds);
+    const halfHeight = Math.max(.6, 1.1 / (bounds.width / bounds.height));
+    await canvas.click({ position: {
+      x: bounds.width * (.5 + sample.x / (2 * halfHeight * bounds.width / bounds.height)),
+      y: bounds.height * (.5 - sample.y / (2 * halfHeight)),
+    } });
+  };
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => { if (message.type() === 'error' && /THREE|WebGL|shader/i.test(message.text())) errors.push(message.text()); });
@@ -94,8 +104,8 @@ try {
   await expect(page.locator('#height-summary')).toContainText('dry preparation 4 / 4 passes');
   await expect(page.locator('#crust-summary')).toContainText('38.00% target');
   const reference = new NativeController(path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core'));
-  try { assert.equal((await reference.generate(DEFAULT_RECIPE)).world.checksum, fingerprint, 'Headless and desktop use the same native math.'); }
-  finally { reference.close(); }
+  const referenceWorld = await reference.generate(DEFAULT_RECIPE).then(result => result.world).finally(() => reference.close());
+  assert.equal(referenceWorld.checksum, fingerprint, 'Headless and desktop use the same native math.');
   const desktopData = await page.evaluate(async (recipe) => {
     const result = await window.desktop.generate(recipe);
     await window.desktop.cancelGeneration();
@@ -184,37 +194,62 @@ try {
   await expect(page.locator('#legend-high')).toContainText('at capacity');
   await ui('#vegetation-reset').click();
   await expect(page.locator('#vegetation-time')).toHaveText('Year 0');
+  await ui('[data-layer="foragerCapacity"]').click();
+  await expect(page.locator('#legend-title')).toContainText('Forager capacity · year 0');
   // traversal-1 desktop UI checks: Travel cost, Travel time, season toggle, route polyline, flat/globe consistency.
   await expect(page.locator('[data-layer="travelCost"]')).toBeEnabled();
   await expect(page.locator('[data-layer="travelTime"]')).toBeEnabled();
   await ui('[data-layer="travelCost"]').click();
   await expect(page.locator('#traversal-context')).toBeVisible();
-  await expect(page.locator('#legend-title')).toContainText('Foot travel cost (summer)');
+  await expect(page.locator('#legend-title')).toContainText(/Foot travel cost \(summer\).*vegetation year 0/);
   await expect(page.locator('#legend-high')).toContainText('h/100 km');
   await page.locator('#traversal-winter').click();
   await expect(page.locator('#map')).toHaveAttribute('data-travel-season', 'winter');
   await expect(page.locator('#legend-title')).toContainText('Foot travel cost (winter)');
   await page.locator('#traversal-summer').click();
   await expect(page.locator('#map')).toHaveAttribute('data-travel-season', 'summer');
-  // Select a passable dry region and compute travel time from it.
-  const travelBox = (await page.locator('#map').boundingBox())!;
-  for (let attempt = 0; attempt < 30; attempt++) {
-    const x = travelBox.x + travelBox.width * (0.18 + 0.64 * ((attempt * 0.618) % 1));
-    const y = travelBox.y + travelBox.height * (0.25 + 0.50 * ((attempt * 0.382) % 1));
-    await page.mouse.click(x, y);
-    if (await page.locator('#travel-from-here').isEnabled()) break;
-  }
+  await ui('#reset-view').click();
+  const { centers, neighborOffsets, neighbors } = referenceWorld.surface;
+  const bodyIds = referenceWorld.water.bodyIds;
+  const coordinates = (id: number) => ({ id, x: Math.atan2(centers[id * 3 + 2], centers[id * 3]) / Math.PI,
+    y: Math.asin(centers[id * 3 + 1]) / Math.PI });
+  const visibleDry = (id: number) => {
+    const { x, y } = coordinates(id);
+    return !bodyIds[id] && Math.abs(x) < .7 && Math.abs(y) < .3;
+  };
+  const adjacentDry = (id: number) => neighbors.subarray(neighborOffsets[id], neighborOffsets[id + 1]).find(visibleDry);
+  const originId = bodyIds.findIndex((_, id) => visibleDry(id) && adjacentDry(id) !== undefined);
+  assert.ok(originId >= 0, 'Reference recipe has a visible dry neighbor pair.');
+  const origin = coordinates(originId), target = coordinates(adjacentDry(originId)!);
+  await clickAtlas(origin);
+  await expect(page.locator('#selection-title')).toHaveText(`Region ${origin.id.toLocaleString('en')}`);
   await ui('#travel-from-here').click();
   await expect(page.locator('#map')).toHaveAttribute('data-active-layer', 'travelTime');
-  await expect(page.locator('#map')).toHaveAttribute('data-travel-origin', /^\d+$/);
+  await expect(canvas).toHaveAttribute('data-travel-origin', String(origin.id));
   await expect(page.locator('#isochrone-legend')).toBeVisible();
-  await expect(page.locator('#isochrone-legend')).toContainText('30–60 d');
+  await expect(page.locator('#isochrone-legend')).toContainText('Unreachable on foot (water)');
+  await expect(page.locator('#isochrone-legend')).toContainText('365 d');
+  await page.locator('#close-inspector').click();
+  await clickAtlas(target);
+  await expect(page.locator('#selection-title')).toHaveText(`Region ${target.id.toLocaleString('en')}`);
+  await expect(page.locator('#map')).toHaveAttribute('data-travel-route-hops', /^[1-9]\d*$/);
+  await page.locator('#traversal-winter').click();
+  await expect(page.locator('#legend-title')).toContainText('winter');
+  await expect(page.locator('#map')).toHaveAttribute('data-travel-route-hops', /^[1-9]\d*$/);
   await ui('#tab-factors').click();
-  await expect(page.locator('#traversal-note')).toContainText(/foot cost|Impassable|ocean|lake/i);
-  await page.locator('[data-view="globe"]').click();
+  await expect(page.locator('#traversal-note')).toContainText('Winter foot cost');
+  await expect(page.locator('#traversal-details')).toContainText(`Route from region ${origin.id}`);
+  await page.locator('button[data-view="globe"]').click();
   await expect(page.locator('#map')).toHaveAttribute('data-view', 'globe');
-  await page.locator('[data-view="flat"]').click();
+  await page.locator('#traversal-frame').click();
+  await expect(page.locator('#map')).toHaveAttribute('data-travel-route-hops', /^[1-9]\d*$/);
+  await expect(page.locator('#camera-position')).not.toHaveText(/^0\.0° [NS] · 0\.0° [EW]$/);
+  await page.locator('#reset-view').click();
+  await expect(page.locator('#camera-position')).toHaveText(/^0\.0° [NS] · 0\.0° [EW]$/);
+  await page.locator('button[data-view="flat"]').click();
   await page.locator('#traversal-clear-source').click();
+  await expect(page.locator('#map')).not.toHaveAttribute('data-travel-origin', /^\d+$/);
+  await expect(page.locator('#isochrone-legend')).toBeHidden();
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await ui('[data-layer="surface"]').click();
   await ui('#temperature-month').selectOption('3');
@@ -245,7 +280,6 @@ try {
   assert.equal(resolved.water.depthMeters.length, 10_242);
   assert.equal(resolved.basins.regionNodes.length, 10_242);
 
-  const canvas = page.locator('#map');
   const atlasExportPath = path.join(temp, 'atlas-export.png');
   await app.evaluate(({ dialog }, destination) => {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
@@ -257,15 +291,6 @@ try {
   assert.ok(atlasPng.readUInt32BE(16) > 200 && atlasPng.readUInt32BE(20) > 200);
   assert.ok(atlasPng.length > 10_000, 'The exported atlas must contain more than a blank background.');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
-  const clickAtlas = async (sample: { x: number; y: number }) => {
-    const bounds = await canvas.boundingBox();
-    assert.ok(bounds);
-    const halfHeight = Math.max(.6, 1.1 / (bounds.width / bounds.height));
-    await canvas.click({ position: {
-      x: bounds.width * (.5 + sample.x / (2 * halfHeight * bounds.width / bounds.height)),
-      y: bounds.height * (.5 - sample.y / (2 * halfHeight)),
-    } });
-  };
   // Locator clicks resolve the current center; window-manager resizing must not
   // leave later globe picks using dimensions captured at application startup.
   await canvas.click();
