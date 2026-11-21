@@ -99,6 +99,30 @@ pub fn profile(
         })
         .collect();
 
+    // Average nearby depths within the same plate to soften sampling seams
+    // between ridge sources with different opening rates. Keep the axes fixed.
+    let thermal: Vec<_> = age.iter().copied().map(thermal_depth).collect();
+    let cooled: Vec<_> = thermal
+        .iter()
+        .enumerate()
+        .map(|(i, &depth)| {
+            if !oceanic(i) || age[i] == 0. {
+                return depth;
+            }
+            let mut total = depth;
+            let mut weights = 1.;
+            for k in surface.offsets[i] as usize..surface.offsets[i + 1] as usize {
+                let j = surface.neighbors[k] as usize;
+                if same_oceanic_plate(i, j) {
+                    let weight = 0.3 * (1. - smooth(surface.distances[k] / 240_000.));
+                    total += weight * thermal[j];
+                    weights += weight;
+                }
+            }
+            total / weights
+        })
+        .collect();
+
     let mut trench_depth = vec![0_f64; n];
     for (a, b, opening, kind) in contacts {
         if kind != CONVERGENT {
@@ -165,6 +189,12 @@ pub fn profile(
         |_, j| wet(j),
     );
 
+    // The coarser mesh samples a shelf with fewer centers and spreads the
+    // slope break over wider edges during preparation. Allow up to half a
+    // coarse cell of additional shelf support, fading toward active margins.
+    let mean_area = surface.areas.iter().sum::<f64>() / n as f64;
+    let spacing = (2. * mean_area / 3_f64.sqrt()).sqrt();
+    let shelf_support = 0.5 * (spacing - 60_000.).clamp(0., 60_000.);
     let contribution_meters = (0..n)
         .map(|i| {
             let margin_weight = if oceanic(i) {
@@ -181,13 +211,13 @@ pub fn profile(
                     crust.density_kg_per_cubic_meter[i],
                 ))
             .clamp(-250., 250.);
-            let abyss = thermal_depth(age[i]) - 0.6 * residual;
+            let abyss = cooled[i] - 0.6 * residual;
             let (shore_distance, shore_source) = coast[i];
             let activity = 1. - smooth((active[shore_source].0 - 100_000.) / 500_000.);
-            let mut depth = margin_depth(shore_distance, activity, abyss);
+            let mut depth = margin_depth(shore_distance, activity, shelf_support, abyss);
             let (trench_distance, trench_source) = trench[i];
             if trench_distance.is_finite() {
-                let cut = 1. - smooth(trench_distance / 115_000.);
+                let cut = 1. - smooth(trench_distance / 175_000.);
                 let rise = smooth(trench_distance / 150_000.)
                     * (1. - smooth((trench_distance - 150_000.) / 150_000.));
                 depth += cut * (trench_depth[trench_source] - depth) - 300. * rise;
@@ -250,9 +280,9 @@ fn thermal_depth(age: f64) -> f64 {
     }
 }
 
-fn margin_depth(distance: f64, activity: f64, abyss: f64) -> f64 {
-    let shelf = 210_000. - 150_000. * activity;
-    let slope = 320_000. - 140_000. * activity;
+fn margin_depth(distance: f64, activity: f64, shelf_support: f64, abyss: f64) -> f64 {
+    let shelf = 60_000. + (100_000. + shelf_support) * (1. - activity);
+    let slope = 250_000. - 95_000. * activity;
     if distance <= shelf {
         return 25. + 135. * distance / shelf;
     }
@@ -324,6 +354,37 @@ mod tests {
     }
 
     #[test]
+    fn ridge_age_uses_opening_rate_and_cannot_cross_a_plate_boundary() {
+        let surface = Surface::build(4, 6_371_000.);
+        let mut recipe = recipe(4);
+        recipe.water = WaterSettings::Coverage { fraction: 1. };
+        let crust = Crust::build(&surface, "fixture", 0., 1.);
+        let mut tectonics = Tectonics::build(&surface, "fixture", 3, 0., 6_371_000.);
+        let [b, c, d] = surface.neighbors[..3].try_into().unwrap();
+        tectonics.owners.fill(0);
+        tectonics.owners[b as usize] = 1;
+        tectonics.owners[d as usize] = 2;
+        tectonics.boundary_cells = vec![0, b];
+        tectonics.boundary_types = vec![DIVERGENT];
+        let bed = vec![-4_500.; surface.centers.len()];
+        let run = |opening| {
+            let mut tectonics = tectonics.clone();
+            tectonics.boundary_motion = vec![opening, 0.];
+            profile(&surface, &crust, &tectonics, &recipe, &bed).unwrap()
+        };
+        let slow = run(0.03);
+        let fast = run(0.08);
+        let depth = |model: &Profile, i: usize| 1. - model.contribution_meters[i];
+        let c = c as usize;
+        let d = d as usize;
+        assert!(fast.ridge_axis[0] && fast.ridge_axis[b as usize]);
+        assert_eq!(depth(&fast, 0), 2_600.);
+        assert!(depth(&fast, 0) < depth(&fast, c));
+        assert!(depth(&fast, c) < depth(&slow, c));
+        assert!((depth(&fast, d) - thermal_depth(MAX_AGE_MYR)).abs() < 1e-9);
+    }
+
+    #[test]
     fn convergent_axes_follow_the_incoming_oceanic_slab() {
         let surface = Surface::build(2, 6_371_000.);
         let mut recipe = recipe(2);
@@ -374,17 +435,22 @@ mod tests {
     #[test]
     fn passive_shelf_is_wider_and_both_profiles_reach_the_same_abyss() {
         let abyss = thermal_depth(MAX_AGE_MYR);
-        assert!(margin_depth(200_000., 0., abyss) < 200.);
-        assert!(margin_depth(200_000., 1., abyss) > 1_000.);
-        assert_eq!(margin_depth(530_000., 0., abyss), 3_000.);
-        assert_eq!(margin_depth(240_000., 1., abyss), 3_000.);
-        assert_eq!(margin_depth(1_200_000., 0., abyss), abyss);
-        assert_eq!(margin_depth(1_200_000., 1., abyss), abyss);
+        assert!(margin_depth(150_000., 0., 0., abyss) < 200.);
+        assert!(margin_depth(150_000., 1., 0., abyss) > 1_000.);
+        assert_eq!(margin_depth(410_000., 0., 0., abyss), 3_000.);
+        assert_eq!(margin_depth(215_000., 1., 0., abyss), 3_000.);
+        assert_eq!(margin_depth(1_200_000., 0., 0., abyss), abyss);
+        assert_eq!(margin_depth(1_200_000., 1., 0., abyss), abyss);
+        assert!(margin_depth(185_000., 0., 30_000., abyss) <= 160.);
+        assert_eq!(
+            margin_depth(185_000., 1., 30_000., abyss),
+            margin_depth(185_000., 1., 0., abyss)
+        );
     }
 
     #[test]
     fn generated_floors_are_deterministic_bounded_and_respect_the_reference_shore() {
-        for subdivision in [0, 2, 7] {
+        for subdivision in 0..=7 {
             let world = World::generate(recipe(subdivision)).unwrap();
             let bed: Vec<_> = (0..world.surface.centers.len())
                 .map(|i| {
