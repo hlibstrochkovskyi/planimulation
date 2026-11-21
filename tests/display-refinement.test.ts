@@ -3,13 +3,15 @@ import { test } from 'node:test';
 import { buildSurface } from '../src/core/surface';
 import type { Water } from '../src/core/water';
 import type { Drainage } from '../src/core/drainage';
-import { buildViewGeometry } from '../src/renderer/view-geometry';
+import { buildRenderViewGeometry, buildViewGeometry } from '../src/renderer/view-geometry';
 import { computeReliefMetrics } from '../src/renderer/natural-color';
 import {
   buildLodCache,
   buildLodPatch,
   computeCoastField,
+  computeValleyField,
   MAX_LOD_TRIANGLES,
+  meshFrequencyForRegions,
   sampleCoastPhi,
   sampleDetailHeightMeters,
   seedOffsetFromString,
@@ -148,5 +150,78 @@ test('curved river lines are deterministic, stay within corridor bounds, and sep
       assert.ok(Math.abs(lenA - 1.00032) < 1e-4 && Math.abs(lenB - 1.00032) < 1e-4);
       assert.ok(angularDistance([a[0] / lenA, a[1] / lenA, a[2] / lenA], [b[0] / lenB, b[1] / lenB, b[2] / lenB]) < 0.25);
     }
+  }
+});
+
+test('symmetric coastline field keeps 1-cell peninsulas connected without depth asymmetry sawtooth', () => {
+  const { surface, water } = makeTestWorld(3);
+  const n = surface.areasSquareMeters.length;
+  // Build a narrow 1-region-wide dry peninsula surrounded by deep 4,000 m ocean.
+  const customBody = new Uint32Array(n).fill(1);
+  const customDepth = new Float64Array(n).fill(4000);
+  const customElev = new Float64Array(n).fill(-4000);
+  const a = 10;
+  const b = surface.neighbors[surface.neighborOffsets[a]];
+  customBody[a] = 0; customDepth[a] = 0; customElev[a] = 45;
+  customBody[b] = 0; customDepth[b] = 0; customElev[b] = 45;
+
+  const coast = computeCoastField(surface, customElev, customBody, customDepth, 0, customBody, 1);
+  // Shared corner between two adjacent dry peninsula cells (a, b) and one deep ocean cell must remain dry (> 0),
+  // preventing deep-ocean asymmetry from severing the peninsula into sawtooth teeth.
+  const pair = buildRenderViewGeometry(surface, undefined, customElev, { ...water, bodyIds: customBody, depthMeters: customDepth });
+  const { offsets, regions } = pair.corners;
+  let sharedDryCorners = 0;
+  for (let c = 0; c + 1 < offsets.length; c++) {
+    let hasA = false, hasB = false, phiSum = 0;
+    const count = offsets[c + 1] - offsets[c];
+    for (let j = offsets[c]; j < offsets[c + 1]; j++) {
+      const rid = regions[j];
+      if (rid === a) hasA = true;
+      if (rid === b) hasB = true;
+      phiSum += coast.phi[rid];
+    }
+    if (hasA && hasB) {
+      sharedDryCorners++;
+      assert.ok(phiSum / count > 0, `Shared peninsula corner ${c} should stay connected (>0), got ${phiSum / count}`);
+    }
+  }
+  assert.equal(sharedDryCorners, 2, 'Expected two shared dual corners between adjacent peninsula regions.');
+});
+
+test('drainage valleys carve lower decorative detail than divides and stay bounded', () => {
+  const { surface, water, drainage } = makeTestWorld(3);
+  const valley = computeValleyField(surface, drainage, water.bodyIds);
+  const seed = seedOffsetFromString('first-light');
+  const meshFreq = meshFrequencyForRegions(surface.areasSquareMeters.length);
+  let valleySum = 0, divideSum = 0;
+  for (let i = 0; i < 64; i++) {
+    const t = i / 64 * Math.PI * 2;
+    const x = Math.cos(t) * 0.8, y = Math.sin(t) * 0.6, z = Math.sqrt(Math.max(0, 1 - x * x - y * y));
+    const hDivide = sampleDetailHeightMeters(x, y, z, 1200, 0.9, seed, true, 0, meshFreq);
+    const hValley = sampleDetailHeightMeters(x, y, z, 1200, 0.9, seed, true, 0.95, meshFreq);
+    assert.ok(Math.abs(hDivide) <= 540 && Math.abs(hValley) <= 540);
+    divideSum += hDivide;
+    valleySum += hValley;
+  }
+  assert.ok(valleySum < divideSum - 2000, `Expected carved drainage valleys to lie lower than divides (${valleySum} vs ${divideSum}).`);
+  assert.ok(valley.every((v) => v >= 0 && v <= 1));
+});
+
+test('compact indexed render geometry halves triangle count and preserves exact region indices', () => {
+  const { surface, elevation, water } = makeTestWorld(3);
+  const full = buildViewGeometry(surface, undefined, elevation, water);
+  const compact = buildRenderViewGeometry(surface, undefined, elevation, water);
+  assert.ok(compact.globe.indices && compact.flat.indices && compact.globe.waterIndices);
+  assert.ok(compact.compactRing);
+  assert.equal(compact.globe.indices.length / 3, (full.globe.regions.length / 3) / 2);
+  assert.equal(compact.globe.waterIndices.length / 3, (full.globe.waterRegions.length / 3) / 2);
+  assert.ok(compact.globe.positions.length < full.globe.positions.length * 0.25);
+  assert.ok((compact.globe.landCoastIndexCount ?? 0) > 0 && (compact.globe.landCoastIndexCount ?? 0) <= compact.globe.indices.length);
+  // Every indexed triangle must belong to a single model region.
+  const idx = compact.globe.indices;
+  const reg = compact.globe.regions;
+  for (let i = 0; i < idx.length; i += 3) {
+    assert.equal(reg[idx[i]], reg[idx[i + 1]]);
+    assert.equal(reg[idx[i]], reg[idx[i + 2]]);
   }
 });

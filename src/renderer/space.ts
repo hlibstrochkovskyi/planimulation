@@ -143,14 +143,18 @@ export class SpaceBackdrop extends Group {
     this.atmosphere.material.uniforms.outerRadius.value = outerRadius;
     this.atmosphere.material.uniforms.scaleHeight.value = scaleHeight;
   }
-  updateView(camera: Camera, distance: number, nightBlend: number, worldSun: Vector3): void {
+  updateView(camera: Camera, distance: number, nightBlend: number, worldSun: Vector3, activeSun?: Vector3): void {
     // Stars are effectively at infinity: translation must not produce nearby parallax.
     this.stars.position.copy(camera.position);
     this.sky.material.uniforms.inverseProjection.value.copy(camera.projectionMatrixInverse);
     this.sky.material.uniforms.cameraRotation.value.setFromMatrix4(camera.matrixWorld);
     const scale = Math.max(0, Math.min(1, (distance - .4) / 5.6));
     this.sky.material.uniforms.exposure.value = .055 + .105 * scale * scale * (3 - 2 * scale);
-    this.atmosphere.material.uniforms.sunDirection.value.set(-.4, .6, 1).normalize().transformDirection(camera.matrixWorld).lerp(worldSun, nightBlend).normalize();
+    if (activeSun) {
+      this.atmosphere.material.uniforms.sunDirection.value.copy(activeSun);
+    } else {
+      this.atmosphere.material.uniforms.sunDirection.value.set(-.4, .6, 1).normalize().transformDirection(camera.matrixWorld).lerp(worldSun, nightBlend).normalize();
+    }
   }
   dispose(): void {
     this.disposed = true; this.sky.geometry.dispose(); this.sky.material.dispose(); this.panorama.dispose();

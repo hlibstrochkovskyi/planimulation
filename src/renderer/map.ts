@@ -10,14 +10,15 @@ import type { World } from '../core/world';
 import type { Water } from '../core/water';
 import type { WaterFrame } from '../shared/desktop-api';
 import { speedCmPerYear } from '../core/tectonics';
-import type { ViewCorners, ViewGeometry, ViewPair } from './view-geometry';
+import { buildIndexedWaterSurface } from './view-geometry';
+import type { CompactDualRing, ViewCorners, ViewGeometry, ViewPair } from './view-geometry';
 import { relaxedMask, reliefGradients } from './shading';
 import { buildDrainageLines, DRAINAGE_LINE_WIDTHS, NATURAL_PERENNIAL_COLORS, NATURAL_RIVER_WIDTHS,
   NATURAL_SEASONAL_COLORS, PERENNIAL_LINE_COLORS, RIVER_LINE_WIDTHS, SEASONAL_LINE_COLORS } from './rivers';
 import { displaceDirections, effectiveExaggeration } from './relief';
 import { computeNaturalSurface, computeReliefMetrics } from './natural-color';
 import type { ReliefMetrics, SurfaceStyle } from './natural-color';
-import { computeCoastField, REFINEMENT_GLSL, seedOffsetFromString } from './refinement';
+import { computeCoastField, computeValleyField, meshFrequencyForRegions, REFINEMENT_GLSL, seedOffsetFromString } from './refinement';
 import type { CoastField, LodPatchData } from './refinement';
 import { summarizeTerrain } from '../core/terrain';
 import { buildWaterSurface, pickSurface } from './water-surface';
@@ -144,7 +145,7 @@ export class SurfaceMap {
       tintField: { value: null }, cornerTintField: { value: null },
       detailField: { value: null }, cornerDetailField: { value: null },
       lodMaskField: { value: null }, lodActive: { value: 0 }, lodPass: { value: 0 },
-      lodExaggeration: { value: 0 },
+      lodExaggeration: { value: 0 }, meshFreq: { value: 53.1 }, waterLevelRadius: { value: 1.0 }, viewZoomDetail: { value: 0.0 },
       biomeMode: { value: 0 }, naturalMode: { value: 1 }, detailEnabled: { value: 1 },
       seedOffset: { value: new Vector3() }, precipitationMode: { value: 0 },
       smoothMode: { value: 0 }, reliefStrength: { value: 0 },
@@ -155,14 +156,14 @@ export class SurfaceMap {
       isochroneLevels: { value: ISOCHRONE_DAYS.map(travelTimeCoordinate) },
       distantLightMix: { value: 0 }, sunDirection: { value: this.worldSun }, activeSunDirection: { value: this.activeSun } },
     // Field texels hold (value, wet mask, east slope, north slope); detail texels hold
-    // (coast phi, strict wet/dry sign, local relief m, lake factor) for regions and dual corners.
+    // (coast phi, strict wet/dry sign, effective relief m, lake factor) for regions and dual corners.
     vertexShader: `attribute float region; attribute vec2 cornerPair; attribute vec3 weight; attribute float radialOffset;
       uniform sampler2D field; uniform float textureWidth; uniform float textureHeight;
       uniform sampler2D cornerField; uniform float cornerWidth; uniform float cornerHeight;
       uniform sampler2D tintField; uniform sampler2D cornerTintField;
       uniform sampler2D detailField; uniform sampler2D cornerDetailField;
       uniform sampler2D lodMaskField; uniform float lodActive; uniform float lodPass; uniform float lodExaggeration;
-      uniform float globe;
+      uniform float globe; uniform float surfaceMode; uniform float waterSurface; uniform float waterLevelRadius;
       varying float cell; varying vec4 blended; varying vec4 tint; varying vec4 detailVal;
       varying float centerWeight; varying vec3 modelDir; varying vec2 flatCoord;
       varying vec3 direction; varying vec3 planetDirection;
@@ -176,17 +177,30 @@ export class SurfaceMap {
           gl_Position=vec4(2.0,2.0,2.0,1.0);
           return;
         }
-        blended=weight.x*texel(field,region,textureWidth,textureHeight)
-          +weight.y*texel(cornerField,cornerPair.x,cornerWidth,cornerHeight)
-          +weight.z*texel(cornerField,cornerPair.y,cornerWidth,cornerHeight);
-        tint=weight.x*texel(tintField,region,textureWidth,textureHeight)
-          +weight.y*texel(cornerTintField,cornerPair.x,cornerWidth,cornerHeight)
-          +weight.z*texel(cornerTintField,cornerPair.y,cornerWidth,cornerHeight);
-        detailVal=weight.x*texel(detailField,region,textureWidth,textureHeight)
-          +weight.y*texel(cornerDetailField,cornerPair.x,cornerWidth,cornerHeight)
-          +weight.z*texel(cornerDetailField,cornerPair.y,cornerWidth,cornerHeight);
+        vec4 b=vec4(0.0), t=vec4(0.0), d=vec4(0.0);
+        if(weight.x>0.0) {
+          b+=weight.x*texel(field,region,textureWidth,textureHeight);
+          t+=weight.x*texel(tintField,region,textureWidth,textureHeight);
+          d+=weight.x*texel(detailField,region,textureWidth,textureHeight);
+        }
+        if(weight.y>0.0) {
+          b+=weight.y*texel(cornerField,cornerPair.x,cornerWidth,cornerHeight);
+          t+=weight.y*texel(cornerTintField,cornerPair.x,cornerWidth,cornerHeight);
+          d+=weight.y*texel(cornerDetailField,cornerPair.x,cornerWidth,cornerHeight);
+        }
+        if(weight.z>0.0) {
+          b+=weight.z*texel(cornerField,cornerPair.y,cornerWidth,cornerHeight);
+          t+=weight.z*texel(cornerTintField,cornerPair.y,cornerWidth,cornerHeight);
+          d+=weight.z*texel(cornerDetailField,cornerPair.y,cornerWidth,cornerHeight);
+        }
+        blended=b; tint=t; detailVal=d;
         vec3 pos=position;
-        if(lodPass>0.5) pos=position*(1.0+lodExaggeration*radialOffset);
+        if(lodPass>0.5) {
+          pos=position*(1.0+lodExaggeration*radialOffset);
+        } else if(globe>0.5 && surfaceMode>0.5 && waterSurface<0.5) {
+          float r=length(pos);
+          if(r>0.0 && r<waterLevelRadius) pos*=(waterLevelRadius/r);
+        }
         flatCoord=position.xy;
         modelDir=globe>0.5 ? (length(position)>0.0 ? normalize(position) : vec3(1.0,0.0,0.0)) : vec3(1.0,0.0,0.0);
         direction=normalMatrix*(length(pos)>0.0 ? normalize(pos) : vec3(0.0,0.0,1.0));
@@ -201,6 +215,7 @@ export class SurfaceMap {
       uniform float basinMode; uniform float spillFrom; uniform float spillTo; uniform float temperatureMode; uniform float windMode;
       uniform float distantLightMix; uniform vec3 sunDirection; uniform vec3 activeSunDirection;
       uniform float biomeMode; uniform float naturalMode; uniform float detailEnabled;
+      uniform float meshFreq; uniform float viewZoomDetail;
       uniform vec3 seedOffset; uniform float precipitationMode;
       varying float cell; varying vec4 blended; varying vec4 tint; varying vec4 detailVal;
       varying float centerWeight; varying vec3 modelDir; varying vec2 flatCoord;
@@ -240,9 +255,10 @@ export class SurfaceMap {
           mDir=vec3(cl*cos(lon),sin(lat),cl*sin(lon));
         }
         float pixelArc=length(fwidth(mDir));
-        float fineWeight=smoothstep(0.0045,0.0008,pixelArc);
+        float fineWeight=smoothstep(0.0045,0.00045,pixelArc);
         float localRelief=max(0.0,detailVal.b);
-        float rugged=smoothstep(80.0,1400.0,localRelief);
+        float rugged=smoothstep(95.0,1150.0,localRelief);
+        float valley=travelTimeMode>0.5 ? 0.0 : clamp(tint.a,0.0,1.0);
         bool useDetail=smoothMode>0.5 && detailEnabled>0.5;
         float phiDetail=detailVal.r;
 
@@ -257,16 +273,16 @@ export class SurfaceMap {
         if(surfaceMode>0.5) {
           bool frozenCap=movementMode>0.5 && waterSurface>0.5 && own.g>0.0;
           if(smoothMode>0.5 && movementMode<0.5) {
-            // Zero contour of interpolated height relative to water level, with bounded coastal detail.
-            float coastBand=smoothstep(0.02,0.32,1.0-abs(detailVal.g));
-            float centerGuard=1.0-smoothstep(0.72,0.94,centerWeight);
+            // Zero contour of symmetric relaxed coastline field, perturbed strictly in transition zones.
+            float coastBand=smoothstep(0.01,0.28,1.0-abs(detailVal.g));
+            float centerGuard=1.0-smoothstep(0.68,0.93,centerWeight);
             float coastMask=coastBand*centerGuard;
             if(useDetail && coastMask>0.001) {
-              float coastAmp=(0.28+0.18*rugged)*coastMask;
-              phiDetail+=coastAmp*sampleCoastNoise(mDir,seedOffset,fineWeight);
+              float coastAmp=(0.38+0.16*rugged)*coastMask;
+              phiDetail+=coastAmp*sampleCoastNoise(mDir,seedOffset,meshFreq,pixelArc);
             }
             if(waterSurface>0.5 && !frozenCap && phiDetail>0.0) discard;
-            float fw=max(fwidth(phiDetail),0.0012);
+            float fw=max(fwidth(phiDetail),0.0010);
             landMix=waterSurface>0.5 ? 0.0 : smoothstep(-fw*0.85,fw*0.85,phiDetail);
             wet=!frozenCap && (waterSurface>0.5 || phiDetail<0.0);
           } else {
@@ -275,33 +291,48 @@ export class SurfaceMap {
             landMix=wet ? 0.0 : 1.0;
           }
 
-          float waterDepth=(smoothMode>0.5 && movementMode<0.5) ? 160.0*sinh(min(max(-phiDetail,0.0),5.5)) : max(-v,0.0);
+          float rawDepth=max(-v,0.0);
+          float shoreDepthFade=smoothstep(0.0,0.36,max(-phiDetail,0.0));
+          float waterDepth=(smoothMode>0.5 && movementMode<0.5)
+            ? mix(14.0*max(-phiDetail,0.0)/0.36,max(rawDepth,120.0*max(-phiDetail,0.0)),shoreDepthFade)
+            : rawDepth;
           vec3 waterColor=naturalMode>0.5 ? naturalWater(waterDepth,detailVal.a) : bathymetric(waterDepth);
           vec3 landColor=biomeMode>0.5 ? tint.rgb : hypsometric(max(v,0.0));
 
-          // Single-pass analytical fractal micro-relief normals & alpine rock/snow detail on land.
+          // Single-pass band-limited analytical fractal micro-relief normals & close-up satellite surface detail.
           if(useDetail && landMix>0.01 && reliefStrength>0.0) {
-            float coastTaper=smoothstep(0.0,0.25,max(0.0,phiDetail));
-            if(coastTaper>0.005) {
+            float coastTaper=smoothstep(0.0,0.28,max(0.0,phiDetail));
+            if(coastTaper>0.004) {
               float mh=length(mDir.xz);
               vec3 mEast=mh<1e-6 ? vec3(1.0,0.0,0.0) : vec3(-mDir.z/mh,0.0,mDir.x/mh);
               vec3 mNorth=cross(mEast,mDir);
-              vec4 dg=sampleDetailGrad(mDir,seedOffset,rugged,fineWeight);
+              vec4 dg=sampleDetailGrad(mDir,seedOffset,rugged,valley,meshFreq,pixelArc);
               detailSignal=dg.x;
-              // Scale micro-relief slopes strongly in mountains, gently on hills, almost zero on flat plains.
-              float ampSlope=(0.0014+0.0165*rugged)*coastTaper;
+              // Scale micro-relief sharply on mountain divides, softly on hills, calm on near-flat plains & valley floors.
+              float valleyDamp=1.0-0.58*valley;
+              float reliefCurve=pow(rugged,0.90);
+              float zoomBoost=1.0+0.50*fineWeight;
+              float ampSlope=(0.00085*(1.0+0.55*fineWeight)+0.0195*reliefCurve*zoomBoost)*valleyDamp*coastTaper;
               detailGrad=vec2(dot(dg.yzw,mEast),dot(dg.yzw,mNorth))*ampSlope;
               if(naturalMode>0.5 && biomeMode>0.5) {
                 float microSlope=length(detailGrad);
-                float rockiness=clamp(tint.a,0.0,1.0);
-                // Steep alpine micro-slopes expose bare granite/slate; ridges hold crisp snow accents.
-                float screeMix=smoothstep(0.22,0.95,microSlope)*rugged*(0.24+0.48*rockiness);
-                vec3 rockTint=vec3(0.46,0.445,0.425);
+                float highRock=smoothstep(1650.0,3600.0,v);
+                float rockiness=clamp(max(highRock*0.85,rugged*0.75),0.0,1.0);
+                // Steep alpine micro-slopes expose bare granite/slate; high cold ridges catch snow.
+                float screeMix=smoothstep(0.28,0.98,microSlope)*smoothstep(0.14,0.60,rugged)*(0.22+0.48*rockiness);
+                vec3 rockTint=mix(vec3(0.49,0.46,0.42),vec3(0.45,0.45,0.46),highRock);
                 landColor=mix(landColor,rockTint,screeMix);
-                float coldPeak=smoothstep(0.38,0.85,rockiness)*smoothstep(0.12,0.52,detailSignal)*smoothstep(2000.0,3600.0,v+detailSignal*420.0);
-                landColor=mix(landColor,vec3(0.88,0.905,0.93),coldPeak*0.48);
-                // Subtle satellite micro-texture breaks up 112-km interpolation softness on forests & deserts.
-                float texStrength=(0.055+0.045*rugged)*(1.0-smoothstep(0.82,0.93,landColor.r));
+                float coldPeak=smoothstep(0.32,0.82,rockiness)*smoothstep(0.08,0.48,detailSignal)*smoothstep(1900.0,3500.0,v+detailSignal*450.0);
+                landColor=mix(landColor,vec3(0.90,0.92,0.94),coldPeak*0.52);
+                // Subtle littoral beach/cliff nuance right along the smoothed shoreline.
+                float littoral=(1.0-smoothstep(0.0,0.14,phiDetail))*fineWeight;
+                vec3 shoreTint=mix(vec3(0.62,0.58,0.46),vec3(0.39,0.38,0.36),smoothstep(0.12,0.52,rugged));
+                landColor=mix(landColor,shoreTint,littoral*0.24*(1.0-smoothstep(0.75,0.90,landColor.r)));
+                // Subtle riparian greening along incised drainage valleys in warmer/drier terrain.
+                float dryLand=smoothstep(0.04,0.22,landColor.r-landColor.g);
+                landColor=mix(landColor,vec3(0.24,0.34,0.20),valley*dryLand*0.20*coastTaper);
+                // Multi-scale satellite surface mosaic breaks up smooth interpolation at close range.
+                float texStrength=(0.045+0.048*fineWeight+0.032*rugged)*(1.0-smoothstep(0.80,0.92,landColor.r));
                 landColor*=(1.0+detailSignal*texStrength);
               }
             }
@@ -329,17 +360,18 @@ export class SurfaceMap {
         // Softly compress relief gradients so alpine ridges sculpt crisply without black walls.
         vec2 rawGrad=blended.ba+detailGrad;
         float gMag=length(rawGrad);
-        vec2 gSoft=rawGrad/(1.0+0.48*gMag);
-        float reliefWeight=reliefStrength*mix(0.22,1.0,landMix);
+        vec2 gSoft=rawGrad/(1.0+0.34*gMag);
+        float reliefWeight=reliefStrength*mix(0.24,1.0,landMix);
+        float creviceAO=1.0-0.13*clamp(-detailSignal,0.0,1.0)*(0.25+0.75*rugged)*reliefWeight;
 
         if(globe<0.5 && reliefWeight>0.0) {
           vec3 n=normalize(vec3(-gSoft.x,-gSoft.y,1.0));
-          vec3 light=normalize(vec3(-0.56,0.62,0.55));
+          vec3 light=normalize(vec3(-0.60,0.64,0.48));
           float delta=dot(n,light)-light.z;
           vec3 shadeTint=delta>=0.0
-            ? mix(vec3(1.0),vec3(1.22,1.19,1.12),clamp(delta*1.55,0.0,1.0))
-            : mix(vec3(1.0),vec3(0.52,0.58,0.68),clamp(-delta*1.35,0.0,1.0));
-          color*=mix(vec3(1.0),shadeTint,reliefWeight);
+            ? mix(vec3(1.0),vec3(1.28,1.24,1.15),clamp(delta*1.75,0.0,1.0))
+            : mix(vec3(1.0),vec3(0.45,0.52,0.64),clamp(-delta*1.55,0.0,1.0));
+          color*=mix(vec3(1.0),shadeTint,reliefWeight)*creviceAO;
         }
 
         if(temperatureMode>0.5) {
@@ -372,12 +404,19 @@ export class SurfaceMap {
             : worldUp;
           float macroDot=dot(worldUp,activeSunDirection);
           float normalDot=dot(worldNormal,activeSunDirection);
-          float hemi=0.46+0.54*smoothstep(-0.26,0.92,macroDot);
+          float hemi=0.54+0.46*smoothstep(-0.24,0.88,macroDot);
           float slopeDelta=normalDot-macroDot;
           vec3 reliefTint=slopeDelta>=0.0
-            ? mix(vec3(1.0),vec3(1.22,1.19,1.12),clamp(slopeDelta*1.55,0.0,1.0))
-            : mix(vec3(1.0),vec3(0.54,0.60,0.70),clamp(-slopeDelta*1.40,0.0,1.0));
-          vec3 survey=color*hemi*reliefTint;
+            ? mix(vec3(1.0),vec3(1.34,1.29,1.19),clamp(slopeDelta*1.85,0.0,1.0))
+            : mix(vec3(1.0),vec3(0.44,0.52,0.65),clamp(-slopeDelta*1.65,0.0,1.0));
+          vec3 survey=color*hemi*reliefTint*creviceAO;
+          // Subtle grazing-angle aerial perspective haze on tilted close-up views for atmospheric depth.
+          if(surfaceMode>0.5 && viewZoomDetail>0.01) {
+            vec3 viewDir=normalize(cameraPosition-planetDirection);
+            float grazing=pow(1.0-clamp(dot(worldUp,viewDir),0.0,1.0),2.4);
+            float haze=grazing*viewZoomDetail*0.28*(1.0-distantLightMix);
+            survey=mix(survey,vec3(0.48,0.62,0.80),haze);
+          }
 
           float solar=dot(worldUp,sunDirection);
           float solarSlope=dot(worldNormal,sunDirection);
@@ -406,8 +445,11 @@ export class SurfaceMap {
   private cornerDetailValues = new Float32Array(0);
   private lodMaskValues = new Float32Array(0);
   private corners: ViewCorners | null = null;
+  private compactRing: CompactDualRing | null = null;
   private reliefMetrics: ReliefMetrics | null = null;
   private coastField: CoastField | null = null;
+  private valleyFactor: Float32Array | null = null;
+  private linesExaggerationDirty = false;
   private smoothShading = true;
   private reliefShading = true;
   private drainageLines = true;
@@ -419,6 +461,7 @@ export class SurfaceMap {
   private lodTimer = 0;
   private lastLodFocus: [number, number, number] = [0, 0, 0];
   private lastLodDistance = Infinity;
+  private lastLodTilt = 0;
   private lastLodSubdivision = 1;
   private lodTriangles = 0;
   private baseGlobeTriangles = 0;
@@ -633,6 +676,8 @@ export class SurfaceMap {
     geometry.setAttribute('region', new BufferAttribute(data.regions, 1));
     geometry.setAttribute('cornerPair', new BufferAttribute(data.cornerPairs, 2));
     geometry.setAttribute('weight', new BufferAttribute(data.weights, 3));
+    if (data.indices) geometry.setIndex(new BufferAttribute(data.indices, 1));
+    if (data.landCoastIndexCount !== undefined) geometry.userData.landCoastIndexCount = data.landCoastIndexCount;
     const lines = new BufferGeometry(); lines.setAttribute('position', new BufferAttribute(data.lines, 3));
     const tectonicLines = new BufferGeometry();
     tectonicLines.setAttribute('position', new BufferAttribute(data.tectonicLines, 3));
@@ -642,6 +687,7 @@ export class SurfaceMap {
     water.setAttribute('region', new BufferAttribute(data.waterRegions, 1));
     water.setAttribute('cornerPair', new BufferAttribute(data.waterCornerPairs, 2));
     water.setAttribute('weight', new BufferAttribute(data.waterWeights, 3));
+    if (data.waterIndices) water.setIndex(new BufferAttribute(data.waterIndices, 1));
     const waterLines = new BufferGeometry(); waterLines.setAttribute('position', new BufferAttribute(data.waterLines, 3));
     for (const [g, offsets] of [[geometry, data.radialOffsets], [lines, data.lineOffsets], [tectonicLines, data.tectonicOffsets],
       [water, data.waterOffsets], [waterLines, data.waterLineOffsets]] as const) {
@@ -689,25 +735,31 @@ export class SurfaceMap {
       this.applyLodPatch(e.data.patch ?? null);
     };
     const next = { flat: this.makeView(pair.flat), globe: this.makeView(pair.globe) };
-    this.baseFlatTriangles = pair.flat.regions.length / 3;
-    this.baseGlobeTriangles = (pair.globe.regions.length + pair.globe.waterRegions.length) / 3;
+    const flatTriCount = pair.flat.indices ? pair.flat.indices.length / 3 : pair.flat.regions.length / 3;
+    const globeBedTriCount = pair.globe.indices ? pair.globe.indices.length / 3 : pair.globe.regions.length / 3;
+    const globeWaterTriCount = pair.globe.waterIndices ? pair.globe.waterIndices.length / 3 : pair.globe.waterRegions.length / 3;
+    this.baseFlatTriangles = flatTriCount;
+    this.baseGlobeTriangles = globeBedTriCount + globeWaterTriCount;
     this.canvas.dataset.flatTriangles = String(this.baseFlatTriangles);
     this.canvas.dataset.globeBaseTriangles = String(this.baseGlobeTriangles);
     this.canvas.dataset.lodTriangles = '0';
     this.canvas.dataset.lodLevel = '1';
     this.lodTriangles = 0;
     this.lastLodDistance = Infinity;
+    this.lastLodTilt = 0;
     this.lastLodSubdivision = 1;
     this.reliefMetrics = computeReliefMetrics(world.surface, world.terrain.elevation, world.water.bodyIds, world.water.levelMeters);
     this.coastField = computeCoastField(world.surface, world.terrain.elevation, world.water.bodyIds, world.water.depthMeters,
       world.water.levelMeters, world.water.bodyIds, world.water.mainOceanId);
+    this.valleyFactor = computeValleyField(world.surface, world.drainage, world.water.bodyIds, null);
     const seedVec = seedOffsetFromString(world.recipe.seed);
     this.material.uniforms.seedOffset.value.set(seedVec[0], seedVec[1], seedVec[2]);
+    this.material.uniforms.meshFreq.value = meshFrequencyForRegions(world.stats.regionCount);
     this.rivers = null; this.addDrainageLines(next, world);
     // Model longitude increases toward +Z. Reflect the display embedding so east
     // appears on the right in a north-up globe, matching the flat projection.
     next.globe.scale.z = -1;
-    this.releaseViews(); this.views = next;
+    this.releaseViews(); this.views = next; this.compactRing = pair.compactRing ?? null; this.linesExaggerationDirty = false;
     this.scene.add(next.flat, next.globe); this.world = world; this.waterFrame = null; this.temperatureNormals = null; this.windNormals = null; this.climateNormals = null; this.vegetation = null; this.wildFood = null;
     this.traversalCosts = null; this.travelField = null;
     this.moistureFrame = null; this.regionalWater = null; this.globeWater = world.water;
@@ -770,30 +822,52 @@ export class SurfaceMap {
     const frame = isMovement(this.layer) ? this.world.water : this.regionalWater ?? this.waterFrame ?? this.world.water;
     if (frame !== this.globeWater) this.updateWaterSurface(frame);
   }
+  private syncBedDrawRange(): void {
+    if (!this.views || !this.world) return;
+    const bed = (this.views.globe.children[0] as Mesh<BufferGeometry>).geometry;
+    const landCoastCount = bed.userData.landCoastIndexCount as number | undefined;
+    if (landCoastCount === undefined) return;
+    // Skip underwater interior-ocean bed triangles when the globe water surface covers them.
+    const skipUnderwater = this.mode === 'globe' && surfaceLike(this.layer) && this.globeWater === this.world.water;
+    bed.setDrawRange(0, skipUnderwater ? landCoastCount : Infinity);
+  }
   private updateWaterSurface(frame: Water | WaterFrame | RegionalWaterDisplay): void {
     if (!this.world || !this.views) throw new Error('Water display requires a prepared world.');
     const globe = this.views.globe;
-    const bed = (globe.children[0] as Mesh<BufferGeometry>).geometry;
-    const base = bed.userData.base as Float32Array;
-    const regions = bed.getAttribute('region').array as Float32Array;
-    const data = buildWaterSurface(base, regions, frame, this.world.recipe.radiusMeters, {
-      cornerPairs: bed.getAttribute('cornerPair').array as Float32Array, weights: bed.getAttribute('weight').array as Float32Array });
     const water = new BufferGeometry();
-    water.setAttribute('position', new BufferAttribute(data.waterPositions, 3));
-    water.setAttribute('region', new BufferAttribute(data.waterRegions, 1));
-    water.setAttribute('cornerPair', new BufferAttribute(data.waterCornerPairs, 2));
-    water.setAttribute('weight', new BufferAttribute(data.waterWeights, 3));
-    water.userData.base = data.waterPositions.slice(); water.userData.offsets = data.waterOffsets;
     const lines = new BufferGeometry();
-    lines.setAttribute('position', new BufferAttribute(data.waterLines, 3));
-    lines.userData.base = data.waterLines.slice(); lines.userData.offsets = data.waterLineOffsets;
+    if (this.compactRing) {
+      const data = buildIndexedWaterSurface(this.world.surface, this.compactRing, frame);
+      water.setAttribute('position', new BufferAttribute(data.waterPositions, 3));
+      water.setAttribute('region', new BufferAttribute(data.waterRegions, 1));
+      water.setAttribute('cornerPair', new BufferAttribute(data.waterCornerPairs, 2));
+      water.setAttribute('weight', new BufferAttribute(data.waterWeights, 3));
+      water.setIndex(new BufferAttribute(data.waterIndices, 1));
+      water.userData.base = data.waterPositions.slice(); water.userData.offsets = data.waterOffsets;
+      lines.setAttribute('position', new BufferAttribute(data.waterLines, 3));
+      lines.userData.base = data.waterLines.slice(); lines.userData.offsets = data.waterLineOffsets;
+    } else {
+      const bed = (globe.children[0] as Mesh<BufferGeometry>).geometry;
+      const base = bed.userData.base as Float32Array;
+      const regions = bed.getAttribute('region').array as Float32Array;
+      const data = buildWaterSurface(base, regions, frame, this.world.recipe.radiusMeters, {
+        cornerPairs: bed.getAttribute('cornerPair').array as Float32Array, weights: bed.getAttribute('weight').array as Float32Array });
+      water.setAttribute('position', new BufferAttribute(data.waterPositions, 3));
+      water.setAttribute('region', new BufferAttribute(data.waterRegions, 1));
+      water.setAttribute('cornerPair', new BufferAttribute(data.waterCornerPairs, 2));
+      water.setAttribute('weight', new BufferAttribute(data.waterWeights, 3));
+      water.userData.base = data.waterPositions.slice(); water.userData.offsets = data.waterOffsets;
+      lines.setAttribute('position', new BufferAttribute(data.waterLines, 3));
+      lines.userData.base = data.waterLines.slice(); lines.userData.offsets = data.waterLineOffsets;
+    }
     const oldWater = globe.children[3] as Mesh<BufferGeometry>;
     const oldLines = globe.children[4] as LineSegments<BufferGeometry>;
     oldWater.geometry.dispose(); oldLines.geometry.dispose();
     oldWater.geometry = water; oldLines.geometry = lines;
     this.appliedExaggeration = NaN;
-    this.setExaggeration(this.adaptiveExaggeration ? 'auto' : this.exaggeration);
     this.globeWater = frame;
+    this.syncBedDrawRange();
+    this.setExaggeration(this.adaptiveExaggeration ? 'auto' : this.exaggeration);
   }
   setTemperatureNormals(normals: TemperatureNormals | null): void {
     if (normals && (!this.world || normals.annualMeanCelsius.length !== this.world.stats.regionCount)) {
@@ -822,6 +896,7 @@ export class SurfaceMap {
       throw new Error('River normals do not match this world.');
     }
     this.rivers = frame;
+    this.valleyFactor = computeValleyField(this.world.surface, this.world.drainage, this.world.water.bodyIds, frame);
     this.rebuildDrainageLines();
     this.applyTint();
   }
@@ -957,13 +1032,14 @@ export class SurfaceMap {
       : timeDays ? (id) => travelTimeColor(timeDays[id]) : null;
     const hasTint = naturalSurface || color !== null;
     this.material.uniforms.biomeMode.value = hasTint ? 1 : 0;
-    if (hasTint && this.world && this.corners && this.tintTexture && this.cornerTintTexture) {
+    if ((hasTint || surfaceLike(layer)) && this.world && this.corners && this.tintTexture && this.cornerTintTexture) {
       const tint = this.tintValues, out = this.cornerTintValues, surface = this.world.surface;
       const traversalLayer = isMovement(layer) && costs !== null;
       const activeBodyIds = traversalLayer ? this.world.water.bodyIds : this.waterFrame?.bodyIds ?? this.world.water.bodyIds;
       const activeWetMask: ArrayLike<number> = traversalLayer ? this.world.water.bodyIds : this.regionalWater?.wetMask ?? activeBodyIds;
       const wet = (id: number): boolean => traversalLayer ? !isRegionPassable(costs, id, this.travelSeason) : activeWetMask[id] !== 0;
       const count = this.world.stats.regionCount;
+      const valley = this.valleyFactor ?? computeValleyField(surface, this.world.drainage, activeWetMask, this.rivers);
 
       if (naturalSurface) {
         const relief = this.reliefMetrics ?? computeReliefMetrics(surface, this.world.terrain.elevation, activeWetMask, this.world.water.levelMeters);
@@ -979,25 +1055,25 @@ export class SurfaceMap {
         const own = tint.slice(0, count * 4);
         for (let id = 0; id < count; id++) {
           if (wet(id)) continue;
-          let r = 0, g = 0, b = 0, a = 0, n = 0;
+          let r = 0, g = 0, b = 0, n = 0;
           for (let k = surface.neighborOffsets[id]; k < surface.neighborOffsets[id + 1]; k++) {
             const j = surface.neighbors[k];
             if (wet(j)) continue;
-            r += own[j * 4]; g += own[j * 4 + 1]; b += own[j * 4 + 2]; a += own[j * 4 + 3]; n++;
+            r += own[j * 4]; g += own[j * 4 + 1]; b += own[j * 4 + 2]; n++;
           }
           if (n) {
             tint[id * 4] = .72 * own[id * 4] + .28 * r / n;
             tint[id * 4 + 1] = .72 * own[id * 4 + 1] + .28 * g / n;
             tint[id * 4 + 2] = .72 * own[id * 4 + 2] + .28 * b / n;
-            tint[id * 4 + 3] = .72 * own[id * 4 + 3] + .28 * a / n;
           }
+          tint[id * 4 + 3] = valley[id];
         }
       } else if (color) {
         for (let id = 0; id < count; id++) {
           const rgb = color(id);
           for (let c = 0; c < 3; c++) tint[id * 4 + c] = rgb[c] / 255;
           const days = timeDays?.[id] ?? -1;
-          tint[id * 4 + 3] = days < 0 ? -1 : travelTimeCoordinate(days);
+          tint[id * 4 + 3] = timeDays ? (days < 0 ? -1 : travelTimeCoordinate(days)) : valley[id];
         }
         if (layer === 'biome' || layer === 'vegetationState') {
           // Display-only softening: each dry region mixes half of its dry neighbors' mean
@@ -1014,6 +1090,9 @@ export class SurfaceMap {
             if (n) { tint[id * 4] = .5 * own[id * 4] + .5 * r / n; tint[id * 4 + 1] = .5 * own[id * 4 + 1] + .5 * g / n; tint[id * 4 + 2] = .5 * own[id * 4 + 2] + .5 * b / n; }
           }
         }
+      } else {
+        // Relief tint (hypsometric) mode still carries drainage valley factor in tint.a.
+        for (let id = 0; id < count; id++) tint[id * 4 + 3] = valley[id];
       }
 
       // Water regions borrow their dry neighbors' mean so interpolated shores do not darken.
@@ -1107,6 +1186,7 @@ export class SurfaceMap {
     this.controls.enabled = mode === 'flat';
     this.controls.mouseButtons.LEFT = MOUSE.PAN;
     this.planetCamera.setEnabled(mode === 'globe');
+    this.syncBedDrawRange();
     if (mode === 'globe') { this.syncAdaptiveExaggeration(); this.scheduleLodUpdate(true); }
     else this.clearLodPatch();
     this.notifyNavigation(); this.draw();
@@ -1115,6 +1195,7 @@ export class SurfaceMap {
     this.layer = layer;
     this.space.setSurfaceMode(surfaceLike(layer));
     this.syncWaterSurface();
+    this.syncBedDrawRange();
     this.canvas.dataset.activeLayer = layer;
     this.notifyNavigation();
     this.material.uniforms.surfaceMode.value = surfaceLike(layer) ? 1 : 0;
@@ -1187,10 +1268,11 @@ export class SurfaceMap {
     if (surfaceLike(this.layer) && this.detailTexture && this.cornerDetailTexture && this.corners) {
       this.reliefMetrics = computeReliefMetrics(w.surface, w.terrain.elevation, surfaceMask, w.water.levelMeters);
       this.coastField = computeCoastField(w.surface, w.terrain.elevation, surfaceMask, depth, w.water.levelMeters, bodyIds, mainOceanId, surfaceLevels);
+      this.valleyFactor = computeValleyField(w.surface, w.drainage, surfaceMask, this.rivers);
       const count = w.stats.regionCount;
       const dVals = this.detailValues, dOut = this.cornerDetailValues;
       const { phi, strictMask, lakeMask, localWaterLevel } = this.coastField;
-      const rel = this.reliefMetrics.localReliefMeters;
+      const rel = this.reliefMetrics.effectiveReliefMeters;
       for (let id = 0; id < count; id++) {
         dVals[id * 4] = phi[id];
         dVals[id * 4 + 1] = strictMask[id];
@@ -1216,15 +1298,23 @@ export class SurfaceMap {
       if (this.worker && !isMovement(this.layer)) {
         const wetBytes = new Uint8Array(count);
         for (let id = 0; id < count; id++) wetBytes[id] = surfaceMask[id] ? 1 : 0;
+        const phiCopy = phi.slice();
+        const strictCopy = strictMask.slice();
+        const wlCopy = localWaterLevel.slice();
+        const rawRelCopy = this.reliefMetrics.localReliefMeters.slice();
+        const effRelCopy = rel.slice();
+        const valCopy = this.valleyFactor.slice();
         this.worker.postMessage({
           type: 'lod-fields',
           waterLevelMeters: w.water.levelMeters,
           wetMask: wetBytes,
-          phi: phi.slice(),
-          strictMask: strictMask.slice(),
-          localWaterLevel: localWaterLevel.slice(),
-          localReliefMeters: rel.slice(),
-        });
+          phi: phiCopy,
+          strictMask: strictCopy,
+          localWaterLevel: wlCopy,
+          localReliefMeters: rawRelCopy,
+          effectiveReliefMeters: effRelCopy,
+          valleyFactor: valCopy,
+        }, [wetBytes.buffer, phiCopy.buffer, strictCopy.buffer, wlCopy.buffer, rawRelCopy.buffer, effRelCopy.buffer, valCopy.buffer]);
       }
     }
     this.texture.needsUpdate = true; this.draw();
@@ -1306,6 +1396,7 @@ export class SurfaceMap {
       waterLevelMeters: world.water.levelMeters,
       coastField: this.coastField ?? undefined,
       reliefMetrics: this.reliefMetrics ?? undefined,
+      valleyFactor: this.valleyFactor ?? undefined,
       detailEnabled: this.displayDetail,
     });
     const offset = this.rivers ? DRAINAGE_LINE_WIDTHS.length : 0;
@@ -1345,10 +1436,26 @@ export class SurfaceMap {
   }
   setBoundaries(visible: boolean): void {
     this.boundaries = visible;
+    if (visible && this.linesExaggerationDirty && this.views && Number.isFinite(this.appliedExaggeration)) {
+      this.syncBoundaryLineExaggeration(this.appliedExaggeration);
+    }
     if (this.views) for (const group of Object.values(this.views)) {
       group.children[1].visible = visible; group.children[4].visible = visible && surfaceLike(this.layer);
     }
     this.draw();
+  }
+  private syncBoundaryLineExaggeration(applied: number): void {
+    if (!this.views) return;
+    for (const idx of [1, 4]) {
+      const lineObj = this.views.globe.children[idx] as LineSegments<BufferGeometry>;
+      const { base, offsets } = lineObj.geometry.userData as { base?: Float32Array; offsets?: Float32Array };
+      if (!base || !offsets) continue;
+      const attribute = lineObj.geometry.getAttribute('position') as BufferAttribute;
+      displaceDirections(base, offsets, applied, attribute.array as Float32Array);
+      attribute.needsUpdate = true;
+      lineObj.geometry.computeBoundingSphere();
+    }
+    this.linesExaggerationDirty = false;
   }
   setBasinContact(from = -1, to = -1): void {
     this.material.uniforms.spillFrom.value = from; this.material.uniforms.spillTo.value = to;
@@ -1402,18 +1509,26 @@ export class SurfaceMap {
         object.geometry.computeBoundingSphere();
       }
     }
-    if (this.views) for (const object of this.views.globe.children) {
-      if (!(object instanceof Mesh || object instanceof LineSegments)) continue;
-      const geometry = (object as Mesh<BufferGeometry>).geometry;
-      const { base, offsets } = geometry.userData as { base?: Float32Array; offsets?: Float32Array };
-      if (!base || !offsets) continue;
-      const attribute = geometry.getAttribute('position') as BufferAttribute;
-      displaceDirections(base, offsets, applied, attribute.array as Float32Array); attribute.needsUpdate = true;
-      geometry.computeBoundingSphere(); geometry.computeBoundingBox();
+    if (this.views) {
+      const children = this.views.globe.children;
+      for (let idx = 0; idx < children.length; idx++) {
+        const object = children[idx];
+        if (!(object instanceof Mesh || object instanceof LineSegments)) continue;
+        // Skip hidden region boundary lines during zoom; lazily sync if boundaries are toggled on.
+        if ((idx === 1 || idx === 4) && !this.boundaries) { this.linesExaggerationDirty = true; continue; }
+        const geometry = (object as Mesh<BufferGeometry>).geometry;
+        const { base, offsets } = geometry.userData as { base?: Float32Array; offsets?: Float32Array };
+        if (!base || !offsets) continue;
+        const attribute = geometry.getAttribute('position') as BufferAttribute;
+        displaceDirections(base, offsets, applied, attribute.array as Float32Array); attribute.needsUpdate = true;
+        geometry.computeBoundingSphere();
+      }
+      if (this.boundaries) this.linesExaggerationDirty = false;
     }
     const outerRadius = this.world ? Math.max(1, 1 + applied * Math.max(0, this.terrainRange.maximumMeters, waterExtent ?? 0) / this.world.recipe.radiusMeters) : 1;
     const atmosphericReference = this.world?.water.mainOceanId
       ? 1 + applied * this.world.water.levelMeters / this.world.recipe.radiusMeters : 1;
+    this.material.uniforms.waterLevelRadius.value = atmosphericReference;
     this.planetCamera.setRadius(outerRadius); this.space.setRadius(outerRadius, atmosphericReference);
     this.canvas.dataset.exaggeration = String(applied); this.draw(); return applied;
   }
@@ -1427,12 +1542,24 @@ export class SurfaceMap {
     }
     const lat = view.latitude * Math.PI / 180;
     const lon = view.longitude * Math.PI / 180;
-    const focus: [number, number, number] = [Math.cos(lat) * Math.cos(lon), Math.sin(lat), Math.cos(lat) * Math.sin(lon)];
-    const targetSub = view.distance < 0.48 ? 4 : view.distance < 0.98 ? 3 : 2;
+    const headingRad = view.heading * Math.PI / 180;
+    const tiltRad = view.tilt * Math.PI / 180;
+    const cosLat = Math.cos(lat), sinLat = Math.sin(lat), cosLon = Math.cos(lon), sinLon = Math.sin(lon);
+    const focus: [number, number, number] = [cosLat * cosLon, sinLat, cosLat * sinLon];
+    // Model-space local east/north tangent frame matching globe.scale.z = -1 reflection.
+    const mEast: [number, number, number] = [-sinLon, 0, cosLon];
+    const mNorth: [number, number, number] = [-sinLat * cosLon, cosLat, -sinLat * sinLon];
+    const forward: [number, number, number] = [
+      mNorth[0] * Math.cos(headingRad) + mEast[0] * Math.sin(headingRad),
+      mNorth[1] * Math.cos(headingRad) + mEast[1] * Math.sin(headingRad),
+      mNorth[2] * Math.cos(headingRad) + mEast[2] * Math.sin(headingRad),
+    ];
+    const targetSub = view.distance < 0.52 ? 4 : view.distance < 1.05 ? 3 : 2;
     const dotFocus = focus[0] * this.lastLodFocus[0] + focus[1] * this.lastLodFocus[1] + focus[2] * this.lastLodFocus[2];
     const movedAngle = Math.acos(Math.max(-1, Math.min(1, dotFocus)));
     const distRatio = Number.isFinite(this.lastLodDistance) ? Math.abs(view.distance - this.lastLodDistance) / Math.max(0.05, view.distance) : 1;
-    if (!force && this.lodTriangles > 0 && targetSub === this.lastLodSubdivision && movedAngle < 0.08 && distRatio < 0.22) return;
+    const tiltChanged = Math.abs(view.tilt - this.lastLodTilt) > 12;
+    if (!force && this.lodTriangles > 0 && targetSub === this.lastLodSubdivision && movedAngle < 0.06 && distRatio < 0.20 && !tiltChanged) return;
 
     clearTimeout(this.lodTimer);
     this.lodTimer = window.setTimeout(() => {
@@ -1441,6 +1568,7 @@ export class SurfaceMap {
       const reqId = ++this.lodRequestId;
       this.lastLodFocus = focus;
       this.lastLodDistance = view.distance;
+      this.lastLodTilt = view.tilt;
       this.lastLodSubdivision = targetSub;
       const seedVec = seedOffsetFromString(this.world.recipe.seed);
       this.worker.postMessage({
@@ -1448,6 +1576,8 @@ export class SurfaceMap {
         requestId: reqId,
         focus,
         distance: view.distance,
+        tiltRad,
+        forward,
         seedOffset: seedVec,
         detailEnabled: this.displayDetail,
       });
@@ -1547,10 +1677,37 @@ export class SurfaceMap {
         this.canvas.dataset.dayNight = nightBlend.toFixed(3);
         this.lineMaterial.opacity = .45 * (1 - nightBlend * .8);
 
-        // Keep globe lighting direction synchronized with SpaceBackdrop atmosphere.
+        // Keep globe survey sun at an oblique NW angle in the local surface tangent frame
+        // (independent of camera tilt, lowering from ~48° at orbit to ~32° close up so relief pops).
         if (this.mode === 'globe') {
-          this.activeSun.set(-.4, .6, 1).normalize().transformDirection(this.globeCamera.matrixWorld).lerp(this.worldSun, nightBlend).normalize();
-          this.space.updateView(this.camera, distance, nightBlend, this.worldSun);
+          const view = this.planetCamera.view;
+          const zoomT = Math.max(0, Math.min(1, (1.35 - distance) / 1.15));
+          const zoomSmooth = zoomT * zoomT * (3 - 2 * zoomT);
+          this.material.uniforms.viewZoomDetail.value = zoomSmooth;
+          const lat = view.latitude * Math.PI / 180;
+          const worldLon = -view.longitude * Math.PI / 180;
+          const head = view.heading * Math.PI / 180;
+          const cosLat = Math.cos(lat), sinLat = Math.sin(lat);
+          const cosL = Math.cos(worldLon), sinL = Math.sin(worldLon);
+          const fx = cosLat * cosL, fy = sinLat, fz = cosLat * sinL;
+          const ex = sinL, ey = 0, ez = -cosL;
+          const nx = fy * ez - fz * ey, ny = fz * ex - fx * ez, nz = fx * ey - fy * ex;
+          const nLen = Math.hypot(nx, ny, nz) || 1;
+          const nnx = nx / nLen, nny = ny / nLen, nnz = nz / nLen;
+          const ch = Math.cos(head), sh = Math.sin(head);
+          const fwdX = nnx * ch + ex * sh, fwdY = nny * ch + ey * sh, fwdZ = nnz * ch + ez * sh;
+          const rgtX = ex * ch - nnx * sh, rgtY = ey * ch - nny * sh, rgtZ = ez * ch - nnz * sh;
+          // Screen upper-left oblique azimuth, elevation 48° at orbit -> 32° at close-up.
+          const sunElev = (48 - 16 * zoomSmooth) * Math.PI / 180;
+          const sinE = Math.sin(sunElev), cosE = Math.cos(sunElev);
+          const azX = -0.68 * rgtX + 0.73 * fwdX;
+          const azY = -0.68 * rgtY + 0.73 * fwdY;
+          const azZ = -0.68 * rgtZ + 0.73 * fwdZ;
+          this.activeSun.set(fx * sinE + azX * cosE, fy * sinE + azY * cosE, fz * sinE + azZ * cosE).normalize()
+            .lerp(this.worldSun, nightBlend).normalize();
+          this.space.updateView(this.camera, distance, nightBlend, this.worldSun, this.activeSun);
+        } else {
+          this.material.uniforms.viewZoomDetail.value = 0;
         }
 
         // Hide tiny coastal stubs at planet scale on Land and water; fade them in smoothly when zoomed in.
@@ -1587,7 +1744,7 @@ export class SurfaceMap {
     this.tintTexture?.dispose(); this.tintTexture = null; this.cornerTintTexture?.dispose(); this.cornerTintTexture = null;
     this.detailTexture?.dispose(); this.detailTexture = null; this.cornerDetailTexture?.dispose(); this.cornerDetailTexture = null;
     this.lodMaskTexture?.dispose(); this.lodMaskTexture = null;
-    this.corners = null; this.views = null; this.lodTriangles = 0;
+    this.corners = null; this.compactRing = null; this.views = null; this.lodTriangles = 0;
   }
   dispose(): void {
     this.cancelPreparation(); cancelAnimationFrame(this.frame); this.stopDamping(); this.resizeObserver.disconnect();
