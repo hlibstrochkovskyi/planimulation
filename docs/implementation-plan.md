@@ -273,6 +273,8 @@ The third increment, [wild food for foragers](wild-food.md) (`wild-food-1`), tur
 
 The fourth increment, [climate-normal rivers](rivers.md) (`rivers-1`), derives monthly runoff and discharge from the frozen climate normals with Oudin potential evaporation, degree-day snow and an HBV-type soil partition, routes it along C1 drainage, and balances inland terminals by annual evaporation and spill over the lowest saddle path. The atlas and globe show local runoff and distinguish perennial and seasonal channels by mean discharge. On three review worlds runoff is 22–31% of land precipitation and aridity-band means fall within the Fu curve envelope; ocean inflow stays below Earth's mainly because the inherited land precipitation is lower. Endorheic area remains far below Earth's; lake levels and groundwater are outside this increment.
 
+The fifth increment, [foot traversal](traversal.md) (`traversal-1`), gives deterministic foot travel costs, least-time fields and routes on the region graph for local summer and winter, from Tobler slope speeds, neighborhood relief, vegetation, snow, static water barriers and a contributing-area proxy for river crossings (`rivers-1` discharge is available to replace it). Summer crossings of the largest landmass average 24.8–27.2 km/day on the three reference worlds, and a least-time field takes under 4 ms at 40,962 regions. Crossing hazards, a calendar for long journeys and group provisions remain open.
+
 Preserve differences between worlds. Checks detect broken laws rather than requiring every planet to have the same forest area.
 
 ## 8. Adding 3D
