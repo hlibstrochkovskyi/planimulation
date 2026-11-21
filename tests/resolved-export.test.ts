@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { DEFAULT_RECIPE } from '../src/core/recipe';
+import { DEFAULT_RECIPE, MULTISCALE_ERODED_MODEL_VERSION } from '../src/core/recipe';
 import { NativeController } from '../src/native/client';
 import { RESOLVED_WORLD_FORMAT, resolvedWorldJson, writeResolvedWorld } from '../src/native/resolved-export';
 
@@ -60,11 +60,11 @@ test('resolved export remains within its bound at the highest supported resoluti
   const core = new NativeController(executable);
   const folder = await mkdtemp(path.join(os.tmpdir(), 'planimulation-resolved-large-'));
   try {
-    const { epoch } = await core.generate({ ...DEFAULT_RECIPE, subdivision: 6 });
+    const { epoch } = await core.generate({ ...DEFAULT_RECIPE, modelVersion: MULTISCALE_ERODED_MODEL_VERSION, subdivision: 7 });
     core.accept(epoch);
     const destination = path.join(folder, 'large.json');
     await writeResolvedWorld(destination, core.resolvedInitialWorld(epoch));
     const size = (await stat(destination)).size;
-    assert.ok(size > 1_000_000 && size < 256 * 2 ** 20);
+    assert.ok(size > 1_000_000 && size < 256 * 2 ** 20, `${size} bytes`);
   } finally { core.close(); await rm(folder, { recursive: true, force: true }); }
 });
