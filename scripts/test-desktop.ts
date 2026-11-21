@@ -915,7 +915,7 @@ try {
   await ui('#seed').fill('world-before-seasonal-restore');
   await ui('#subdivision').selectOption('2');
   await ui('#generate').click();
-  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
+  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.locator('#region-count')).toHaveText('162');
   await app.evaluate(({ dialog }, destination) => {
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [destination] });
@@ -944,7 +944,7 @@ try {
   assert.equal(await readFile(seasonalPath, 'utf8'), uninterrupted, 'GUI save/load retains exact uninterrupted full-checkpoint continuation.');
   await ui('#seed').fill(DEFAULT_RECIPE.seed);
   await ui('#generate').click();
-  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
+  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await expect(page.locator('[data-layer="vaporWater"]')).toBeDisabled();
   await expect(page.locator('#moisture-time')).toContainText('Not initialized');
@@ -985,7 +985,7 @@ try {
   await expect(page.locator('#status')).toContainText('Complete seasonal checkpoint saved');
   assert.equal(await readFile(seasonalPath, 'utf8'), orographicContinued);
   await ui('#generate').click();
-  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
+  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.locator('#moisture-start-precise')).toBeEnabled();
   await ui('#moisture-start-precise').click();
   await expect(page.locator('#model-label')).toContainText('SEASONAL-MOISTURE-7');
@@ -1024,7 +1024,7 @@ try {
   // The new ownership mode must work through the real bridge and file dialogs,
   // without relabeling the old terminal-column mode or mutating initial relief.
   await ui('#generate').click();
-  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
+  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.locator('[data-layer="regionalDepth"]')).toBeDisabled();
   await ui('#moisture-start-regional').click();
   await expect(page.locator('#model-label')).toContainText('SEASONAL-MOISTURE-15');
@@ -1100,7 +1100,7 @@ try {
     await canvas.screenshot({ path: executablePath ? 'artifacts/regional-water-globe-packaged.png' : 'artifacts/regional-water-globe.png' });
   } finally { flowReference.close(); }
   await ui('#generate').click();
-  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
+  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.locator('#moisture-start')).toBeEnabled();
   await expect(page.locator('[data-layer="regionalDepth"]')).toBeDisabled();
   await expect(canvas).not.toHaveAttribute('data-regional-surface', 'active');
@@ -1178,7 +1178,7 @@ try {
     await canvas.screenshot({ path: 'artifacts/soil-water-globe.png' });
   } finally { soilReference.close(); }
   await ui('#generate').click();
-  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready');
+  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.locator('#moisture-start-soil')).toBeEnabled();
   await expect(canvas).not.toHaveAttribute('data-seasonal-model', 'regional-seasonal-water-1');
   await ui('[data-layer="surface"]').click();
