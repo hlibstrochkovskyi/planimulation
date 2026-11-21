@@ -3,6 +3,7 @@ use planimulation_core::{
     climate_normals::Normals as ClimateNormals,
     exact_initial_accounting::exact_units,
     prescribed_water_inventory::{Checkpoint, PrescribedWaterInventory},
+    rivers::Rivers,
     seasonal_moisture::{
         Checkpoint as MoistureCheckpoint, Model as MoistureModel, State as MoistureState,
     },
@@ -38,6 +39,7 @@ enum Command {
     SeasonalTemperature,
     SeasonalWind,
     ClimateNormals,
+    Rivers,
     InitializeVegetation,
     AdvanceVegetation {
         years: u32,
@@ -125,6 +127,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut vegetation_series: Option<(usize, u32, Vec<RegionYear>)> = None;
     // Climate normals of the current world, shared by the biome layers and vegetation.
     let mut climate: Option<ClimateNormals> = None;
+    let mut rivers: Option<Rivers> = None;
     loop {
         let mut line = Vec::new();
         let count = input
@@ -157,6 +160,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     vegetation = None;
                     food = None;
                     vegetation_series = None;
+                    rivers = None;
                     climate = None;
                 }
                 Command::Advance { steps } => {
@@ -179,6 +183,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .as_ref()
                         .expect("climate normals were just computed");
                     wire::climate_normals(&mut output, normals).map_err(|e| e.to_string())?;
+                }
+                Command::Rivers => {
+                    let w = world.as_ref().ok_or("Generate a world first.")?;
+                    if rivers.is_none() {
+                        if climate.is_none() {
+                            climate = Some(ClimateNormals::from_world(w)?);
+                        }
+                        rivers = Some(Rivers::from_world(w, climate.as_ref().unwrap())?);
+                    }
+                    wire::rivers(&mut output, rivers.as_ref().unwrap())
+                        .map_err(|e| e.to_string())?;
                 }
                 Command::InitializeVegetation => {
                     let w = world.as_ref().ok_or("Generate a world first.")?;

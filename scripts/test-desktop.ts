@@ -116,7 +116,7 @@ try {
   }, { ...DEFAULT_RECIPE });
   assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'advanceVegetation', 'cancelGeneration', 'climateNormals', 'copyText', 'exportView', 'forage', 'generate', 'initializeOrographicMoisture', 'initializePreciseMoisture', 'initializeRegionalMoisture', 'initializeSoilMoisture', 'initializeVegetation', 'inspectWaterBudget', 'openRecipe', 'openSeasonalCheckpoint', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveSeasonalCheckpoint', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalSoilMoisture', 'seasonalTemperature', 'seasonalWind', 'vegetationSeries', 'wildFood', 'wildFoodSeries']);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'advanceVegetation', 'cancelGeneration', 'climateNormals', 'copyText', 'exportView', 'forage', 'generate', 'initializeOrographicMoisture', 'initializePreciseMoisture', 'initializeRegionalMoisture', 'initializeSoilMoisture', 'initializeVegetation', 'inspectWaterBudget', 'openRecipe', 'openSeasonalCheckpoint', 'openWaterCheckpoint', 'prescribeWater', 'rivers', 'saveRecipe', 'saveResolvedWorld', 'saveSeasonalCheckpoint', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalSoilMoisture', 'seasonalTemperature', 'seasonalWind', 'vegetationSeries', 'wildFood', 'wildFoodSeries']);
   await expect(page.locator('[data-layer="temperature"]')).toBeEnabled();
   await expect(page.locator('#temperature-month')).toBeEnabled();
   await ui('[data-layer="temperature"]').click();
@@ -148,6 +148,19 @@ try {
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await ui('#temperature-month').selectOption('9');
   await expect(page.locator('#map')).toHaveAttribute('data-climate-month', '9');
+  await expect(page.locator('[data-layer="annualRunoff"]')).toBeEnabled();
+  await expect(page.locator('[data-layer="riverDischarge"]')).toBeEnabled();
+  await ui('[data-layer="annualRunoff"]').click();
+  await expect(page.locator('#legend-title')).toContainText('Runoff generated locally');
+  await expect(page.locator('#legend-high')).toHaveText('≥2,000 mm/year');
+  await ui('[data-layer="riverDischarge"]').click();
+  await expect(page.locator('#legend-title')).toContainText('log scale');
+  await expect(page.locator('#legend-high')).toHaveText('≥30,000 m³/s');
+  await expect(page.locator('#map')).toHaveAttribute('data-river-line-mode', 'discharge');
+  await expect(page.locator('#rivers-summary')).toContainText('of land runoff reaches the ocean');
+  await expect(page.locator('#selection-details')).toContainText('Minimum monthly discharge');
+  await expect(page.locator('#selection-details')).toContainText('Downstream terminal');
+  await expect(page.locator('#fingerprint')).toHaveText(fingerprint);
   await expect(page.locator('[data-layer="vegetationState"]')).toBeEnabled();
   await ui('#vegetation-10').click();
   await expect(page.locator('#vegetation-time')).toHaveText('Year 10', { timeout: 30_000 });
