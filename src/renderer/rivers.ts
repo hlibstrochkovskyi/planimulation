@@ -4,7 +4,7 @@ import type { Rivers } from '../core/rivers';
 import { angularDistance, cross, midpoint, normalize, readVector } from '../core/vector';
 import type { Vec3 } from '../core/vector';
 import { projectArc } from './projection';
-import { sampleCoastPhi, sampleDetailHeightMeters, seedOffsetFromString } from './refinement';
+import { meshFrequencyForRegions, sampleCoastPhi, sampleDetailHeightMeters, seedOffsetFromString } from './refinement';
 import type { CoastField } from './refinement';
 import type { ReliefMetrics } from './natural-color';
 
@@ -54,6 +54,7 @@ export interface RiverDisplayOptions {
   waterLevelMeters?: number;
   coastField?: CoastField;
   reliefMetrics?: ReliefMetrics;
+  valleyFactor?: Float32Array;
   detailEnabled?: boolean;
 }
 
@@ -108,7 +109,9 @@ export function buildDrainageLines(
   const seedOffset = seedOffsetFromString(seedStr);
   const coastField = options.coastField;
   const reliefMetrics = options.reliefMetrics;
+  const valleyFactor = options.valleyFactor;
   const waterLevel = options.waterLevelMeters ?? 0;
+  const meshFreq = meshFrequencyForRegions(n);
 
   // Identify main stem donor and donor counts for smooth confluences and node jitter bounds.
   const mainDonor = new Int32Array(n).fill(-1);
@@ -203,6 +206,7 @@ export function buildDrainageLines(
         rugI * (1 - t) + rugR * t,
         seedOffset,
         detailEnabled,
+        meshFreq,
       );
       if (phiVal > 0) lo = t; else hi = t;
     }
@@ -266,8 +270,10 @@ export function buildDrainageLines(
     const freq1 = 1.9 + 0.35 * edgeHash(seedInt, i, r, 97);
     const freq2 = 3.2 + 0.75 * edgeHash(seedInt, i, r, 131);
 
-    const relI = reliefMetrics?.localReliefMeters[i] ?? 0;
-    const relR = entersWater ? 0 : (reliefMetrics?.localReliefMeters[r] ?? 0);
+    const relI = reliefMetrics?.effectiveReliefMeters[i] ?? reliefMetrics?.localReliefMeters[i] ?? 0;
+    const relR = entersWater ? 0 : (reliefMetrics?.effectiveReliefMeters[r] ?? reliefMetrics?.localReliefMeters[r] ?? 0);
+    const valI = valleyFactor ? valleyFactor[i] : 0;
+    const valR = entersWater ? 0 : (valleyFactor ? valleyFactor[r] : 0);
     const phiI = coastField ? coastField.phi[i] : 1;
     const phiR = coastField ? (entersWater ? 0 : coastField.phi[r]) : 1;
 
@@ -303,12 +309,13 @@ export function buildDrainageLines(
       }
       points.push(p);
 
-      // Follow the exact refined terrain elevation on the globe (smooth base + fractal detail).
+      // Follow the exact refined terrain elevation on the globe (smooth base + valley-carved fractal detail).
       const hBase = ha + (hb - ha) * t;
       const wl = localWlI + (localWlR - localWlI) * t;
       const relInterp = relI + (relR - relI) * t;
+      const valInterp = valI + (valR - valI) * t;
       const phiInterp = Math.max(0, phiI + (phiR - phiI) * t);
-      const detailM = sampleDetailHeightMeters(p[0], p[1], p[2], relInterp, phiInterp, seedOffset, detailEnabled);
+      const detailM = sampleDetailHeightMeters(p[0], p[1], p[2], relInterp, phiInterp, seedOffset, detailEnabled, valInterp, meshFreq);
       heights.push(Math.max(wl, hBase + detailM));
     }
 

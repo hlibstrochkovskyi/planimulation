@@ -10,8 +10,10 @@ export type SurfaceStyle = 'natural' | 'hypsometric';
 type Rgb = readonly [number, number, number];
 
 export interface ReliefMetrics {
-  /** Maximum elevation difference to any neighbor on dry land (meters); 0 on water. */
+  /** Maximum/RMS elevation difference to neighbors on dry land (meters); 0 on water. */
   localReliefMeters: Float32Array;
+  /** Resolution-normalized relief (meters at 105 km scale) so subdivision 7 reads as crisp as subdivision 6. */
+  effectiveReliefMeters: Float32Array;
   /** Dimensionless ruggedness in [0, 1] scaled for display rock/detail blending. */
   ruggedness: Float32Array;
   /** Dimensionless raw slope magnitude (rise / run) for steep-rock exposure. */
@@ -56,13 +58,13 @@ const COLOR_SAVANNA_MOIST: Rgb = [0.415, 0.485, 0.285];
 const COLOR_GRASS_DRY: Rgb = [0.505, 0.525, 0.365];
 const COLOR_GRASS_MOIST: Rgb = [0.375, 0.455, 0.295];
 
-const COLOR_BOREAL_FOREST: Rgb = [0.155, 0.235, 0.19];
-const COLOR_TEMPERATE_FOREST: Rgb = [0.175, 0.275, 0.165];
-const COLOR_TROPICAL_SEASONAL: Rgb = [0.195, 0.295, 0.155];
-const COLOR_TROPICAL_RAINFOREST: Rgb = [0.125, 0.235, 0.135];
+const COLOR_BOREAL_FOREST: Rgb = [0.178, 0.268, 0.212];
+const COLOR_TEMPERATE_FOREST: Rgb = [0.198, 0.308, 0.185];
+const COLOR_TROPICAL_SEASONAL: Rgb = [0.218, 0.322, 0.172];
+const COLOR_TROPICAL_RAINFOREST: Rgb = [0.148, 0.268, 0.155];
 
-const COLOR_ROCK_WARM: Rgb = [0.495, 0.455, 0.405];
-const COLOR_ROCK_ALPINE: Rgb = [0.43, 0.425, 0.42];
+const COLOR_ROCK_WARM: Rgb = [0.515, 0.472, 0.418];
+const COLOR_ROCK_ALPINE: Rgb = [0.455, 0.448, 0.442];
 
 /** Deterministic subtle per-region variation in [-1, 1] without consuming model RNG. */
 function hashRegion(id: number, salt: number): number {
@@ -85,6 +87,7 @@ export function computeReliefMetrics(
 ): ReliefMetrics {
   const n = elevation.length;
   const localReliefMeters = new Float32Array(n);
+  const effectiveReliefMeters = new Float32Array(n);
   const ruggedness = new Float32Array(n);
   const slope = new Float32Array(n);
   for (let i = 0; i < n; i++) {
@@ -93,6 +96,7 @@ export function computeReliefMetrics(
     let maxDiff = 0;
     let maxSlope = 0;
     let sumSq = 0;
+    let slopeSq = 0;
     let count = 0;
     for (let k = surface.neighborOffsets[i]; k < surface.neighborOffsets[i + 1]; k++) {
       const j = surface.neighbors[k];
@@ -103,18 +107,25 @@ export function computeReliefMetrics(
       if (dist > 1) {
         const s = diff / dist;
         if (s > maxSlope) maxSlope = s;
+        slopeSq += s * s;
       }
       sumSq += diff * diff;
       count++;
     }
     const rms = count > 0 ? Math.sqrt(sumSq / count) : 0;
+    const rmsSlope = count > 0 ? Math.sqrt(slopeSq / count) : 0;
     // Blend RMS and max difference so ridges and escarpments both carry crisp detail.
     const relief = 0.55 * rms + 0.45 * maxDiff;
+    // Normalize by physical slope at a 105 km reference span so subdivision 7 (56 km)
+    // retains full ruggedness on eroded valleys, foothills and alpine belts.
+    const slopeRelief = (0.55 * rmsSlope + 0.45 * maxSlope) * 105_000;
+    const effective = Math.max(relief, slopeRelief);
     localReliefMeters[i] = relief;
+    effectiveReliefMeters[i] = effective;
     slope[i] = maxSlope;
-    ruggedness[i] = smoothstep(80, 1400, relief);
+    ruggedness[i] = smoothstep(95, 1150, effective);
   }
-  return { localReliefMeters, ruggedness, slope };
+  return { localReliefMeters, effectiveReliefMeters, ruggedness, slope };
 }
 
 /**
@@ -164,7 +175,7 @@ export function computeNaturalSurface(
     }
 
     const elevAboveSea = Math.max(0, elevation[id] - seaLevel);
-    const localRelief = relief.localReliefMeters[id];
+    const localRelief = relief.effectiveReliefMeters[id];
     const localSlope = relief.slope[id];
     const absLat = Math.abs(Math.asin(clamp(centers[id * 3 + 1], -1, 1)));
     const variation = hashRegion(id, 17);

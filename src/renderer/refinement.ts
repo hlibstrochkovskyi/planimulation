@@ -1,16 +1,19 @@
 import type { Surface } from '../core/surface';
+import type { Drainage } from '../core/drainage';
+import type { Rivers } from '../core/rivers';
 import type { Vec3 } from '../core/vector';
 
-export const MAX_LOD_TRIANGLES = 110_000;
+export const MAX_LOD_TRIANGLES = 120_000;
+const DEFAULT_MESH_FREQ = 53.1;
 
 export interface CoastField {
-  /** Per-region compressed signed height relative to local water surface (<0 wet, >0 dry). */
+  /** Per-region symmetric, corner-rounded signed coastline field (<0 wet, >0 dry, in [-1, 1]). */
   phi: Float32Array;
   /** Per-region strict wet/dry sign (-1 wet, +1 dry). */
   strictMask: Float32Array;
   /** Per-region local water surface elevation in meters (sea level or adjacent lake level). */
   localWaterLevel: Float32Array;
-  /** Per-region lake marker: 0 = land, 0 = ocean (waterKind 1), 1 = inland lake (waterKind 2). */
+  /** Per-region lake marker: 0 = land or ocean, 1 = inland lake. */
   lakeMask: Float32Array;
 }
 
@@ -31,6 +34,14 @@ const smoothstep = (e0: number, e1: number, x: number): number => {
   return t * t * (3 - 2 * t);
 };
 const fract = (x: number): number => x - Math.floor(x);
+
+/**
+ * Inverse nominal cell spacing on the unit sphere (radians^-1) for resolution-adaptive
+ * coastline and fractal detail frequencies (~53 at subd 6, ~106 at subd 7).
+ */
+export function meshFrequencyForRegions(regionCount: number): number {
+  return Math.sqrt(Math.max(12, regionCount)) / 3.81;
+}
 
 /**
  * Deterministic 3D domain offset derived from the world seed string.
@@ -86,24 +97,45 @@ export function vnoise3(x: number, y: number, z: number): number {
   return nxy0 + (nxy1 - nxy0) * uz;
 }
 
-/** Four-octave domain-warped coastline perturbation in [-1, 1] evaluated on the 3D unit sphere. */
-export function sampleCoastNoise(x: number, y: number, z: number, seedOffset: Vec3): number {
+/**
+ * Orthonormal 3D rotation applied between fractal octaves so cubic lattice axes
+ * never align across octaves (eliminates horizontal/vertical grid creases on ridges).
+ */
+function rot3x(_x: number, y: number, z: number): number { return 0.80 * y + 0.60 * z; }
+function rot3y(x: number, y: number, z: number): number { return -0.80 * x + 0.36 * y - 0.48 * z; }
+function rot3z(x: number, y: number, z: number): number { return -0.60 * x - 0.48 * y + 0.64 * z; }
+
+/**
+ * Four-octave domain-warped coastline perturbation in [-1, 1] evaluated on the 3D unit sphere.
+ * Frequencies scale with `meshFreq` so hex edges break into natural bays and headlands at every subdivision.
+ */
+export function sampleCoastNoise(
+  x: number,
+  y: number,
+  z: number,
+  seedOffset: Vec3,
+  meshFreq = DEFAULT_MESH_FREQ,
+): number {
   const ox = seedOffset[0], oy = seedOffset[1], oz = seedOffset[2];
-  // Gentle 3D domain warp breaks regular blob symmetry into organic bays and headlands.
-  const wx = (vnoise3(x * 34.0 + ox + 3.1, y * 34.0 + oy - 7.4, z * 34.0 + oz + 11.2) * 2 - 1) * 0.011;
-  const wy = (vnoise3(x * 34.0 + ox - 9.7, y * 34.0 + oy + 5.3, z * 34.0 + oz - 4.8) * 2 - 1) * 0.011;
-  const wz = (vnoise3(x * 34.0 + ox + 6.5, y * 34.0 + oy + 12.1, z * 34.0 + oz + 2.9) * 2 - 1) * 0.011;
-  const px = x + wx, py = y + wy, pz = z + wz;
+  const mf = Math.max(18, meshFreq);
+  const wf = mf * 1.15;
+  const wa = 0.28 / mf;
+  const wx = (vnoise3(x * wf + ox + 3.1, y * wf + oy - 7.4, z * wf + oz + 11.2) * 2 - 1) * wa;
+  const wy = (vnoise3(x * wf + ox - 9.7, y * wf + oy + 5.3, z * wf + oz - 4.8) * 2 - 1) * wa;
+  const wz = (vnoise3(x * wf + ox + 6.5, y * wf + oy + 12.1, z * wf + oz + 2.9) * 2 - 1) * wa;
+  let px = x + wx, py = y + wy, pz = z + wz;
   let sum = 0;
-  let amp = 0.54;
-  let freq = 48.0;
+  let amp = 0.56;
+  let freq = mf * 1.45;
   let norm = 0;
   for (let o = 0; o < 4; o++) {
     const n = vnoise3(px * freq + ox + o * 13.7, py * freq + oy + o * 7.3, pz * freq + oz + o * 19.1) * 2 - 1;
     sum += n * amp;
     norm += amp;
-    freq *= 2.12;
-    amp *= 0.52;
+    const nx = rot3x(px, py, pz), ny = rot3y(px, py, pz), nz = rot3z(px, py, pz);
+    px = nx; py = ny; pz = nz;
+    freq *= 2.06;
+    amp *= 0.50;
   }
   return sum / norm;
 }
@@ -123,20 +155,22 @@ export function sampleCoastPhi(
   ruggedness: number,
   seedOffset: Vec3,
   detailEnabled: boolean,
+  meshFreq = DEFAULT_MESH_FREQ,
 ): number {
   if (!detailEnabled) return phiBase;
-  const coastBand = smoothstep(0.02, 0.32, 1.0 - Math.abs(mStrict));
-  const centerGuard = 1.0 - smoothstep(0.72, 0.94, wCenter);
+  const coastBand = smoothstep(0.01, 0.28, 1.0 - Math.abs(mStrict));
+  const centerGuard = 1.0 - smoothstep(0.68, 0.93, wCenter);
   const coastMask = coastBand * centerGuard;
   if (coastMask <= 1e-5) return phiBase;
-  const coastAmp = (0.28 + 0.18 * clamp(ruggedness, 0, 1)) * coastMask;
-  return phiBase + coastAmp * sampleCoastNoise(x, y, z, seedOffset);
+  const coastAmp = (0.38 + 0.16 * clamp(ruggedness, 0, 1)) * coastMask;
+  return phiBase + coastAmp * sampleCoastNoise(x, y, z, seedOffset, meshFreq);
 }
 
 /**
  * Bounded deterministic fractal terrain detail (in meters) for globe LOD vertices
- * and river height draping. Scaled by local relief: crisp in mountains, almost zero
- * on plains, strictly zero on water and smoothly tapered to zero at coastlines.
+ * and river height draping. Scaled by local relief and shaped by model drainage:
+ * crisp ridges on mountain divides, lowered concave valley floors along rivers,
+ * near-flat on plains, strictly zero on water and smoothly tapered at coastlines.
  */
 export function sampleDetailHeightMeters(
   x: number,
@@ -146,38 +180,53 @@ export function sampleDetailHeightMeters(
   phiDetail: number,
   seedOffset: Vec3,
   detailEnabled: boolean,
+  valleyFactor = 0,
+  meshFreq = DEFAULT_MESH_FREQ,
 ): number {
   if (!detailEnabled || phiDetail <= 0 || localReliefMeters <= 10) return 0;
-  const coastTaper = smoothstep(0.0, 0.26, phiDetail);
+  const coastTaper = smoothstep(0.0, 0.30, phiDetail);
   if (coastTaper <= 1e-5) return 0;
-  const reliefAmp = Math.min(540, localReliefMeters * 0.32) * coastTaper;
+  const reliefAmp = Math.min(540, localReliefMeters * 0.36) * coastTaper;
   const ox = seedOffset[0] + 17.3, oy = seedOffset[1] - 23.1, oz = seedOffset[2] + 9.7;
   let fbm = 0;
   let ridge = 0;
   let amp = 0.54;
-  let freq = 44.0;
+  let freq = Math.max(44, meshFreq * 0.92);
   let norm = 0;
   let ridgeWeight = 1.0;
+  let px = x, py = y, pz = z;
   for (let o = 0; o < 4; o++) {
-    const raw = vnoise3(x * freq + ox + o * 11.3, y * freq + oy + o * 17.9, z * freq + oz + o * 5.7);
+    const raw = vnoise3(px * freq + ox + o * 11.3, py * freq + oy + o * 17.9, pz * freq + oz + o * 5.7);
     const signed = raw * 2 - 1;
-    let r = 1.0 - Math.sqrt(signed * signed + 0.008);
+    let r = 1.0 - Math.sqrt(signed * signed + 0.022);
     r = r * r * ridgeWeight;
     ridgeWeight = clamp(r * 1.45, 0.25, 1.0);
     fbm += signed * amp;
     ridge += (r * 2 - 0.85) * amp;
     norm += amp;
-    freq *= 2.08;
-    amp *= 0.50;
+    const nx = rot3x(px, py, pz), ny = rot3y(px, py, pz), nz = rot3z(px, py, pz);
+    px = nx; py = ny; pz = nz;
+    freq *= 2.04;
+    amp *= 0.45;
   }
-  const rugged = smoothstep(120, 1050, localReliefMeters);
-  const combined = ((1 - rugged * 0.62) * fbm + rugged * 0.62 * ridge) / norm;
-  return combined * reliefAmp;
+  const v = clamp(valleyFactor, 0, 1);
+  const rugged = smoothstep(100, 1050, localReliefMeters);
+  const ridgeMix = rugged * 0.72 * (1 - 0.65 * v);
+  let combined = ((1 - ridgeMix) * fbm + ridgeMix * ridge) / norm;
+  // Attenuate positive ridges and carve concave valley floor along model drainage channels
+  // so rivers lie in the lowest local detail while divides carry sharp peaks.
+  if (v > 1e-4) {
+    if (combined > 0) combined *= 1 - 0.85 * v;
+    combined -= 0.42 * v;
+  }
+  return clamp(combined * reliefAmp, -540, 540);
 }
 
 /**
- * Compute per-region signed elevation relative to local water surface (`phi`)
- * and strict wet/dry mask (`-1` wet, `+1` dry) for smooth zero-contour coastlines.
+ * Compute per-region symmetric, corner-rounded signed coastline field (`phi` in [-1, 1])
+ * and strict wet/dry mask (`-1` wet, `+1` dry). Two relaxation passes with symmetric
+ * sign floors (±0.55) eliminate hex-grid sawtooth along straight coasts and 1-cell
+ * peninsulas while keeping every single-cell island centered and smooth.
  */
 export function computeCoastField(
   surface: Surface,
@@ -190,23 +239,43 @@ export function computeCoastField(
   surfaceLevelsMeters?: ArrayLike<number>,
 ): CoastField {
   const n = elevation.length;
-  const phi = new Float32Array(n);
   const strictMask = new Float32Array(n);
   const localWaterLevel = new Float32Array(n);
   const lakeMask = new Float32Array(n);
 
+  let cur = new Float32Array(n);
+  let next = new Float32Array(n);
   for (let id = 0; id < n; id++) {
     if (wetMask[id]) {
       const level = surfaceLevelsMeters ? surfaceLevelsMeters[id] : elevation[id] + depthMeters[id];
       localWaterLevel[id] = Number.isFinite(level) ? level : waterLevelMeters;
-      const d = Math.max(depthMeters[id] ?? 0, 12);
-      phi[id] = -Math.asinh(d / 160);
       strictMask[id] = -1;
+      cur[id] = -1;
       lakeMask[id] = mainOceanId > 0 && bodyIds[id] === mainOceanId ? 0 : 1;
     } else {
       strictMask[id] = 1;
+      cur[id] = 1;
       lakeMask[id] = 0;
     }
+  }
+
+  // Two symmetric neighbor relaxation passes round hex corners without depth/elevation bias.
+  for (let pass = 0; pass < 2; pass++) {
+    for (let id = 0; id < n; id++) {
+      const start = surface.neighborOffsets[id], end = surface.neighborOffsets[id + 1];
+      let sum = 0;
+      for (let k = start; k < end; k++) sum += cur[surface.neighbors[k]];
+      next[id] = 0.5 * cur[id] + 0.5 * (sum / Math.max(1, end - start));
+    }
+    const tmp = cur; cur = next; next = tmp;
+  }
+
+  // Enforce symmetric sign floor (±0.55) so 1-region peninsulas stay connected with zero
+  // sawtooth and 1-region islands place their zero-contour near mid-cell for full noise room.
+  const phi = new Float32Array(n);
+  for (let id = 0; id < n; id++) {
+    const s = strictMask[id];
+    phi[id] = s * Math.max(0.55, s * cur[id]);
   }
 
   for (let id = 0; id < n; id++) {
@@ -220,18 +289,42 @@ export function computeCoastField(
         wetNeighbors++;
       }
     }
-    const refLevel = wetNeighbors > 0 ? levelSum / wetNeighbors : waterLevelMeters;
-    localWaterLevel[id] = refLevel;
-    const h = Math.max(elevation[id] - refLevel, 12);
-    phi[id] = Math.asinh(h / 160);
+    localWaterLevel[id] = wetNeighbors > 0 ? levelSum / wetNeighbors : waterLevelMeters;
   }
 
   return { phi, strictMask, localWaterLevel, lakeMask };
 }
 
 /**
- * Shared GLSL noise, coastline zero-contour, natural water palette, and soft
- * relief lighting helpers injected into the SurfaceMap fragment shader.
+ * Compute per-region display drainage-valley factor in [0, 1] from model contributing area
+ * and river discharge. Interfluves / divides stay 0; major river trunks reach 1 so decorative
+ * detail carves valleys along model drainage and places rivers in the lowest local elevation.
+ */
+export function computeValleyField(
+  surface: Surface,
+  drainage: Drainage,
+  wetMask: ArrayLike<number>,
+  rivers?: Rivers | null,
+): Float32Array {
+  const n = surface.areasSquareMeters.length;
+  const valley = new Float32Array(n);
+  for (let id = 0; id < n; id++) {
+    if (wetMask[id]) continue;
+    const area = Math.max(1, surface.areasSquareMeters[id]);
+    const cells = Math.max(1, drainage.contributingArea[id] / area);
+    let v = smoothstep(0.35, 3.6, Math.log(cells));
+    if (rivers && rivers.meanDischarge[id] > 50) {
+      const qv = smoothstep(Math.log(60), Math.log(6000), Math.log(rivers.meanDischarge[id]));
+      if (qv > v) v = qv;
+    }
+    valley[id] = v;
+  }
+  return valley;
+}
+
+/**
+ * Shared GLSL noise, resolution-adaptive coastline zero-contour, drainage-shaped
+ * analytical fractal micro-relief, and natural bathymetric water helpers.
  */
 export const REFINEMENT_GLSL = `
 float hash3(vec3 p) {
@@ -290,109 +383,112 @@ vec4 vnoise3Grad(vec3 p) {
   return vec4(val, grad);
 }
 
-float sampleCoastNoise(vec3 p, vec3 seedOff, float fineWeight) {
+// Orthonormal 3D rotation (column-major, matching TS rot3x/rot3y/rot3z) applied between octaves.
+const mat3 OCT_ROT = mat3(
+   0.00, -0.80, -0.60,
+   0.80,  0.36, -0.48,
+   0.60, -0.48,  0.64
+);
+const mat3 OCT_ROT_T = mat3(
+   0.00,  0.80,  0.60,
+  -0.80,  0.36, -0.48,
+  -0.60, -0.48,  0.64
+);
+
+float sampleCoastNoise(vec3 p, vec3 seedOff, float meshFreq, float pixelArc) {
+  float mf = max(18.0, meshFreq);
+  float wf = mf * 1.15;
+  float wa = 0.28 / mf;
   vec3 warp = vec3(
-    vnoise3(p * 34.0 + seedOff + vec3(3.1, -7.4, 11.2)) * 2.0 - 1.0,
-    vnoise3(p * 34.0 + seedOff + vec3(-9.7, 5.3, -4.8)) * 2.0 - 1.0,
-    vnoise3(p * 34.0 + seedOff + vec3(6.5, 12.1, 2.9)) * 2.0 - 1.0
-  ) * 0.011;
+    vnoise3(p * wf + seedOff + vec3(3.1, -7.4, 11.2)) * 2.0 - 1.0,
+    vnoise3(p * wf + seedOff + vec3(-9.7, 5.3, -4.8)) * 2.0 - 1.0,
+    vnoise3(p * wf + seedOff + vec3(6.5, 12.1, 2.9)) * 2.0 - 1.0
+  ) * wa;
   vec3 q = p + warp;
   float sum = 0.0;
-  float amp = 0.54;
-  float freq = 48.0;
+  float amp = 0.56;
+  float freq = mf * 1.45;
   float norm = 0.0;
-  for (int o = 0; o < 4; o++) {
+  for (int o = 0; o < 6; o++) {
+    float nyq = 1.0 - smoothstep(0.35, 0.95, pixelArc * freq);
+    if (o >= 4 && nyq < 0.01) break;
     float fo = float(o);
     float n = vnoise3(q * freq + seedOff + vec3(fo * 13.7, fo * 7.3, fo * 19.1)) * 2.0 - 1.0;
-    sum += n * amp;
-    norm += amp;
-    freq *= 2.12;
-    amp *= 0.52;
-  }
-  if (fineWeight > 0.01) {
-    float n4 = vnoise3(q * freq + seedOff + vec3(54.8, 29.2, 76.4)) * 2.0 - 1.0;
-    sum += n4 * amp * fineWeight;
-    norm += amp * fineWeight;
-    freq *= 2.10;
+    float w = amp * max(o < 2 ? 0.25 : 0.0, nyq);
+    sum += n * w;
+    norm += w;
+    q = OCT_ROT * q;
+    freq *= 2.06;
     amp *= 0.50;
-    float n5 = vnoise3(q * freq + seedOff + vec3(68.5, 36.5, 95.5)) * 2.0 - 1.0;
-    sum += n5 * amp * fineWeight * 0.72;
-    norm += amp * fineWeight * 0.72;
   }
-  return sum / norm;
+  return sum / max(norm, 0.001);
 }
 
-// Returns vec4(value, d/dx, d/dy, d/dz) of ridged + fBm terrain detail in one pass.
-vec4 sampleDetailGrad(vec3 p, vec3 seedOff, float rugged, float fineWeight) {
+// Band-limited, octave-rotated analytical ridged + fBm terrain detail.
+// Each octave rotates by OCT_ROT (removing grid creases), transforms gradients back via
+// transpose(rot), decays slope energy cleanly (0.43 * 2.04 = 0.88/octave), and fades
+// before Nyquist so orbit stays silky smooth while close-ups show crisp ridges & spurs.
+vec4 sampleDetailGrad(vec3 p, vec3 seedOff, float rugged, float valley, float meshFreq, float pixelArc) {
   vec3 off = seedOff + vec3(17.3, -23.1, 9.7);
   float fbm = 0.0;
   vec3 fbmGrad = vec3(0.0);
   float ridge = 0.0;
   vec3 ridgeGrad = vec3(0.0);
-  float amp = 0.54;
-  float freq = 44.0;
+  float amp = 0.56;
+  float gAmp = 0.56;
+  float freq = max(44.0, meshFreq * 0.88);
   float norm = 0.0;
+  float gNorm = 0.0;
   float rw = 1.0;
-  for (int o = 0; o < 4; o++) {
+  vec3 q = p;
+  mat3 rotT = mat3(1.0);
+  for (int o = 0; o < 7; o++) {
+    float nyq = 1.0 - smoothstep(0.30, 0.88, pixelArc * freq);
+    if (o >= 3 && nyq < 0.01) break;
     float fo = float(o);
-    vec4 ng = vnoise3Grad(p * freq + off + vec3(fo * 11.3, fo * 17.9, fo * 5.7));
+    vec4 ng = vnoise3Grad(q * freq + off + vec3(fo * 11.3, fo * 17.9, fo * 5.7));
     float s = ng.x * 2.0 - 1.0;
-    vec3 ds = ng.yzw * (2.0 * freq);
-    float ab = sqrt(s * s + 0.008);
+    vec3 ds = rotT * (ng.yzw * (2.0 * freq));
+    float ab = sqrt(s * s + 0.018);
     float t = 1.0 - ab;
     vec3 dt = -(s / ab) * ds;
     float r = t * t * rw;
     vec3 dr = (2.0 * t * rw) * dt;
-    rw = clamp(r * 1.45, 0.25, 1.0);
-    fbm += s * amp;
-    fbmGrad += ds * amp;
-    ridge += (r * 2.0 - 0.85) * amp;
-    ridgeGrad += (2.0 * dr) * amp;
-    norm += amp;
-    freq *= 2.08;
-    amp *= 0.50;
+    rw = clamp(r * 1.44, 0.24, 1.0);
+    float w = amp * nyq;
+    float gw = gAmp * nyq;
+    fbm += s * w;
+    fbmGrad += ds * gw;
+    ridge += (r * 2.0 - 0.85) * w;
+    ridgeGrad += (2.0 * dr) * gw;
+    norm += w;
+    gNorm += gw;
+    // Rotate domain for next octave and track inverse transpose for exact sphere-space gradients.
+    q = OCT_ROT * q;
+    rotT = rotT * OCT_ROT_T;
+    freq *= 2.04;
+    amp *= 0.46;
+    gAmp *= 0.43;
   }
-  if (fineWeight > 0.01) {
-    vec4 ng4 = vnoise3Grad(p * freq + off + vec3(45.2, 71.6, 22.8));
-    float s4 = ng4.x * 2.0 - 1.0;
-    vec3 ds4 = ng4.yzw * (2.0 * freq);
-    float ab4 = sqrt(s4 * s4 + 0.008);
-    float t4 = 1.0 - ab4;
-    float r4 = t4 * t4 * rw;
-    vec3 dr4 = (2.0 * t4 * rw) * (-(s4 / ab4) * ds4);
-    float w4 = amp * fineWeight;
-    fbm += s4 * w4;
-    fbmGrad += ds4 * w4;
-    ridge += (r4 * 2.0 - 0.85) * w4;
-    ridgeGrad += (2.0 * dr4) * w4;
-    norm += w4;
-    freq *= 2.08;
-    amp *= 0.48;
-    vec4 ng5 = vnoise3Grad(p * freq + off + vec3(56.5, 89.5, 28.5));
-    float s5 = ng5.x * 2.0 - 1.0;
-    vec3 ds5 = ng5.yzw * (2.0 * freq);
-    float w5 = amp * fineWeight * 0.72;
-    fbm += s5 * w5;
-    fbmGrad += ds5 * w5;
-    ridge += ((1.0 - abs(s5)) * 1.5 - 0.75) * w5;
-    ridgeGrad += (-sign(s5) * 1.5 * ds5) * w5;
-    norm += w5;
-  }
-  float mixR = rugged * 0.62;
-  return vec4(mix(fbm, ridge, mixR) / norm, mix(fbmGrad, ridgeGrad, mixR) / norm);
+  float mixR = rugged * 0.72 * (1.0 - 0.65 * clamp(valley, 0.0, 1.0));
+  float invN = 1.0 / max(norm, 0.001);
+  float invGN = 1.0 / max(gNorm, 0.001);
+  return vec4(mix(fbm, ridge, mixR) * invN, mix(fbmGrad, ridgeGrad, mixR) * invGN);
 }
 
-// Calm, luminous Blue-Marble ocean with smooth logarithmic bathymetry and distinct lakes.
+// Calm, luminous Blue-Marble ocean calibrated to 9 km so v5 shelves, ridges and trenches all read cleanly.
 vec3 naturalWater(float depth, float lakeMix) {
-  float ld = log(1.0 + max(depth, 0.0) / 140.0) / log(1.0 + 6000.0 / 140.0);
-  vec3 shelf = vec3(0.108, 0.236, 0.372);
-  vec3 slope = vec3(0.068, 0.168, 0.308);
-  vec3 deep  = vec3(0.042, 0.108, 0.228);
-  vec3 abyss = vec3(0.028, 0.074, 0.172);
-  vec3 ocean = mix(shelf, slope, smoothstep(0.0, 0.38, ld));
-  ocean = mix(ocean, deep, smoothstep(0.32, 0.74, ld));
-  ocean = mix(ocean, abyss, smoothstep(0.68, 1.0, ld));
-  vec3 lake = mix(vec3(0.115, 0.258, 0.375), vec3(0.066, 0.175, 0.295), smoothstep(0.0, 500.0, depth));
+  float ld = log(1.0 + max(depth, 0.0) / 130.0) / log(1.0 + 9000.0 / 130.0);
+  vec3 shoal = vec3(0.135, 0.295, 0.430);
+  vec3 shelf = vec3(0.098, 0.228, 0.368);
+  vec3 slope = vec3(0.062, 0.158, 0.298);
+  vec3 deep  = vec3(0.038, 0.098, 0.214);
+  vec3 trench = vec3(0.020, 0.056, 0.140);
+  vec3 ocean = mix(shoal, shelf, smoothstep(0.0, 0.18, ld));
+  ocean = mix(ocean, slope, smoothstep(0.16, 0.50, ld));
+  ocean = mix(ocean, deep, smoothstep(0.46, 0.80, ld));
+  ocean = mix(ocean, trench, smoothstep(0.76, 1.0, ld));
+  vec3 lake = mix(vec3(0.125, 0.275, 0.392), vec3(0.064, 0.172, 0.292), smoothstep(0.0, 480.0, depth));
   return mix(ocean, lake, clamp(lakeMix, 0.0, 1.0));
 }
 `;
@@ -400,16 +496,21 @@ vec3 naturalWater(float depth, float lakeMix) {
 export interface LodWorkerCache {
   surface: Surface;
   elevation: Float64Array;
-  boundaryCorners: Uint32Array;
+  /** Compact per-region ring of true dual corners (5 or 6 per region, omitting edge midpoints). */
+  ringOffsets: Uint32Array;
+  ringCorners: Uint32Array;
+  ringDirections: Float32Array;
   cornerOffsets: Uint32Array;
   cornerRegions: Uint32Array;
   cornerElevation: Float32Array;
   fanNeighbors: Int32Array;
+  meshFreq: number;
 }
 
 /**
- * Precompute shared dual-corner elevations and per-fan neighbor lookup once when
- * building view geometry, so camera-local LOD updates stay O(visible_regions).
+ * Precompute compact 5/6-corner dual topology, shared corner elevations, and per-fan
+ * neighbor lookup once when building view geometry, so camera-local LOD updates stay
+ * O(visible_regions) and cover 2x more area per triangle budget than 12-fan rings.
  */
 export function buildLodCache(
   surface: Surface,
@@ -417,7 +518,9 @@ export function buildLodCache(
   boundaryCorners: Uint32Array,
   cornerOffsets: Uint32Array,
   cornerRegions: Uint32Array,
+  compactRing?: { ringOffsets: Uint32Array; ringCorners: Uint32Array; ringDirections: Float32Array },
 ): LodWorkerCache {
+  const n = surface.areasSquareMeters.length;
   const cornerCount = cornerOffsets.length - 1;
   const cornerElevation = new Float32Array(cornerCount);
   for (let k = 0; k < cornerCount; k++) {
@@ -427,20 +530,63 @@ export function buildLodCache(
     cornerElevation[k] = sum / Math.max(1, end - start);
   }
 
-  // Map each directed/undirected corner pair (cA, cB) on a region's boundary to the
-  // single neighbor region sharing that dual edge, so outer LOD edges match cleanly.
-  const edgeOwner = new Map<number, number>();
-  const n = surface.areasSquareMeters.length;
-  const totalFans = surface.boundaryDirections.length / 3;
+  let ringOffsets: Uint32Array;
+  let ringCorners: Uint32Array;
+  let ringDirections: Float32Array;
+
+  if (compactRing) {
+    ringOffsets = compactRing.ringOffsets;
+    ringCorners = compactRing.ringCorners;
+    ringDirections = compactRing.ringDirections;
+  } else {
+    // Filter out degree-2 edge midpoints so each hex/pentagon has 6 or 5 dual corners.
+    const keptCounts = new Uint8Array(n);
+    let totalKept = 0;
+    for (let id = 0; id < n; id++) {
+      let c = 0;
+      const start = surface.boundaryOffsets[id], end = surface.boundaryOffsets[id + 1];
+      for (let j = start; j < end; j++) {
+        const cid = boundaryCorners[j];
+        if (cornerOffsets[cid + 1] - cornerOffsets[cid] >= 3) c++;
+      }
+      if (c < 3) c = end - start;
+      keptCounts[id] = c;
+      totalKept += c;
+    }
+    ringOffsets = new Uint32Array(n + 1);
+    ringCorners = new Uint32Array(totalKept);
+    ringDirections = new Float32Array(totalKept * 3);
+    const dirs = surface.boundaryDirections;
+    let cursor = 0;
+    for (let id = 0; id < n; id++) {
+      ringOffsets[id] = cursor;
+      const start = surface.boundaryOffsets[id], end = surface.boundaryOffsets[id + 1];
+      const filterDeg3 = keptCounts[id] < end - start;
+      for (let j = start; j < end; j++) {
+        const cid = boundaryCorners[j];
+        if (filterDeg3 && cornerOffsets[cid + 1] - cornerOffsets[cid] < 3) continue;
+        ringCorners[cursor] = cid;
+        ringDirections[cursor * 3] = dirs[j * 3];
+        ringDirections[cursor * 3 + 1] = dirs[j * 3 + 1];
+        ringDirections[cursor * 3 + 2] = dirs[j * 3 + 2];
+        cursor++;
+      }
+    }
+    ringOffsets[n] = cursor;
+  }
+
+  // Map each shared dual edge (cA, cB) to the single neighbor region across it.
+  const totalFans = ringCorners.length;
   const fanNeighbors = new Int32Array(totalFans).fill(-1);
-  const edgeKey = (a: number, b: number): number => (a < b ? a * 4_294_967_296 + b : b * 4_294_967_296 + a);
+  const edgeOwner = new Map<number, number>();
   const fanOfEdge = new Map<number, number>();
+  const edgeKey = (a: number, b: number): number => (a < b ? a * 4_294_967_296 + b : b * 4_294_967_296 + a);
 
   for (let id = 0; id < n; id++) {
-    const start = surface.boundaryOffsets[id], end = surface.boundaryOffsets[id + 1];
+    const start = ringOffsets[id], end = ringOffsets[id + 1];
     for (let j = start; j < end; j++) {
       const next = j + 1 === end ? start : j + 1;
-      const key = edgeKey(boundaryCorners[j], boundaryCorners[next]);
+      const key = edgeKey(ringCorners[j], ringCorners[next]);
       const otherRegion = edgeOwner.get(key);
       if (otherRegion === undefined) {
         edgeOwner.set(key, id);
@@ -453,12 +599,25 @@ export function buildLodCache(
     }
   }
 
-  return { surface, elevation, boundaryCorners, cornerOffsets, cornerRegions, cornerElevation, fanNeighbors };
+  return {
+    surface,
+    elevation,
+    ringOffsets,
+    ringCorners,
+    ringDirections,
+    cornerOffsets,
+    cornerRegions,
+    cornerElevation,
+    fanNeighbors,
+    meshFreq: meshFrequencyForRegions(n),
+  };
 }
 
 export interface LodRequestParams {
   focus: Vec3;
   distance: number;
+  tiltRad?: number;
+  forward?: Vec3;
   seedOffset: Vec3;
   detailEnabled: boolean;
   waterLevelMeters: number;
@@ -467,13 +626,15 @@ export interface LodRequestParams {
   strictMask: Float32Array;
   localWaterLevel: Float32Array;
   localReliefMeters: Float32Array;
+  effectiveReliefMeters?: Float32Array;
+  valleyFactor?: Float32Array;
 }
 
 /**
  * Build a watertight, bounded camera-local subdivided globe patch.
  * Regions inside the camera focus cone are subdivided into k×k fan sub-triangles;
  * outer perimeter edges bordering unrefined regions remain unsplit (1 segment)
- * with zero detail displacement so there are zero T-junctions or cracks.
+ * with locked base corner heights so there are zero T-junctions or cracks.
  */
 export function buildLodPatch(cache: LodWorkerCache, params: LodRequestParams): LodPatchData {
   const empty = (): LodPatchData => ({
@@ -489,35 +650,50 @@ export function buildLodPatch(cache: LodWorkerCache, params: LodRequestParams): 
 
   if (params.distance >= 1.65) return empty();
 
-  const { surface, elevation, boundaryCorners, cornerOffsets, cornerRegions, cornerElevation, fanNeighbors } = cache;
+  const { surface, elevation, ringOffsets, ringCorners, ringDirections, cornerOffsets, cornerRegions, cornerElevation, fanNeighbors, meshFreq } = cache;
   const n = surface.areasSquareMeters.length;
   const radius = surface.radiusMeters;
   const centers = surface.centers;
-  const boundaryDirs = surface.boundaryDirections;
   const { focus, distance, seedOffset, detailEnabled, wetMask, phi, strictMask, localWaterLevel, localReliefMeters } = params;
+  const reliefField = params.effectiveReliefMeters ?? localReliefMeters;
+  const valleyField = params.valleyFactor;
+  const tiltRad = params.tiltRad ?? 0;
 
-  let k = distance < 0.48 ? 4 : distance < 0.98 ? 3 : 2;
-  const maxAngle = distance < 0.48
-    ? clamp(distance * 0.95 + 0.14, 0.20, 0.62)
-    : distance < 0.98
-      ? clamp(distance * 0.85 + 0.14, 0.34, 0.92)
-      : clamp(distance * 0.72 + 0.10, 0.50, 1.15);
+  // When tilted, shift the LOD focus slightly forward toward the viewed horizon so
+  // the full tilted viewport receives high-detail subdivision instead of wasting budget behind the camera.
+  let fx = focus[0], fy = focus[1], fz = focus[2];
+  if (tiltRad > 0.08 && params.forward) {
+    const shift = Math.min(0.24, distance * Math.sin(tiltRad) * 0.55);
+    fx += params.forward[0] * shift;
+    fy += params.forward[1] * shift;
+    fz += params.forward[2] * shift;
+    const invF = 1 / Math.hypot(fx, fy, fz);
+    fx *= invF; fy *= invF; fz *= invF;
+  }
+
+  let k = distance < 0.52 ? 4 : distance < 1.05 ? 3 : 2;
+  const tiltBoost = Math.sin(clamp(tiltRad, 0, 1.35)) * distance * 0.42;
+  // Tight frustum-matched cone keeps subdivision-7 close-ups at k = 4 inside the triangle budget.
+  const maxAngle = distance < 0.52
+    ? clamp(distance * 0.72 + tiltBoost + 0.075, 0.11, 0.52)
+    : distance < 1.05
+      ? clamp(distance * 0.68 + tiltBoost + 0.09, 0.28, 0.78)
+      : clamp(distance * 0.62 + 0.08, 0.44, 1.02);
   const cosLimit = Math.cos(maxAngle);
 
   // Select visible dry land and coastal ocean regions (open deep ocean stays coarse).
   const candidates: Array<{ id: number; dotVal: number; fans: number }> = [];
   for (let id = 0; id < n; id++) {
-    const d = centers[id * 3] * focus[0] + centers[id * 3 + 1] * focus[1] + centers[id * 3 + 2] * focus[2];
+    const d = centers[id * 3] * fx + centers[id * 3 + 1] * fy + centers[id * 3 + 2] * fz;
     if (d < cosLimit) continue;
     let include = wetMask[id] === 0;
     if (!include) {
-      // Include coastal ocean/lake cells touching at least one dry region so coastlines are continuous.
       for (let m = surface.neighborOffsets[id]; m < surface.neighborOffsets[id + 1]; m++) {
         if (wetMask[surface.neighbors[m]] === 0) { include = true; break; }
       }
     }
     if (!include) continue;
-    const fans = surface.boundaryOffsets[id + 1] - surface.boundaryOffsets[id];
+    const fans = ringOffsets[id + 1] - ringOffsets[id];
     candidates.push({ id, dotVal: d, fans });
   }
 
@@ -550,37 +726,38 @@ export function buildLodPatch(cache: LodWorkerCache, params: LodRequestParams): 
     replacedRegions[i] = chosen[i].id;
   }
 
-  // Compute corner-averaged phi, strictMask, relief, and localWaterLevel for corners touched by chosen regions.
   const cornerCount = cornerOffsets.length - 1;
   const cornerPhi = new Float32Array(cornerCount);
   const cornerStrict = new Float32Array(cornerCount);
   const cornerRelief = new Float32Array(cornerCount);
   const cornerWaterLevel = new Float32Array(cornerCount);
+  const cornerValley = new Float32Array(cornerCount);
   const cornerVisited = new Uint8Array(cornerCount);
 
   const ensureCorner = (c: number): void => {
     if (cornerVisited[c]) return;
     cornerVisited[c] = 1;
-    let pSum = 0, mSum = 0, rSum = 0, wSum = 0;
+    let pSum = 0, mSum = 0, rSum = 0, wSum = 0, vSum = 0;
     const start = cornerOffsets[c], end = cornerOffsets[c + 1];
     const count = Math.max(1, end - start);
     for (let j = start; j < end; j++) {
       const rid = cornerRegions[j];
       pSum += phi[rid];
       mSum += strictMask[rid];
-      rSum += localReliefMeters[rid];
+      rSum += reliefField[rid];
       wSum += localWaterLevel[rid];
+      if (valleyField) vSum += valleyField[rid];
     }
     cornerPhi[c] = pSum / count;
     cornerStrict[c] = mSum / count;
     cornerRelief[c] = rSum / count;
     cornerWaterLevel[c] = wSum / count;
+    cornerValley[c] = vSum / count;
   };
 
-  // Count exact emitted triangles (interior fan: k*k; outer rim fan with unsplit edge AB: (k-1)^2 + k).
   let triangleCount = 0;
   for (const { id } of chosen) {
-    const start = surface.boundaryOffsets[id], end = surface.boundaryOffsets[id + 1];
+    const start = ringOffsets[id], end = ringOffsets[id + 1];
     for (let j = start; j < end; j++) {
       const nb = fanNeighbors[j];
       const outerSplit = nb >= 0 && inPatch[nb] === 1;
@@ -595,7 +772,6 @@ export function buildLodPatch(cache: LodWorkerCache, params: LodRequestParams): 
   const weights = new Float32Array(vertexCount * 3);
   const radialOffsets = new Float32Array(vertexCount);
 
-  // Reusable per-fan grid arrays (max k = 4 -> 15 grid points)
   const maxGrid = ((k + 1) * (k + 2)) / 2;
   const gx = new Float32Array(maxGrid);
   const gy = new Float32Array(maxGrid);
@@ -628,28 +804,27 @@ export function buildLodPatch(cache: LodWorkerCache, params: LodRequestParams): 
     const elevC = elevation[id];
     const phiC = phi[id];
     const mC = strictMask[id];
-    const relC = localReliefMeters[id];
+    const relC = reliefField[id];
     const wlC = localWaterLevel[id];
-    const start = surface.boundaryOffsets[id], end = surface.boundaryOffsets[id + 1];
+    const valC = valleyField ? valleyField[id] : 0;
+    const start = ringOffsets[id], end = ringOffsets[id + 1];
 
-    // Check if any corner of this region touches an unrefined neighbor; taper detail on outer rim.
     for (let j = start; j < end; j++) {
       const next = j + 1 === end ? start : j + 1;
-      const cA = boundaryCorners[j], cB = boundaryCorners[next];
+      const cA = ringCorners[j], cB = ringCorners[next];
       ensureCorner(cA);
       ensureCorner(cB);
-      const ax = boundaryDirs[j * 3], ay = boundaryDirs[j * 3 + 1], az = boundaryDirs[j * 3 + 2];
-      const bx = boundaryDirs[next * 3], by = boundaryDirs[next * 3 + 1], bz = boundaryDirs[next * 3 + 2];
+      const ax = ringDirections[j * 3], ay = ringDirections[j * 3 + 1], az = ringDirections[j * 3 + 2];
+      const bx = ringDirections[next * 3], by = ringDirections[next * 3 + 1], bz = ringDirections[next * 3 + 2];
       const elevA = cornerElevation[cA], elevB = cornerElevation[cB];
       const phiA = cornerPhi[cA], phiB = cornerPhi[cB];
       const mA = cornerStrict[cA], mB = cornerStrict[cB];
       const relA = cornerRelief[cA], relB = cornerRelief[cB];
       const wlA = cornerWaterLevel[cA], wlB = cornerWaterLevel[cB];
+      const valA = cornerValley[cA], valB = cornerValley[cB];
 
       const nb = fanNeighbors[j];
       const outerSplit = nb >= 0 && inPatch[nb] === 1;
-      // Also check whether corners cA / cB are incident to any region outside the patch,
-      // so shared rim corners stay locked to exact base corner elevation (zero cracks!).
       let cAOuter = !outerSplit;
       if (!cAOuter) {
         for (let ci = cornerOffsets[cA]; ci < cornerOffsets[cA + 1]; ci++) {
@@ -680,12 +855,10 @@ export function buildLodPatch(cache: LodWorkerCache, params: LodRequestParams): 
 
           const baseH = w0 * elevC + w1 * elevA + w2 * elevB;
           const wl = w0 * wlC + w1 * wlA + w2 * wlB;
-          // Lock rim vertices touching unrefined regions to exact base height so seams are watertight.
           const isRimLocked = (!outerSplit && r === k) || (cAOuter && r === k && c === 0) || (cBOuter && r === k && c === k);
           if (isRimLocked) {
             goff[gi] = Math.max(baseH, wl) / radius;
           } else {
-            // Smoothly fade detail on rim-adjacent rows so transition is visually seamless.
             let rimFade = 1;
             if (!outerSplit) rimFade = Math.min(rimFade, (k - r) / k);
             if (cAOuter) rimFade = Math.min(rimFade, 1 - w1 * 0.85);
@@ -693,15 +866,15 @@ export function buildLodPatch(cache: LodWorkerCache, params: LodRequestParams): 
             const phiBase = w0 * phiC + w1 * phiA + w2 * phiB;
             const mInterp = w0 * mC + w1 * mA + w2 * mB;
             const relInterp = w0 * relC + w1 * relA + w2 * relB;
-            const rugged = smoothstep(80, 1400, relInterp);
-            const phiDetail = sampleCoastPhi(px, py, pz, phiBase, mInterp, w0, rugged, seedOffset, detailEnabled && rimFade > 0.05);
-            const detailM = sampleDetailHeightMeters(px, py, pz, relInterp, phiDetail, seedOffset, detailEnabled) * rimFade;
+            const valInterp = w0 * valC + w1 * valA + w2 * valB;
+            const rugged = smoothstep(95, 1150, relInterp);
+            const phiDetail = sampleCoastPhi(px, py, pz, phiBase, mInterp, w0, rugged, seedOffset, detailEnabled && rimFade > 0.05, meshFreq);
+            const detailM = sampleDetailHeightMeters(px, py, pz, relInterp, phiDetail, seedOffset, detailEnabled, valInterp, meshFreq) * rimFade;
             if (phiDetail <= 0) {
               goff[gi] = wl / radius;
             } else {
-              // Rise smoothly out of the zero-contour coastline with zero abrupt shoreline cliff.
-              const shoreRise = smoothstep(0.0, 0.24, phiDetail);
-              const landHeight = Math.max(0, baseH - wl) * (0.25 + 0.75 * shoreRise) + detailM;
+              const shoreRise = smoothstep(0.0, 0.30, phiDetail);
+              const landHeight = Math.max(0, baseH - wl) * (0.20 + 0.80 * shoreRise) + detailM;
               goff[gi] = (wl + Math.max(0, landHeight)) / radius;
             }
           }
@@ -727,7 +900,6 @@ export function buildLodPatch(cache: LodWorkerCache, params: LodRequestParams): 
       }
 
       if (!outerSplit) {
-        // Watertight transition strip: row (k - 1) has k vertices; row k keeps ONLY corners A and B.
         const idxA = rowIndex(k, 0);
         const idxB = rowIndex(k, k);
         const split = Math.floor((k - 1) / 2);
@@ -736,7 +908,6 @@ export function buildLodPatch(cache: LodWorkerCache, params: LodRequestParams): 
           emitVertex(idxA, id, cA, cB);
           emitVertex(rowIndex(k - 1, c + 1), id, cA, cB);
         }
-        // Center bridge triangle spans the unsplit outer edge A -> B.
         emitVertex(rowIndex(k - 1, split), id, cA, cB);
         emitVertex(idxA, id, cA, cB);
         emitVertex(idxB, id, cA, cB);

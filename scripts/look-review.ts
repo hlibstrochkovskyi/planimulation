@@ -1,11 +1,12 @@
 // Capture before/after visual review screenshots and basic frame/memory metrics.
-// Usage: node --import tsx scripts/look-review.ts [OUTPUT_DIR] [seed]
+// Usage: node --import tsx scripts/look-review.ts [OUTPUT_DIR] [seed] [family] [subdivision]
 import { strict as assert } from 'node:assert';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { _electron as electron, expect } from '@playwright/test';
-import { NEW_WORLD_RECIPE } from '../src/core/recipe';
+import { NEW_WORLD_RECIPE, parseRecipe } from '../src/core/recipe';
+import type { Recipe } from '../src/core/recipe';
 import { decodeClimateNormals, decodeRivers, decodeWorld, NativeSession } from '../src/native/client';
 
 interface TargetPoint {
@@ -17,7 +18,23 @@ interface TargetPoint {
   lonDeg: number;
 }
 
-const [output = 'artifacts/look-review', seed = NEW_WORLD_RECIPE.seed] = process.argv.slice(2);
+const FAMILY_ALIASES: Record<string, Recipe['modelVersion']> = {
+  v4: 'multiscale-geography-4',
+  v5: 'multiscale-geography-5',
+};
+
+const [
+  output = 'artifacts/look-review',
+  seed = NEW_WORLD_RECIPE.seed,
+  rawFamily = NEW_WORLD_RECIPE.modelVersion,
+  rawSubdivision = String(NEW_WORLD_RECIPE.subdivision),
+] = process.argv.slice(2);
+const family = (FAMILY_ALIASES[rawFamily] ?? rawFamily) as Recipe['modelVersion'];
+const subdivision = Number(rawSubdivision);
+const targetRecipe = parseRecipe({ ...NEW_WORLD_RECIPE, seed, modelVersion: family, subdivision });
+const needsGenerate = targetRecipe.seed !== NEW_WORLD_RECIPE.seed
+  || targetRecipe.modelVersion !== NEW_WORLD_RECIPE.modelVersion
+  || targetRecipe.subdivision !== NEW_WORLD_RECIPE.subdivision;
 const outputAbs = path.resolve(output);
 const executable = path.resolve('dist/native', process.platform === 'win32' ? 'planimulation-core.exe' : 'planimulation-core');
 
@@ -25,7 +42,7 @@ function selectTargets(): Promise<TargetPoint[]> {
   return (async () => {
     const session = new NativeSession(executable);
     try {
-      const world = decodeWorld(await session.request({ command: 'generate', recipe: { ...NEW_WORLD_RECIPE, seed } }));
+      const world = decodeWorld(await session.request({ command: 'generate', recipe: targetRecipe }));
       const climate = decodeClimateNormals(await session.request({ command: 'climateNormals' }), world.stats.regionCount, 1);
       const rivers = decodeRivers(await session.request({ command: 'rivers' }), world.stats.regionCount, 1);
       const { surface, terrain, water } = world;
@@ -40,12 +57,14 @@ function selectTargets(): Promise<TargetPoint[]> {
         const p = posOf(id);
         return Math.abs(p.x) < 0.85 && Math.abs(p.latDeg) < 62;
       };
-      const hasCoastalNeighbor = (id: number): boolean => {
+      const countWetNeighbors = (id: number): number => {
+        let count = 0;
         for (let k = surface.neighborOffsets[id]; k < surface.neighborOffsets[id + 1]; k++) {
-          if (water.bodyIds[surface.neighbors[k]] !== 0) return true;
+          if (water.bodyIds[surface.neighbors[k]] !== 0) count++;
         }
-        return false;
+        return count;
       };
+      const hasCoastalNeighbor = (id: number): boolean => countWetNeighbors(id) > 0;
 
       // 1. Major river mouth & coastline
       let bestMouth = -1, bestMouthFlow = -1;
@@ -90,10 +109,24 @@ function selectTargets(): Promise<TargetPoint[]> {
         if (score > bestTransitionScore) { bestTransitionScore = score; bestTransition = id; }
       }
 
+      // 4. Small island or narrow coastal peninsula (high wet-neighbor ratio with relief)
+      let bestIsland = -1, bestIslandScore = -1;
+      for (let id = 0; id < n; id++) {
+        if (water.bodyIds[id] !== 0 || !isCentral(id)) continue;
+        const wetN = countWetNeighbors(id);
+        const deg = surface.neighborOffsets[id + 1] - surface.neighborOffsets[id];
+        if (wetN < deg - 2) continue;
+        const elev = terrain.elevation[id] - water.levelMeters;
+        // Prefer small islands (1-4 cells) or crisp peninsulas with visible topography.
+        const score = wetN * 400 + Math.min(1800, elev) + (wetN === deg ? 250 : 0);
+        if (score > bestIslandScore) { bestIslandScore = score; bestIsland = id; }
+      }
+
       return [
         { name: 'mouth', ...posOf(bestMouth >= 0 ? bestMouth : 0) },
         { name: 'mountains', ...posOf(bestMountain >= 0 ? bestMountain : 1) },
         { name: 'transition', ...posOf(bestTransition >= 0 ? bestTransition : 2) },
+        { name: 'island', ...posOf(bestIsland >= 0 ? bestIsland : (bestMouth >= 0 ? bestMouth : 0)) },
       ];
     } finally {
       session.close();
@@ -121,19 +154,26 @@ try {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
 
-  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 120_000 });
-  if (seed !== NEW_WORLD_RECIPE.seed) {
+  const tStart = Date.now();
+  await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 180_000 });
+  let worldReadyMs = Date.now() - tStart;
+  if (needsGenerate) {
     await page.locator('[data-dialog="world-dialog"]').click();
-    await page.locator('#seed').fill(seed);
+    await page.locator('#generator-family').selectOption(targetRecipe.modelVersion);
+    await page.locator('#subdivision').selectOption(String(targetRecipe.subdivision));
+    await page.locator('#seed').fill(targetRecipe.seed);
+    const tGen = Date.now();
     await page.locator('#generate').click();
-    await expect(page.locator('#world-name')).toHaveText(seed, { timeout: 180_000 });
-    await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 180_000 });
+    await expect(page.locator('body')).toHaveAttribute('data-state', 'generating', { timeout: 30_000 }).catch(() => {});
+    await expect(page.locator('body')).toHaveAttribute('data-state', 'ready', { timeout: 600_000 });
+    worldReadyMs = Date.now() - tGen;
   }
 
   const canvas = page.locator('#map');
-  await expect(canvas).toHaveAttribute('data-river-line-mode', 'discharge', { timeout: 60_000 });
-  await expect(page.locator('[data-layer="vegetationState"]')).toBeEnabled({ timeout: 60_000 });
+  await expect(canvas).toHaveAttribute('data-river-line-mode', 'discharge', { timeout: 180_000 });
+  await expect(page.locator('[data-layer="vegetationState"]')).toBeEnabled({ timeout: 180_000 });
   const fingerprint = (await page.locator('#fingerprint').textContent()) ?? '';
+  const generationTimeText = (await page.locator('#generation-time').textContent()) ?? '';
 
   // Hide inspector and layers pane for maximum viewport detail during planet captures.
   const toggleLayers = page.locator('#toggle-layers');
@@ -264,43 +304,69 @@ try {
     await capture(`05-globe-heading-${idx + 1}-lon${lon}.png`);
   }
 
-  // 5. Globe zoomed x3, x6, and x6 + tilt on target 2 (mountains / coast) or target 1 (mouth)
+  // 5. Globe zoomed x3, x6 (~1,250 km), x6 + tilt, x8 + tilt on mountains/coast, and x8 + tilt on island/peninsula
   const zoomTarget = targets[1];
+  const islandTarget = targets[3] ?? targets[0];
   await page.locator('#reset-view').click();
   await waitFrames(4);
   await dragGlobeTo(zoomTarget.latDeg, zoomTarget.lonDeg);
   const overviewDist = Number(await canvas.getAttribute('data-view-distance')) || 2.25;
 
-  // Zoom ~3x (3 clicks of 1.5x = 3.375x, adjust close to 3x)
-  for (let i = 0; i < 3; i++) {
-    await page.locator('#zoom-in').click();
-    await waitFrames(3);
-  }
-  await page.waitForTimeout(300);
-  const dist3x = Number(await canvas.getAttribute('data-view-distance'));
+  const zoomToClicks = async (clicks: number): Promise<number> => {
+    for (let i = 0; i < clicks; i++) {
+      await page.locator('#zoom-in').click();
+      await waitFrames(3);
+    }
+    await page.waitForTimeout(700);
+    await waitFrames(4);
+    return Number(await canvas.getAttribute('data-view-distance'));
+  };
+
+  // Zoom ~3 clicks (~0.67 R)
+  const dist3x = await zoomToClicks(3);
   await capture('06-globe-zoom-3x.png');
 
-  // Zoom ~6x (2 more clicks -> ~7.6x, or wheel to ~6x)
-  await page.locator('#zoom-in').click();
-  await waitFrames(3);
-  await page.mouse.move(800, 500);
-  await page.mouse.wheel(0, -100);
-  await page.waitForTimeout(400);
-  const dist6x = Number(await canvas.getAttribute('data-view-distance'));
+  // Zoom to 6 clicks (~0.20 R ≈ 1,250 km)
+  const dist6x = await zoomToClicks(3);
   await capture('07-globe-zoom-6x.png');
 
-  // Tilt at ~6x
+  // Tilt at 6 clicks (~1,250 km)
   await page.locator('#tilt-view').click();
-  await page.waitForTimeout(450);
+  await page.waitForTimeout(800);
+  await waitFrames(4);
   await capture('08-globe-zoom-6x-tilt.png');
-  const zoomDataset = await canvas.evaluate((el) => ({
+  const zoom6Dataset = await canvas.evaluate((el) => ({
     lodTriangles: el.dataset.lodTriangles ?? null,
     lodLevel: el.dataset.lodLevel ?? null,
     exaggeration: el.dataset.exaggeration ?? null,
+    viewDistance: el.dataset.viewDistance ?? null,
+    tilt: el.dataset.tilt ?? null,
+  }));
+
+  // Zoom to 8 clicks (~0.09 R ≈ 560 km) + tilt
+  const dist8x = await zoomToClicks(2);
+  await capture('09-globe-zoom-8x-tilt.png');
+  const zoom8Dataset = await canvas.evaluate((el) => ({
+    lodTriangles: el.dataset.lodTriangles ?? null,
+    lodLevel: el.dataset.lodLevel ?? null,
+    exaggeration: el.dataset.exaggeration ?? null,
+    viewDistance: el.dataset.viewDistance ?? null,
+    tilt: el.dataset.tilt ?? null,
   }));
 
   // Measure globe RAF at zoomed-in tilted view (heaviest LOD case)
   const globeZoomPerf = await measureRaf();
+
+  // Island / narrow peninsula at 8 clicks + tilt
+  await page.locator('#reset-view').click();
+  await waitFrames(4);
+  await dragGlobeTo(islandTarget.latDeg, islandTarget.lonDeg);
+  const distIsland = await zoomToClicks(8);
+  await page.locator('#tilt-view').click();
+  await page.waitForTimeout(800);
+  await waitFrames(4);
+  await capture('10-globe-island-8x-tilt.png');
+
   await page.locator('#reset-view').click();
   await waitFrames(4);
   const globeOverviewPerf = await measureRaf();
@@ -309,11 +375,16 @@ try {
   const metrics = await app.evaluate(({ app }) => app.getAppMetrics().map(m => ({ type: m.type, workingSetMB: Number((m.memory.workingSetSize / 1024).toFixed(1)) })));
 
   const summary = {
-    seed,
+    seed: targetRecipe.seed,
+    family: targetRecipe.modelVersion,
+    subdivision: targetRecipe.subdivision,
     fingerprint,
+    worldReadyMs,
+    generationTimeText,
     targets,
-    distances: { overviewDist, dist3x, dist6x },
-    zoomDataset,
+    distances: { overviewDist, dist3x, dist6x, dist8x, distIsland },
+    zoomDataset: zoom6Dataset,
+    zoom8Dataset,
     dataset,
     performance: { flat: flatPerf, globeOverview: globeOverviewPerf, globeZoom: globeZoomPerf },
     memory: metrics,
