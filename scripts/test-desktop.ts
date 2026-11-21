@@ -152,10 +152,10 @@ try {
   await expect(page.locator('[data-layer="riverDischarge"]')).toBeEnabled();
   await ui('[data-layer="annualRunoff"]').click();
   await expect(page.locator('#legend-title')).toContainText('Runoff generated locally');
-  await expect(page.locator('#legend-high')).toHaveText('≥1,000 mm/year');
+  await expect(page.locator('#legend-high')).toHaveText('≥2,000 mm/year');
   await ui('[data-layer="riverDischarge"]').click();
   await expect(page.locator('#legend-title')).toContainText('log scale');
-  await expect(page.locator('#legend-high')).toHaveText('≥100,000 m³/s');
+  await expect(page.locator('#legend-high')).toHaveText('≥30,000 m³/s');
   await expect(page.locator('#map')).toHaveAttribute('data-river-line-mode', 'discharge');
   await expect(page.locator('#rivers-summary')).toContainText('of land runoff reaches the ocean');
   await expect(page.locator('#selection-details')).toContainText('Minimum monthly discharge');

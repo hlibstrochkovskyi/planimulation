@@ -21,8 +21,11 @@ function catmullRom(p0: Vec3, p1: Vec3, p2: Vec3, p3: Vec3, t: number): Vec3 {
 
 /** Line widths in CSS pixels for increasing contributing-area classes. */
 export const DRAINAGE_LINE_WIDTHS = [1, 1.7, 2.6] as const;
-export const RIVER_LINE_WIDTHS = [0.85, 1.35, 2.1, 3] as const;
-export const RIVER_LINE_THRESHOLDS = [300, 1_000, 3_000, 10_000] as const;
+/** Nearly even intervals on a log discharge scale (m³/s). */
+export const RIVER_LINE_THRESHOLDS = [300, 1_000, 3_000, 10_000, 30_000] as const;
+export const RIVER_LINE_WIDTHS = [0.85, 1.3, 2, 3, 3.9] as const;
+export const PERENNIAL_LINE_COLORS = [0x30486b, 0x124fa7, 0x0767d4, 0x1589f5, 0x40b9ff] as const;
+export const SEASONAL_LINE_COLORS = [0x425e60, 0x2c6669, 0x25848b, 0x17a5a8, 0x37c7c3] as const;
 
 export interface DrainageLines {
   /** Flat map segment endpoints (x, y, z pairs) per width class. */

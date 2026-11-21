@@ -173,8 +173,10 @@ canvas[data-gpu=lost] ~ #gpu-status { display: grid; }
 #legend-gradient.water-gradient { background: linear-gradient(90deg, #2e9ebf, #061a42); }
 #legend-gradient.temperature-gradient { background: linear-gradient(90deg, #1a337a, #4aaed1, #e3e0a3, #d43d21); }
 #legend-gradient.precipitation-gradient { background: linear-gradient(90deg, #94703f, #d1c77a 40%, #529e5c 70%, #215c9e); }
-#legend-gradient.runoff-gradient { background: linear-gradient(90deg, #ddcfa8, #2a8f7e); }
-#legend-gradient.discharge-gradient { background: linear-gradient(90deg, #dcdac0, #195d80); }
+#legend-gradient.runoff-gradient { background: linear-gradient(90deg, #a9643e, #d6a466 31.5%, #d7ca8b 51.7%, #64ad88 69.8%, #267696 84.2%, #2e3e75); }
+#legend-gradient.discharge-gradient { height: 7px; border-radius: 0;
+  background: linear-gradient(90deg, #30486b, #124fa7 26%, #0767d4 50%, #1589f5 76%, #40b9ff);
+  clip-path: polygon(0 44%, 100% 3%, 100% 97%, 0 56%); }
 #legend-gradient.woody-gradient { background: linear-gradient(90deg, #d6cca0, #84a058 50%, #1c582c); }
 #legend-gradient.change-gradient { background: linear-gradient(90deg, #a84024, #eeeadc 50%, #1e7a40); }
 #legend-gradient.productivity-gradient { background: linear-gradient(90deg, #ece4c8, #d6c45c 25%, #6ea03c 55%, #0c524e); }
