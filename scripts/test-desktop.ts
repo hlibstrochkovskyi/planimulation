@@ -116,7 +116,7 @@ try {
   }, { ...DEFAULT_RECIPE });
   assert.equal(desktopData.checksum, fingerprint); assert.equal(desktopData.typed, true);
   assert.equal(await page.evaluate(() => typeof (globalThis as unknown as { require?: unknown }).require), 'undefined');
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'advanceVegetation', 'cancelGeneration', 'climateNormals', 'copyText', 'exportView', 'generate', 'initializeOrographicMoisture', 'initializePreciseMoisture', 'initializeRegionalMoisture', 'initializeSoilMoisture', 'initializeVegetation', 'inspectWaterBudget', 'openRecipe', 'openSeasonalCheckpoint', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveSeasonalCheckpoint', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalSoilMoisture', 'seasonalTemperature', 'seasonalWind', 'vegetationSeries']);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.desktop).sort()), ['acceptWorld', 'advance', 'advanceVegetation', 'cancelGeneration', 'climateNormals', 'copyText', 'exportView', 'forage', 'generate', 'initializeOrographicMoisture', 'initializePreciseMoisture', 'initializeRegionalMoisture', 'initializeSoilMoisture', 'initializeVegetation', 'inspectWaterBudget', 'openRecipe', 'openSeasonalCheckpoint', 'openWaterCheckpoint', 'prescribeWater', 'saveRecipe', 'saveResolvedWorld', 'saveSeasonalCheckpoint', 'saveWaterCheckpoint', 'seasonalMoisture', 'seasonalSoilMoisture', 'seasonalTemperature', 'seasonalWind', 'vegetationSeries', 'wildFood', 'wildFoodSeries']);
   await expect(page.locator('[data-layer="temperature"]')).toBeEnabled();
   await expect(page.locator('#temperature-month')).toBeEnabled();
   await ui('[data-layer="temperature"]').click();
@@ -168,6 +168,20 @@ try {
   await ui('[data-layer="precipitationAnomaly"]').click();
   await expect(page.locator('#legend-high')).toContainText('200%');
   await expect(page.locator('#biome-legend')).toBeHidden();
+  await expect(page.locator('#vegetation-summary')).toContainText('foragers year-round');
+  await ui('[data-layer="foragerCapacity"]').click();
+  await expect(page.locator('#legend-title')).toContainText('Forager capacity · year 10');
+  await expect(page.locator('#legend-high')).toContainText('people/100 km²');
+  await page.locator('#map').screenshot({ path: executablePath ? 'artifacts/forager-capacity-packaged.png' : 'artifacts/forager-capacity.png' });
+  await expect(page.locator('#food-note')).toContainText(/foragers per 100 km² year-round|Initial water region/);
+  if (await page.locator('#food-forage').isVisible()) {
+    await ui('#forage-3').click();
+    await expect(page.locator('#forage-note')).toContainText('foraged here', { timeout: 15_000 });
+  }
+  await ui('[data-layer="leanSeason"]').click();
+  await expect(page.locator('#legend-title')).toContainText('Lean-season limit');
+  await ui('[data-layer="gameStock"]').click();
+  await expect(page.locator('#legend-high')).toContainText('at capacity');
   await ui('#vegetation-reset').click();
   await expect(page.locator('#vegetation-time')).toHaveText('Year 0');
   await expect(page.locator('#fingerprint')).toHaveText(fingerprint);

@@ -8,7 +8,8 @@ use planimulation_core::{
     },
     seasonal_temperature::{Normals, Settings},
     seasonal_wind::{Normals as WindNormals, Settings as WindSettings},
-    vegetation::{Model as VegetationModel, State as VegetationState},
+    vegetation::{Model as VegetationModel, RegionYear, State as VegetationState},
+    wild_food::{Model as WildFoodModel, State as WildFoodState},
     wire,
 };
 use serde::Deserialize;
@@ -43,6 +44,15 @@ enum Command {
     },
     VegetationSeries {
         region: usize,
+    },
+    WildFood,
+    WildFoodSeries {
+        region: usize,
+    },
+    Forage {
+        region: usize,
+        people: f64,
+        years: u32,
     },
     SeasonalMoisture {
         seconds: u32,
@@ -89,6 +99,19 @@ fn write_moisture(
     }
 }
 
+/// The replayed vegetation history of `region` at the current year, computed once.
+fn cached_series<'a>(
+    cache: &'a mut Option<(usize, u32, Vec<RegionYear>)>,
+    model: &VegetationModel,
+    state: &VegetationState,
+    region: usize,
+) -> Result<&'a [RegionYear], String> {
+    if !matches!(cache, Some((r, y, _)) if *r == region && *y == state.year) {
+        *cache = Some((region, state.year, model.region_series(state, region)?));
+    }
+    Ok(&cache.as_ref().expect("series was just cached").2)
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut input = io::stdin().lock();
     let mut output = io::stdout().lock();
@@ -96,6 +119,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut water_state: Option<PrescribedWaterInventory> = None;
     let mut moisture_state: Option<SeasonalSession> = None;
     let mut vegetation: Option<(VegetationModel, VegetationState)> = None;
+    // Wild food advances with vegetation; the last replayed region history is kept
+    // because food series and foraging experiments reuse it.
+    let mut food: Option<(WildFoodModel, WildFoodState)> = None;
+    let mut vegetation_series: Option<(usize, u32, Vec<RegionYear>)> = None;
     // Climate normals of the current world, shared by the biome layers and vegetation.
     let mut climate: Option<ClimateNormals> = None;
     loop {
@@ -128,6 +155,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     water_state = None;
                     moisture_state = None;
                     vegetation = None;
+                    food = None;
+                    vegetation_series = None;
                     climate = None;
                 }
                 Command::Advance { steps } => {
@@ -160,24 +189,87 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .as_ref()
                         .expect("climate normals were just computed");
                     let (model, state) = VegetationModel::new(w, normals, Default::default())?;
+                    let wild = WildFoodModel::new(w, normals, &model, &state, Default::default())?;
                     wire::vegetation(&mut output, &model, &state).map_err(|e| e.to_string())?;
                     vegetation = Some((model, state));
+                    food = Some(wild);
+                    vegetation_series = None;
                 }
                 Command::AdvanceVegetation { years } => {
                     let (model, state) = vegetation
                         .as_mut()
                         .ok_or("Initialize vegetation before advancing it.")?;
-                    let mut next = state.clone();
-                    model.advance(&mut next, years)?;
+                    let (food_model, food_state) = food
+                        .as_mut()
+                        .ok_or("Initialize vegetation before advancing it.")?;
+                    use planimulation_core::vegetation::{
+                        MAXIMUM_YEARS, MAXIMUM_YEARS_PER_REQUEST,
+                    };
+                    if years == 0 || years > MAXIMUM_YEARS_PER_REQUEST {
+                        return Err(format!(
+                            "Vegetation accepts 1–{MAXIMUM_YEARS_PER_REQUEST} years per request."
+                        ));
+                    }
+                    if state.year + years > MAXIMUM_YEARS {
+                        return Err(format!(
+                            "Vegetation runs are limited to {MAXIMUM_YEARS} years."
+                        ));
+                    }
+                    let (mut next, mut next_food) = (state.clone(), food_state.clone());
+                    for _ in 0..years {
+                        model.advance(&mut next, 1)?;
+                        food_model.step(model, &next, &mut next_food)?;
+                    }
                     *state = next;
+                    *food_state = next_food;
+                    vegetation_series = None;
                     wire::vegetation(&mut output, model, state).map_err(|e| e.to_string())?;
                 }
                 Command::VegetationSeries { region } => {
                     let (model, state) = vegetation
                         .as_ref()
                         .ok_or("Initialize vegetation before inspecting it.")?;
-                    let series = model.region_series(state, region)?;
-                    wire::vegetation_series(&mut output, region, &series)
+                    let series = cached_series(&mut vegetation_series, model, state, region)?;
+                    wire::vegetation_series(&mut output, region, series)
+                        .map_err(|e| e.to_string())?;
+                }
+                Command::WildFood => {
+                    let (model, state) = vegetation
+                        .as_ref()
+                        .ok_or("Initialize vegetation before reading wild food.")?;
+                    let (food_model, food_state) = food
+                        .as_ref()
+                        .ok_or("Initialize vegetation before reading wild food.")?;
+                    let regions = food_model.regions(model, state, food_state);
+                    wire::wild_food(&mut output, food_model, food_state, &regions)
+                        .map_err(|e| e.to_string())?;
+                }
+                Command::WildFoodSeries { region } => {
+                    let (model, state) = vegetation
+                        .as_ref()
+                        .ok_or("Initialize vegetation before inspecting wild food.")?;
+                    let (food_model, _) = food
+                        .as_ref()
+                        .ok_or("Initialize vegetation before inspecting wild food.")?;
+                    let series = cached_series(&mut vegetation_series, model, state, region)?;
+                    let foods = food_model.region_series(region, series)?;
+                    wire::wild_food_series(&mut output, region, &foods)
+                        .map_err(|e| e.to_string())?;
+                }
+                Command::Forage {
+                    region,
+                    people,
+                    years,
+                } => {
+                    let (model, state) = vegetation
+                        .as_ref()
+                        .ok_or("Initialize vegetation before foraging.")?;
+                    let (food_model, _) = food
+                        .as_ref()
+                        .ok_or("Initialize vegetation before foraging.")?;
+                    let series = cached_series(&mut vegetation_series, model, state, region)?;
+                    let rows = food_model.forage(region, series, people, years)?;
+                    wire::forage(&mut output, region, people, years, &rows)
                         .map_err(|e| e.to_string())?;
                 }
                 Command::SeasonalWind => {

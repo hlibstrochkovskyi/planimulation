@@ -534,4 +534,5 @@ pub mod terrain_patch_landscape;
 pub mod terrain_preparation;
 pub mod vegetation;
 pub mod water;
+pub mod wild_food;
 pub mod wire;

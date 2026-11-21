@@ -276,6 +276,7 @@ export class Workspace {
     const relevant: Record<string, string[]> = {
       'climate-note': ['biome', 'annualPrecipitation'],
       'vegetation-note': ['vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly'],
+      'food-note': ['foragerCapacity', 'leanSeason', 'gameStock', 'productivity'],
       'crust-note': ['crust', 'thickness', 'plates', 'surface'],
       'water-note': ['surface', 'depth', 'waterBodies'],
       'drainage-note': ['catchments', 'contributingArea', 'runoffFlow', 'runoffWater', 'basins', 'spill'],
@@ -301,6 +302,9 @@ export class Workspace {
       woodyChange: ['Woody change, 10 years', 'Woody / herb cover', 'This year\'s precipitation', 'Vegetation state'],
       productivity: ['Net primary productivity', 'Woody / herb cover', 'This year\'s precipitation', 'Annual mean temperature normal'],
       precipitationAnomaly: ['This year\'s precipitation', 'Root-zone moisture', 'Annual precipitation', 'Vegetation state'],
+      foragerCapacity: ['Forager capacity', 'With perfect storage', 'Plant food / game offtake', 'Vegetation state'],
+      leanSeason: ['With perfect storage', 'Forager capacity', 'Climate warmest / coldest month', 'Vegetation state'],
+      gameStock: ['Game stock', 'Plant food / game offtake', 'Woody / herb cover', 'This year\'s precipitation'],
       catchments: ['Drainage receiver', 'Catchment outlet', 'Contributing', 'Elevation (reference datum)'],
       contributingArea: ['Contributing', 'Drainage receiver', 'Catchment outlet'],
       plates: ['Tectonic plate', 'Plate area', 'Speed (model frame)', 'Continentality'],

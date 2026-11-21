@@ -4,6 +4,7 @@ import type { CaptureRect } from './capture';
 import type { TemperatureNormals } from '../core/seasonal-temperature';
 import type { ClimateNormals } from '../core/climate-normals';
 import type { VegetationFrame, VegetationSeries } from '../core/vegetation';
+import type { ForageExperiment, WildFoodFrame, WildFoodSeries } from '../core/wild-food';
 import type { WindNormals } from '../core/seasonal-wind';
 import type { MoistureFrame } from './seasonal-moisture';
 import type { SoilMoistureFrame } from './soil-moisture';
@@ -32,6 +33,9 @@ export interface DesktopAPI {
   initializeVegetation(epoch: number): Promise<VegetationFrame>;
   advanceVegetation(epoch: number, years: number): Promise<VegetationFrame>;
   vegetationSeries(epoch: number, region: number): Promise<VegetationSeries>;
+  wildFood(epoch: number): Promise<WildFoodFrame>;
+  wildFoodSeries(epoch: number, region: number): Promise<WildFoodSeries>;
+  forage(epoch: number, region: number, people: number, years: number): Promise<ForageExperiment>;
   seasonalWind(epoch: number): Promise<WindNormals>;
   seasonalMoisture(epoch: number, seconds: number): Promise<MoistureFrame>;
   initializeOrographicMoisture(epoch: number): Promise<MoistureFrame>;

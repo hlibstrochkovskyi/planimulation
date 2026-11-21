@@ -20,6 +20,7 @@ import type { TemperatureNormals } from '../core/seasonal-temperature';
 import { BIOMES } from '../core/climate-normals';
 import type { ClimateNormals } from '../core/climate-normals';
 import type { VegetationFrame } from '../core/vegetation';
+import type { WildFoodFrame } from '../core/wild-food';
 import type { WindNormals } from '../core/seasonal-wind';
 import type { SeasonalDisplayFrame } from '../shared/seasonal-display';
 import { hasRegionalSurface, isSoilMoistureFrame } from '../shared/seasonal-display';
@@ -31,14 +32,15 @@ import { PlanetCamera } from './planet-camera';
 import type { PlanetView } from './planet-camera';
 import { SpaceBackdrop } from './space';
 
-export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill' | 'temperature' | 'windSpeed' | 'biome' | 'annualPrecipitation' | 'vegetationState' | 'woodyCover' | 'woodyChange' | 'productivity' | 'precipitationAnomaly' | MoistureLayer;
+export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill' | 'temperature' | 'windSpeed' | 'biome' | 'annualPrecipitation' | 'vegetationState' | 'woodyCover' | 'woodyChange' | 'productivity' | 'precipitationAnomaly' | 'foragerCapacity' | 'leanSeason' | 'gameStock' | MoistureLayer;
 export type ViewMode = 'flat' | 'globe';
 /** Continuous layers can be interpolated between regions; categorical and sentinel layers cannot. */
 const SMOOTH_LAYERS = new Set<string>(['surface', 'signal', 'area', 'latitude', 'crust', 'thickness', 'elevation', 'uplift',
-  'depth', 'contributingArea', 'temperature', 'windSpeed', 'biome', 'annualPrecipitation', 'vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly']);
-const RELIEF_LAYERS: Partial<Record<string, number>> = { surface: 1, biome: 1, vegetationState: 1, woodyCover: 1, woodyChange: 1, productivity: 1, precipitationAnomaly: 1, elevation: .8 };
+  'depth', 'contributingArea', 'temperature', 'windSpeed', 'biome', 'annualPrecipitation', 'vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly', 'foragerCapacity', 'leanSeason', 'gameStock']);
+const RELIEF_LAYERS: Partial<Record<string, number>> = { surface: 1, biome: 1, vegetationState: 1, woodyCover: 1, woodyChange: 1, productivity: 1, precipitationAnomaly: 1, foragerCapacity: 1, leanSeason: 1, gameStock: 1, elevation: .8 };
 /** Land layers colored by a per-region tint over relief, with bathymetric water. */
-const TINT_LAYERS = new Set<string>(['biome', 'vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly']);
+const TINT_LAYERS = new Set<string>(['biome', 'vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly',
+  'foragerCapacity', 'leanSeason', 'gameStock']);
 /** Layers drawn as land and water with a shoreline, bathymetry and the globe water surface. */
 const surfaceLike = (layer: string): boolean => layer === 'surface' || TINT_LAYERS.has(layer);
 type Rgb = readonly [number, number, number];
@@ -59,6 +61,23 @@ export function productivityColor(grams: number): Rgb {
   return t < 0.25 ? mixRgb([236, 228, 200], [214, 196, 92], t / 0.25)
     : t < 0.55 ? mixRgb([214, 196, 92], [110, 160, 60], (t - 0.25) / 0.3)
     : mixRgb([110, 160, 60], [12, 82, 78], (t - 0.55) / 0.45);
+}
+/** Forager capacity on a log scale from 0.1 to 100 people per 100 km². */
+export function capacityColor(peoplePerSquareKilometer: number): Rgb {
+  const t = Math.min(1, Math.max(0, (Math.log10(Math.max(peoplePerSquareKilometer, 1e-9)) + 3) / 3));
+  return t < 0.4 ? mixRgb([240, 234, 216], [226, 176, 92], t / 0.4)
+    : t < 0.75 ? mixRgb([226, 176, 92], [176, 74, 44], (t - 0.4) / 0.35)
+    : mixRgb([176, 74, 44], [82, 28, 46], (t - 0.75) / 0.25);
+}
+/** Year-round capacity as a share of perfect-storage capacity: pale where seasons do not limit. */
+export function leanColor(ratio: number): Rgb {
+  return mixRgb([84, 76, 160], [238, 234, 220], Math.min(1, Math.max(0, ratio)));
+}
+/** Game stock relative to its capacity: depleted red, half amber, full green; gray without game. */
+export function gameColor(stock: number, capacity: number): Rgb {
+  if (!(capacity > 1e-6)) return [206, 202, 192];
+  const t = Math.min(1, Math.max(0, stock / capacity));
+  return t < 0.5 ? mixRgb([176, 64, 40], [228, 196, 112], t / 0.5) : mixRgb([228, 196, 112], [52, 118, 64], (t - 0.5) / 0.5);
 }
 /** Diverging precipitation factor: half of normal or less is fully dry, double or more fully wet. */
 export function anomalyColor(factor: number): Rgb {
@@ -208,6 +227,7 @@ export class SurfaceMap {
   private temperatureNormals: TemperatureNormals | null = null;
   private climateNormals: ClimateNormals | null = null;
   private vegetation: VegetationFrame | null = null;
+  private wildFood: WildFoodFrame | null = null;
   private tintTexture: DataTexture | null = null;
   private cornerTintTexture: DataTexture | null = null;
   private tintValues = new Float32Array(0);
@@ -408,7 +428,7 @@ export class SurfaceMap {
     // appears on the right in a north-up globe, matching the flat projection.
     next.globe.scale.z = -1;
     this.releaseViews(); this.views = next;
-    this.scene.add(next.flat, next.globe); this.world = world; this.waterFrame = null; this.temperatureNormals = null; this.windNormals = null; this.climateNormals = null; this.vegetation = null;
+    this.scene.add(next.flat, next.globe); this.world = world; this.waterFrame = null; this.temperatureNormals = null; this.windNormals = null; this.climateNormals = null; this.vegetation = null; this.wildFood = null;
     this.moistureFrame = null; this.regionalWater = null; this.waterSurfaceDirty = false;
     delete this.canvas.dataset.regionalSurface;
     delete this.canvas.dataset.moistureSeconds;
@@ -509,15 +529,26 @@ export class SurfaceMap {
     this.vegetation = frame;
     this.applyTint();
   }
+  /** Wild food for the food layers; display only. */
+  setWildFood(frame: WildFoodFrame | null): void {
+    if (frame && (!this.world || frame.capacity.length !== this.world.stats.regionCount)) {
+      throw new Error('Wild food does not match this world.');
+    }
+    this.wildFood = frame;
+    this.applyTint();
+  }
   /** Per-region land colors of the active tint layer; shared corners average only dry regions. */
   private applyTint(): void {
-    const climate = this.climateNormals, vegetation = this.vegetation, layer = this.layer;
+    const climate = this.climateNormals, vegetation = this.vegetation, food = this.wildFood, layer = this.layer;
     const color: ((id: number) => Rgb) | null = layer === 'biome' && climate ? (id) => BIOMES[climate.biome[id]].color
       : layer === 'vegetationState' && vegetation ? (id) => BIOMES[vegetation.label[id]].color
       : layer === 'woodyCover' && vegetation ? (id) => woodyColor(vegetation.woody[id])
       : layer === 'woodyChange' && vegetation ? (id) => changeColor(vegetation.woodyChange[id])
       : layer === 'productivity' && vegetation ? (id) => productivityColor(vegetation.productivity[id])
-      : layer === 'precipitationAnomaly' && vegetation ? (id) => anomalyColor(vegetation.precipitationFactor[id]) : null;
+      : layer === 'precipitationAnomaly' && vegetation ? (id) => anomalyColor(vegetation.precipitationFactor[id])
+      : layer === 'foragerCapacity' && food ? (id) => capacityColor(food.capacity[id])
+      : layer === 'leanSeason' && food ? (id) => food.storedCapacity[id] > 0 ? leanColor(food.capacity[id] / food.storedCapacity[id]) : [206, 202, 192]
+      : layer === 'gameStock' && food ? (id) => gameColor(food.game[id], food.gameCapacity[id]) : null;
     this.material.uniforms.biomeMode.value = color ? 1 : 0;
     if (color && this.world && this.corners && this.tintTexture && this.cornerTintTexture) {
       const tint = this.tintValues, out = this.cornerTintValues, surface = this.world.surface;

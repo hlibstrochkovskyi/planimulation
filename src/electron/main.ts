@@ -74,6 +74,11 @@ void app.whenReady().then(() => {
   ipcMain.handle('world:initializeVegetation', (event, epoch: number) => { senderWindow(event); return core.initializeVegetation(epoch); });
   ipcMain.handle('world:advanceVegetation', (event, epoch: number, years: number) => { senderWindow(event); return core.advanceVegetation(epoch, years); });
   ipcMain.handle('world:vegetationSeries', (event, epoch: number, region: number) => { senderWindow(event); return core.vegetationSeries(epoch, region); });
+  ipcMain.handle('world:wildFood', (event, epoch: number) => { senderWindow(event); return core.wildFood(epoch); });
+  ipcMain.handle('world:wildFoodSeries', (event, epoch: number, region: number) => { senderWindow(event); return core.wildFoodSeries(epoch, region); });
+  ipcMain.handle('world:forage', (event, epoch: number, region: number, people: number, years: number) => {
+    senderWindow(event); return core.forage(epoch, region, people, years);
+  });
   ipcMain.handle('world:seasonalWind', (event, epoch: number) => { senderWindow(event); return core.seasonalWind(epoch); });
   ipcMain.handle('world:seasonalMoisture', (event, epoch: number, seconds: number) => {
     senderWindow(event); return core.seasonalMoisture(epoch, seconds);

@@ -29,6 +29,7 @@ The separate [unified regional soil cycle](docs/regional-soil-cycle.md) applies 
 | [Mountain belts and filled plains](docs/mountain-belts.md) | `multiscale-geography-3`: meandering varied convergent belts, filled shallow depressions, connected drainage measurements |
 | [Climate normals and biomes](docs/climate-normals.md) | Prescribed `climate-normals-1` temperature and precipitation normals, Köppen-style biome classes, Biomes and Annual precipitation layers |
 | [Vegetation with memory](docs/vegetation.md) | `vegetation-2`: yearly woody and herb cover under coherent wet and dry years, seed dispersal, spin-up, labels with hysteresis, ten-year change and Miami productivity layers, region history |
+| [Wild food for foragers](docs/wild-food.md) | `wild-food-1`: seasonal plant food, a recovering game stock, year-round forager capacity, lean-season limits and a foraging experiment |
 | [Coastal lowlands](docs/coastal-lowlands.md) | Default for new desktop worlds, `multiscale-geography-4`: crust-baseline height compressed toward coasts, unchanged shorelines, hypsometry measurements |
 | [Initial crust](docs/crust.md) | Spherical continentality, area fitting, approximate material properties, and validation |
 | [Explainable elevation](docs/terrain.md) | Elevation contributions, physical-distance propagation, globe relief, and display-only exaggeration |

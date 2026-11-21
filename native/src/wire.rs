@@ -369,6 +369,100 @@ pub fn vegetation_series(
     )
 }
 
+/// Wild-food display frame: seven per-region f64 fields, lean months and the yearly
+/// land summaries.
+pub fn wild_food(
+    out: &mut impl Write,
+    model: &crate::wild_food::Model,
+    state: &crate::wild_food::State,
+    regions: &[crate::wild_food::RegionFood],
+) -> io::Result<()> {
+    let mut bytes = Vec::with_capacity(regions.len() * 60 + state.summaries.len() * 32);
+    let fields: [fn(&crate::wild_food::RegionFood) -> f64; 7] = [
+        |r| r.capacity,
+        |r| r.stored_capacity,
+        |r| r.plant_kcal,
+        |r| r.game_kcal,
+        |r| r.game,
+        |r| r.game_capacity,
+        |r| r.access,
+    ];
+    for field in fields {
+        f64s(&mut bytes, regions.iter().map(field));
+    }
+    u32s(
+        &mut bytes,
+        &regions
+            .iter()
+            .map(|r| u32::from(r.lean_month))
+            .collect::<Vec<_>>(),
+    );
+    for s in &state.summaries {
+        f64s(
+            &mut bytes,
+            [s.capacity_people, s.plant_kcal, s.game_kcal, s.game_ratio].into_iter(),
+        );
+    }
+    send(
+        out,
+        json!({"kind":"wildFood", "wildFoodModelVersion":crate::wild_food::MODEL_VERSION,
+            "vegetationModelVersion":crate::vegetation::MODEL_VERSION, "settings":model.settings(),
+            "year":state.year, "regionCount":regions.len()}),
+        &bytes,
+    )
+}
+
+/// One region's wild food from year 0: eight f64 values and twelve monthly plant shares
+/// per year.
+pub fn wild_food_series(
+    out: &mut impl Write,
+    region: usize,
+    series: &[crate::wild_food::RegionFood],
+) -> io::Result<()> {
+    let mut bytes = Vec::with_capacity(series.len() * 160);
+    for y in series {
+        f64s(
+            &mut bytes,
+            [
+                y.capacity,
+                y.stored_capacity,
+                y.plant_kcal,
+                y.game_kcal,
+                y.game,
+                y.game_capacity,
+                y.access,
+                f64::from(y.lean_month),
+            ]
+            .into_iter()
+            .chain(y.season),
+        );
+    }
+    send(
+        out,
+        json!({"kind":"wildFoodSeries", "wildFoodModelVersion":crate::wild_food::MODEL_VERSION,
+            "region":region, "year":series.len() - 1}),
+        &bytes,
+    )
+}
+
+/// A foraging experiment in one region: game stock and unmet need per year.
+pub fn forage(
+    out: &mut impl Write,
+    region: usize,
+    people: f64,
+    years: u32,
+    rows: &[crate::wild_food::ForageYear],
+) -> io::Result<()> {
+    let mut bytes = Vec::with_capacity(rows.len() * 16);
+    f64s(&mut bytes, rows.iter().flat_map(|r| [r.game, r.shortfall]));
+    send(
+        out,
+        json!({"kind":"forage", "wildFoodModelVersion":crate::wild_food::MODEL_VERSION,
+            "region":region, "people":people, "years":years, "year":rows.len() - 1}),
+        &bytes,
+    )
+}
+
 pub fn water_frame(
     out: &mut impl Write,
     display: &WaterDisplay,

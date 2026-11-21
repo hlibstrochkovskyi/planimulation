@@ -269,6 +269,8 @@ The first increment, [climate normals and biomes](climate-normals.md), adds a pr
 
 The second increment, [vegetation with memory](vegetation.md) (`vegetation-2`), adds yearly woody and herbaceous cover driven by spatially coherent, persistent wet and dry years on top of those normals, with variability that grows with aridity. Dieback is fast and regrowth slow, woody plants re-establish from wooded neighbors, and labels follow accumulated cover with hysteresis. A spin-up starts runs in a typical state. Miami-model net primary productivity, scaled by realized cover, is the first output for future food supply. The desktop runs it for chosen numbers of years, maps ten-year woody change and productivity, and shows region time series in the inspector. Soil, water feedback, fire and grazing remain open.
 
+The third increment, [wild food for foragers](wild-food.md) (`wild-food-1`), turns vegetation into the first renewable resource. Plant food follows a monthly growing season and spoils while it stands; game is a stock with a forage-set capacity that remembers recent years, logistic recovery and dieback. The year-round forager capacity without storage, its share of the perfect-storage capacity and the game stock are mapped, the inspector names what limits a region, and a single-region foraging experiment shows depletion and recovery. Plant and game shares are calibrated to observed terrestrial forager densities; aquatic food and human storage remain open.
+
 Preserve differences between worlds. Checks detect broken laws rather than requiring every planet to have the same forest area.
 
 ## 8. Adding 3D

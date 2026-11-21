@@ -14,6 +14,8 @@ import { BIOMES, CLIMATE_MODEL_VERSION } from '../core/climate-normals';
 import type { ClimateNormals } from '../core/climate-normals';
 import { DEFAULT_VEGETATION_SETTINGS, VEGETATION_MAX_YEARS, VEGETATION_MAX_YEARS_PER_REQUEST, VEGETATION_MODEL_VERSION } from '../core/vegetation';
 import type { VegetationFrame, VegetationRegionYear, VegetationSeries } from '../core/vegetation';
+import { DEFAULT_WILD_FOOD_SETTINGS, MONTHS, WILD_FOOD_MODEL_VERSION } from '../core/wild-food';
+import type { ForageExperiment, WildFoodFrame, WildFoodRegionYear, WildFoodSeries } from '../core/wild-food';
 import { DEFAULT_WIND_SETTINGS, WIND_MODEL_VERSION } from '../core/seasonal-wind';
 import type { WindNormals } from '../core/seasonal-wind';
 import { decodeSeasonalMoisture } from './seasonal-moisture';
@@ -68,7 +70,7 @@ export class FrameReader {
         if (!h || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0
           || h.byteLength > (checkpoint ? MAX_SEASONAL_CHECKPOINT_BYTES : MAX_BYTES)
           || (seasonal ? h.protocol !== seasonal.protocol : (h.protocol !== 9 && h.protocol !== 10)
-            || !['world', 'frame', 'water', 'temperature', 'wind', 'climate', 'vegetation', 'vegetationSeries', 'checkpoint', 'error'].includes(h.kind))) throw new Error('Invalid native protocol header.');
+            || !['world', 'frame', 'water', 'temperature', 'wind', 'climate', 'vegetation', 'vegetationSeries', 'wildFood', 'wildFoodSeries', 'forage', 'checkpoint', 'error'].includes(h.kind))) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
       if (this.length < this.header.byteLength) return;
@@ -354,6 +356,69 @@ export function decodeVegetationSeries(packet: Packet, region: number, year: num
   return { epoch, region, years };
 }
 
+export function decodeWildFood(packet: Packet, count: number, year: number, epoch: number): WildFoodFrame {
+  const { header, bytes } = packet;
+  if (header.kind !== 'wildFood' || header.protocol !== 9 || header.wildFoodModelVersion !== WILD_FOOD_MODEL_VERSION
+    || header.vegetationModelVersion !== VEGETATION_MODEL_VERSION || header.regionCount !== count || header.year !== year
+    || bytes.length !== count * 60 + (year + 1) * 32 || !sameSettings(header.settings, DEFAULT_WILD_FOOD_SETTINGS)) {
+    throw new Error('Invalid native wild-food metadata.');
+  }
+  let offset = 0;
+  const next = (length: number): Float64Array => { const field = floats(bytes.subarray(offset, offset + length * 8)); offset += length * 8; return field; };
+  const capacity = next(count), storedCapacity = next(count), plantKcal = next(count), gameKcal = next(count),
+    game = next(count), gameCapacity = next(count), access = next(count);
+  const leanMonth = new Uint32Array(count);
+  for (let i = 0; i < count; i++) leanMonth[i] = bytes.readUInt32LE(offset + i * 4);
+  offset += count * 4;
+  for (let i = 0; i < count; i++) {
+    if (!(capacity[i] >= 0 && capacity[i] <= storedCapacity[i] * (1 + 1e-9) + 1e-300) || !(storedCapacity[i] < 1e4) || !(plantKcal[i] >= 0)
+      || !(gameKcal[i] >= 0) || !(game[i] >= 0) || !(gameCapacity[i] >= 0) || !(access[i] >= 0 && access[i] <= 1) || leanMonth[i] >= MONTHS) {
+      throw new Error('Invalid native wild-food values.');
+    }
+  }
+  const summary = next((year + 1) * 4), summaries = [];
+  for (let y = 0; y <= year; y++) {
+    const [capacityPeople, plant, gameFood, gameRatio] = summary.subarray(y * 4, y * 4 + 4);
+    if (!(capacityPeople >= 0) || !(plant >= 0) || !(gameFood >= 0) || !(gameRatio >= 0 && gameRatio < 10)) throw new Error('Invalid native wild-food summary.');
+    summaries.push({ capacityPeople, plantKcal: plant, gameKcal: gameFood, gameRatio });
+  }
+  return { epoch, modelVersion: WILD_FOOD_MODEL_VERSION, year, capacity, storedCapacity, plantKcal, gameKcal, game, gameCapacity, access, leanMonth, summaries };
+}
+
+export function decodeWildFoodSeries(packet: Packet, region: number, year: number, epoch: number): WildFoodSeries {
+  const { header, bytes } = packet;
+  const width = 8 + MONTHS;
+  if (header.kind !== 'wildFoodSeries' || header.protocol !== 9 || header.wildFoodModelVersion !== WILD_FOOD_MODEL_VERSION
+    || header.region !== region || header.year !== year || bytes.length !== (year + 1) * width * 8) {
+    throw new Error('Invalid native wild-food series.');
+  }
+  const values = floats(bytes), years: WildFoodRegionYear[] = [];
+  for (let y = 0; y <= year; y++) {
+    const row = values.subarray(y * width, y * width + width);
+    const [capacity, storedCapacity, plantKcal, gameKcal, game, gameCapacity, access, leanMonth] = row;
+    const season = [...row.subarray(8)];
+    if (!(capacity >= 0) || !(storedCapacity >= 0) || !(plantKcal >= 0) || !(gameKcal >= 0) || !(game >= 0) || !(gameCapacity >= 0)
+      || !(access >= 0 && access <= 1) || !Number.isInteger(leanMonth) || leanMonth < 0 || leanMonth >= MONTHS
+      || season.some(v => !(v >= 0 && v <= 1))) throw new Error('Invalid native wild-food series values.');
+    years.push({ capacity, storedCapacity, plantKcal, gameKcal, game, gameCapacity, access, leanMonth, season });
+  }
+  return { epoch, region, years };
+}
+
+export function decodeForage(packet: Packet, region: number, people: number, years: number, year: number, epoch: number): ForageExperiment {
+  const { header, bytes } = packet;
+  if (header.kind !== 'forage' || header.protocol !== 9 || header.wildFoodModelVersion !== WILD_FOOD_MODEL_VERSION
+    || header.region !== region || header.people !== people || header.years !== years || header.year !== year
+    || bytes.length !== (year + 1) * 16) throw new Error('Invalid native foraging experiment.');
+  const values = floats(bytes), game: number[] = [], shortfall: number[] = [];
+  for (let y = 0; y <= year; y++) {
+    const [g, s] = values.subarray(y * 2, y * 2 + 2);
+    if (!(g >= 0) || !(s >= 0 && s <= 1)) throw new Error('Invalid native foraging values.');
+    game.push(g); shortfall.push(s);
+  }
+  return { epoch, region, people, years, game, shortfall };
+}
+
 export function decodeSeasonalTemperature(packet: Packet, count: number, epoch: number): TemperatureNormals {
   const { header, bytes } = packet;
   const settings = header.settings;
@@ -629,6 +694,34 @@ export class NativeController {
     const packet = await session.request({ command: 'vegetationSeries', region });
     if (this.active !== session || this.epoch !== epoch) throw new Error('Stale vegetation series.');
     try { return decodeVegetationSeries(packet, region, year, epoch); }
+    catch (error) { session.close(); throw error; }
+  }
+  async wildFood(epoch: number): Promise<WildFoodFrame> {
+    if (!this.active || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    const session = this.active, year = this.vegetationYear;
+    const packet = await session.request({ command: 'wildFood' });
+    if (this.active !== session || this.epoch !== epoch) throw new Error('Stale wild-food response.');
+    try { return decodeWildFood(packet, this.count, year, epoch); }
+    catch (error) { session.close(); throw error; }
+  }
+  async wildFoodSeries(epoch: number, region: number): Promise<WildFoodSeries> {
+    if (!this.active || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    if (!Number.isInteger(region) || region < 0 || region >= this.count) throw new Error('Wild-food region is outside the world.');
+    const session = this.active, year = this.vegetationYear;
+    const packet = await session.request({ command: 'wildFoodSeries', region });
+    if (this.active !== session || this.epoch !== epoch) throw new Error('Stale wild-food series.');
+    try { return decodeWildFoodSeries(packet, region, year, epoch); }
+    catch (error) { session.close(); throw error; }
+  }
+  async forage(epoch: number, region: number, people: number, years: number): Promise<ForageExperiment> {
+    if (!this.active || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    if (!Number.isInteger(region) || region < 0 || region >= this.count) throw new Error('Foraging region is outside the world.');
+    if (!Number.isInteger(people) || people < 1 || people > 1e7) throw new Error('Foraging accepts 1 to 10,000,000 people.');
+    if (!Number.isInteger(years) || years < 0 || years > VEGETATION_MAX_YEARS) throw new Error(`Foraging lasts 0–${VEGETATION_MAX_YEARS} years.`);
+    const session = this.active, year = this.vegetationYear;
+    const packet = await session.request({ command: 'forage', region, people, years });
+    if (this.active !== session || this.epoch !== epoch) throw new Error('Stale foraging response.');
+    try { return decodeForage(packet, region, people, years, year, epoch); }
     catch (error) { session.close(); throw error; }
   }
   async seasonalWind(epoch: number): Promise<WindNormals> {

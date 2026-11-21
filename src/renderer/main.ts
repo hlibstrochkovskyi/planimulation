@@ -25,6 +25,8 @@ import { BIOMES, aridityThreshold } from '../core/climate-normals';
 import type { ClimateNormals } from '../core/climate-normals';
 import { CHANGE_YEARS, COVER_ARIDITY, DEFAULT_VEGETATION_SETTINGS, FOREST_COVER, MINIMUM_REFERENCE_COVER, OPEN_COVER, VARIABILITY_PRECIPITATION_MM, WOODY_ARIDITY, miami } from '../core/vegetation';
 import type { VegetationFrame, VegetationSeries } from '../core/vegetation';
+import { COLD_NEED_CELSIUS, DEFAULT_WILD_FOOD_SETTINGS } from '../core/wild-food';
+import type { ForageExperiment, WildFoodFrame, WildFoodSeries } from '../core/wild-food';
 
 function element<T extends HTMLElement>(id: string): T {
   const result = document.getElementById(id);
@@ -72,6 +74,11 @@ element('biome-legend').replaceChildren(...BIOMES.slice(1).map(({ name, color })
   swatch.style.background = `rgb(${color.join(',')})`; item.append(swatch, name); return item;
 }));
 const vegetationLayerButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-layer="vegetationState"], [data-layer="woodyCover"], [data-layer="woodyChange"], [data-layer="productivity"], [data-layer="precipitationAnomaly"]')];
+const foodLayerButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-layer="foragerCapacity"], [data-layer="leanSeason"], [data-layer="gameStock"]')];
+const forageButtons = [...document.querySelectorAll<HTMLButtonElement>('#food-forage button')];
+/** Window of the running mean drawn over a region's yearly forager capacity. */
+const FOOD_MEAN_YEARS = 10;
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const vegetationButtons = ([[1, 'vegetation-1'], [10, 'vegetation-10'], [100, 'vegetation-100']] as const).map(([years, id]) => ({ years, button: element<HTMLButtonElement>(id) }));
 const vegetationReset = element<HTMLButtonElement>('vegetation-reset');
 const windLayerButton = document.querySelector<HTMLButtonElement>('[data-layer="windSpeed"]')!;
@@ -97,6 +104,10 @@ let vegetation: VegetationFrame | null = null;
 let vegetationSeries: VegetationSeries | null = null;
 let vegetationBusy = false;
 let seriesRequest = 0;
+let wildFood: WildFoodFrame | null = null;
+let wildFoodSeries: WildFoodSeries | null = null;
+let forageResult: ForageExperiment | null = null;
+let forageBusy = false;
 let moistureFrame: SeasonalDisplayFrame | null = null;
 let moistureBusyEpoch: number | null = null;
 let moisturePlaying = false;
@@ -172,6 +183,7 @@ function updateExperimentControls(): void {
   element<HTMLButtonElement>('play').disabled = !world || hasSeasonal || (!playing && busy);
   for (const { button } of vegetationButtons) button.disabled = !vegetation || vegetationBusy || generating || vegetation.year >= 10_000;
   vegetationReset.disabled = !vegetation || vegetationBusy || generating || vegetation.year === 0;
+  for (const button of forageButtons) button.disabled = !wildFood || vegetationBusy || forageBusy || generating || wildFood.year === 0;
   document.body.dataset.seasonalWater = moisturePlaying ? 'running' : moistureBusyEpoch === epoch ? 'working' : hasSeasonal ? 'paused' : 'idle';
   workspace.update({ layer: currentLayer, selected,
     seasonalModel: moistureFrame ? isSoilMoistureFrame(moistureFrame) ? 'soil'
@@ -455,6 +467,12 @@ function inspect(id: number, preserveBasin = false): void {
       ['This year\'s precipitation', `${(vegetation.precipitationFactor[id] * 100).toFixed(0)}% of normal`],
       ['Root-zone moisture', `${(vegetation.rootMoisture[id] * 100).toFixed(0)}% of normal · ${DEFAULT_VEGETATION_SETTINGS.rootMemoryYears}-year memory`],
     ] : []),
+    ...(wildFood && world.water.bodyIds[id] === 0 ? [
+      ['Forager capacity', `${(wildFood.capacity[id] * 100).toFixed(2)} people/100 km² · ${number.format(Math.round(wildFood.capacity[id] * s.areasSquareMeters[id] / 1e6))} in this region`],
+      ['With perfect storage', `${(wildFood.storedCapacity[id] * 100).toFixed(2)} people/100 km² · lean month ${MONTH_NAMES[wildFood.leanMonth[id]]}`],
+      ['Plant food / game offtake', `${number.format(Math.round(wildFood.plantKcal[id] * 1e3))} / ${number.format(Math.round(wildFood.gameKcal[id] * 1e3))} Mcal/km²/year`],
+      ['Game stock', `${(wildFood.game[id] * 1e3).toFixed(0)} kg/km² · ${wildFood.gameCapacity[id] > 0 ? `${(wildFood.game[id] / wildFood.gameCapacity[id] * 100).toFixed(0)}% of capacity` : 'no capacity'}`],
+    ] : []),
     ...(windNormals ? [
       [`Month ${Number(temperatureMonthInput.value) + 1} wind speed normal`, `${Math.hypot(windNormals.monthlyEastMetersPerSecond[Number(temperatureMonthInput.value)][id], windNormals.monthlyNorthMetersPerSecond[Number(temperatureMonthInput.value)][id]).toFixed(2)} m/s`],
       ['Eastward wind component', `${windNormals.monthlyEastMetersPerSecond[Number(temperatureMonthInput.value)][id].toFixed(2)} m/s`],
@@ -517,6 +535,7 @@ function inspect(id: number, preserveBasin = false): void {
   element('climate-note').textContent = climateNormals ? climateExplanation(climateNormals, id, world.water.bodyIds[id] !== 0)
     : 'Climate normals are unavailable for this world.';
   renderVegetationNote(id);
+  renderFoodNote(id);
   void requestVegetationSeries(id);
   element('wind-note').textContent = windNormals
     ? `Latitude ${lat.toFixed(2)}° and the selected month determine a prescribed east/north tangent vector. Trades are easterly, midlatitude winds westerly, and polar winds easterly; the convergence belt follows half the subsolar declination. These are smooth, zonally symmetric model choices, not simulated atmospheric circulation. Terrain and water do not redirect wind. Seasonal water uses these normals on its own elapsed-time clock.`
@@ -606,6 +625,9 @@ function updateLegend(): void {
     woodyChange: [`Woody change · years ${Math.max(0, (vegetation?.year ?? 0) - CHANGE_YEARS)}–${vegetation?.year ?? 0} · drought losses and regrowth`, '−0.3', '+0.3'],
     productivity: [`Net primary productivity · year ${vegetation?.year ?? 0} · Miami model × realized cover`, '0', '≥2,500 g/m²/year'],
     precipitationAnomaly: [`Year ${vegetation?.year ?? 0} precipitation · fraction of the climate normal · land only`, '≤50%', '≥200%'],
+    foragerCapacity: [`Forager capacity · year ${wildFood?.year ?? 0} · year-round wild plant food and game, no storage, no aquatic food · logarithmic`, '≤0.1', '≥100 people/100 km²'],
+    leanSeason: [`Lean-season limit · year ${wildFood?.year ?? 0} · year-round capacity as a share of perfect-storage capacity`, '0 · storage decides', '1 · no seasonal limit'],
+    gameStock: [`Game stock · year ${wildFood?.year ?? 0} · herbivore live weight relative to its forage capacity · gray = no game`, '0 · depleted', '1 · at capacity'],
     windSpeed: [`Month ${Number(temperatureMonthInput.value) + 1} prescribed surface-wind speed · no atmospheric dynamics`,
       '0 m/s', `${number.format(windMaximum)} m/s`],
   };
@@ -624,6 +646,9 @@ function updateLegend(): void {
   element('legend-gradient').classList.toggle('change-gradient', currentLayer === 'woodyChange');
   element('legend-gradient').classList.toggle('productivity-gradient', currentLayer === 'productivity');
   element('legend-gradient').classList.toggle('precipitation-gradient', currentLayer === 'annualPrecipitation');
+  element('legend-gradient').classList.toggle('capacity-gradient', currentLayer === 'foragerCapacity');
+  element('legend-gradient').classList.toggle('lean-gradient', currentLayer === 'leanSeason');
+  element('legend-gradient').classList.toggle('game-gradient', currentLayer === 'gameStock');
   element('boundary-legend').hidden = !plateLayer;
   element('legend-gradient').classList.toggle('water-gradient', currentLayer === 'depth');
   element('legend-gradient').classList.toggle('temperature-gradient', currentLayer === 'temperature');
@@ -686,18 +711,33 @@ function renderVegetation(): void {
   } else {
     let driest = 0;
     for (let y = 1; y < s.length; y++) if (s[y].precipitationFactor < s[driest].precipitationFactor) driest = y;
-    element('vegetation-summary').textContent = `Land precipitation this year ${(last.precipitationFactor * 100).toFixed(0)}% of normal · forest ${(last.forestShare * 100).toFixed(1)}% of land (range ${(Math.min(...forest) * 100).toFixed(1)}–${(Math.max(...forest) * 100).toFixed(1)}%) · ${(last.labelChanges / Math.max(1, world.water.bodyIds.filter(body => body === 0).length) * 100).toFixed(2)}% of land regions changed class this year · driest year so far ${driest + 1} at ${(s[driest].precipitationFactor * 100).toFixed(0)}% · land productivity ${last.productivityPetagrams.toFixed(0)} Pg dry matter/year (Earth about 115–125). Green: forest share between ${(low * 100).toFixed(0)}% and ${(high * 100).toFixed(0)}%; blue: land precipitation, 80–120% of normal (dashed = normal).`;
+    const food = wildFood?.year === vegetation.year ? wildFood.summaries[wildFood.summaries.length - 1] : null;
+    const foodText = food ? ` · wild food for ${(food.capacityPeople / 1e6).toFixed(1)} M foragers year-round (game stock ${(food.gameRatio * 100).toFixed(0)}% of capacity)` : '';
+    element('vegetation-summary').textContent = `Land precipitation this year ${(last.precipitationFactor * 100).toFixed(0)}% of normal · forest ${(last.forestShare * 100).toFixed(1)}% of land (range ${(Math.min(...forest) * 100).toFixed(1)}–${(Math.max(...forest) * 100).toFixed(1)}%) · ${(last.labelChanges / Math.max(1, world.water.bodyIds.filter(body => body === 0).length) * 100).toFixed(2)}% of land regions changed class this year · driest year so far ${driest + 1} at ${(s[driest].precipitationFactor * 100).toFixed(0)}% · land productivity ${last.productivityPetagrams.toFixed(0)} Pg dry matter/year (Earth about 115–125)${foodText}. Green: forest share between ${(low * 100).toFixed(0)}% and ${(high * 100).toFixed(0)}%; blue: land precipitation, 80–120% of normal (dashed = normal)${food ? '; orange: forager capacity over its own range' : ''}.`;
   }
+  const capacity = wildFood?.year === vegetation.year ? wildFood.summaries.slice(1).map(x => x.capacityPeople) : [];
+  const capacityLow = Math.min(...capacity) * 0.95, capacityHigh = Math.max(...capacity) * 1.05;
   drawChart(chart, [{ className: 'forest', values: s.map(x => (x.forestShare - low) / (high - low)) },
-    { className: 'rain', values: s.map(x => 0.5 + (x.precipitationFactor - 1) * 2.5) }], 0.5);
+    { className: 'rain', values: s.map(x => 0.5 + (x.precipitationFactor - 1) * 2.5) },
+    ...(capacity.length ? [{ className: 'capacity', values: capacity.map(x => (x - capacityLow) / Math.max(1, capacityHigh - capacityLow)) }] : [])], 0.5);
   updateExperimentControls();
 }
 
 function applyVegetation(frame: VegetationFrame): void {
-  vegetation = frame; vegetationSeries = null; map.setVegetation(frame);
+  vegetation = frame; vegetationSeries = null; wildFoodSeries = null; forageResult = null; map.setVegetation(frame);
   for (const button of vegetationLayerButtons) button.disabled = false;
   renderVegetation(); updateLegend();
   if (selected !== null) inspect(selected, true);
+}
+
+/** Wild food follows the vegetation year; requested after every vegetation frame. */
+async function loadWildFood(activeEpoch: number, request: number): Promise<void> {
+  const frame = await api.wildFood(activeEpoch);
+  if (request !== generationId || frame.epoch !== epoch) return;
+  wildFood = frame; map.setWildFood(frame);
+  for (const button of foodLayerButtons) button.disabled = false;
+  renderVegetation(); updateLegend();
+  if (selected !== null) renderFoodNote(selected);
 }
 
 async function runVegetation(years: number | 'reset'): Promise<void> {
@@ -708,8 +748,10 @@ async function runVegetation(years: number | 'reset'): Promise<void> {
   try {
     const frame = years === 'reset' ? await api.initializeVegetation(activeEpoch) : await api.advanceVegetation(activeEpoch, years);
     if (request !== generationId || frame.epoch !== epoch) return;
-    vegetationBusy = false;
     applyVegetation(frame);
+    await loadWildFood(activeEpoch, request);
+    vegetationBusy = false;
+    if (selected !== null) void requestVegetationSeries(selected);
     showStatus(`Vegetation year ${frame.year} · native request + IPC ${number.format(performance.now() - started)} ms.`);
   } catch (error) {
     if (request === generationId) showStatus(error instanceof Error ? error.message : String(error), true);
@@ -732,9 +774,97 @@ async function requestVegetationSeries(id: number): Promise<void> {
     const series = await api.vegetationSeries(epoch, id);
     if (request !== seriesRequest || series.epoch !== epoch || selected !== id) return;
     vegetationSeries = series; renderVegetationNote(id);
+    // The native core reuses this region's replayed vegetation history.
+    const food = await api.wildFoodSeries(epoch, id);
+    if (request !== seriesRequest || food.epoch !== epoch || selected !== id) return;
+    wildFoodSeries = food; renderFoodNote(id);
   } catch (error) {
     if (request === seriesRequest) element('vegetation-note').textContent = `Vegetation history unavailable: ${error instanceof Error ? error.message : String(error)}`;
   }
+}
+
+/** Mean year-round capacity of a region over its replayed history, people/km². */
+const meanCapacity = (series: WildFoodSeries): number => series.years.reduce((a, y) => a + y.capacity, 0) / series.years.length;
+
+async function runForage(multiple: number): Promise<void> {
+  if (!world || !wildFood || selected === null || forageBusy || vegetationBusy || world.water.bodyIds[selected] !== 0) return;
+  const id = selected, activeEpoch = epoch;
+  if (wildFoodSeries?.region !== id || wildFoodSeries.years.length !== wildFood.year + 1) return;
+  const people = Math.max(1, Math.round(multiple * meanCapacity(wildFoodSeries) * world.surface.areasSquareMeters[id] / 1e6));
+  forageBusy = true; updateExperimentControls();
+  try {
+    const result = await api.forage(activeEpoch, id, people, 50);
+    if (activeEpoch !== epoch || selected !== id) return;
+    forageResult = result; renderFoodNote(id);
+  } catch (error) {
+    element('forage-note').hidden = false;
+    element('forage-note').textContent = `Foraging experiment unavailable: ${error instanceof Error ? error.message : String(error)}`;
+  } finally {
+    forageBusy = false; updateExperimentControls();
+  }
+}
+for (const button of forageButtons) button.addEventListener('click', () => void runForage(Number(button.dataset.multiple)));
+
+/** Explains the wild-food-1 supply of one region from the frame and its replayed history. */
+function renderFoodNote(id: number): void {
+  const list = element('food-details'), chart = svgElement('food-region-chart'), forageChart = svgElement('forage-chart');
+  list.replaceChildren();
+  const hide = (text: string): void => {
+    element('food-note').textContent = text; chart.toggleAttribute('hidden', true); forageChart.toggleAttribute('hidden', true);
+    element('food-forage').hidden = true; element('forage-note').hidden = true;
+  };
+  if (!world || !wildFood || !climateNormals || wildFood.year !== vegetation?.year) { hide('Wild food starts with vegetation.'); return; }
+  if (world.water.bodyIds[id] !== 0) { hide('Initial water region; aquatic food is not modeled.'); return; }
+  const f = wildFood, settings = DEFAULT_WILD_FOOD_SETTINGS, area = world.surface.areasSquareMeters[id] / 1e6;
+  const per100 = (x: number): string => (x * 100).toFixed(2), pct = (x: number): string => `${(x * 100).toFixed(0)}%`;
+  const mcal = (kcalPerSquareMeter: number): string => number.format(Math.round(kcalPerSquareMeter * 1e3));
+  const series = wildFoodSeries?.region === id && wildFoodSeries.years.length === f.year + 1 ? wildFoodSeries.years : null;
+  const ratio = f.storedCapacity[id] > 0 ? f.capacity[id] / f.storedCapacity[id] : 0;
+  const total = f.plantKcal[id] + f.gameKcal[id];
+  const limit = f.storedCapacity[id] <= 0 ? 'no food: no productive cover'
+    : ratio > 0.999 ? 'total food decides: game covers the months when plants run short'
+    : `the lean season decides: plants run short around ${MONTH_NAMES[f.leanMonth[id]]} and the game offtake cannot cover it`;
+  element('food-note').textContent = `${per100(f.capacity[id])} foragers per 100 km² year-round (${number.format(Math.round(f.capacity[id] * area))} in this region) at year ${f.year}: ${limit}.`;
+  const cold = climateNormals.coldestMonthCelsius[id], [warmNeed, coldNeed] = COLD_NEED_CELSIUS;
+  const coldShare = Math.min(1, Math.max(0, (warmNeed - cold) / (warmNeed - coldNeed)));
+  const rows = [
+    `Plant food ${mcal(f.plantKcal[id])} Mcal/km²/year (${total > 0 ? pct(f.plantKcal[id] / total) : '0%'} of energy): ${settings.herbEdibleShare * 100}% of herb and ${settings.woodyEdibleShare * 100}% of woody productivity is harvestable food at ${settings.plantEnergyKcalPerGram} kcal/g; a closed canopy hides up to ${pct(settings.canopyPenalty)} of tree food. Standing food loses ${pct(settings.plantSpoilagePerMonth)} per month.`,
+    `Game ${(f.game[id] * 1e3).toFixed(0)} kg/km² live weight, capacity ${(f.gameCapacity[id] * 1e3).toFixed(0)} kg/km² from forage (herbs plus ${pct(settings.browseShare)} of woody growth as browse; ${settings.gameCapacityGrams * 1e3} kg/km² at ${settings.gameReferenceForage} g/m²/year, exponent ${settings.gameCapacityExponent}, remembered over ${settings.gameMemoryYears} years). Grows ${settings.gameGrowthPerYear}/year, loses ${pct(settings.gameDiebackPerYear)} of any excess per year.`,
+    `Sustainable offtake ${mcal(f.gameKcal[id])} Mcal/km²/year: logistic production at up to half the capacity, ${pct(settings.gameHumanShare)} left to people by other predators, hunting success ${pct(f.access[id])} under this canopy, ${settings.gameEnergyKcalPerGram} kcal per gram of live weight.`,
+    `Need ${number.format(settings.needKcalPerDay)} kcal/person/day, up to ${pct(settings.coldNeedIncrease)} more in cold months (coldest month ${cold.toFixed(1)} °C → +${pct(settings.coldNeedIncrease * coldShare)}). With perfect storage ${per100(f.storedCapacity[id])} per 100 km²; the year-round value is ${pct(ratio)} of that.`,
+  ];
+  if (series && series.length > 1) {
+    const season = series[series.length - 1].season;
+    const peak = season.indexOf(Math.max(...season));
+    let low = 1;
+    for (let y = 2; y < series.length; y++) if (series[y].capacity < series[low].capacity) low = y;
+    let recovered = -1;
+    for (let y = low; y < series.length; y++) if (series[y].capacity >= 0.95 * series[0].capacity) { recovered = y; break; }
+    rows.push(`Plant food peaks in ${MONTH_NAMES[peak]} (${pct(season[peak])} of the year's growth). Worst year ${low}: ${per100(series[low].capacity)} per 100 km², ${pct(series[0].capacity > 0 ? series[low].capacity / series[0].capacity : 0)} of year 0; ${recovered >= 0 ? `back within 5% by year ${recovered}.` : 'not yet back within 5%.'} Chart: faint orange yearly capacity, orange its ${FOOD_MEAN_YEARS}-year mean, green game stock as a share of capacity.`);
+    const high = Math.max(...series.map(y => y.capacity)) * 1.05 || 1;
+    const mean = series.map((_, y) => { const window = series.slice(Math.max(0, y - FOOD_MEAN_YEARS + 1), y + 1); return window.reduce((a, b) => a + b.capacity, 0) / window.length; });
+    drawChart(chart, [{ className: 'capacity yearly', values: series.map(y => y.capacity / high) },
+      { className: 'capacity', values: mean.map(c => c / high) },
+      { className: 'game', values: series.map(y => y.gameCapacity > 0 ? y.game / y.gameCapacity : 0) }]);
+  } else {
+    if (f.year > 0) rows.push('History: waiting for the region replay…');
+    chart.toggleAttribute('hidden', true);
+  }
+  rows.push('Not modeled: fish and shellfish, human storage, fire, game migration, competition among species.');
+  for (const text of rows) { const row = document.createElement('li'); row.textContent = text; list.append(row); }
+  element('food-forage').hidden = f.year === 0 || !series || series.every(y => y.capacity <= 0);
+  const result = forageResult?.region === id && forageResult.game.length === f.year + 1 && series ? forageResult : null;
+  element('forage-note').hidden = !result && f.year > 0;
+  if (f.year === 0) element('forage-note').textContent = 'Advance vegetation to run a foraging experiment over the recorded years.';
+  if (result && series) {
+    const end = Math.min(result.years, f.year), base = series.map(y => y.game), unmet = result.shortfall.slice(1, end + 1);
+    let back = -1;
+    for (let y = end + 1; y < result.game.length; y++) if (result.game[y] >= 0.9 * base[y]) { back = y; break; }
+    element('forage-note').textContent = `${number.format(result.people)} people (${number.format(result.people / Math.max(1, meanCapacity(wildFoodSeries!) * area))}× the mean year-round capacity) foraged here in years 1–${end}: game ${pct(base[end] > 0 ? result.game[end] / base[end] : 0)} of the untouched stock at the end, average unmet need ${pct(unmet.reduce((a, b) => a + b, 0) / Math.max(1, unmet.length))}. ${end >= f.year ? 'Advance further to see recovery after they leave.' : back >= 0 ? `Game back within 10% of the untouched stock ${back - end} years after they left.` : 'Game has not yet recovered.'} Chart: green with the group, dashed without, red unmet need.`;
+    const high = Math.max(...base, ...result.game) * 1.05 || 1;
+    drawChart(forageChart, [{ className: 'baseline', values: base.map(g => g / high) }, { className: 'game', values: result.game.map(g => g / high) },
+      { className: 'shortfall', values: result.shortfall }]);
+  } else forageChart.toggleAttribute('hidden', true);
 }
 
 /** Mirrors the native vegetation-2 rules so the inspector names the deciding state. */
@@ -896,7 +1026,8 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
     map.setMoistureFrame(moistureFrame); renderMoisture();
     temperatureNormals = null; windNormals = null; climateNormals = null;
     vegetation = null; vegetationSeries = null; vegetationBusy = false; map.setVegetation(null);
-    for (const button of [...climateLayerButtons, ...vegetationLayerButtons]) button.disabled = true;
+    wildFood = null; wildFoodSeries = null; forageResult = null; map.setWildFood(null);
+    for (const button of [...climateLayerButtons, ...vegetationLayerButtons, ...foodLayerButtons]) button.disabled = true;
     renderVegetation();
     map.setTemperatureNormals(null); map.setWindNormals(null);
     waterBusy = false; budgetBusyEpoch = null;
@@ -1009,6 +1140,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
       const frame = await api.initializeVegetation(epoch);
       if (request !== generationId || frame.epoch !== epoch) return;
       applyVegetation(frame);
+      await loadWildFood(epoch, request);
     } catch (error) {
       if (request !== generationId) return;
       climateError = error instanceof Error ? error.message : String(error);
@@ -1017,6 +1149,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
     if ((currentLayer === 'temperature' && !temperatureNormals) || (currentLayer === 'windSpeed' && !windNormals)
       || ((currentLayer === 'biome' || currentLayer === 'annualPrecipitation') && !climateNormals)
       || (['vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly'].includes(currentLayer) && !vegetation)
+      || (['foragerCapacity', 'leanSeason', 'gameStock'].includes(currentLayer) && !wildFood)
       || (isMoistureLayer(currentLayer) && !supportsMoistureLayer(moistureFrame, currentLayer))) {
       document.querySelector<HTMLButtonElement>('[data-layer="surface"]')?.click();
     }
@@ -1039,6 +1172,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
       windLayerButton.disabled = windNormals === null;
       for (const button of climateLayerButtons) button.disabled = climateNormals === null;
       for (const button of vegetationLayerButtons) button.disabled = vegetation === null;
+      for (const button of foodLayerButtons) button.disabled = wildFood === null;
       temperatureMonthInput.disabled = temperatureNormals === null && windNormals === null;
       waterBudgetButton.disabled = world === null || budgetBusyEpoch === epoch;
       element<HTMLButtonElement>('play').disabled = world === null;
