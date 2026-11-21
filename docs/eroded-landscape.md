@@ -208,6 +208,10 @@ seven laws in all 27 standard and 15 extreme runs (294 of 294 checks), in 7 min
 | 5c151f46 | 34.2% → 35.6% | 120.4 → 122.9 | 13.12 → 13.42 |
 | 4836187e | 23.6% → 25.7% | 143.9 → 149.9 | 19.71 → 20.14 |
 
+Repeated after `sediment-1` (commit `55a4055`): again 294 of 294 checks; the three
+named seeds change by at most 0.1 percentage points of forest, 0.1 Pg/yr of NPP
+and 0.03 M foragers.
+
 ## Acceptance checks
 
 - Native checks cover independently integrated deposited volume, the source
