@@ -4,6 +4,9 @@ export const RIVER_MODEL_VERSION = 'rivers-1' as const;
 
 export const DEFAULT_RIVER_SETTINGS = {
   soilCapacityMm: 100,
+  soilRechargeExponent: 2,
+  soilEtFullFraction: 0.7,
+  soilStepsPerMonth: 4,
   snowMeltMmPerDegreeDay: 3,
   snowThresholdCelsius: 0,
   petTemperatureOffsetCelsius: 5,

@@ -22,6 +22,8 @@ test('river protocol carries conserved runoff, spill records and reproducible di
     const frame = decodeRivers(packet, n, 1);
     assert.equal(packet.header.protocol, 9);
     assert.equal(frame.modelVersion, RIVER_MODEL_VERSION);
+    assert.equal(frame.settings.soilRechargeExponent, 2);
+    assert.equal(frame.settings.soilStepsPerMonth, 4);
     assert.equal(frame.monthDays.reduce((a, b) => a + b, 0), 365);
     assert.equal(frame.oceanTerminal, world.water.bodyIds.indexOf(world.water.mainOceanId));
     assert.ok(frame.spillSegments.length > 0 && frame.lakes.size > 0);

@@ -41,19 +41,36 @@ handles ice sheets. With every month at or below freezing, all precipitation
 accumulates and the region generates zero runoff. Glacier flow, calving, and
 sublimation are outside this monthly balance.
 
-**Soil and actual evapotranspiration (AET).** Rain and melt join water carried
-over from the previous month. AET withdraws up to PET; the remaining water fills
-a uniform 100 mm root-zone bucket, with any excess becoming runoff. The capacity
-represents an order-of-magnitude plant-available soil stock. This model takes
-no soil or vegetation input. Monthly updates clamp a translated stock to
-`[0, 100]`; their composition over a year is also a translated clamp. For
-nonpositive annual translation, the end of one pass from empty is the fixed
-point. For positive translation, the end of one pass from full is the fixed
-point. The computed normal year starts at that exact periodic state, up to
-rounding. For each land region over the year,
+**Soil and actual evapotranspiration (AET).** The uniform root-zone
+capacity is 100 mm of plant-available water. Each month distributes rain plus
+melt and PET evenly across four deterministic wetting and drying pulses. This
+approximates wetting within the month from monthly inputs. The previous model
+let monthly AET consume all available water before producing any runoff,
+which suppressed runoff from wetting events even on moist ground.
+
+The HBV-type recharge share is `(S / C)^2` for soil stock `S` and capacity
+`C`. Integrating its complement, `dS/dL = 1 − (S / C)^2`, during a wetting
+pulse lets recharge rise as that pulse wets the soil. With `s = S / C` and
+`w = tanh(L / C)` for liquid input `L`, infiltration is
+`C × (1 − s²) × w / (1 + s × w)`. The rest of the pulse generates runoff
+immediately. This applies the HBV soil-moisture rule without a separate
+groundwater response reservoir. AET then draws up to pulse PET, scaled by
+`min(1, S / (0.7 × C))` at the post-wetting stock and bounded by the
+available water. The capacity, stress threshold and pulse count are uniform
+approximation parameters. [Lindström et al. (1997)](https://doi.org/10.1016/S0022-1694(97)00041-3),
+[HBV-light manual](https://www.geo.uzh.ch/dam/jcr%3Ac8afa73c-ac90-478e-a8c7-929eed7b1b62/hbv_manual_2005.pdf)
+
+Each pulse and thus each month conserves liquid input plus starting soil
+stock as runoff, AET and ending soil stock. The annual map is monotone and
+nonexpansive on `[0, C]`. Starting with an empty stock, up to four normal
+years try to close the cycle. When the annual residual stays above
+`10⁻¹⁰ mm`, bisection brackets the crossing of ending and starting stock
+to that same precision. With no PET, a full bucket is periodic and all
+liquid input generates runoff. Annual land storage records the snow/ice change.
+For each dry land region,
 
 ```text
-P = AET + runoff + change in snow/ice and soil water
+P = AET + runoff + snow/ice gain      (up to the soil-solver and rounding tolerance)
 0 ≤ AET ≤ min(P, PET)
 0 ≤ runoff
 ```
@@ -108,15 +125,20 @@ destination is a closed terminal.
 
 ## Desktop and transport
 
-**Runoff** shows locally generated land runoff on a linear 0–1,000 mm/year
-scale. **River discharge** shows accumulated mean flow on a fixed
-`log10(1 + Q)` scale through 100,000 m³/s. Both layers use the same fields in the
-flat map and globe. The river overlay uses increasing line widths at
-300, 1,000, 3,000, and 10,000 m³/s. Smaller streams remain inspectable. Rivers
-with a maximum monthly discharge below 1 m³/s are classed as **None**. A minimum
-of at least 1 m³/s is **Perennial**. The remaining rivers are **Seasonal /
-ephemeral** and are drawn thinner and lighter. Area-weighted drainage lines
-serve as the fallback while river normals are unavailable.
+**Runoff** shows locally generated land runoff on a fixed `log(1 + depth)`
+scale with color anchors at 0, 10, 50, 200, 600 and 2,000 mm/year. The palette
+runs from warm dry tones through muted green to deep blue. **River discharge**
+draws the network over neutral shaded relief with bathymetric water. Mean
+discharge sets line width, color and opacity in five logarithmically spaced
+classes starting at 300, 1,000, 3,000, 10,000 and 30,000 m³/s. Perennial reaches
+are blue. Seasonal reaches are thinner and teal. The same lines appear on
+**Land and water**, while **Runoff** shows the local depth field alone. These
+displays use the same regional inputs and paths on the flat map and globe.
+
+Rivers with a maximum monthly discharge below 1 m³/s are classed as **None**.
+A minimum of at least 1 m³/s is **Perennial**. The remaining rivers are
+**Seasonal / ephemeral**. Streams below the display cutoff remain inspectable.
+Area-weighted lines serve as a fallback while river normals are unavailable.
 
 Inspect a region for PET, land AET and runoff, mean/minimum/maximum discharge
 and months of the extrema (first on ties), flow class, and ocean or endorheic
@@ -138,85 +160,145 @@ thresholds, destinations, and closure of the main budgets.
 ## Measurements
 
 `cargo run --release --locked --manifest-path native/Cargo.toml --example rivers_report`
-uses the default `multiscale-geography-4` geometry at subdivision 6 (40,962
-regions). Depths are area-weighted over dry land. Ocean flow includes
-precipitation contributed by spilling inland lakes. Timings are native analysis
-only, starting with computed normals and ending before wire encoding.
+uses the three review seeds at subdivision 6 (40,962 regions) with the default
+`multiscale-geography-4` geometry. Depths are area-weighted over dry land.
+Ocean flow includes precipitation contributed by spilling inland lakes.
+Timings cover native analysis with normals already computed, before wire
+encoding.
 
-| World | Land P (mm/year) | Land AET (mm/year) | Land runoff (mm/year) | Land ice gain (mm/year) | Ocean flow (km³/year) | Endorheic land | Native analysis |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| first-light | 635.3 | 524.2 | 92.2 | 18.9 | 13,501 | 5.9% | 32 ms |
-| 5c151f46 | 655.5 | 531.0 | 114.3 | 10.2 | 17,113 | 2.4% | 34 ms |
-| 4836187e | 764.5 | 682.6 | 70.5 | 11.4 | 10,821 | 13.2% | 32 ms |
-| Earth reference | — | 480–550 | 250–320 | — | 37,000–45,000 | roughly 18–20% | — |
+| World | Land P (mm/year) | Land AET (mm/year) | Land runoff (mm/year) | Land ice gain (mm/year) | Runoff/P | AET/P | Ocean flow (km³/year) | Endorheic land | Native analysis |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| first-light | 635.3 | 446.6 | 169.8 | 18.9 | 26.7% | 70.3% | 24,842 | 0.048% | 137.4 ms |
+| 5c151f46 | 655.5 | 444.3 | 201.0 | 10.2 | 30.7% | 67.8% | 29,750 | 0.000% | 144.1 ms |
+| 4836187e | 764.5 | 587.8 | 165.2 | 11.4 | 21.6% | 76.9% | 24,540 | 2.750% | 79.8 ms |
 
-Earth reference ranges are comparison targets from the task. Published studies
-estimate 44,200 ± 2,660 km³/year ocean inflow, a median terrestrial ET of
-549 mm/year across water balance estimates, and endorheic area of approximately
-one fifth of land. [Clark et al. (2015)](https://doi.org/10.1175/JHM-D-14-0183.1),
+The original monthly bucket yielded 92.2, 114.3 and 70.5 mm/year of runoff
+on these worlds. The new partition increases the runoff coefficients from
+14.5%, 17.4% and 9.2% to the values above. The inherited land precipitation
+is 635–765 mm/year under the frozen `climate-normals-1`.
+
+For orientation, terrestrial ET estimates have a median near 549 mm/year.
+Published global water budgets report runoff coefficients around 35–41%,
+ocean flow estimates include 44,200 ± 2,660 km³/year, and roughly one fifth
+of Earth's land is endorheic.
+[Trenberth et al. (2007)](https://staff.cgd.ucar.edu/trenbert/trenberth.pdf/GEWEX-JHydroMet8.pdf),
+[van der Ent et al. (2010)](https://doi.org/10.1029/2010WR009127),
+[Clark et al. (2015)](https://doi.org/10.1175/JHM-D-14-0183.1),
 [Xiong et al. (2023)](https://doi.org/10.5194/essd-15-4571-2023),
 [Wang et al. (2018)](https://doi.org/10.1038/s41561-018-0265-7)
 
-| Seed | Land runoff reaching ocean | Land runoff reaching closed terminals | Land runoff evaporating in spilling lakes | Overflowing / closed inland terminals |
+Using an Earth reference of 760 mm/year and a 0.35 runoff coefficient from
+the Trenberth budget gives 266 mm/year of runoff. The table decomposes this
+depth gap as `0.35 × (760 − P) + (0.35 × P − Q)`, where `Q` is modeled
+runoff depth. The first term isolates precipitation at the reference
+coefficient. The second includes the allocation to AET and permanent ice
+within the model. This arithmetic comparison does not rerun the climate.
+
+| World | Runoff gap (mm/year) | Precipitation term (mm/year) | Share of gap | Remaining term (mm/year) |
 | --- | ---: | ---: | ---: | ---: |
-| first-light | 98.03% | 1.01% | 0.96% | 14 / 5 |
-| 5c151f46 | 99.61% | 0.08% | 0.30% | 29 / 9 |
-| 4836187e | 98.65% | 0.30% | 1.05% | 21 / 25 |
+| first-light | 96.2 | 43.6 | 45% | 52.6 |
+| 5c151f46 | 65.0 | 36.6 | 56% | 28.4 |
+| 4836187e | 100.8 | −1.6 | −2% | 102.4 |
 
-Largest ocean mouth cells by mean discharge in m³/s, with region IDs in
-parentheses. A receiving cell can aggregate several neighboring reaches.
+For the third seed, annual precipitation slightly exceeds the reference. More
+of its precipitation falls in climates with high PET relative to precipitation.
+Snow/ice gain represents 1.5–3.0% of land precipitation across the three worlds.
+The ocean receives 95.6–98.9% of generated land runoff. Ocean flow remains
+26–39% below the 40,000 km³/year Trenberth reference. The largest ocean
+receiving cells carry 33,730, 46,312 and 37,154 m³/s, respectively. The report
+prints the ten highest-flow mouths with their region IDs for each world.
 
-| Rank | first-light | 5c151f46 | 4836187e |
-| ---: | ---: | ---: | ---: |
-| 1 | 17,542 (35050) | 41,221 (28145) | 24,548 (28512) |
-| 2 | 11,580 (3759) | 18,959 (30004) | 9,554 (6269) |
-| 3 | 10,730 (28550) | 17,449 (27320) | 9,538 (28529) |
-| 4 | 9,873 (14512) | 9,745 (7699) | 6,823 (29478) |
-| 5 | 9,336 (7266) | 8,570 (13184) | 4,971 (3482) |
-| 6 | 8,654 (26084) | 8,443 (30480) | 4,614 (24837) |
-| 7 | 7,407 (3756) | 7,472 (1840) | 4,100 (30416) |
-| 8 | 7,291 (14598) | 6,120 (15049) | 4,053 (29469) |
-| 9 | 6,893 (13764) | 5,912 (14939) | 3,630 (6138) |
-| 10 | 6,531 (29248) | 5,771 (7226) | 3,370 (7545) |
+| World | Land runoff reaching ocean | Land runoff reaching closed terminals | Land runoff evaporating in spilling lakes | Overflowing / closed inland terminals |
+| --- | ---: | ---: | ---: | ---: |
+| first-light | 95.57% | 0.01% | 4.42% | 18 / 1 |
+| 5c151f46 | 98.87% | 0.00% | 1.13% | 38 / 0 |
+| 4836187e | 95.84% | 0.34% | 3.82% | 41 / 5 |
 
-The largest outlets span Mississippi- to Congo-scale flows (roughly 17,000 and
-41,000 m³/s), and each seed has an upper tail above the next few mouths.
-No outlet is Amazon-scale (roughly 209,000 m³/s). The overall flow distribution
-is plausible for a drier set of worlds with this geography, with a compressed
-upper tail relative to Earth. [Sperna Weiland et al. (2012), Table 2](https://doi.org/10.5194/hess-16-1047-2012)
+### Regional Budyko comparison
 
-Ocean flow is 2.2–4.2 times below the Earth reference range across these seeds.
-The first two have AET in the reference range, but land precipitation is only
-635–656 mm/year. Holding the measured ice gain and using even 480 mm/year of
-AET leaves at most 136 and 165 mm/year of runoff, respectively. The third has
-more precipitation, but AET consumes about 89% of it. Its low-runoff result
-also depends on the spatial and seasonal overlap of rainfall and high PET,
-and on the bucket giving monthly AET first access to available water. Lake
-retention cannot explain the ocean-flow deficit. The ocean receives 98.0%,
-99.6%, and 98.6% of land runoff, respectively. The precipitation climatology
-was used as supplied.
+The annual diagnostic uses Fu's curve
+`AET/P = 1 + φ − (1 + φ^ω)^(1/ω)`, where `φ = PET/P`. The reference is
+`ω = 2.6` and the illustrative catchment span is `ω = 2–4`. The span is a
+comparison, not a fitted confidence interval. For each modeled region without
+permanent snow/ice gain and with positive precipitation, calculate its
+aridity and its three Fu values. The table bins regions by aridity and
+weights both modeled ratios and Fu values by precipitation volume. This
+compares the curves at each region's aridity before taking the mean. The
+excluded areas are 10.5%, 7.0% and 4.7% of dry land, respectively. Fu's curve
+is a long-term catchment relationship, so this is a regional plausibility
+check using gridded inputs and Oudin PET.
+[Zhang et al. (2004)](https://doi.org/10.1029/2003WR002710)
+
+| World | Aridity band | Land area | PET/P | AET/P | Fu (2.6) | Fu (2–4) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| first-light | <0.5 | 13.6% | 0.352 | 0.333 | 0.324 | 0.289–0.347 |
+| first-light | 0.5–0.8 | 11.1% | 0.639 | 0.497 | 0.526 | 0.450–0.596 |
+| first-light | 0.8–1.2 | 17.8% | 1.027 | 0.741 | 0.701 | 0.592–0.817 |
+| first-light | 1.2–2 | 32.5% | 1.521 | 0.845 | 0.816 | 0.697–0.927 |
+| first-light | 2–3 | 12.8% | 2.372 | 0.908 | 0.904 | 0.796–0.980 |
+| first-light | ≥3 | 1.8% | 3.184 | 0.941 | 0.940 | 0.846–0.992 |
+| first-light | all | 89.5% | 1.252 | 0.729 | 0.707 | 0.606–0.802 |
+| 5c151f46 | <0.5 | 13.9% | 0.395 | 0.364 | 0.359 | 0.318–0.388 |
+| 5c151f46 | 0.5–0.8 | 20.4% | 0.645 | 0.488 | 0.529 | 0.453–0.601 |
+| 5c151f46 | 0.8–1.2 | 23.5% | 1.012 | 0.733 | 0.696 | 0.587–0.811 |
+| 5c151f46 | 1.2–2 | 29.9% | 1.497 | 0.837 | 0.812 | 0.693–0.925 |
+| 5c151f46 | 2–3 | 5.2% | 2.263 | 0.888 | 0.897 | 0.787–0.977 |
+| 5c151f46 | ≥3 | <0.1% | 3.025 | 0.941 | 0.936 | 0.839–0.991 |
+| 5c151f46 | all | 93.0% | 1.092 | 0.690 | 0.676 | 0.577–0.771 |
+| 4836187e | <0.5 | 7.1% | 0.351 | 0.329 | 0.323 | 0.288–0.346 |
+| 4836187e | 0.5–0.8 | 6.9% | 0.638 | 0.486 | 0.525 | 0.449–0.595 |
+| 4836187e | 0.8–1.2 | 19.1% | 1.043 | 0.757 | 0.706 | 0.596–0.823 |
+| 4836187e | 1.2–2 | 39.8% | 1.511 | 0.858 | 0.814 | 0.695–0.926 |
+| 4836187e | 2–3 | 17.9% | 2.372 | 0.926 | 0.904 | 0.796–0.980 |
+| 4836187e | ≥3 | 4.5% | 3.287 | 0.962 | 0.943 | 0.851–0.993 |
+| 4836187e | all | 95.3% | 1.386 | 0.784 | 0.748 | 0.642–0.848 |
+
+Every band mean falls within the reference span. The largest departure from
+the central curve is in the `0.8–1.2` band for `4836187e`. The model
+consumes 0.757 of precipitation there versus 0.706 on the central curve.
+
+### Dry-terminal evaporation sensitivity
+
+The entries show the percentage of dry land ultimately assigned to a closed
+terminal, the number of closed inland terminals, and ocean flow. Only the
+dry-sink footprint cap varies. Initially wet lakes keep their own footprints.
+
+| World | 5% cap (area / count / km³/year) | 10% cap (area / count / km³/year) | 20% cap (area / count / km³/year) |
+| --- | ---: | ---: | ---: |
+| first-light | 0.048% / 1 / 24,882 | 0.048% / 1 / 24,842 | 0.599% / 2 / 24,814 |
+| 5c151f46 | 0.000% / 0 / 29,849 | 0.000% / 0 / 29,750 | 0.330% / 2 / 29,625 |
+| 4836187e | 2.719% / 4 / 24,598 | 2.750% / 5 / 24,540 | 3.847% / 10 / 24,508 |
+
+The modeled closed area is below the old-bucket range of 2.4–13.2% because
+more runoff now exceeds terminal evaporation. Doubling the cap from 10% to
+20% raises closed area by at most 1.10 percentage points, well short of the
+terrestrial comparison. The default remains 10%. Wide departures call for
+review of basin extents, spill equilibrium and the distribution of dry
+climates before retuning the footprint cap.
 
 ## Acceptance and interpretation
 
 - Native tests check the Oudin reference, cross-year snowmelt, persistent
-  ice storage, exact periodic soil accounting, land and global conservation,
-  monotonic monthly discharge along static routes, an independently summed
+  ice storage, monthly soil closure, increasing runoff with saturation, the
+  periodic soil balance, a generated land Fu-band check, land and global
+  conservation, monotonic discharge along static routes, an independently summed
   coastal catchment, zero precipitation, a dry sink spilling into a wet lake,
   closure under arid forcing, and the fully wet and oceanless cases.
 - The node test checks the protocol, both runoff-ledger closures, monthly
   discharge classes, adjacency of spill segments, regenerated fingerprints
   and stale model replacement, and malformed frames. Desktop coverage checks
-  both layers, line mode, inspector values, and the unchanged fingerprint.
+  both layers, line mode, inspector values, and fingerprint preservation.
 - Run `node --import tsx scripts/rivers-review.ts [OUTPUT_DIR] [seed]` after
-  building the desktop to capture both atlas layers, a terminal inspector,
-  and globe discharge. The default path is `artifacts/rivers-1-review/`.
+  building the desktop to capture the atlas and globe on Runoff, River
+  discharge, and Land and water, plus a terminal inspector. The default output
+  is `artifacts/rivers-2-review/`. The script also checks that switching off
+  river lines changes the globe render.
 
 The solution is a climatic normal-year budget with prescribed evaporation
 areas. Lake levels, capacity to reach the sill, seasonal filling history,
 groundwater baseflow, and channel hydraulics are outside the model. A small
-annual surplus connects a basin even if reaching its sill would take many years
-or require a larger evaporating area. The low endorheic area makes sensitivity
-to the area cap and basin spill representation a review question. Bucket
-capacity and within-month partitioning are further sensitivity questions,
-especially where warm rain arrives in brief storms. The line widths are map
-symbology and have no physical effect.
+annual surplus connects a basin even if reaching its sill would take many
+years or require a larger evaporating area. The four soil pulses describe a
+fixed within-month partition of monthly inputs. Actual storm timing, soil
+variation, vegetation coupling and glacier runoff are absent. The line widths
+are map symbology with no physical effect.

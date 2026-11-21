@@ -13,11 +13,16 @@ use std::{array, cmp::Reverse, collections::BinaryHeap};
 pub const MODEL_VERSION: &str = "rivers-1";
 const MONTHS: usize = MONTHS_PER_YEAR;
 const SECONDS_PER_DAY: f64 = 86_400.;
+const SOIL_STEPS_PER_MONTH: usize = 4;
+const SOIL_TOLERANCE_MM: f64 = 1e-10;
 
 #[derive(Clone, Copy, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     pub soil_capacity_mm: f64,
+    pub soil_recharge_exponent: u32,
+    pub soil_et_full_fraction: f64,
+    pub soil_steps_per_month: usize,
     pub snow_melt_mm_per_degree_day: f64,
     pub snow_threshold_celsius: f64,
     pub pet_temperature_offset_celsius: f64,
@@ -35,6 +40,9 @@ impl Default for Settings {
         let orbit = Orbit::default();
         Self {
             soil_capacity_mm: 100.,
+            soil_recharge_exponent: 2,
+            soil_et_full_fraction: 0.7,
+            soil_steps_per_month: SOIL_STEPS_PER_MONTH,
             snow_melt_mm_per_degree_day: 3.,
             snow_threshold_celsius: 0.,
             pet_temperature_offset_celsius: 5.,
@@ -152,28 +160,80 @@ fn land_balance(
         }
     });
 
-    // Exact periodic spin-up of a bucket: the annual map is a translated clamp.
-    // F(empty) is fixed for a nonpositive translation, F(full) for a positive one.
-    let net: Monthly = array::from_fn(|m| liquid[m] - pet[m]);
-    let capacity = s.soil_capacity_mm;
-    let start_soil = net.iter().fold(
-        if net.iter().sum::<f64>() > 0. {
-            capacity
-        } else {
-            0.
-        },
-        |soil, &delta| (soil + delta).clamp(0., capacity),
-    );
-    let (mut soil, mut aet) = (start_soil, 0.);
-    let runoff = array::from_fn(|m| {
-        let available = soil + liquid[m];
-        let used = pet[m].min(available);
+    let (runoff, aet) = soil_balance(liquid, pet, s);
+    (runoff, aet, snow - start_snow)
+}
+
+/// Integrate HBV recharge (dS/dL = 1 - (S/C)²) over incoming liquid L.
+fn infiltrate(soil: f64, capacity: f64, wetting: f64) -> f64 {
+    let saturation = soil / capacity;
+    (capacity - soil) * (1. + saturation) * wetting / (1. + saturation * wetting)
+}
+
+fn soil_month(
+    soil: &mut f64,
+    capacity: f64,
+    full_et: f64,
+    input: f64,
+    wetting: f64,
+    demand: f64,
+) -> (f64, f64) {
+    let (mut runoff, mut aet) = (0., 0.);
+    for _ in 0..SOIL_STEPS_PER_MONTH {
+        let entered = infiltrate(*soil, capacity, wetting)
+            .min(input)
+            .min(capacity - *soil);
+        runoff += input - entered;
+        *soil += entered;
+        let used = soil.min(demand * (*soil / full_et).min(1.));
         aet += used;
-        let remaining = available - used;
-        soil = remaining.min(capacity);
-        remaining - soil
-    });
-    (runoff, aet, (snow - start_snow) + (soil - start_soil))
+        *soil -= used;
+    }
+    (runoff, aet)
+}
+
+fn soil_balance(liquid: Monthly, pet: Monthly, s: Settings) -> (Monthly, f64) {
+    // With no demand, a full bucket is already periodic and passes all input.
+    if pet.iter().all(|&mm| mm == 0.) {
+        return (liquid, 0.);
+    }
+    let capacity = s.soil_capacity_mm;
+    let full_et = capacity * s.soil_et_full_fraction;
+    let input = liquid.map(|mm| mm / SOIL_STEPS_PER_MONTH as f64);
+    let wetting = input.map(|mm| (mm / capacity).tanh());
+    let demand = pet.map(|mm| mm / SOIL_STEPS_PER_MONTH as f64);
+    let year = |mut soil: f64| {
+        let mut aet = 0.;
+        let runoff = array::from_fn(|m| {
+            let (runoff, used) = soil_month(
+                &mut soil, capacity, full_et, input[m], wetting[m], demand[m],
+            );
+            aet += used;
+            runoff
+        });
+        (soil, runoff, aet)
+    };
+    // The annual soil map is monotone and nonexpansive. Iteration from zero
+    // usually closes quickly. Bisection bounds the work for weak annual forcing.
+    let mut low = 0.;
+    for _ in 0..4 {
+        let (end, runoff, aet) = year(low);
+        if (end - low).abs() <= SOIL_TOLERANCE_MM {
+            return (runoff, aet);
+        }
+        low = end;
+    }
+    let mut high = capacity;
+    while high - low > SOIL_TOLERANCE_MM {
+        let mid = (low + high) / 2.;
+        if year(mid).0 > mid {
+            low = mid;
+        } else {
+            high = mid;
+        }
+    }
+    let (_, runoff, aet) = year((low + high) / 2.);
+    (runoff, aet)
 }
 
 fn classify(volume: &Monthly, days: &[usize; MONTHS], s: Settings) -> u32 {
@@ -318,6 +378,18 @@ fn drainage_groups(w: &World) -> Vec<Vec<usize>> {
 
 impl Rivers {
     pub fn from_world(w: &World, climate: &Normals) -> Result<Self, String> {
+        Self::with_dry_lake_area_fraction(w, climate, Settings::default().dry_lake_area_fraction)
+    }
+
+    /// Evaluate sensitivity to the dry-sink evaporation footprint.
+    pub fn with_dry_lake_area_fraction(
+        w: &World,
+        climate: &Normals,
+        dry_lake_area_fraction: f64,
+    ) -> Result<Self, String> {
+        if !(0. ..=1.).contains(&dry_lake_area_fraction) {
+            return Err("Dry-lake area fraction must be between zero and one.".into());
+        }
         let n = w.surface.areas.len();
         if climate.model_version != crate::climate_normals::MODEL_VERSION
             || [
@@ -329,7 +401,10 @@ impl Rivers {
         {
             return Err("River climate normals do not match the surface.".into());
         }
-        let settings = Settings::default();
+        let settings = Settings {
+            dry_lake_area_fraction,
+            ..Settings::default()
+        };
         let mut month_days = [0; MONTHS];
         for day in 0..DAYS_PER_YEAR {
             month_days[day * MONTHS / DAYS_PER_YEAR] += 1;
@@ -661,17 +736,76 @@ mod tests {
     }
 
     #[test]
-    fn oudin_reference_and_periodic_soil_water() {
+    fn oudin_reference() {
         let s = Settings::default();
         near(potential_et(20., 30. / 0.0864, 1, s), 30. / 2.45 / 4.);
         assert_eq!(potential_et(-6., 300., 31, s), 0.);
         assert_eq!(potential_et(20., 0., 31, s), 0.);
+    }
+
+    #[test]
+    fn soil_recharge_increases_with_saturation_and_closes_monthly() {
+        let capacity = Settings::default().soil_capacity_mm;
+        let full_et = capacity * Settings::default().soil_et_full_fraction;
+        let input = 25.;
+        let wetting = (input / capacity).tanh();
+        let demand = 12.;
+        let mut previous = -1.;
+        for start in [0., 10., 30., 50., 70., 90., capacity] {
+            let mut soil = start;
+            let (runoff, aet) = soil_month(&mut soil, capacity, full_et, input, wetting, demand);
+            assert!(runoff > previous);
+            assert!((0. ..=capacity).contains(&soil));
+            assert!((0. ..=4. * demand).contains(&aet));
+            near(start + 4. * input, soil + aet + runoff);
+            previous = runoff;
+        }
+        near(infiltrate(0., capacity, wetting), capacity * wetting);
+        assert_eq!(infiltrate(capacity, capacity, wetting), 0.);
+    }
+
+    #[test]
+    fn soil_budget_repeats_across_a_seasonal_year() {
         let mut p = [0.; MONTHS];
         p[11] = 300.;
-        let (runoff, aet, storage) = land_balance([10.; MONTHS], p, [20.; MONTHS], [30; MONTHS], s);
-        near(runoff[11], 180.);
-        near(aet, 120.);
+        let (runoff, aet, storage) = land_balance(
+            [10.; MONTHS],
+            p,
+            [20.; MONTHS],
+            [30; MONTHS],
+            Settings::default(),
+        );
+        assert!(runoff[11] > 0. && runoff[..11].iter().all(|&q| q == 0.));
+        near(aet + runoff.iter().sum::<f64>(), 300.);
+        assert!(aet > 20. && aet <= 240.);
         near(storage, 0.);
+        // Weak forcing exercises the bracketed solve when spin-up is slow.
+        let (runoff, aet) = soil_balance([0.001; MONTHS], [0.001; MONTHS], Settings::default());
+        near(aet + runoff.iter().sum::<f64>(), 0.012);
+        assert!(aet > 0. && runoff[0] > 0.);
+    }
+
+    #[test]
+    fn generated_land_et_is_within_the_fu_band() {
+        let w = world(0.71);
+        let climate = Normals::from_world(&w).unwrap();
+        let result = Rivers::from_world(&w, &climate).unwrap();
+        let mut volumes = [0.; 3];
+        for (i, &area) in w.surface.areas.iter().enumerate() {
+            let p = climate.annual_precipitation_mm[i];
+            if w.water.body_ids[i] != 0 || p <= 0. || result.storage_mm[i] > 1e-6 {
+                continue;
+            }
+            let phi = result.pet_mm[i] / p;
+            let fu = |omega: f64| 1. + phi - (1. + phi.powf(omega)).powf(1. / omega);
+            volumes[0] += p * area * fu(2.);
+            volumes[1] += result.aet_mm[i] * area;
+            volumes[2] += p * area * fu(4.);
+        }
+        assert!(
+            volumes[0] < volumes[1] && volumes[1] < volumes[2],
+            "{volumes:?}"
+        );
     }
 
     #[test]
