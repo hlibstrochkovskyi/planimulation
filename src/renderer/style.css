@@ -347,3 +347,14 @@ label span { float: right; color: var(--muted); font-weight: 400; }
 }
 @media (max-height: 720px) { .experiment-panel { padding-top: 8px; padding-bottom: 8px; } #moisture-step-note { display: none; } .inspector-empty { padding-top: 24px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
+/* traversal-1 */
+#legend-gradient.travel-cost-gradient { background: linear-gradient(90deg, #e8e0b2, #d8a854 33%, #a84c38 66%, #4c244e); }
+#isochrone-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--muted, #9aa); }
+#isochrone-legend span { display: inline-flex; align-items: center; gap: 4px; }
+#isochrone-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+#traversal-context { padding: 8px 14px; border-top: 1px solid var(--border); }
+.traversal-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; }
+.traversal-controls .control-label { color: var(--muted); }
+.traversal-controls > #traversal-scope { width: 100%; color: var(--muted); font-size: 11px; }
+.selection-actions { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+.selection-actions button { font-size: 11px; }

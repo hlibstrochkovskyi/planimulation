@@ -5,6 +5,7 @@ import type { TemperatureNormals } from '../core/seasonal-temperature';
 import type { ClimateNormals } from '../core/climate-normals';
 import type { VegetationFrame, VegetationSeries } from '../core/vegetation';
 import type { ForageExperiment, WildFoodFrame, WildFoodSeries } from '../core/wild-food';
+import type { TraversalCosts, TravelField, TravelSeason } from '../core/traversal';
 import type { WindNormals } from '../core/seasonal-wind';
 import type { MoistureFrame } from './seasonal-moisture';
 import type { SoilMoistureFrame } from './soil-moisture';
@@ -36,6 +37,8 @@ export interface DesktopAPI {
   wildFood(epoch: number): Promise<WildFoodFrame>;
   wildFoodSeries(epoch: number, region: number): Promise<WildFoodSeries>;
   forage(epoch: number, region: number, people: number, years: number): Promise<ForageExperiment>;
+  traversalCosts(epoch: number): Promise<TraversalCosts>;
+  travelTime(epoch: number, season: TravelSeason, sources: number[]): Promise<TravelField>;
   seasonalWind(epoch: number): Promise<WindNormals>;
   seasonalMoisture(epoch: number, seconds: number): Promise<MoistureFrame>;
   initializeOrographicMoisture(epoch: number): Promise<MoistureFrame>;

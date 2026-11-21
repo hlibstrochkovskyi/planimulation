@@ -27,6 +27,8 @@ import { CHANGE_YEARS, COVER_ARIDITY, DEFAULT_VEGETATION_SETTINGS, FOREST_COVER,
 import type { VegetationFrame, VegetationSeries } from '../core/vegetation';
 import { COLD_NEED_CELSIUS, DEFAULT_WILD_FOOD_SETTINGS } from '../core/wild-food';
 import type { ForageExperiment, WildFoodFrame, WildFoodSeries } from '../core/wild-food';
+import { DEFAULT_TRAVERSAL_SETTINGS, ISOCHRONE_BANDS, UNREACHABLE_COLOR, freezingMonths, isFrozenLakeWinter, isFrozenRiverWinter, isRegionPassable, traceTravelRoute } from '../core/traversal';
+import type { TraversalCosts, TravelField, TravelSeason } from '../core/traversal';
 
 function element<T extends HTMLElement>(id: string): T {
   const result = document.getElementById(id);
@@ -73,6 +75,11 @@ element('biome-legend').replaceChildren(...BIOMES.slice(1).map(({ name, color })
   const item = document.createElement('span'), swatch = document.createElement('i');
   swatch.style.background = `rgb(${color.join(',')})`; item.append(swatch, name); return item;
 }));
+element('isochrone-legend').replaceChildren(...[...ISOCHRONE_BANDS.map(({ label, color }) => ({ label, color })),
+  { label: 'Unreachable', color: UNREACHABLE_COLOR }].map(({ label, color }) => {
+  const item = document.createElement('span'), swatch = document.createElement('i');
+  swatch.style.background = `rgb(${color.join(',')})`; item.append(swatch, label); return item;
+}));
 const vegetationLayerButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-layer="vegetationState"], [data-layer="woodyCover"], [data-layer="woodyChange"], [data-layer="productivity"], [data-layer="precipitationAnomaly"]')];
 const foodLayerButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-layer="foragerCapacity"], [data-layer="leanSeason"], [data-layer="gameStock"]')];
 const forageButtons = [...document.querySelectorAll<HTMLButtonElement>('#food-forage button')];
@@ -81,6 +88,10 @@ const FOOD_MEAN_YEARS = 10;
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const vegetationButtons = ([[1, 'vegetation-1'], [10, 'vegetation-10'], [100, 'vegetation-100']] as const).map(([years, id]) => ({ years, button: element<HTMLButtonElement>(id) }));
 const vegetationReset = element<HTMLButtonElement>('vegetation-reset');
+const traversalLayerButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-layer="travelCost"], [data-layer="travelTime"]')];
+const travelSeasonButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-travel-season]')];
+const travelFromHereButton = element<HTMLButtonElement>('travel-from-here');
+const travelClearSourceButton = element<HTMLButtonElement>('traversal-clear-source');
 const windLayerButton = document.querySelector<HTMLButtonElement>('[data-layer="windSpeed"]')!;
 const moistureStart = element<HTMLButtonElement>('moisture-start');
 const moistureStartOrographic = element<HTMLButtonElement>('moisture-start-orographic');
@@ -108,6 +119,11 @@ let wildFood: WildFoodFrame | null = null;
 let wildFoodSeries: WildFoodSeries | null = null;
 let forageResult: ForageExperiment | null = null;
 let forageBusy = false;
+let traversalCosts: TraversalCosts | null = null;
+let travelField: TravelField | null = null;
+let travelSeason: TravelSeason = 'summer';
+let travelOrigin: number | null = null;
+let travelRequest = 0;
 let moistureFrame: SeasonalDisplayFrame | null = null;
 let moistureBusyEpoch: number | null = null;
 let moisturePlaying = false;
@@ -473,6 +489,7 @@ function inspect(id: number, preserveBasin = false): void {
       ['Plant food / game offtake', `${number.format(Math.round(wildFood.plantKcal[id] * 1e3))} / ${number.format(Math.round(wildFood.gameKcal[id] * 1e3))} Mcal/km²/year`],
       ['Game stock', `${(wildFood.game[id] * 1e3).toFixed(0)} kg/km² · ${wildFood.gameCapacity[id] > 0 ? `${(wildFood.game[id] / wildFood.gameCapacity[id] * 100).toFixed(0)}% of capacity` : 'no capacity'}`],
     ] : []),
+    ...(traversalCosts ? traversalRegionRows(id) : []),
     ...(windNormals ? [
       [`Month ${Number(temperatureMonthInput.value) + 1} wind speed normal`, `${Math.hypot(windNormals.monthlyEastMetersPerSecond[Number(temperatureMonthInput.value)][id], windNormals.monthlyNorthMetersPerSecond[Number(temperatureMonthInput.value)][id]).toFixed(2)} m/s`],
       ['Eastward wind component', `${windNormals.monthlyEastMetersPerSecond[Number(temperatureMonthInput.value)][id].toFixed(2)} m/s`],
@@ -537,6 +554,12 @@ function inspect(id: number, preserveBasin = false): void {
   renderVegetationNote(id);
   renderFoodNote(id);
   void requestVegetationSeries(id);
+  renderTraversalNote(id);
+  updateTravelButtons(id);
+  renderTraversalRoute();
+  if (currentLayer === 'travelTime' && travelOrigin === null && traversalCosts && isRegionPassable(traversalCosts, id, travelSeason)) {
+    void requestTravelTime(id, false);
+  }
   element('wind-note').textContent = windNormals
     ? `Latitude ${lat.toFixed(2)}° and the selected month determine a prescribed east/north tangent vector. Trades are easterly, midlatitude winds westerly, and polar winds easterly; the convergence belt follows half the subsolar declination. These are smooth, zonally symmetric model choices, not simulated atmospheric circulation. Terrain and water do not redirect wind. Seasonal water uses these normals on its own elapsed-time clock.`
     : 'Seasonal surface-wind normals are being calculated.';
@@ -628,6 +651,10 @@ function updateLegend(): void {
     foragerCapacity: [`Forager capacity · year ${wildFood?.year ?? 0} · year-round wild plant food and game, no storage, no aquatic food · logarithmic`, '≤0.1', '≥100 people/100 km²'],
     leanSeason: [`Lean-season limit · year ${wildFood?.year ?? 0} · year-round capacity as a share of perfect-storage capacity`, '0 · storage decides', '1 · no seasonal limit'],
     gameStock: [`Game stock · year ${wildFood?.year ?? 0} · herbivore live weight relative to its forage capacity · gray = no game`, '0 · depleted', '1 · at capacity'],
+    travelCost: [`Foot travel cost (${travelSeason}) · logarithmic · ${traversalCosts?.usesVegetation ? `vegetation year ${traversalCosts.vegetationYear ?? 0}` : 'climate biomes'} · ${DEFAULT_TRAVERSAL_SETTINGS.hoursPerDay} h/day`, '≤20 h/100 km', '≥160 h/100 km'],
+    travelTime: [travelOrigin !== null
+      ? `Least-time foot travel (${travelSeason}) from region ${travelOrigin.toLocaleString('en')} · isochrones in days (${DEFAULT_TRAVERSAL_SETTINGS.hoursPerDay} h/day)`
+      : `Least-time foot travel (${travelSeason}) · select a passable region and click "Travel time from here"`, '', ''],
     windSpeed: [`Month ${Number(temperatureMonthInput.value) + 1} prescribed surface-wind speed · no atmospheric dynamics`,
       '0 m/s', `${number.format(windMaximum)} m/s`],
   };
@@ -639,8 +666,10 @@ function updateLegend(): void {
   element('legend-low').textContent = low;
   element('legend-high').textContent = high;
   const plateLayer = currentLayer === 'plates' || currentLayer === 'boundaries';
-  element('legend-scale').hidden = plateLayer || currentLayer === 'waterBodies' || currentLayer === 'surface' || currentLayer === 'catchments' || currentLayer === 'basins' || currentLayer === 'biome' || currentLayer === 'vegetationState';
+  element('legend-scale').hidden = plateLayer || currentLayer === 'waterBodies' || currentLayer === 'surface' || currentLayer === 'catchments' || currentLayer === 'basins' || currentLayer === 'biome' || currentLayer === 'vegetationState' || currentLayer === 'travelTime';
   element('biome-legend').hidden = currentLayer !== 'biome' && currentLayer !== 'vegetationState';
+  element('isochrone-legend').hidden = currentLayer !== 'travelTime';
+  element('legend-gradient').classList.toggle('travel-cost-gradient', currentLayer === 'travelCost');
   element('legend-gradient').classList.toggle('woody-gradient', currentLayer === 'woodyCover');
   element('legend-gradient').classList.toggle('anomaly-gradient', currentLayer === 'precipitationAnomaly');
   element('legend-gradient').classList.toggle('change-gradient', currentLayer === 'woodyChange');
@@ -749,6 +778,7 @@ async function runVegetation(years: number | 'reset'): Promise<void> {
     const frame = years === 'reset' ? await api.initializeVegetation(activeEpoch) : await api.advanceVegetation(activeEpoch, years);
     if (request !== generationId || frame.epoch !== epoch) return;
     applyVegetation(frame);
+    await refreshTraversalCosts(activeEpoch, request);
     await loadWildFood(activeEpoch, request);
     vegetationBusy = false;
     if (selected !== null) void requestVegetationSeries(selected);
@@ -939,6 +969,175 @@ function coverCapacityAtNormal(id: number): number {
   return warm < 10 ? cover * warm / 10 : cover;
 }
 
+/* --- traversal-1 --- */
+function updateTravelButtons(id: number | null): void {
+  const ready = traversalCosts !== null && id !== null;
+  travelFromHereButton.hidden = !ready;
+  travelFromHereButton.disabled = !ready || !isRegionPassable(traversalCosts!, id!, travelSeason);
+  travelFromHereButton.textContent = travelOrigin !== null && id === travelOrigin
+    ? 'Origin region · recompute' : 'Travel time from here';
+  travelClearSourceButton.hidden = travelOrigin === null;
+}
+
+function renderTraversalRoute(): void {
+  if (!travelField || selected === null) { map.setTravelRoute([]); return; }
+  const route = traceTravelRoute(travelField, selected);
+  map.setTravelRoute(route && route.length >= 2 ? route : []);
+}
+
+function traversalRegionRows(id: number): Array<[string, string]> {
+  const c = traversalCosts!;
+  const summer = travelSeason === 'summer';
+  const passable = isRegionPassable(c, id, travelSeason);
+  const hours = summer ? c.hoursPer100KmSummer[id] : c.hoursPer100KmWinter[id];
+  const slope = summer ? c.slopeFactorSummer[id] : c.slopeFactorWinter[id];
+  const cover = summer ? c.coverFactorSummer[id] : c.coverFactorWinter[id];
+  const snow = summer ? 1 : c.snowFactorWinter[id];
+  const river = summer ? c.riverDelaySummerHours[id] : c.riverDelayWinterHours[id];
+  const kmPerDay = passable && hours > 0 ? (100 * c.settings.hoursPerDay) / hours : 0;
+  const rows: Array<[string, string]> = [
+    [`Travel cost (${travelSeason})`, passable ? `${hours.toFixed(1)} h / 100 km` : 'Impassable on foot'],
+    [`Walking pace (${travelSeason})`, passable ? `${kmPerDay.toFixed(1)} km/day · ${(100 / hours).toFixed(2)} km/h` : 'Blocked by water'],
+    ['Slope & ruggedness', passable ? `×${slope.toFixed(2)} · local relief ${number.format(c.localReliefMeters[id])} m` : '—'],
+    ['Land cover factor', passable ? `×${cover.toFixed(2)} · ${isFrozenLakeWinter(c, id) && !summer ? 'frozen inland lake' : c.usesVegetation ? `vegetation year ${c.vegetationYear}` : 'climate biome'}` : '—'],
+    ['Snow factor', summer ? '×1.00 · summer (snow-free)' : `×${snow.toFixed(2)} · ${freezingMonths(c, id)} months < 0 °C`],
+    ['River crossing proxy', isFrozenRiverWinter(c, id) && !summer ? '0 h · frozen river' : river > 0 ? `+${river.toFixed(1)} h · area proxy` : '0 h · below threshold'],
+  ];
+  if (travelField && travelOrigin !== null) {
+    const days = travelField.days[id], distKm = travelField.distanceMeters[id] / 1000;
+    if (days >= 0) {
+      rows.push(
+        ['Travel time from origin', id === travelOrigin ? `0 days (origin · region ${travelOrigin})` : `${days.toFixed(1)} days from region ${travelOrigin}`],
+        ['Least-time route length', id === travelOrigin ? '0 km' : `${number.format(distKm)} km`],
+        ['Average route pace', id === travelOrigin || days <= 0 ? '—' : `${(distKm / days).toFixed(1)} km/day`],
+      );
+    } else {
+      rows.push(['Travel time from origin', `Unreachable from region ${travelOrigin} (${travelSeason})`]);
+    }
+  }
+  return rows;
+}
+
+function renderTraversalNote(id: number): void {
+  const list = element('traversal-details');
+  list.replaceChildren();
+  if (!world || !traversalCosts) {
+    element('traversal-note').textContent = 'Movement costs start after climate normals load.';
+    return;
+  }
+  const c = traversalCosts, summer = travelSeason === 'summer', passable = isRegionPassable(c, id, travelSeason);
+  const body = world.water.bodyIds[id], isOcean = body !== 0 && body === world.water.mainOceanId;
+  const isLake = body !== 0 && !isOcean;
+  if (!passable) {
+    element('traversal-note').textContent = isOcean
+      ? `Main ocean (body ${body}): impassable on foot in both summer and winter. Sea ice is not modeled.`
+      : isLake
+        ? `Inland lake (body ${body}): impassable in ${travelSeason}${!summer ? ` (freezes only when coldest month ≤ ${c.settings.freezeTempCelsius} °C with ≥ ${c.settings.freezeMinMonths} freezing months)` : '; may freeze in deep winter'}.`
+        : 'Impassable on foot in this season.';
+    return;
+  }
+  const hours = summer ? c.hoursPer100KmSummer[id] : c.hoursPer100KmWinter[id];
+  const slope = summer ? c.slopeFactorSummer[id] : c.slopeFactorWinter[id];
+  const cover = summer ? c.coverFactorSummer[id] : c.coverFactorWinter[id];
+  const snow = summer ? 1 : c.snowFactorWinter[id];
+  const river = summer ? c.riverDelaySummerHours[id] : c.riverDelayWinterHours[id];
+  const kmPerDay = (100 * c.settings.hoursPerDay) / hours;
+  element('traversal-note').textContent = `${summer ? 'Summer' : 'Winter'} foot cost ${hours.toFixed(1)} h / 100 km (${kmPerDay.toFixed(1)} km/day at ${c.settings.hoursPerDay} h/day, ${(100 / hours).toFixed(2)} km/h).`;
+  const rows: string[] = [
+    `Slope & ruggedness ×${slope.toFixed(2)}: Tobler hiking function over edge elevation gradients plus neighborhood relief ${number.format(c.localReliefMeters[id])} m (scale ${c.settings.reliefScaleMeters} m; no sub-grid roughness field is stored).`,
+    isFrozenLakeWinter(c, id) && !summer
+      ? `Land cover ×${cover.toFixed(2)}: deep-winter frozen inland lake ice (body ${body}; impassable in summer).`
+      : `Land cover ×${cover.toFixed(2)}: ${c.usesVegetation && vegetation ? `uses live vegetation-2 woody cover ${vegetation.woody[id].toFixed(2)} (year ${c.vegetationYear})` : 'uses climate-normals-1 biome class fallback'} plus climate heat/aridity/ice factor.`,
+    summer
+      ? `Seasonal snow ×1.00: local summer (seasonal snow melted; ${freezingMonths(c, id)} months below 0 °C in winter).`
+      : `Seasonal snow ×${snow.toFixed(2)}: ${freezingMonths(c, id)} months below 0 °C in climate normals.`,
+    isFrozenRiverWinter(c, id) && !summer
+      ? `Water / river crossing: 0 h delay (deep-winter frozen river; contributing area ${number.format(world.drainage.contributingArea[id] / 1e6)} km²).`
+      : river > 0
+        ? `Water / river crossing: +${river.toFixed(1)} h proxy delay from contributing dry-land area ${number.format(world.drainage.contributingArea[id] / 1e6)} km² (not hydraulic discharge; 25% when following the river valley).`
+        : `Water / river crossing: 0 h delay (contributing area ${number.format(world.drainage.contributingArea[id] / 1e6)} km² is below the ${number.format(c.settings.riverThresholdSquareMeters / 1e6)} km² proxy threshold).`,
+  ];
+  if (travelField && travelOrigin !== null) {
+    const days = travelField.days[id], distKm = travelField.distanceMeters[id] / 1000;
+    const route = traceTravelRoute(travelField, id);
+    rows.push(days >= 0
+      ? id === travelOrigin
+        ? `Origin: region ${travelOrigin} (0 days). Click another region to trace the least-time route.`
+        : `Route from region ${travelOrigin}: ${days.toFixed(1)} days over ${number.format(distKm)} km (${Math.max(0, (route?.length ?? 1) - 1)} edges, avg ${(distKm / days).toFixed(1)} km/day).`
+      : `Route from region ${travelOrigin}: unreachable on foot in ${travelSeason} (separated by impassable water).`);
+  }
+  for (const text of rows) { const row = document.createElement('li'); row.textContent = text; list.append(row); }
+}
+
+async function refreshTraversalCosts(activeEpoch: number, request: number): Promise<void> {
+  try {
+    const costs = await api.traversalCosts(activeEpoch);
+    if (request !== generationId || costs.epoch !== epoch) return;
+    traversalCosts = costs;
+    map.setTraversalCosts(costs);
+    for (const button of traversalLayerButtons) button.disabled = false;
+    updateTravelButtons(selected);
+    updateLegend();
+    if (selected !== null) inspect(selected, true);
+    if (travelOrigin !== null) await requestTravelTime(travelOrigin, false);
+  } catch (error) {
+    if (request === generationId) element('traversal-note').textContent = `Movement costs unavailable: ${error instanceof Error ? error.message : String(error)}`;
+  }
+}
+
+async function requestTravelTime(origin: number, switchLayer = true): Promise<void> {
+  if (!world || !traversalCosts || document.body.dataset.state === 'generating') return;
+  const activeEpoch = epoch, req = ++travelRequest;
+  const started = performance.now();
+  try {
+    const field = await api.travelTime(activeEpoch, travelSeason, [origin]);
+    if (req !== travelRequest || field.epoch !== epoch) return;
+    travelOrigin = origin;
+    travelField = field;
+    map.setTravelField(field);
+    if (switchLayer && currentLayer !== 'travelTime') selectLayer('travelTime');
+    renderTraversalRoute();
+    updateTravelButtons(selected);
+    updateLegend();
+    if (selected !== null) inspect(selected, true);
+    const reachable = field.days.reduce((n, d) => n + (d >= 0 ? 1 : 0), 0);
+    showStatus(`Travel time (${travelSeason}) from region ${origin}: ${reachable.toLocaleString('en')} reachable regions · ${number.format(performance.now() - started)} ms.`);
+  } catch (error) {
+    if (req === travelRequest) showStatus(error instanceof Error ? error.message : String(error), true);
+  }
+}
+
+function setTravelSeason(season: TravelSeason): void {
+  travelSeason = season;
+  for (const button of travelSeasonButtons) {
+    const active = button.dataset.travelSeason === season;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  }
+  map.setTravelSeason(season);
+  updateTravelButtons(selected);
+  updateLegend();
+  if (selected !== null) inspect(selected, true);
+  if (travelOrigin !== null) void requestTravelTime(travelOrigin, false);
+}
+
+function clearTravelOrigin(): void {
+  travelOrigin = null;
+  travelField = null;
+  map.setTravelField(null);
+  map.setTravelRoute([]);
+  updateTravelButtons(selected);
+  updateLegend();
+  if (selected !== null) inspect(selected, true);
+}
+
+travelFromHereButton.addEventListener('click', () => { if (selected !== null) void requestTravelTime(selected, true); });
+travelClearSourceButton.addEventListener('click', () => clearTravelOrigin());
+for (const button of travelSeasonButtons) {
+  button.addEventListener('click', () => setTravelSeason(button.dataset.travelSeason as TravelSeason));
+}
+/* --- end traversal-1 --- */
+
 function setInputs(recipe: Recipe): void {
   generatorFamilyInput.value = recipe.modelVersion;
   seedInput.value = recipe.seed;
@@ -1027,7 +1226,10 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
     temperatureNormals = null; windNormals = null; climateNormals = null;
     vegetation = null; vegetationSeries = null; vegetationBusy = false; map.setVegetation(null);
     wildFood = null; wildFoodSeries = null; forageResult = null; map.setWildFood(null);
-    for (const button of [...climateLayerButtons, ...vegetationLayerButtons, ...foodLayerButtons]) button.disabled = true;
+    traversalCosts = null; travelField = null; travelOrigin = null;
+    map.setTraversalCosts(null); map.setTravelField(null); map.setTravelRoute([]);
+    updateTravelButtons(null);
+    for (const button of [...climateLayerButtons, ...vegetationLayerButtons, ...foodLayerButtons, ...traversalLayerButtons]) button.disabled = true;
     renderVegetation();
     map.setTemperatureNormals(null); map.setWindNormals(null);
     waterBusy = false; budgetBusyEpoch = null;
@@ -1141,6 +1343,8 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
       if (request !== generationId || frame.epoch !== epoch) return;
       applyVegetation(frame);
       await loadWildFood(epoch, request);
+      showStatus('Calculating foot-traversal costs in the native core…');
+      await refreshTraversalCosts(epoch, request);
     } catch (error) {
       if (request !== generationId) return;
       climateError = error instanceof Error ? error.message : String(error);
@@ -1150,6 +1354,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
       || ((currentLayer === 'biome' || currentLayer === 'annualPrecipitation') && !climateNormals)
       || (['vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly'].includes(currentLayer) && !vegetation)
       || (['foragerCapacity', 'leanSeason', 'gameStock'].includes(currentLayer) && !wildFood)
+      || (['travelCost', 'travelTime'].includes(currentLayer) && !traversalCosts)
       || (isMoistureLayer(currentLayer) && !supportsMoistureLayer(moistureFrame, currentLayer))) {
       document.querySelector<HTMLButtonElement>('[data-layer="surface"]')?.click();
     }
@@ -1173,6 +1378,7 @@ async function generate(recipe: Recipe | null, prepared?: PreparedWaterWorld | P
       for (const button of climateLayerButtons) button.disabled = climateNormals === null;
       for (const button of vegetationLayerButtons) button.disabled = vegetation === null;
       for (const button of foodLayerButtons) button.disabled = wildFood === null;
+      for (const button of traversalLayerButtons) button.disabled = traversalCosts === null;
       temperatureMonthInput.disabled = temperatureNormals === null && windNormals === null;
       waterBudgetButton.disabled = world === null || budgetBusyEpoch === epoch;
       element<HTMLButtonElement>('play').disabled = world === null;
@@ -1431,6 +1637,9 @@ function selectLayer(layer: Layer): void {
     other.setAttribute('aria-pressed', String(active));
   }
   map.setLayer(currentLayer); updateLegend(); updateExperimentControls();
+  if (layer === 'travelTime' && travelOrigin === null && selected !== null && traversalCosts && isRegionPassable(traversalCosts, selected, travelSeason)) {
+    void requestTravelTime(selected, false);
+  }
 }
 for (const button of document.querySelectorAll<HTMLButtonElement>('[data-layer]')) {
   button.addEventListener('click', () => selectLayer(button.dataset.layer as Layer));

@@ -21,6 +21,9 @@ import { BIOMES } from '../core/climate-normals';
 import type { ClimateNormals } from '../core/climate-normals';
 import type { VegetationFrame } from '../core/vegetation';
 import type { WildFoodFrame } from '../core/wild-food';
+import { ISOCHRONE_BANDS, UNREACHABLE_COLOR, isRegionPassable } from '../core/traversal';
+import type { TraversalCosts, TravelField, TravelSeason } from '../core/traversal';
+import { buildRouteOverlay } from './route';
 import type { WindNormals } from '../core/seasonal-wind';
 import type { SeasonalDisplayFrame } from '../shared/seasonal-display';
 import { hasRegionalSurface, isSoilMoistureFrame } from '../shared/seasonal-display';
@@ -32,15 +35,15 @@ import { PlanetCamera } from './planet-camera';
 import type { PlanetView } from './planet-camera';
 import { SpaceBackdrop } from './space';
 
-export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill' | 'temperature' | 'windSpeed' | 'biome' | 'annualPrecipitation' | 'vegetationState' | 'woodyCover' | 'woodyChange' | 'productivity' | 'precipitationAnomaly' | 'foragerCapacity' | 'leanSeason' | 'gameStock' | MoistureLayer;
+export type Layer = 'surface' | 'signal' | 'area' | 'latitude' | 'plates' | 'boundaries' | 'speed' | 'crust' | 'thickness' | 'elevation' | 'uplift' | 'depth' | 'waterBodies' | 'catchments' | 'contributingArea' | 'basins' | 'spill' | 'temperature' | 'windSpeed' | 'biome' | 'annualPrecipitation' | 'vegetationState' | 'woodyCover' | 'woodyChange' | 'productivity' | 'precipitationAnomaly' | 'foragerCapacity' | 'leanSeason' | 'gameStock' | 'travelCost' | 'travelTime' | MoistureLayer;
 export type ViewMode = 'flat' | 'globe';
 /** Continuous layers can be interpolated between regions; categorical and sentinel layers cannot. */
 const SMOOTH_LAYERS = new Set<string>(['surface', 'signal', 'area', 'latitude', 'crust', 'thickness', 'elevation', 'uplift',
-  'depth', 'contributingArea', 'temperature', 'windSpeed', 'biome', 'annualPrecipitation', 'vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly', 'foragerCapacity', 'leanSeason', 'gameStock']);
-const RELIEF_LAYERS: Partial<Record<string, number>> = { surface: 1, biome: 1, vegetationState: 1, woodyCover: 1, woodyChange: 1, productivity: 1, precipitationAnomaly: 1, foragerCapacity: 1, leanSeason: 1, gameStock: 1, elevation: .8 };
+  'depth', 'contributingArea', 'temperature', 'windSpeed', 'biome', 'annualPrecipitation', 'vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly', 'foragerCapacity', 'leanSeason', 'gameStock', 'travelCost', 'travelTime']);
+const RELIEF_LAYERS: Partial<Record<string, number>> = { surface: 1, biome: 1, vegetationState: 1, woodyCover: 1, woodyChange: 1, productivity: 1, precipitationAnomaly: 1, foragerCapacity: 1, leanSeason: 1, gameStock: 1, travelCost: .85, travelTime: .75, elevation: .8 };
 /** Land layers colored by a per-region tint over relief, with bathymetric water. */
 const TINT_LAYERS = new Set<string>(['biome', 'vegetationState', 'woodyCover', 'woodyChange', 'productivity', 'precipitationAnomaly',
-  'foragerCapacity', 'leanSeason', 'gameStock']);
+  'foragerCapacity', 'leanSeason', 'gameStock', 'travelCost', 'travelTime']);
 /** Layers drawn as land and water with a shoreline, bathymetry and the globe water surface. */
 const surfaceLike = (layer: string): boolean => layer === 'surface' || TINT_LAYERS.has(layer);
 type Rgb = readonly [number, number, number];
@@ -84,8 +87,23 @@ export function anomalyColor(factor: number): Rgb {
   const t = Math.min(1, Math.max(-1, Math.log2(factor)));
   return t < 0 ? mixRgb([238, 234, 220], [176, 92, 40], -t) : mixRgb([238, 234, 220], [40, 108, 182], t);
 }
+/** Logarithmic travel cost in hours per 100 km: 20 (fast flat) to 160+ (very slow). */
+export function travelCostColor(hoursPer100Km: number): Rgb {
+  if (!(hoursPer100Km > 0)) return UNREACHABLE_COLOR;
+  const t = Math.min(1, Math.max(0, Math.log2(hoursPer100Km / 20) / 3));
+  return t < 1 / 3 ? mixRgb([232, 224, 178], [216, 168, 84], t * 3)
+    : t < 2 / 3 ? mixRgb([216, 168, 84], [168, 76, 56], (t - 1 / 3) * 3)
+    : mixRgb([168, 76, 56], [76, 36, 78], (t - 2 / 3) * 3);
+}
+/** Stepped isochrone bands for least-time travel fields in days. */
+export function travelTimeColor(days: number): Rgb {
+  if (days < 0) return UNREACHABLE_COLOR;
+  for (const band of ISOCHRONE_BANDS) if (days <= band.maxDays) return band.color;
+  return ISOCHRONE_BANDS[ISOCHRONE_BANDS.length - 1].color;
+}
 /** Child order inside each view group. Picking and visibility depend on these indices. */
 const RIVERS = 5;
+const ROUTE = 6;
 export interface NavigationView extends PlanetView { mode: ViewMode; radiusMeters: number }
 
 export class SurfaceMap {
@@ -220,6 +238,8 @@ export class SurfaceMap {
   private reliefShading = true;
   private drainageLines = true;
   private readonly riverMaterials = DRAINAGE_LINE_WIDTHS.map(linewidth => new LineMaterial({ color: 0x4d9cc9, linewidth, transparent: true }));
+  private readonly routeCasingMaterial = new LineMaterial({ color: 0x0b1220, linewidth: 5.5, transparent: true, opacity: 0.85, side: DoubleSide, depthWrite: false });
+  private readonly routeLineMaterial = new LineMaterial({ color: 0xf8fafc, linewidth: 3, transparent: true, opacity: 0.98, side: DoubleSide, depthWrite: false });
   private world: World | null = null;
   private waterFrame: WaterFrame | null = null;
   private regionalWater: RegionalWaterDisplay | null = null;
@@ -228,6 +248,10 @@ export class SurfaceMap {
   private climateNormals: ClimateNormals | null = null;
   private vegetation: VegetationFrame | null = null;
   private wildFood: WildFoodFrame | null = null;
+  private traversalCosts: TraversalCosts | null = null;
+  private travelField: TravelField | null = null;
+  private travelSeason: TravelSeason = 'summer';
+  private travelRoute: number[] = [];
   private tintTexture: DataTexture | null = null;
   private cornerTintTexture: DataTexture | null = null;
   private tintValues = new Float32Array(0);
@@ -377,6 +401,8 @@ export class SurfaceMap {
     if (!width || !height) return;
     this.renderer.setSize(width, height, false);
     for (const material of this.riverMaterials) material.resolution.set(width, height);
+    this.routeCasingMaterial.resolution.set(width, height);
+    this.routeLineMaterial.resolution.set(width, height);
     const aspect = width / height, halfHeight = Math.max(.6, 1.1 / aspect);
     Object.assign(this.flatCamera, { left: -halfHeight * aspect, right: halfHeight * aspect, top: halfHeight, bottom: -halfHeight });
     this.flatCamera.updateProjectionMatrix();
@@ -404,7 +430,7 @@ export class SurfaceMap {
     }
     const group = new Group();
     group.add(new Mesh(geometry, this.material), new LineSegments(lines, this.lineMaterial), new LineSegments(tectonicLines, this.tectonicMaterial),
-      new Mesh(water, this.waterMaterial), new LineSegments(waterLines, this.lineMaterial), new Group());
+      new Mesh(water, this.waterMaterial), new LineSegments(waterLines, this.lineMaterial), new Group(), new Group());
     return group;
   }
   cancelPreparation(): void {
@@ -429,10 +455,14 @@ export class SurfaceMap {
     next.globe.scale.z = -1;
     this.releaseViews(); this.views = next;
     this.scene.add(next.flat, next.globe); this.world = world; this.waterFrame = null; this.temperatureNormals = null; this.windNormals = null; this.climateNormals = null; this.vegetation = null; this.wildFood = null;
+    this.traversalCosts = null; this.travelField = null; this.travelRoute = [];
     this.moistureFrame = null; this.regionalWater = null; this.waterSurfaceDirty = false;
     delete this.canvas.dataset.regionalSurface;
     delete this.canvas.dataset.moistureSeconds;
     delete this.canvas.dataset.seasonalModel;
+    delete this.canvas.dataset.travelOrigin;
+    delete this.canvas.dataset.travelRouteHops;
+    this.canvas.dataset.travelSeason = this.travelSeason;
     this.appliedExaggeration = NaN;
     this.terrainRange = summarizeTerrain(world.surface, world.terrain);
     this.maximumDepth = world.water.depthMeters.reduce((max, d) => Math.max(max, d), 0);
@@ -537,9 +567,69 @@ export class SurfaceMap {
     this.wildFood = frame;
     this.applyTint();
   }
+  /** Foot-traversal costs for the Travel cost layer; display only. */
+  setTraversalCosts(costs: TraversalCosts | null): void {
+    if (costs && (!this.world || costs.flags.length !== this.world.stats.regionCount)) {
+      throw new Error('Traversal costs do not match this world.');
+    }
+    this.traversalCosts = costs;
+    this.applyTint();
+  }
+  /** Least-time Dijkstra field for the Travel time layer; display only. */
+  setTravelField(field: TravelField | null): void {
+    if (field && (!this.world || field.days.length !== this.world.stats.regionCount)) {
+      throw new Error('Travel field does not match this world.');
+    }
+    this.travelField = field;
+    if (field && field.sources.length) this.canvas.dataset.travelOrigin = String(field.sources[0]);
+    else delete this.canvas.dataset.travelOrigin;
+    this.applyTint();
+  }
+  setTravelSeason(season: TravelSeason): void {
+    this.travelSeason = season;
+    this.canvas.dataset.travelSeason = season;
+    this.applyTint();
+  }
+  /** Draw or clear the least-time route polyline on both flat map and globe; display only. */
+  setTravelRoute(path: readonly number[]): void {
+    this.travelRoute = [...path];
+    this.canvas.dataset.travelRouteHops = String(Math.max(0, path.length - 1));
+    if (!this.views || !this.world) return;
+    for (const view of Object.values(this.views)) {
+      const group = view.children[ROUTE];
+      for (const child of [...group.children]) {
+        if ('geometry' in child) (child as LineSegments2).geometry.dispose();
+        group.remove(child);
+      }
+    }
+    if (path.length >= 2) {
+      const overlay = buildRouteOverlay(this.world.surface, this.world.terrain.elevation, this.world.water.bodyIds, this.world.water.levelMeters, path);
+      if (overlay.flat.length) {
+        const casing = new LineSegments2(new LineSegmentsGeometry().setPositions(overlay.flat), this.routeCasingMaterial);
+        const core = new LineSegments2(new LineSegmentsGeometry().setPositions(overlay.flat), this.routeLineMaterial);
+        casing.renderOrder = 1; core.renderOrder = 2;
+        this.views.flat.children[ROUTE].add(casing, core);
+      }
+      if (overlay.globe.positions.length) {
+        const applied = Number.isFinite(this.appliedExaggeration) ? this.appliedExaggeration : 0;
+        const displaced = displaceDirections(overlay.globe.positions, overlay.globe.offsets, applied);
+        [this.routeCasingMaterial, this.routeLineMaterial].forEach((material, index) => {
+          const geometry = new LineSegmentsGeometry().setPositions(displaced);
+          geometry.userData.routeBase = overlay.globe.positions;
+          geometry.userData.routeOffsets = overlay.globe.offsets;
+          const line = new LineSegments2(geometry, material);
+          line.renderOrder = index + 1;
+          this.views!.globe.children[ROUTE].add(line);
+        });
+      }
+    }
+    this.applyShadingModes();
+    this.draw();
+  }
   /** Per-region land colors of the active tint layer; shared corners average only dry regions. */
   private applyTint(): void {
-    const climate = this.climateNormals, vegetation = this.vegetation, food = this.wildFood, layer = this.layer;
+    const climate = this.climateNormals, vegetation = this.vegetation, food = this.wildFood, costs = this.traversalCosts, field = this.travelField, layer = this.layer;
+    const costField = costs ? (this.travelSeason === 'summer' ? costs.hoursPer100KmSummer : costs.hoursPer100KmWinter) : null;
     const color: ((id: number) => Rgb) | null = layer === 'biome' && climate ? (id) => BIOMES[climate.biome[id]].color
       : layer === 'vegetationState' && vegetation ? (id) => BIOMES[vegetation.label[id]].color
       : layer === 'woodyCover' && vegetation ? (id) => woodyColor(vegetation.woody[id])
@@ -548,11 +638,14 @@ export class SurfaceMap {
       : layer === 'precipitationAnomaly' && vegetation ? (id) => anomalyColor(vegetation.precipitationFactor[id])
       : layer === 'foragerCapacity' && food ? (id) => capacityColor(food.capacity[id])
       : layer === 'leanSeason' && food ? (id) => food.storedCapacity[id] > 0 ? leanColor(food.capacity[id] / food.storedCapacity[id]) : [206, 202, 192]
-      : layer === 'gameStock' && food ? (id) => gameColor(food.game[id], food.gameCapacity[id]) : null;
+      : layer === 'gameStock' && food ? (id) => gameColor(food.game[id], food.gameCapacity[id])
+      : layer === 'travelCost' && costField ? (id) => travelCostColor(costField[id])
+      : layer === 'travelTime' && costs ? (id) => (field ? travelTimeColor(field.days[id]) : UNREACHABLE_COLOR) : null;
     this.material.uniforms.biomeMode.value = color ? 1 : 0;
     if (color && this.world && this.corners && this.tintTexture && this.cornerTintTexture) {
       const tint = this.tintValues, out = this.cornerTintValues, surface = this.world.surface;
-      const wet = (id: number): boolean => this.world!.water.bodyIds[id] !== 0;
+      const traversalLayer = (layer === 'travelCost' || layer === 'travelTime') && costs !== null;
+      const wet = (id: number): boolean => traversalLayer ? !isRegionPassable(costs!, id, this.travelSeason) : this.world!.water.bodyIds[id] !== 0;
       const count = this.world.stats.regionCount;
       for (let id = 0; id < count; id++) {
         const rgb = color(id);
@@ -693,7 +786,12 @@ export class SurfaceMap {
     const w = this.world;
     const depth = this.regionalWater?.depthMeters ?? this.waterFrame?.depthMeters ?? w.water.depthMeters;
     const bodyIds = this.waterFrame?.bodyIds ?? w.water.bodyIds;
-    const surfaceMask = this.regionalWater?.wetMask ?? bodyIds;
+    let surfaceMask: ArrayLike<number> = this.regionalWater?.wetMask ?? bodyIds;
+    if ((this.layer === 'travelCost' || this.layer === 'travelTime') && this.traversalCosts) {
+      const passableMask = new Uint8Array(w.stats.regionCount);
+      for (let id = 0; id < w.stats.regionCount; id++) passableMask[id] = isRegionPassable(this.traversalCosts, id, this.travelSeason) ? 0 : 1;
+      surfaceMask = passableMask;
+    }
     const values = this.values, masked = surfaceLike(this.layer) || this.layer === 'depth';
     const mask = masked ? relaxedMask(w.surface, surfaceMask) : null;
     for (let id = 0; id < w.stats.regionCount; id++) {
@@ -750,6 +848,7 @@ export class SurfaceMap {
     this.canvas.dataset.smoothShading = String(smooth);
     if (this.views) for (const view of Object.values(this.views)) {
       view.children[RIVERS].visible = this.drainageLines && (surfaceLike(this.layer) || this.layer === 'elevation');
+      view.children[ROUTE].visible = (this.layer === 'travelTime' || this.layer === 'travelCost') && this.travelRoute.length >= 2;
     }
   }
   setSmoothShading(enabled: boolean): void { this.smoothShading = enabled; this.applyShadingModes(); this.refreshField(); }
@@ -795,6 +894,10 @@ export class SurfaceMap {
     if (this.views) for (const river of this.views.globe.children[RIVERS].children as LineSegments2[]) {
       const { riverBase, riverOffsets } = river.geometry.userData as { riverBase: Float32Array; riverOffsets: Float32Array };
       river.geometry.setPositions(displaceDirections(riverBase, riverOffsets, applied));
+    }
+    if (this.views) for (const segment of this.views.globe.children[ROUTE].children as LineSegments2[]) {
+      const { routeBase, routeOffsets } = segment.geometry.userData as { routeBase: Float32Array; routeOffsets: Float32Array };
+      segment.geometry.setPositions(displaceDirections(routeBase, routeOffsets, applied));
     }
     if (this.views) for (const object of this.views.globe.children) {
       if (!(object instanceof Mesh || object instanceof LineSegments)) continue;
@@ -880,6 +983,6 @@ export class SurfaceMap {
     window.removeEventListener('pointercancel', this.endMapDrag);
     window.removeEventListener('blur', this.clearMapDrag);
     this.controls.removeEventListener('change', this.handleControlsChange);
-    this.controls.dispose(); this.planetCamera.dispose(); this.space.dispose(); this.releaseViews(); this.material.dispose(); this.waterMaterial.dispose(); this.lineMaterial.dispose(); for (const material of this.riverMaterials) material.dispose(); this.tectonicMaterial.dispose(); this.renderer.dispose();
+    this.controls.dispose(); this.planetCamera.dispose(); this.space.dispose(); this.releaseViews(); this.material.dispose(); this.waterMaterial.dispose(); this.lineMaterial.dispose(); for (const material of this.riverMaterials) material.dispose(); this.routeCasingMaterial.dispose(); this.routeLineMaterial.dispose(); this.tectonicMaterial.dispose(); this.renderer.dispose();
   }
 }

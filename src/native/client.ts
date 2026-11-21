@@ -16,6 +16,8 @@ import { DEFAULT_VEGETATION_SETTINGS, VEGETATION_MAX_YEARS, VEGETATION_MAX_YEARS
 import type { VegetationFrame, VegetationRegionYear, VegetationSeries } from '../core/vegetation';
 import { DEFAULT_WILD_FOOD_SETTINGS, MONTHS, WILD_FOOD_MODEL_VERSION } from '../core/wild-food';
 import type { ForageExperiment, WildFoodFrame, WildFoodRegionYear, WildFoodSeries } from '../core/wild-food';
+import { DEFAULT_TRAVERSAL_SETTINGS, TRAVERSAL_MAX_SOURCES, TRAVERSAL_MODEL_VERSION } from '../core/traversal';
+import type { TraversalCosts, TravelField, TravelSeason } from '../core/traversal';
 import { DEFAULT_WIND_SETTINGS, WIND_MODEL_VERSION } from '../core/seasonal-wind';
 import type { WindNormals } from '../core/seasonal-wind';
 import { decodeSeasonalMoisture } from './seasonal-moisture';
@@ -70,7 +72,7 @@ export class FrameReader {
         if (!h || !Number.isSafeInteger(h.byteLength) || h.byteLength < 0
           || h.byteLength > (checkpoint ? MAX_SEASONAL_CHECKPOINT_BYTES : MAX_BYTES)
           || (seasonal ? h.protocol !== seasonal.protocol : (h.protocol !== 9 && h.protocol !== 10)
-            || !['world', 'frame', 'water', 'temperature', 'wind', 'climate', 'vegetation', 'vegetationSeries', 'wildFood', 'wildFoodSeries', 'forage', 'checkpoint', 'error'].includes(h.kind))) throw new Error('Invalid native protocol header.');
+            || !['world', 'frame', 'water', 'temperature', 'wind', 'climate', 'vegetation', 'vegetationSeries', 'wildFood', 'wildFoodSeries', 'forage', 'traversalCosts', 'traversalField', 'checkpoint', 'error'].includes(h.kind))) throw new Error('Invalid native protocol header.');
         this.header = h;
       }
       if (this.length < this.header.byteLength) return;
@@ -419,6 +421,102 @@ export function decodeForage(packet: Packet, region: number, people: number, yea
   return { epoch, region, people, years, game, shortfall };
 }
 
+export function decodeTraversalCosts(packet: Packet, count: number, epoch: number): TraversalCosts {
+  const { header, bytes } = packet;
+  const vegYear = header.vegetationYear;
+  if (header.kind !== 'traversalCosts' || header.protocol !== 9
+    || header.traversalModelVersion !== TRAVERSAL_MODEL_VERSION
+    || header.climateModelVersion !== CLIMATE_MODEL_VERSION
+    || header.regionCount !== count || !Number.isSafeInteger(count) || count < 1
+    || typeof header.usesVegetation !== 'boolean'
+    || (vegYear !== null && (!Number.isSafeInteger(vegYear) || (vegYear as number) < 0 || (vegYear as number) > VEGETATION_MAX_YEARS))
+    || (header.usesVegetation !== (vegYear !== null))
+    || bytes.length !== count * 84
+    || !sameSettings(header.settings, DEFAULT_TRAVERSAL_SETTINGS)) {
+    throw new Error('Invalid native traversal-cost metadata.');
+  }
+  let offset = 0;
+  const next = (): Float64Array => { const field = floats(bytes.subarray(offset, offset + count * 8)); offset += count * 8; return field; };
+  const hoursPer100KmSummer = next(), hoursPer100KmWinter = next(),
+    slopeFactorSummer = next(), slopeFactorWinter = next(),
+    coverFactorSummer = next(), coverFactorWinter = next(),
+    snowFactorWinter = next(), riverDelaySummerHours = next(),
+    riverDelayWinterHours = next(), localReliefMeters = next();
+  const flags = new Uint32Array(count);
+  for (let i = 0; i < count; i++) flags[i] = bytes.readUInt32LE(offset + i * 4);
+  for (let i = 0; i < count; i++) {
+    const okCost = (v: number): boolean => v === -1 || v > 0;
+    const okFactor = (v: number): boolean => v === -1 || (v > 0 && v <= 2);
+    if (!okCost(hoursPer100KmSummer[i]) || !okCost(hoursPer100KmWinter[i])
+      || !okFactor(slopeFactorSummer[i]) || !okFactor(slopeFactorWinter[i])
+      || !okFactor(coverFactorSummer[i]) || !okFactor(coverFactorWinter[i])
+      || !(snowFactorWinter[i] > 0 && snowFactorWinter[i] <= 1 + 1e-12)
+      || riverDelaySummerHours[i] < 0 || riverDelayWinterHours[i] < 0 || localReliefMeters[i] < 0) {
+      throw new Error('Invalid native traversal-cost values.');
+    }
+  }
+  return {
+    epoch,
+    modelVersion: TRAVERSAL_MODEL_VERSION,
+    usesVegetation: header.usesVegetation,
+    vegetationYear: vegYear as number | null,
+    settings: DEFAULT_TRAVERSAL_SETTINGS,
+    hoursPer100KmSummer,
+    hoursPer100KmWinter,
+    slopeFactorSummer,
+    slopeFactorWinter,
+    coverFactorSummer,
+    coverFactorWinter,
+    snowFactorWinter,
+    riverDelaySummerHours,
+    riverDelayWinterHours,
+    localReliefMeters,
+    flags,
+  };
+}
+
+export function decodeTraversalField(packet: Packet, count: number, epoch: number): TravelField {
+  const { header, bytes } = packet;
+  const season = header.season;
+  const sources = header.sources;
+  const vegYear = header.vegetationYear;
+  if (header.kind !== 'traversalField' || header.protocol !== 9
+    || header.traversalModelVersion !== TRAVERSAL_MODEL_VERSION
+    || (season !== 'summer' && season !== 'winter')
+    || !Array.isArray(sources) || sources.length < 1 || sources.length > TRAVERSAL_MAX_SOURCES
+    || sources.some((s) => !Number.isSafeInteger(s) || (s as number) < 0 || (s as number) >= count)
+    || typeof header.usesVegetation !== 'boolean'
+    || (vegYear !== null && (!Number.isSafeInteger(vegYear) || (vegYear as number) < 0 || (vegYear as number) > VEGETATION_MAX_YEARS))
+    || (header.usesVegetation !== (vegYear !== null))
+    || header.regionCount !== count || !Number.isSafeInteger(count) || count < 1
+    || bytes.length !== count * 20) {
+    throw new Error('Invalid native traversal-field metadata.');
+  }
+  const days = floats(bytes.subarray(0, count * 8));
+  const distanceMeters = floats(bytes.subarray(count * 8, count * 16));
+  const predecessor = new Uint32Array(count);
+  for (let i = 0; i < count; i++) {
+    predecessor[i] = bytes.readUInt32LE(count * 16 + i * 4);
+    const reachable = days[i] >= 0;
+    if ((days[i] < 0 && days[i] !== -1) || (distanceMeters[i] < 0 && distanceMeters[i] !== -1)
+      || (reachable !== (distanceMeters[i] >= 0))
+      || (reachable ? predecessor[i] >= count : predecessor[i] !== count)) {
+      throw new Error('Invalid native traversal-field values.');
+    }
+  }
+  return {
+    epoch,
+    modelVersion: TRAVERSAL_MODEL_VERSION,
+    season,
+    sources: sources as number[],
+    usesVegetation: header.usesVegetation,
+    vegetationYear: vegYear as number | null,
+    days,
+    distanceMeters,
+    predecessor,
+  };
+}
+
 export function decodeSeasonalTemperature(packet: Packet, count: number, epoch: number): TemperatureNormals {
   const { header, bytes } = packet;
   const settings = header.settings;
@@ -722,6 +820,28 @@ export class NativeController {
     const packet = await session.request({ command: 'forage', region, people, years });
     if (this.active !== session || this.epoch !== epoch) throw new Error('Stale foraging response.');
     try { return decodeForage(packet, region, people, years, year, epoch); }
+    catch (error) { session.close(); throw error; }
+  }
+
+  async traversalCosts(epoch: number): Promise<TraversalCosts> {
+    if (!this.active || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    const session = this.active;
+    const packet = await session.request({ command: 'traversalCosts' });
+    if (this.active !== session || this.epoch !== epoch) throw new Error('Stale traversal-cost response.');
+    try { return decodeTraversalCosts(packet, this.count, epoch); }
+    catch (error) { session.close(); throw error; }
+  }
+  async travelTime(epoch: number, season: TravelSeason, sources: number[]): Promise<TravelField> {
+    if (!this.active || this.candidate || epoch !== this.epoch) throw new Error('No matching active world.');
+    if (season !== 'summer' && season !== 'winter') throw new Error('Invalid travel season.');
+    if (!Array.isArray(sources) || sources.length < 1 || sources.length > TRAVERSAL_MAX_SOURCES
+      || sources.some((s) => !Number.isInteger(s) || s < 0 || s >= this.count)) {
+      throw new Error('Invalid travel origin regions.');
+    }
+    const session = this.active;
+    const packet = await session.request({ command: 'travelTime', season, sources });
+    if (this.active !== session || this.epoch !== epoch) throw new Error('Stale travel-time response.');
+    try { return decodeTraversalField(packet, this.count, epoch); }
     catch (error) { session.close(); throw error; }
   }
   async seasonalWind(epoch: number): Promise<WindNormals> {
