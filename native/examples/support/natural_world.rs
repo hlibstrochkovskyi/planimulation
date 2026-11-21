@@ -1,9 +1,12 @@
 use planimulation_core::{Recipe, water::WaterSettings};
 
+/// Default new-world recipe parameters. `NATURAL_MODEL` selects another
+/// generator family (default `multiscale-geography-4`).
 pub fn recipe(seed: &str, subdivision: u32) -> Recipe {
     Recipe {
         schema_version: 1,
-        model_version: "multiscale-geography-4".into(),
+        model_version: std::env::var("NATURAL_MODEL")
+            .unwrap_or_else(|_| "multiscale-geography-4".into()),
         random_version: "fnv1a-utf8-mulberry32-1".into(),
         seed: seed.into(),
         subdivision,
